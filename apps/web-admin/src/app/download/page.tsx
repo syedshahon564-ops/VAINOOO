@@ -53,14 +53,9 @@ export default function DownloadAppPage() {
     const downloadUrl =
       settings?.apkDownloadUrl && settings.apkDownloadUrl.trim() !== ''
         ? settings.apkDownloadUrl
-        : '/livetourbd.apk';
+        : 'https://github.com/syedshahon564-ops/VAINOOO/releases/download/v1.0.0/FF_Rival_Tour_BD.apk';
 
-    const a = document.createElement('a');
-    a.href = downloadUrl;
-    a.download = 'FF_Rival_Tour_BD.apk';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    window.location.href = downloadUrl;
   };
 
   return (
