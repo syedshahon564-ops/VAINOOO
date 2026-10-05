@@ -1,0 +1,24 @@
+{
+  "name": "ff-esports-core",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Production-grade Free Fire esports tournament ecosystem with LiveTourBD aesthetics",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:api": "npm --prefix apps/backend-api run dev",
+    "dev:web": "npm --prefix apps/web-admin run dev",
+    "dev": "concurrently \"npm run dev:api\" \"npm run dev:web\"",
+    "build:api": "npm --prefix apps/backend-api run build",
+    "build:web": "npm --prefix apps/web-admin run build",
+    "build": "npm run build:api && npm run build:web",
+    "db:generate": "npm --prefix packages/database run generate",
+    "db:push": "npm --prefix packages/database run push",
+    "bot:start": "cd services/bot-observer-engine && python main_observer.py"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

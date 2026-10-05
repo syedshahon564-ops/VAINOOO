@@ -1,0 +1,177 @@
+// Prisma schema for Free Fire Esports Core
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  PLAYER
+  SUPERVISOR
+  ADMIN
+}
+
+enum GameMode {
+  BR_SOLO
+  BR_DUO
+  BR_SQUAD
+  CS_4V4
+}
+
+enum MapType {
+  BERMUDA
+  PURGATORY
+  KALAHARI
+  ALPINE
+  NEXTERRA
+}
+
+enum TournamentStatus {
+  UPCOMING
+  ROOM_OPEN
+  LIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  BKASH
+  NAGAD
+  ROCKET
+}
+
+enum TransactionType {
+  DEPOSIT
+  WITHDRAW
+  ENTRY_FEE
+  PRIZE_PAYOUT
+  REFUND
+}
+
+enum TransactionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum AnomalyType {
+  HEADSHOT_ANOMALY
+  SPEED_HACK
+  EMULATOR_MISMATCH
+  RAPID_FIRE
+}
+
+model User {
+  id                String                 @id @default(uuid())
+  phone             String                 @unique
+  ign               String                 // Free Fire In-Game Name
+  uid               String                 @unique // Free Fire UID
+  passwordHash      String
+  role              UserRole               @default(PLAYER)
+  walletBalance     Float                  @default(0.0)
+  deviceFingerprint String?
+  isBanned          Boolean                @default(false)
+  banReason         String?
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+
+  participants      TournamentParticipant[]
+  transactions      WalletTransaction[]
+  antiCheatLogs     AntiCheatLog[]
+}
+
+model Tournament {
+  id              String                 @id @default(uuid())
+  title           String
+  gameMode        GameMode               @default(BR_SOLO)
+  mapType         MapType                @default(BERMUDA)
+  entryFee        Float                  @default(20.0)
+  prizePool       Float                  @default(500.0)
+  firstPrize      Float                  @default(250.0)
+  secondPrize     Float                  @default(120.0)
+  thirdPrize      Float                  @default(50.0)
+  perKillPrize    Float                  @default(10.0)
+  totalSlots      Int                    @default(48)
+  filledSlots     Int                    @default(0)
+  status          TournamentStatus       @default(UPCOMING)
+  matchTime       DateTime
+  roomId          String?
+  roomPass        String?
+  revealAt        DateTime               // Automatically calculated 15 mins before matchTime
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+
+  participants    TournamentParticipant[]
+  antiCheatLogs   AntiCheatLog[]
+  botSessions     BotSession[]
+}
+
+model TournamentParticipant {
+  id              String       @id @default(uuid())
+  tournamentId    String
+  userId          String
+  slotNumber      Int
+  teamName        String?
+  kills           Int          @default(0)
+  rank            Int?
+  prizeWon        Float        @default(0.0)
+  screenshotUrl   String?
+  isVerified      Boolean      @default(false)
+  createdAt       DateTime     @default(now())
+
+  tournament      Tournament   @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tournamentId, slotNumber])
+  @@unique([tournamentId, userId])
+}
+
+model WalletTransaction {
+  id              String            @id @default(uuid())
+  userId          String
+  type            TransactionType
+  method          PaymentMethod     @default(BKASH)
+  amount          Float
+  phone           String            // bKash/Nagad sender phone
+  trxId           String            @unique
+  status          TransactionStatus @default(PENDING)
+  adminNote       String?
+  balanceAfter    Float?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AntiCheatLog {
+  id              String       @id @default(uuid())
+  userId          String
+  tournamentId    String
+  anomalyType     AnomalyType
+  confidenceScore Float        // e.g. 0.95
+  details         String
+  snapshotUrl     String?
+  actionTaken     String?      // e.g. AUTO_BANNED, FLAGGED_FOR_REVIEW
+  createdAt       DateTime     @default(now())
+
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tournament      Tournament   @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+}
+
+model BotSession {
+  id              String       @id @default(uuid())
+  tournamentId    String
+  botIdentifier   String       @default("OBSERVER_FLEET_01")
+  status          String       @default("IDLE") // CONNECTING, SPECTATING, PARSING, DONE
+  fps             Float        @default(60.0)
+  spectatorSlot   Int          @default(1)
+  logs            String?      // Real-time observer logs
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  tournament      Tournament   @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+}

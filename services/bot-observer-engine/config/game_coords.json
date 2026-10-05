@@ -1,0 +1,27 @@
+{
+  "resolution": "1920x1080",
+  "killfeed_box": {
+    "x1": 1380,
+    "y1": 40,
+    "x2": 1880,
+    "y2": 260
+  },
+  "booyah_banner_box": {
+    "x1": 680,
+    "y1": 220,
+    "x2": 1240,
+    "y2": 440
+  },
+  "scoreboard_ranks_box": {
+    "x1": 340,
+    "y1": 250,
+    "x2": 1580,
+    "y2": 880
+  },
+  "tap_targets": {
+    "custom_room_search_input": [320, 140],
+    "password_input_confirm": [960, 620],
+    "switch_to_spectator_slot_1": [1680, 240],
+    "start_game_ready_button": [1720, 980]
+  }
+}

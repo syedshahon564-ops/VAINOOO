@@ -1,0 +1,33 @@
+# Node & Monorepo
+node_modules
+**/node_modules
+dist
+**/dist
+.next
+**/.next
+out
+build
+*.log
+*.idsig
+.env*.local
+
+# Flutter
+.dart_tool
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+build/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+
+# Database & IDE
+.vscode
+.idea
+prisma/*.db
+.DS_Store
+Thumbs.db
