@@ -4,9 +4,13 @@ import React from 'react';
 import Link from 'next/link';
 import { ShieldCheck, Heart, Zap, Trophy } from 'lucide-react';
 import { useCMS } from '@/lib/cms-store';
+import { useViewMode } from '@/lib/view-mode';
 
 export default function Footer() {
   const { settings } = useCMS();
+  const { isApp } = useViewMode();
+
+  if (isApp) return null;
 
   return (
     <footer className="border-t border-gray-200 dark:border-white/[0.08] bg-white dark:bg-[#07070a] pt-16 pb-12 mt-20 transition-colors">

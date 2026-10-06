@@ -320,6 +320,15 @@ export function saveCMSData(data: CMSData): void {
     // Ignore storage quota errors
   }
   window.dispatchEvent(new CustomEvent('ff_cms_updated', { detail: data }));
+
+  // Background server sync so all phones, emulators and browsers stay updated
+  try {
+    fetch('/api/cms', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    }).catch(() => {});
+  } catch (e) {}
 }
 
 export function addMatch(match: Omit<MatchItem, 'id' | 'filledSlots'>): MatchItem {
@@ -395,6 +404,36 @@ export function useCMS() {
   useEffect(() => {
     setData(getCMSData());
     setLoaded(true);
+
+    // Initial background sync with server to pick up matches/categories created on other devices/admin
+    fetch('/api/cms')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((serverData) => {
+        if (serverData && !serverData.error) {
+          const current = getCMSData();
+          if (serverData.matches && serverData.matches.length > 0) {
+            const merged: CMSData = {
+              categories: { ...current.categories, ...(serverData.categories || {}) },
+              matches: serverData.matches,
+              settings: { ...current.settings, ...(serverData.settings || {}) },
+              topPlayers: (serverData.topPlayers && serverData.topPlayers.length > 0) ? serverData.topPlayers : current.topPlayers,
+            };
+            memoryCMSCache = merged;
+            setData(merged);
+            try {
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+            } catch (e) {}
+          } else if (current.matches && current.matches.length > 0) {
+            // Push client matches to server so other devices receive them
+            fetch('/api/cms', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(current),
+            }).catch(() => {});
+          }
+        }
+      })
+      .catch(() => {});
 
     const handleUpdate = (e: any) => {
       if (e.detail) {

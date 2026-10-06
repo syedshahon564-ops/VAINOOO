@@ -3,12 +3,16 @@
 import React, { useState, useEffect } from 'react';
 import { Download, X, ShieldCheck } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageProvider';
+import { useViewMode } from '@/lib/view-mode';
 
 export default function MobileInstallBanner() {
   const { t } = useLanguage();
+  const { isApp } = useViewMode();
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showBanner, setShowBanner] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
+
+  if (isApp) return null;
 
   useEffect(() => {
     const isInStandalone =

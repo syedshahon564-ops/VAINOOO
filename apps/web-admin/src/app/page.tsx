@@ -17,12 +17,19 @@ import {
 import { useCMS } from '@/lib/cms-store';
 import { useLanguage } from '@/components/LanguageProvider';
 import AppDownloadModal from '@/components/AppDownloadModal';
+import MobileAppViewPage from './mobile-app-view/page';
+import { useViewMode } from '@/lib/view-mode';
 
 export default function HomePage() {
   const [showNotice, setShowNotice] = useState(true);
   const [showDownloadModal, setShowDownloadModal] = useState(false);
   const { categories, matches, settings } = useCMS();
   const { t } = useLanguage();
+  const { isApp, setViewMode } = useViewMode();
+
+  if (isApp) {
+    return <MobileAppViewPage standalone={true} onSwitchToWeb={() => setViewMode('web')} />;
+  }
 
   const handleDownloadApp = () => {
     const downloadUrl = (settings?.apkDownloadUrl && settings.apkDownloadUrl.trim() !== '')
@@ -103,6 +110,12 @@ export default function HomePage() {
                 className="px-6 py-3 rounded-xl bg-red-600 hover:bg-red-500 text-white font-black text-xs flex items-center gap-2 shadow-lg shadow-red-600/30 transition-all border border-red-500/30"
               >
                 <Download className="w-4 h-4" /> {t('📥 ডাউনলোড অ্যাপ (Android)', '📥 Download App (Android)')}
+              </button>
+              <button
+                onClick={() => setViewMode('app')}
+                className="px-6 py-3 rounded-xl bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 font-black text-xs flex items-center gap-2 border border-amber-500/40 shadow-lg transition-all"
+              >
+                <Smartphone className="w-4 h-4 text-amber-400" /> {t('📱 মোবাইল অ্যাপ ভিউ', '📱 Switch to App View')}
               </button>
             </div>
           </div>

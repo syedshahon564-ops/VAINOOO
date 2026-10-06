@@ -49,9 +49,32 @@ import {
   AppNotification,
 } from '@/lib/match-scheduler';
 
-export default function MobileAppViewPage() {
+export default function MobileAppViewPage({
+  standalone = false,
+  onSwitchToWeb,
+}: {
+  standalone?: boolean;
+  onSwitchToWeb?: () => void;
+} = {}) {
   const { categories, matches, settings, topPlayers, updateMatch } = useCMS();
   const { language: globalLang, setLanguage: setGlobalLang } = useLanguage();
+
+  const [isMobileScreen, setIsMobileScreen] = useState(standalone);
+  const [forceFullscreen, setForceFullscreen] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+        typeof navigator !== 'undefined' ? navigator.userAgent : ''
+      );
+      setIsMobileScreen(standalone || (typeof window !== 'undefined' && window.innerWidth < 768) || isMobileUA);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [standalone]);
+
+  const isMobileView = standalone || isMobileScreen || forceFullscreen;
 
   // Active Tab & Screen Navigation
   const [activeTab, setActiveTab] = useState<'home' | 'my-matches' | 'top-players' | 'wallet' | 'profile'>('home');
@@ -266,102 +289,143 @@ export default function MobileAppViewPage() {
   );
 
   return (
-    <div className="min-h-screen bg-slate-100 dark:bg-[#07070a] py-8 px-4 transition-colors">
-      <div className="max-w-7xl mx-auto">
+    <div
+      className={
+        isMobileView
+          ? 'w-full min-h-screen transition-colors'
+          : 'min-h-screen bg-slate-100 dark:bg-[#07070a] py-8 px-4 transition-colors'
+      }
+    >
+      <div className={isMobileView ? 'w-full min-h-screen' : 'max-w-7xl mx-auto'}>
         {/* Top Breadcrumb & Controls */}
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-8 bg-white dark:bg-white/5 p-5 rounded-2xl border border-gray-200 dark:border-white/10 shadow-sm">
-          <div>
-            <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-1">
-              <Link href="/" className="hover:text-red-600 transition-colors">
-                {tPhone('হোম', 'Home')}
-              </Link>
-              <span>/</span>
-              <span className="text-red-600 font-bold">
-                FF RIVAL TOUR BD - {tPhone('মোবাইল অ্যাপ লাইভ সিমুলেটর', 'Mobile App Live Simulator')}
-              </span>
+        {!isMobileView && (
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-8 bg-white dark:bg-white/5 p-5 rounded-2xl border border-gray-200 dark:border-white/10 shadow-sm">
+            <div>
+              <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-1">
+                <Link href="/" className="hover:text-red-600 transition-colors">
+                  {tPhone('হোম', 'Home')}
+                </Link>
+                <span>/</span>
+                <span className="text-red-600 font-bold">
+                  FF RIVAL TOUR BD - {tPhone('মোবাইল অ্যাপ লাইভ সিমুলেটর', 'Mobile App Live Simulator')}
+                </span>
+              </div>
+              <h1 className="text-2xl font-black text-gray-900 dark:text-white flex items-center gap-2">
+                <Smartphone className="w-6 h-6 text-red-600" />
+                FF RIVAL TOUR BD - {tPhone('মোবাইল অ্যাপ ইন্টারঅ্যাক্টিভ ভিউ', 'Mobile App Interactive Simulator')}
+              </h1>
+              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                {tPhone(
+                  'রুম রুলস, রেজিস্টার্ড প্লেয়ার্স লিস্ট (৩ নং ছবি), টোটাল প্রাইজ ডিটেইলস (২ নং ছবি) ও বাংলা/ইংরেজি সিস্টেম টেস্ট করুন।',
+                  'Test Room Rules, Registered Participants list (Image 3), Total Prize Details (Image 2), and bilingual system.'
+                )}
+              </p>
             </div>
-            <h1 className="text-2xl font-black text-gray-900 dark:text-white flex items-center gap-2">
-              <Smartphone className="w-6 h-6 text-red-600" />
-              FF RIVAL TOUR BD - {tPhone('মোবাইল অ্যাপ ইন্টারঅ্যাক্টিভ ভিউ', 'Mobile App Interactive Simulator')}
-            </h1>
-            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-              {tPhone(
-                'রুম রুলস, রেজিস্টার্ড প্লেয়ার্স লিস্ট (৩ নং ছবি), টোটাল প্রাইজ ডিটেইলস (২ নং ছবি) ও বাংলা/ইংরেজি সিস্টেম টেস্ট করুন।',
-                'Test Room Rules, Registered Participants list (Image 3), Total Prize Details (Image 2), and bilingual system.'
-              )}
-            </p>
+
+            <div className="flex flex-wrap items-center gap-2.5">
+              <button
+                onClick={() => setForceFullscreen(true)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-black bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/20 transition-all"
+                title="Fullscreen App Mode"
+              >
+                <Smartphone className="w-4 h-4" />
+                <span>{tPhone('ফুলস্ক্রিন অ্যাপ ভিউ', 'Fullscreen App Mode')}</span>
+              </button>
+
+              {/* Bilingual System Switcher for Phone */}
+              <button
+                onClick={togglePhoneLang}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-black bg-gradient-to-r from-red-600/10 to-amber-500/10 border border-red-500/30 text-red-600 dark:text-amber-400 hover:scale-105 transition-all shadow-sm"
+                title="Toggle Bangla and English for Mobile Phone"
+              >
+                <Globe className="w-4 h-4 text-amber-500" />
+                <span>
+                  {phoneLang === 'bn' ? '🌐 Switch App to English' : '🌐 অ্যাপ বাংলায় দেখুন'}
+                </span>
+              </button>
+
+              <Link
+                href="/leaderboard"
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-black bg-amber-500 text-black hover:bg-amber-400 transition-all shadow-md shadow-amber-500/20"
+              >
+                <Trophy className="w-4 h-4" /> {tPhone('ওয়েব লিডারবোর্ড', 'Web Leaderboard')}
+              </Link>
+
+              <Link
+                href="/admin"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-red-600 text-white hover:bg-red-700 shadow-md shadow-red-600/20"
+              >
+                <Shield className="w-4 h-4" /> {tPhone('অ্যাডমিন প্যানেল', 'Admin Panel')}
+              </Link>
+
+              <button
+                onClick={() => setPhoneTheme(phoneTheme === 'dark' ? 'light' : 'dark')}
+                className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/15 transition-all text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-white/10"
+              >
+                {phoneTheme === 'dark' ? (
+                  <>
+                    <Sun className="w-4 h-4 text-amber-400" /> {tPhone('অ্যাপ লাইট মোড', 'Light Mode')}
+                  </>
+                ) : (
+                  <>
+                    <Moon className="w-4 h-4 text-slate-700" /> {tPhone('অ্যাপ ডার্ক মোড', 'Dark Mode')}
+                  </>
+                )}
+              </button>
+            </div>
           </div>
-
-          <div className="flex flex-wrap items-center gap-2.5">
-            {/* Bilingual System Switcher for Phone */}
-            <button
-              onClick={togglePhoneLang}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-black bg-gradient-to-r from-red-600/10 to-amber-500/10 border border-red-500/30 text-red-600 dark:text-amber-400 hover:scale-105 transition-all shadow-sm"
-              title="Toggle Bangla and English for Mobile Phone"
-            >
-              <Globe className="w-4 h-4 text-amber-500" />
-              <span>
-                {phoneLang === 'bn' ? '🌐 Switch App to English' : '🌐 অ্যাপ বাংলায় দেখুন'}
-              </span>
-            </button>
-
-            <Link
-              href="/leaderboard"
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-black bg-amber-500 text-black hover:bg-amber-400 transition-all shadow-md shadow-amber-500/20"
-            >
-              <Trophy className="w-4 h-4" /> {tPhone('ওয়েব লিডারবোর্ড', 'Web Leaderboard')}
-            </Link>
-
-            <Link
-              href="/admin"
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-red-600 text-white hover:bg-red-700 shadow-md shadow-red-600/20"
-            >
-              <Shield className="w-4 h-4" /> {tPhone('অ্যাডমিন প্যানেল', 'Admin Panel')}
-            </Link>
-
-            <button
-              onClick={() => setPhoneTheme(phoneTheme === 'dark' ? 'light' : 'dark')}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/15 transition-all text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-white/10"
-            >
-              {phoneTheme === 'dark' ? (
-                <>
-                  <Sun className="w-4 h-4 text-amber-400" /> {tPhone('অ্যাপ লাইট মোড', 'Light Mode')}
-                </>
-              ) : (
-                <>
-                  <Moon className="w-4 h-4 text-slate-700" /> {tPhone('অ্যাপ ডার্ক মোড', 'Dark Mode')}
-                </>
-              )}
-            </button>
-          </div>
-        </div>
+        )}
 
         {/* Workspace: Phone Mockup on Left + Feature Highlights on Right */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <div
+          className={
+            isMobileView
+              ? 'w-full min-h-screen'
+              : 'grid grid-cols-1 lg:grid-cols-12 gap-8 items-start'
+          }
+        >
           {/* LEFT: Phone Simulator */}
-          <div className="lg:col-span-5 flex justify-center">
+          <div
+            className={
+              isMobileView
+                ? 'w-full min-h-screen flex flex-col'
+                : 'lg:col-span-5 flex justify-center'
+            }
+          >
             {/* Realistic Smartphone Chassis */}
-            <div className="relative w-[370px] sm:w-[390px] h-[780px] bg-slate-900 rounded-[50px] p-3 shadow-2xl ring-1 ring-white/20 shadow-red-500/10 border-4 border-slate-700 flex flex-col">
+            <div
+              className={
+                isMobileView
+                  ? 'w-full min-h-screen flex flex-col p-0 border-0 rounded-none shadow-none bg-transparent'
+                  : 'relative w-[370px] sm:w-[390px] h-[780px] bg-slate-900 rounded-[50px] p-3 shadow-2xl ring-1 ring-white/20 shadow-red-500/10 border-4 border-slate-700 flex flex-col'
+              }
+            >
               {/* Dynamic Island / Camera Notch */}
-              <div className="absolute top-4 left-1/2 -translate-x-1/2 w-28 h-5 bg-black rounded-full z-50 flex items-center justify-center gap-2">
-                <div className="w-2.5 h-2.5 rounded-full bg-slate-800"></div>
-                <div className="w-2 h-2 rounded-full bg-blue-950"></div>
-              </div>
+              {!isMobileView && (
+                <div className="absolute top-4 left-1/2 -translate-x-1/2 w-28 h-5 bg-black rounded-full z-50 flex items-center justify-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-slate-800"></div>
+                  <div className="w-2 h-2 rounded-full bg-blue-950"></div>
+                </div>
+              )}
 
               {/* Inside Screen Content */}
               <div
-                className={`relative w-full h-full rounded-[40px] overflow-hidden flex flex-col font-sans transition-colors ${
+                className={`relative w-full ${
+                  isMobileView ? 'min-h-screen rounded-none' : 'h-full rounded-[40px]'
+                } overflow-hidden flex flex-col font-sans transition-colors ${
                   phoneTheme === 'dark' ? 'bg-[#0f0f15] text-white' : 'bg-slate-50 text-slate-900'
                 }`}
               >
                 {/* Status Bar */}
-                <div className="pt-3 px-6 pb-2 flex justify-between items-center text-[11px] font-bold tracking-tight opacity-75 z-40 select-none">
-                  <span>3:41</span>
-                  <div className="flex items-center gap-1.5">
-                    <span>5G</span>
-                    <span>100%</span>
+                {!isMobileView && (
+                  <div className="pt-3 px-6 pb-2 flex justify-between items-center text-[11px] font-bold tracking-tight opacity-75 z-40 select-none">
+                    <span>3:41</span>
+                    <div className="flex items-center gap-1.5">
+                      <span>5G</span>
+                      <span>100%</span>
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* Mobile App Header (Matching Image 1 when in category: < Solo Full Map 🔄) */}
                 <div
@@ -418,6 +482,19 @@ export default function MobileAppViewPage() {
                       </div>
 
                       <div className="flex items-center gap-1.5">
+                        {onSwitchToWeb && (
+                          <button
+                            onClick={onSwitchToWeb}
+                            title={tPhone('ওয়েবসাইট সংস্করণ', 'Switch to Website')}
+                            className={`px-2 py-1 rounded-full text-[9px] font-black border transition-all flex items-center gap-1 shadow-sm ${
+                              phoneTheme === 'dark'
+                                ? 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border-amber-500/30'
+                                : 'bg-amber-100 hover:bg-amber-200 text-amber-900 border-amber-300'
+                            }`}
+                          >
+                            <span>🌐 Web</span>
+                          </button>
+                        )}
                         <button
                           onClick={togglePhoneLang}
                           className={`px-2 py-1 rounded-full text-[9px] font-black border transition-all flex items-center gap-1 shadow-sm ${
@@ -1353,6 +1430,16 @@ export default function MobileAppViewPage() {
                         </div>
                       </div>
 
+                      {onSwitchToWeb && (
+                        <button
+                          onClick={onSwitchToWeb}
+                          className="w-full py-2.5 rounded-xl border border-gray-300 dark:border-white/10 bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-gray-800 dark:text-gray-200 text-xs font-bold transition-all flex items-center justify-center gap-2"
+                        >
+                          <Globe className="w-3.5 h-3.5 text-blue-500" />
+                          <span>{tPhone('ওয়েবসাইট সংস্করণে যান', 'Switch to Website Version')}</span>
+                        </button>
+                      )}
+
                       {/* Support button */}
                       <a
                         href={`https://wa.me/${settings.whatsappNumber}`}
@@ -1370,10 +1457,10 @@ export default function MobileAppViewPage() {
 
                 {/* 5-ICON BOTTOM NAVIGATION BAR (BILINGUAL SYSTEM) */}
                 <div
-                  className={`h-16 px-2 flex items-center justify-around border-t z-40 select-none ${
+                  className={`sticky bottom-0 h-16 px-2 flex items-center justify-around border-t z-40 select-none backdrop-blur-md pb-safe ${
                     phoneTheme === 'dark'
-                      ? 'bg-[#14141c] border-white/10'
-                      : 'bg-white border-slate-200'
+                      ? 'bg-[#14141c]/95 border-white/10'
+                      : 'bg-white/95 border-slate-200'
                   }`}
                 >
                   {/* 1. MATCH */}
@@ -1439,7 +1526,8 @@ export default function MobileAppViewPage() {
           </div>
 
           {/* RIGHT: Architecture & Feature Highlights */}
-          <div className="lg:col-span-7 space-y-6">
+          {!isMobileView && (
+            <div className="lg:col-span-7 space-y-6">
             <div className="bg-white dark:bg-white/5 rounded-2xl border border-gray-200 dark:border-white/10 p-6 shadow-sm space-y-4">
               <span className="text-xs font-black uppercase tracking-wider text-amber-500 bg-amber-50 dark:bg-amber-950/40 px-3 py-1 rounded-full border border-amber-200 dark:border-amber-900/50">
                 {tPhone('নতুন ডিজাইন: ইমেজ ১, ২ ও ৩ হুবহু বাস্তবায়িত', 'New Design: Image 1, 2 & 3 Exactly Implemented')}
@@ -1535,7 +1623,8 @@ export default function MobileAppViewPage() {
                 </Link>
               </div>
             </div>
-          </div>
+            </div>
+          )}
         </div>
       </div>
 

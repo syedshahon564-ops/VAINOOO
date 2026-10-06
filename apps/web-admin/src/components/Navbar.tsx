@@ -21,14 +21,18 @@ import { useLanguage } from '@/components/LanguageProvider';
 import { useCMS } from '@/lib/cms-store';
 import { getCurrentUser, logoutUser } from '@/lib/user-store';
 import DepositWithdrawModal from '@/components/DepositWithdrawModal';
+import { useViewMode } from '@/lib/view-mode';
 
 export default function Navbar() {
   const router = useRouter();
+  const { isApp } = useViewMode();
   const [user, setUser] = useState<any>(null);
   const [showDepositModal, setShowDepositModal] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const { language, toggleLanguage, t } = useLanguage();
   const { settings } = useCMS();
+
+  if (isApp) return null;
 
   // Hidden secret trigger for owner: 5 clicks on logo within 3 seconds navigates to secret /admin
   const logoClicksRef = useRef<number>(0);

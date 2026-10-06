@@ -31,3 +31,5 @@ venv/
 prisma/*.db
 .DS_Store
 Thumbs.db
+scratch/
+*.jar
