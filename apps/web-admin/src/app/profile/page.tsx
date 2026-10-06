@@ -16,8 +16,11 @@ import {
 } from 'lucide-react';
 
 import { getCurrentUser } from '@/lib/user-store';
+import DepositWithdrawModal from '@/components/DepositWithdrawModal';
 
 export default function ProfilePage() {
+  const [showFinanceModal, setShowFinanceModal] = useState(false);
+  const [financeModalTab, setFinanceModalTab] = useState<'DEPOSIT' | 'WITHDRAW'>('DEPOSIT');
   const [user, setUser] = useState<any>({
     ign: 'BDX_STRIKER',
     uid: '192837465',
@@ -116,19 +119,33 @@ export default function ProfilePage() {
           <div className="text-3xl font-black text-red-600 dark:text-red-400">
             ৳ {Number(user.walletBalance || 1450).toFixed(2)}
           </div>
-          <div className="flex gap-2 justify-center sm:justify-end pt-1">
-            <Link
-              href="/wallet"
+          <div className="flex gap-2 justify-center sm:justify-end pt-1 flex-wrap">
+            <button
+              onClick={() => {
+                setFinanceModalTab('DEPOSIT');
+                setShowFinanceModal(true);
+              }}
               className="px-3 py-1.5 rounded-lg btn-red text-[11px] font-bold flex items-center gap-1 shadow-sm"
             >
-              <ArrowDownRight className="w-3.5 h-3.5" /> Deposit
-            </Link>
-            <Link
-              href="/wallet"
-              className="px-3 py-1.5 rounded-lg bg-white dark:bg-white/10 text-gray-800 dark:text-white border border-gray-200 dark:border-white/10 text-[11px] font-bold flex items-center gap-1 hover:bg-gray-50"
+              <ArrowDownRight className="w-3.5 h-3.5" /> ডিপোজিট (Deposit)
+            </button>
+            <button
+              onClick={() => {
+                setFinanceModalTab('WITHDRAW');
+                setShowFinanceModal(true);
+              }}
+              className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold flex items-center gap-1 shadow-sm"
             >
-              <ArrowUpRight className="w-3.5 h-3.5 text-rose-500" /> Withdraw
-            </Link>
+              <ArrowUpRight className="w-3.5 h-3.5 text-white" /> উইথড্র (Withdraw)
+            </button>
+            {user.role === 'ADMIN' && (
+              <Link
+                href="/admin"
+                className="px-3 py-1.5 rounded-lg bg-amber-500 text-black text-[11px] font-black flex items-center gap-1 shadow-sm hover:bg-amber-400"
+              >
+                👑 অ্যাডমিন প্যানেল
+              </Link>
+            )}
           </div>
         </div>
       </div>
@@ -191,6 +208,14 @@ export default function ProfilePage() {
           ))}
         </div>
       </div>
+
+      {showFinanceModal && (
+        <DepositWithdrawModal
+          isOpen={showFinanceModal}
+          initialTab={financeModalTab}
+          onClose={() => setShowFinanceModal(false)}
+        />
+      )}
     </div>
   );
 }

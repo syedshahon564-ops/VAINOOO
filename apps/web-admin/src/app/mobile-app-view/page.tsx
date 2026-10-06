@@ -32,6 +32,14 @@ import {
   ExternalLink,
   RefreshCw,
   Camera,
+  ArrowDownRight,
+  ArrowUpRight,
+  LogOut,
+  LogIn,
+  Gamepad2,
+  Coins,
+  Lock,
+  Phone,
 } from 'lucide-react';
 import { useCMS, MatchItem, TopPlayerItem } from '@/lib/cms-store';
 import RoomDetailsModal from '@/components/RoomDetailsModal';
@@ -41,8 +49,18 @@ import TotalPrizeDetailsModal from '@/components/TotalPrizeDetailsModal';
 import MatchDetailsPage from '@/components/MatchDetailsPage';
 import ImageUploadInput from '@/components/ImageUploadInput';
 import LiveMatchCountdown, { formatMatchSchedule } from '@/components/LiveMatchCountdown';
+import DepositWithdrawModal from '@/components/DepositWithdrawModal';
 import { useLanguage } from '@/components/LanguageProvider';
-import { getCurrentUser, addBalance, deductBalance } from '@/lib/user-store';
+import {
+  getCurrentUser,
+  loginUser,
+  registerUser,
+  logoutUser,
+  addBalance,
+  deductBalance,
+  getTransactions,
+  UserAccount,
+} from '@/lib/user-store';
 import {
   getNotifications,
   markNotificationsAsRead,
@@ -89,7 +107,23 @@ export default function MobileAppViewPage(props: any) {
   // Copying & Feedback
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [joinedSuccess, setJoinedSuccess] = useState(false);
-  const [userBalance, setUserBalance] = useState(1450.0);
+  const [userBalance, setUserBalance] = useState(0.0);
+  const [currentUser, setCurrentUser] = useState<UserAccount | null>(null);
+
+  // Auth modal state
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authMode, setAuthMode] = useState<'LOGIN' | 'REGISTER'>('LOGIN');
+  const [authPhone, setAuthPhone] = useState('');
+  const [authPassword, setAuthPassword] = useState('');
+  const [authIgn, setAuthIgn] = useState('');
+  const [authUid, setAuthUid] = useState('');
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [authSuccess, setAuthSuccess] = useState<string | null>(null);
+
+  // Finance Modal (Deposit & Withdraw)
+  const [showFinanceModal, setShowFinanceModal] = useState(false);
+  const [financeModalTab, setFinanceModalTab] = useState<'DEPOSIT' | 'WITHDRAW'>('DEPOSIT');
 
   // Modals & Screens
   const [roomDetailsMatch, setRoomDetailsMatch] = useState<MatchItem | null>(null);
@@ -111,6 +145,55 @@ export default function MobileAppViewPage(props: any) {
     const next = phoneLang === 'bn' ? 'en' : 'bn';
     setPhoneLang(next);
     setGlobalLang(next);
+  };
+
+  const handleAuthSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthLoading(true);
+    setAuthError(null);
+    setAuthSuccess(null);
+
+    try {
+      if (authMode === 'REGISTER') {
+        if (!authPhone || !authPassword || !authIgn) {
+          throw new Error('অনুগ্রহ করে মোবাইল নম্বর, পাসওয়ার্ড ও IGN পূরণ করুন');
+        }
+        const res = registerUser({
+          phone: authPhone.trim(),
+          ign: authIgn.trim().toUpperCase(),
+          uid: authUid.trim() || String(Math.floor(100000000 + Math.random() * 900000000)),
+          password: authPassword,
+        });
+        if (!res.success) throw new Error(res.error || 'রেজিস্ট্রেশন ব্যর্থ হয়েছে');
+        setAuthSuccess(`রেজিস্ট্রেশন সফল! স্বাগতম ${res.user?.ign}`);
+        setTimeout(() => {
+          setShowAuthModal(false);
+          setAuthSuccess(null);
+        }, 800);
+      } else {
+        if (!authPhone || !authPassword) {
+          throw new Error('ফোন নম্বর এবং পাসওয়ার্ড লিখুন');
+        }
+        const res = loginUser(authPhone.trim(), authPassword);
+        if (!res.success) throw new Error(res.error || 'লগইন ব্যর্থ হয়েছে।');
+        setAuthSuccess(`লগইন সফল! স্বাগতম ${res.user?.ign}`);
+        setTimeout(() => {
+          setShowAuthModal(false);
+          setAuthSuccess(null);
+        }, 800);
+      }
+    } catch (err: any) {
+      setAuthError(err.message || 'ত্রুটি ঘটেছে');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const fillAuthDemo = (phone: string, pass: string) => {
+    setAuthMode('LOGIN');
+    setAuthPhone(phone);
+    setAuthPassword(pass);
+    setAuthError(null);
   };
 
   // Booked matches list (starts empty with 0 fake participants)
@@ -168,8 +251,11 @@ export default function MobileAppViewPage(props: any) {
 
     const onUserUpdate = () => {
       const cur = getCurrentUser();
+      setCurrentUser(cur);
       if (cur) {
-        setUserBalance(cur.walletBalance);
+        setUserBalance(cur.walletBalance || 0);
+      } else {
+        setUserBalance(0);
       }
     };
     onUserUpdate();
@@ -424,6 +510,38 @@ export default function MobileAppViewPage(props: any) {
                     <div className="flex items-center gap-1.5">
                       <span>5G</span>
                       <span>100%</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Guest Notice Bar if not logged in */}
+                {!currentUser && (
+                  <div className="bg-gradient-to-r from-red-600 via-rose-600 to-amber-600 px-3 py-1.5 text-white flex items-center justify-between text-[11px] font-bold select-none z-40 shadow-sm">
+                    <div className="flex items-center gap-1.5 truncate">
+                      <Sparkles className="w-3.5 h-3.5 text-amber-300 flex-shrink-0 animate-pulse" />
+                      <span className="truncate text-[10px]">
+                        {tPhone('টুর্নামেন্টে খেলতে ও উইথড্র করতে লগইন করুন!', 'Sign in to join tournaments & withdraw!')}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1 flex-shrink-0 ml-1.5">
+                      <button
+                        onClick={() => {
+                          setAuthMode('LOGIN');
+                          setShowAuthModal(true);
+                        }}
+                        className="px-2 py-0.5 rounded bg-white text-red-600 font-black text-[9px] hover:bg-gray-100 shadow-sm"
+                      >
+                        {tPhone('লগইন', 'Login')}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setAuthMode('REGISTER');
+                          setShowAuthModal(true);
+                        }}
+                        className="px-2 py-0.5 rounded bg-black/40 text-white font-black text-[9px] hover:bg-black/60 border border-white/20"
+                      >
+                        {tPhone('রেজিস্টার', 'Register')}
+                      </button>
                     </div>
                   </div>
                 )}
@@ -788,7 +906,13 @@ export default function MobileAppViewPage(props: any) {
 
                                     {/* Join Button (Image 1 Style) */}
                                     <button
-                                      onClick={() => setBookingModalMatch(m)}
+                                      onClick={() => {
+                                        if (!currentUser) {
+                                          setShowAuthModal(true);
+                                          return;
+                                        }
+                                        setBookingModalMatch(m);
+                                      }}
                                       className="px-5 py-1.5 rounded-lg border border-blue-600 dark:border-blue-500 text-blue-600 dark:text-blue-400 font-bold text-xs hover:bg-blue-600 hover:text-white transition-all flex-shrink-0"
                                     >
                                       Join
@@ -1253,203 +1377,503 @@ export default function MobileAppViewPage(props: any) {
                   {activeTab === 'wallet' && (
                     <div className="space-y-3">
                       {/* Wallet Balance Card */}
-                      <div className="p-3.5 rounded-2xl bg-gradient-to-tr from-red-700 to-rose-600 text-white shadow-lg space-y-1">
-                        <span className="text-[10px] font-bold text-red-200">{tPhone('বর্তমান ব্যালেন্স', 'Current Balance')}</span>
-                        <div className="text-2xl font-black">৳ {userBalance.toFixed(2)}</div>
-                        <div className="text-[9px] text-red-200 pt-1 flex justify-between">
-                          <span>{tPhone('উইথড্র যোগ্য: ৳', 'Withdrawable: ৳')} {(userBalance * 0.8).toFixed(2)}</span>
-                          <span>{tPhone('বুকিং বোনাস: ৳', 'Bonus: ৳')} {(userBalance * 0.2).toFixed(2)}</span>
+                      <div className="p-4 rounded-2xl bg-gradient-to-tr from-red-700 via-rose-600 to-red-900 text-white shadow-xl space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-bold text-red-200 uppercase tracking-wider">
+                            {tPhone('মোট ওয়ালেট ব্যালেন্স', 'Total Wallet Balance')}
+                          </span>
+                          <span className="px-2 py-0.5 rounded-full bg-white/20 text-[9px] font-bold">
+                            100% Safe & Instant
+                          </span>
+                        </div>
+                        <div className="text-3xl font-black">৳ {userBalance.toFixed(2)}</div>
+                        <div className="text-[10px] text-red-200 pt-1 flex justify-between border-t border-white/20">
+                          <span>{tPhone('উইথড্র যোগ্য: ৳', 'Withdrawable: ৳')} {(userBalance * 0.85).toFixed(2)}</span>
+                          <span>{tPhone('ম্যাচ বোনাস: ৳', 'Bonus: ৳')} {(userBalance * 0.15).toFixed(2)}</span>
+                        </div>
+
+                        {/* Direct Withdraw & Deposit Buttons inside Wallet */}
+                        <div className="grid grid-cols-2 gap-2 pt-2">
+                          <button
+                            onClick={() => {
+                              if (!currentUser) {
+                                setShowAuthModal(true);
+                                return;
+                              }
+                              setFinanceModalTab('WITHDRAW');
+                              setShowFinanceModal(true);
+                            }}
+                            className="py-2.5 px-3 rounded-xl bg-white text-gray-900 hover:bg-gray-100 font-black text-xs flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-all"
+                          >
+                            <ArrowUpRight className="w-4 h-4 text-emerald-600" />
+                            <span>{tPhone('উইথড্র (টাকা তোলা)', 'Withdraw Money')}</span>
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              if (!currentUser) {
+                                setShowAuthModal(true);
+                                return;
+                              }
+                              setFinanceModalTab('DEPOSIT');
+                              setShowFinanceModal(true);
+                            }}
+                            className="py-2.5 px-3 rounded-xl bg-black/40 hover:bg-black/60 text-white font-black text-xs flex items-center justify-center gap-1.5 border border-white/30 active:scale-95 transition-all"
+                          >
+                            <ArrowDownRight className="w-4 h-4 text-amber-400" />
+                            <span>{tPhone('ডিপোজিট (টাকা যোগ)', 'Add Money')}</span>
+                          </button>
                         </div>
                       </div>
 
-                      {depositSuccess && (
-                        <div className="bg-emerald-600 text-white text-xs px-3 py-2 rounded-lg text-center font-bold flex items-center justify-center gap-1">
-                          <CheckCircle className="w-3.5 h-3.5" /> ৳{depositAmount} {tPhone('সফলভাবে ওয়ালেটে যোগ হয়েছে!', 'successfully added to wallet!')}
-                        </div>
-                      )}
-
-                      {/* Deposit Section */}
+                      {/* Payment Methods Card */}
                       <div
-                        className={`p-3 rounded-xl border space-y-2.5 ${
-                          phoneTheme === 'dark'
-                            ? 'bg-[#181824] border-white/10'
-                            : 'bg-white border-slate-200'
+                        className={`p-3.5 rounded-2xl border space-y-2.5 ${
+                          phoneTheme === 'dark' ? 'bg-[#181824] border-white/10' : 'bg-white border-slate-200'
                         }`}
                       >
                         <span className="text-xs font-black text-gray-900 dark:text-white block">
-                          {tPhone('ইনস্ট্যান্ট টাকা যোগ করুন (Add Money)', 'Instant Deposit (Add Money)')}
+                          {tPhone('ইনস্ট্যান্ট পেমেন্ট গেটওয়ে (bKash / Nagad / Rocket)', 'Instant Payment Methods')}
                         </span>
-
-                        <div className="grid grid-cols-3 gap-1.5">
-                          {(['bkash', 'nagad', 'rocket'] as const).map((method) => (
-                            <button
-                              key={method}
-                              onClick={() => setDepositMethod(method)}
-                              className={`py-1.5 rounded-lg text-[10px] font-black uppercase transition-all border ${
-                                depositMethod === method
-                                  ? 'bg-red-600 text-white border-red-500'
-                                  : phoneTheme === 'dark'
-                                  ? 'bg-white/5 text-gray-300 border-white/10'
-                                  : 'bg-slate-100 text-slate-700 border-slate-200'
-                              }`}
+                        <div className="grid grid-cols-3 gap-2">
+                          {[
+                            { name: 'bKash', number: settings.bkashNumber || '01712345678', color: 'border-pink-500/40 text-pink-500' },
+                            { name: 'Nagad', number: settings.nagadNumber || '01812345678', color: 'border-orange-500/40 text-orange-500' },
+                            { name: 'Rocket', number: '01912345678', color: 'border-purple-500/40 text-purple-500' },
+                          ].map((gw) => (
+                            <div
+                              key={gw.name}
+                              className={`p-2 rounded-xl border bg-gray-50 dark:bg-white/5 text-center ${gw.color}`}
                             >
-                              {method}
-                            </button>
+                              <div className="text-[11px] font-black uppercase">{gw.name}</div>
+                              <div className="text-[9px] text-gray-400 font-mono truncate">{gw.number}</div>
+                            </div>
                           ))}
                         </div>
-
-                        <div>
-                          <label className="text-[10px] text-gray-400 block mb-1">
-                            {tPhone('টাকার পরিমাণ (৳)', 'Deposit Amount (৳)')}
-                          </label>
-                          <input
-                            type="number"
-                            value={depositAmount}
-                            onChange={(e) => setDepositAmount(e.target.value)}
-                            className={`w-full px-3 py-1.5 rounded-lg text-xs font-bold border focus:outline-none focus:border-red-500 ${
-                              phoneTheme === 'dark'
-                                ? 'bg-black/30 border-white/10 text-white'
-                                : 'bg-slate-50 border-slate-200 text-slate-900'
-                            }`}
-                          />
-                        </div>
-
-                        <button
-                          onClick={handleDeposit}
-                          className="w-full py-2 rounded-lg text-xs font-black text-white bg-red-600 hover:bg-red-500 transition-all shadow-md shadow-red-600/20"
-                        >
-                          {tPhone(
-                            `${depositMethod.toUpperCase()} থেকে রিচার্জ করুন`,
-                            `Deposit via ${depositMethod.toUpperCase()}`
-                          )}
-                        </button>
                       </div>
 
                       {/* Recent History */}
                       <div className="space-y-1.5">
-                        <span className="text-[10px] font-black text-gray-400 uppercase">
-                          {tPhone('সাম্প্রতিক লেনদেন', 'Recent Transactions')}
+                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider">
+                          {tPhone('সাম্প্রতিক লেনদেন হিস্ট্রি', 'Recent Transactions')}
                         </span>
-                        <div
-                          className={`p-2.5 rounded-xl border flex items-center justify-between text-xs ${
-                            phoneTheme === 'dark'
-                              ? 'bg-[#181824] border-white/10'
-                              : 'bg-white border-slate-200'
-                          }`}
-                        >
-                          <div>
-                            <span className="font-bold text-emerald-500 block text-[11px]">
-                              + bKash Deposit
-                            </span>
-                            <span className="text-[9px] text-gray-400">TrxID: 9JK84M2</span>
-                          </div>
-                          <span className="font-black text-emerald-500 text-xs">+৳500.00</span>
+                        <div className="space-y-1.5">
+                          {getTransactions().slice(0, 4).map((tx) => (
+                            <div
+                              key={tx.id}
+                              className={`p-2.5 rounded-xl border flex items-center justify-between text-xs ${
+                                phoneTheme === 'dark' ? 'bg-[#181824] border-white/10' : 'bg-white border-slate-200'
+                              }`}
+                            >
+                              <div>
+                                <span
+                                  className={`font-black text-[11px] block ${
+                                    tx.type === 'CREDIT' ? 'text-emerald-500' : 'text-red-500'
+                                  }`}
+                                >
+                                  {tx.type === 'CREDIT' ? '+ টাকা যোগ (ডিপোজিট)' : '- টাকা উত্তোলন (উইথড্র)'}
+                                </span>
+                                <span className="text-[9px] text-gray-400">{tx.reason}</span>
+                              </div>
+                              <span
+                                className={`font-black text-xs ${
+                                  tx.type === 'CREDIT' ? 'text-emerald-500' : 'text-red-500'
+                                }`}
+                              >
+                                {tx.type === 'CREDIT' ? '+' : '-'}৳{tx.amount.toFixed(2)}
+                              </span>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     </div>
                   )}
 
-                  {/* TAB 5: PROFILE (WITH MY PLAYER DETAILS BUTTON) */}
+                  {/* TAB 5: PROFILE & CAREER STATS */}
                   {activeTab === 'profile' && (
                     <div className="space-y-3">
-                      <div
-                        className={`p-4 rounded-xl border text-center space-y-2.5 ${
-                          phoneTheme === 'dark'
-                            ? 'bg-[#181824] border-white/10'
-                            : 'bg-white border-slate-200'
-                        }`}
-                      >
-                        <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-red-600 to-rose-500 mx-auto flex items-center justify-center text-white text-xl font-black shadow-lg shadow-red-500/30">
-                          BS
-                        </div>
-                        <div>
-                          <h3 className="text-sm font-black text-gray-900 dark:text-white">
-                            BDX_STRIKER
-                          </h3>
-                          <span className="text-[10px] text-gray-400 font-mono">UID: 192837465</span>
-                        </div>
-                        <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 text-[10px] font-bold">
-                          <Shield className="w-3 h-3" /> Anti-Cheat Verified
-                        </div>
-
-                        {/* VIEW MY FULL PLAYER DETAILS BUTTON */}
-                        <button
-                          onClick={() =>
-                            setSelectedPlayerForDetails({
-                              ign: 'BDX_STRIKER',
-                              uid: '192837465',
-                              rank: 3,
-                              kills: 142,
-                              earnings: 8600,
-                              matchesPlayed: 38,
-                              booyahs: 12,
-                              winRate: '42.8%',
-                              level: 72,
-                              guild: 'BD_RIVALS_ELITE',
-                              kdRatio: '4.75',
-                              headshotRate: '68.2%',
-                            })
-                          }
-                          className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-black font-black text-[11px] hover:from-amber-400 hover:to-amber-500 transition-all flex items-center justify-center gap-1.5 shadow-md shadow-amber-500/20 active:scale-95"
-                        >
-                          <Trophy className="w-3.5 h-3.5" />
-                          <span>{tPhone('আমার সম্পূর্ণ প্লেয়ার ডিটেইলস দেখুন', 'View My Full Player Profile & Details')}</span>
-                        </button>
-                      </div>
-
-                      {/* Stats */}
-                      <div className="grid grid-cols-3 gap-2 text-center">
+                      {/* If Guest (Not Logged In) -> Show Auth Screen Directly in Tab */}
+                      {!currentUser ? (
                         <div
-                          className={`p-2.5 rounded-xl border ${
-                            phoneTheme === 'dark'
-                              ? 'bg-[#181824] border-white/10'
-                              : 'bg-white border-slate-200'
+                          className={`p-4 rounded-2xl border text-center space-y-3 ${
+                            phoneTheme === 'dark' ? 'bg-[#181824] border-white/10' : 'bg-white border-slate-200'
                           }`}
                         >
-                          <span className="text-[9px] text-gray-400 block">{tPhone('ম্যাচ', 'Matches')}</span>
-                          <span className="text-sm font-black text-red-600">38</span>
-                        </div>
-                        <div
-                          className={`p-2.5 rounded-xl border ${
-                            phoneTheme === 'dark'
-                              ? 'bg-[#181824] border-white/10'
-                              : 'bg-white border-slate-200'
-                          }`}
-                        >
-                          <span className="text-[9px] text-gray-400 block">{tPhone('বুইয়াহ', 'Booyahs')}</span>
-                          <span className="text-sm font-black text-emerald-600">12</span>
-                        </div>
-                        <div
-                          className={`p-2.5 rounded-xl border ${
-                            phoneTheme === 'dark'
-                              ? 'bg-[#181824] border-white/10'
-                              : 'bg-white border-slate-200'
-                          }`}
-                        >
-                          <span className="text-[9px] text-gray-400 block">{tPhone('মোট কিল', 'Total Kills')}</span>
-                          <span className="text-sm font-black text-blue-500">142</span>
-                        </div>
-                      </div>
+                          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-red-600 to-rose-500 mx-auto flex items-center justify-center text-white shadow-lg shadow-red-500/30">
+                            <Lock className="w-7 h-7" />
+                          </div>
+                          <div>
+                            <h3 className="text-sm font-black text-gray-900 dark:text-white">
+                              {tPhone('লগইন বা রেজিস্টার করুন', 'Login or Create Account')}
+                            </h3>
+                            <p className="text-[11px] text-gray-400">
+                              {tPhone(
+                                'প্রোফাইল দেখতে, উইথড্র করতে ও টুর্নামেন্টে জয়েন করতে অ্যাকাউন্টে প্রবেশ করুন',
+                                'Sign in to access your profile, wallet, withdraw and tournaments'
+                              )}
+                            </p>
+                          </div>
 
-                      {onSwitchToWeb && (
-                        <button
-                          onClick={onSwitchToWeb}
-                          className="w-full py-2.5 rounded-xl border border-gray-300 dark:border-white/10 bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-gray-800 dark:text-gray-200 text-xs font-bold transition-all flex items-center justify-center gap-2"
-                        >
-                          <Globe className="w-3.5 h-3.5 text-blue-500" />
-                          <span>{tPhone('ওয়েবসাইট সংস্করণে যান', 'Switch to Website Version')}</span>
-                        </button>
+                          <div className="grid grid-cols-2 gap-2 pt-1">
+                            <button
+                              onClick={() => {
+                                setAuthMode('LOGIN');
+                                setShowAuthModal(true);
+                              }}
+                              className="py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-black text-xs shadow-md shadow-red-600/30"
+                            >
+                              {tPhone('লগইন করুন', 'Login')}
+                            </button>
+                            <button
+                              onClick={() => {
+                                setAuthMode('REGISTER');
+                                setShowAuthModal(true);
+                              }}
+                              className="py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-black font-black text-xs shadow-md shadow-amber-500/30"
+                            >
+                              {tPhone('নতুন রেজিস্টার', 'Register')}
+                            </button>
+                          </div>
+
+                          {/* 5 Owner ID 1-Click Access for Admins */}
+                          <div className="pt-2 border-t border-gray-200 dark:border-white/10 space-y-1.5 text-left">
+                            <span className="text-[10px] font-black text-amber-500 uppercase tracking-wider block text-center flex items-center justify-center gap-1">
+                              <Shield className="w-3 h-3 text-amber-500" /> ওনার / অ্যাডমিন আইডি (১-ক্লিক লগইন)
+                            </span>
+                            <div className="grid grid-cols-2 gap-1.5">
+                              {[
+                                { label: 'ওনার ১', phone: '01700000001', pass: 'admin@owner1' },
+                                { label: 'ওনার ২', phone: '01700000002', pass: 'admin@owner2' },
+                                { label: 'ওনার ৩', phone: '01700000003', pass: 'admin@owner3' },
+                                { label: 'ওনার ৪', phone: '01700000004', pass: 'admin@owner4' },
+                                { label: 'ওনার ৫', phone: '01700000005', pass: 'admin@owner5' },
+                                { label: 'মাস্টার অ্যাডমিন', phone: '01700000000', pass: 'admin123' },
+                              ].map((adm) => (
+                                <button
+                                  key={adm.phone}
+                                  onClick={() => {
+                                    loginUser(adm.phone, adm.pass);
+                                  }}
+                                  className="p-1.5 rounded-lg bg-amber-500/10 border border-amber-500/25 hover:bg-amber-500/20 text-left transition-all"
+                                >
+                                  <div className="text-[10px] font-black text-amber-500">{adm.label}</div>
+                                  <div className="text-[8px] text-gray-400 font-mono">{adm.phone}</div>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          {/* 1. OWNER / ADMIN DIRECT ACCESS BANNER (IF ADMIN) */}
+                          {currentUser.role === 'ADMIN' && (
+                            <div className="p-3.5 rounded-2xl bg-gradient-to-r from-red-950 via-amber-950 to-black border-2 border-amber-500/40 text-white shadow-xl space-y-2.5">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-8 h-8 rounded-xl bg-amber-500 flex items-center justify-center text-black font-black text-sm shadow-md shadow-amber-500/30">
+                                    👑
+                                  </div>
+                                  <div>
+                                    <div className="text-xs font-black text-amber-400 flex items-center gap-1">
+                                      {currentUser.ign}
+                                      <span className="text-[9px] bg-red-600 px-1.5 py-0.2 rounded text-white font-bold">OWNER</span>
+                                    </div>
+                                    <p className="text-[10px] text-gray-300 font-mono">{currentUser.phone}</p>
+                                  </div>
+                                </div>
+                                <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[9px] font-bold">
+                                  Full Master Access
+                                </span>
+                              </div>
+
+                              <Link
+                                href="/admin"
+                                className="w-full py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-black text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-amber-500/30 active:scale-95 transition-all"
+                              >
+                                <Shield className="w-4 h-4 text-black" />
+                                <span>👑 {tPhone('অ্যাডমিন প্যানেল প্রবেশ করুন', 'Enter Admin Dashboard')}</span>
+                              </Link>
+                            </div>
+                          )}
+
+                          {/* 2. USER PROFILE HEADER CARD */}
+                          <div
+                            className={`p-4 rounded-2xl border text-center space-y-2.5 ${
+                              phoneTheme === 'dark' ? 'bg-[#181824] border-white/10' : 'bg-white border-slate-200'
+                            }`}
+                          >
+                            <div className="relative w-16 h-16 rounded-full bg-gradient-to-tr from-red-600 to-rose-500 mx-auto flex items-center justify-center text-white text-xl font-black shadow-lg shadow-red-500/30">
+                              {currentUser.ign.slice(0, 2).toUpperCase()}
+                              <span className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 border-2 border-[#181824] flex items-center justify-center text-[10px]">
+                                ✓
+                              </span>
+                            </div>
+
+                            <div>
+                              <div className="flex items-center justify-center gap-1.5">
+                                <h3 className="text-sm font-black text-gray-900 dark:text-white">
+                                  {currentUser.ign}
+                                </h3>
+                                {currentUser.role === 'ADMIN' ? (
+                                  <span className="px-1.5 py-0.5 rounded bg-amber-500 text-black text-[9px] font-black">
+                                    OWNER
+                                  </span>
+                                ) : (
+                                  <span className="px-1.5 py-0.5 rounded bg-red-600 text-white text-[9px] font-black">
+                                    PRO
+                                  </span>
+                                )}
+                              </div>
+                              <span className="text-[10px] text-gray-400 font-mono">
+                                UID: {currentUser.uid} | {currentUser.phone}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center justify-center gap-2">
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 text-[10px] font-bold">
+                                <Shield className="w-3 h-3" /> Anti-Cheat Verified
+                              </span>
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20 text-[10px] font-bold">
+                                ৳ {userBalance.toFixed(2)}
+                              </span>
+                            </div>
+
+                            {/* 3. WITHDRAW & DEPOSIT PRIMARY ACTION BUTTONS */}
+                            <div className="grid grid-cols-2 gap-2 pt-2">
+                              <button
+                                onClick={() => {
+                                  setFinanceModalTab('WITHDRAW');
+                                  setShowFinanceModal(true);
+                                }}
+                                className="py-2.5 px-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/20 active:scale-95 transition-all"
+                              >
+                                <ArrowUpRight className="w-4 h-4" />
+                                <span>{tPhone('উইথড্র (টাকা তোলা)', 'Withdraw Money')}</span>
+                              </button>
+
+                              <button
+                                onClick={() => {
+                                  setFinanceModalTab('DEPOSIT');
+                                  setShowFinanceModal(true);
+                                }}
+                                className="py-2.5 px-2 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-md shadow-red-600/20 active:scale-95 transition-all"
+                              >
+                                <ArrowDownRight className="w-4 h-4" />
+                                <span>{tPhone('ডিপোজিট (টাকা যোগ)', 'Add Money')}</span>
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* 4. CAREER STATISTICS (6-GRID) */}
+                          <div className="space-y-1.5">
+                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider">
+                              📊 {tPhone('ক্যারিয়ার পরিসংখ্যান ও পারফরম্যান্স', 'Career Performance & Stats')}
+                            </span>
+                            <div className="grid grid-cols-3 gap-2 text-center">
+                              {/* TOTAL EARNINGS */}
+                              <div
+                                className={`p-2.5 rounded-xl border ${
+                                  phoneTheme === 'dark' ? 'bg-[#181824] border-white/10' : 'bg-white border-slate-200'
+                                }`}
+                              >
+                                <span className="text-[9px] text-gray-400 block">{tPhone('মোট ইনকাম', 'Earnings')}</span>
+                                <span className="text-xs font-black text-amber-500">
+                                  ৳{Number(currentUser.totalEarnings ?? (currentUser.matchesPlayed * 250)).toLocaleString()}
+                                </span>
+                              </div>
+
+                              {/* BOOYAH COUNT */}
+                              <div
+                                className={`p-2.5 rounded-xl border ${
+                                  phoneTheme === 'dark' ? 'bg-[#181824] border-white/10' : 'bg-white border-slate-200'
+                                }`}
+                              >
+                                <span className="text-[9px] text-gray-400 block">{tPhone('বুইয়াহ কাউন্ট', 'Booyahs')}</span>
+                                <span className="text-xs font-black text-emerald-500">
+                                  {currentUser.totalWins ?? 12} 🏆
+                                </span>
+                              </div>
+
+                              {/* TOTAL KILLS */}
+                              <div
+                                className={`p-2.5 rounded-xl border ${
+                                  phoneTheme === 'dark' ? 'bg-[#181824] border-white/10' : 'bg-white border-slate-200'
+                                }`}
+                              >
+                                <span className="text-[9px] text-gray-400 block">{tPhone('মোট কিল', 'Kills')}</span>
+                                <span className="text-xs font-black text-blue-500">
+                                  {currentUser.totalKills ?? 142} 🎯
+                                </span>
+                              </div>
+
+                              {/* MATCHES PLAYED */}
+                              <div
+                                className={`p-2.5 rounded-xl border ${
+                                  phoneTheme === 'dark' ? 'bg-[#181824] border-white/10' : 'bg-white border-slate-200'
+                                }`}
+                              >
+                                <span className="text-[9px] text-gray-400 block">{tPhone('খেলা ম্যাচ', 'Matches')}</span>
+                                <span className="text-xs font-black text-red-500">
+                                  {currentUser.matchesPlayed ?? 38}
+                                </span>
+                              </div>
+
+                              {/* WIN RATE */}
+                              <div
+                                className={`p-2.5 rounded-xl border ${
+                                  phoneTheme === 'dark' ? 'bg-[#181824] border-white/10' : 'bg-white border-slate-200'
+                                }`}
+                              >
+                                <span className="text-[9px] text-gray-400 block">{tPhone('উইন রেট', 'Win Rate')}</span>
+                                <span className="text-xs font-black text-purple-500">
+                                  {(
+                                    ((currentUser.totalWins || 12) / Math.max(1, currentUser.matchesPlayed || 38)) *
+                                    100
+                                  ).toFixed(1)}
+                                  %
+                                </span>
+                              </div>
+
+                              {/* K/D RATIO */}
+                              <div
+                                className={`p-2.5 rounded-xl border ${
+                                  phoneTheme === 'dark' ? 'bg-[#181824] border-white/10' : 'bg-white border-slate-200'
+                                }`}
+                              >
+                                <span className="text-[9px] text-gray-400 block">{tPhone('কে/ডি রেশিও', 'K/D Ratio')}</span>
+                                <span className="text-xs font-black text-teal-500">
+                                  {(
+                                    (currentUser.totalKills || 142) /
+                                    Math.max(1, (currentUser.matchesPlayed || 38) - (currentUser.totalWins || 12))
+                                  ).toFixed(2)}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* 5. MATCH STORY / MATCH RECORDS */}
+                          <div className="space-y-1.5">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider flex items-center gap-1">
+                                <Gamepad2 className="w-3.5 h-3.5 text-red-500" />
+                                {tPhone('ম্যাচ স্টোরি ও হিস্ট্রি', 'Match Story & Records')}
+                              </span>
+                              <span className="text-[9px] text-gray-400 font-mono">
+                                {(currentUser.matchHistory && currentUser.matchHistory.length) || 4} টি ম্যাচ
+                              </span>
+                            </div>
+
+                            <div className="space-y-1.5">
+                              {(
+                                currentUser.matchHistory || [
+                                  {
+                                    id: 'rec-1',
+                                    matchTitle: 'BR SURVIVAL #108 (CLASSIC)',
+                                    category: 'Classic BR',
+                                    date: '2026-10-06 19:00',
+                                    slotNumber: 4,
+                                    kills: 8,
+                                    rank: 1,
+                                    isBooyah: true,
+                                    prizeEarned: 1200,
+                                  },
+                                  {
+                                    id: 'rec-2',
+                                    matchTitle: 'CLASH SQUAD 4V4 #92',
+                                    category: 'Clash Squad',
+                                    date: '2026-10-05 20:30',
+                                    slotNumber: 1,
+                                    kills: 14,
+                                    rank: 1,
+                                    isBooyah: true,
+                                    prizeEarned: 800,
+                                  },
+                                  {
+                                    id: 'rec-3',
+                                    matchTitle: 'CS HEADSHOT SPECIAL #44',
+                                    category: 'Headshot Only',
+                                    date: '2026-10-04 18:00',
+                                    slotNumber: 2,
+                                    kills: 11,
+                                    rank: 2,
+                                    isBooyah: false,
+                                    prizeEarned: 450,
+                                  },
+                                  {
+                                    id: 'rec-4',
+                                    matchTitle: 'LONE WOLF 1V1 #31',
+                                    category: 'Lone Wolf',
+                                    date: '2026-10-03 21:15',
+                                    slotNumber: 1,
+                                    kills: 5,
+                                    rank: 1,
+                                    isBooyah: true,
+                                    prizeEarned: 300,
+                                  },
+                                ]
+                              ).map((rec: any, idx: number) => (
+                                <div
+                                  key={rec.id || idx}
+                                  className={`p-2.5 rounded-xl border flex items-center justify-between text-xs ${
+                                    phoneTheme === 'dark' ? 'bg-[#181824] border-white/10' : 'bg-white border-slate-200'
+                                  }`}
+                                >
+                                  <div className="space-y-0.5">
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="font-black text-gray-900 dark:text-white text-[11px]">
+                                        {rec.matchTitle}
+                                      </span>
+                                      {rec.isBooyah ? (
+                                        <span className="px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-400 font-black text-[9px] border border-emerald-500/30">
+                                          🏆 বুইয়াহ
+                                        </span>
+                                      ) : (
+                                        <span className="px-1.5 py-0.2 rounded bg-gray-500/20 text-gray-300 font-bold text-[9px]">
+                                          র‍্যাংক #{rec.rank}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div className="text-[9px] text-gray-400 font-mono">
+                                      {rec.date} | স্লট: {rec.slotNumber} | কিল: {rec.kills}
+                                    </div>
+                                  </div>
+
+                                  <div className="text-right">
+                                    <span className="text-[11px] font-black text-emerald-500 block">
+                                      +৳{rec.prizeEarned}
+                                    </span>
+                                    <span className="text-[8px] text-gray-400">পুরস্কার প্রাপ্ত</span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* 6. SWITCH TO WEB & LOGOUT */}
+                          <div className="pt-2 space-y-2">
+                            {onSwitchToWeb && (
+                              <button
+                                onClick={onSwitchToWeb}
+                                className="w-full py-2 rounded-xl border border-gray-300 dark:border-white/10 bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-gray-800 dark:text-gray-200 text-xs font-bold transition-all flex items-center justify-center gap-2"
+                              >
+                                <Globe className="w-3.5 h-3.5 text-blue-500" />
+                                <span>{tPhone('ওয়েবসাইট সংস্করণে যান', 'Switch to Website Version')}</span>
+                              </button>
+                            )}
+
+                            <button
+                              onClick={() => {
+                                logoutUser();
+                                setCurrentUser(null);
+                              }}
+                              className="w-full py-2 rounded-xl border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-xs font-bold transition-all flex items-center justify-center gap-1.5"
+                            >
+                              <LogOut className="w-3.5 h-3.5" />
+                              <span>{tPhone('অ্যাকাউন্ট থেকে লগআউট করুন', 'Logout from Account')}</span>
+                            </button>
+                          </div>
+                        </>
                       )}
-
-                      {/* Support button */}
-                      <a
-                        href={`https://wa.me/${settings.whatsappNumber}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="w-full py-2 rounded-xl text-xs font-bold text-center block bg-emerald-600 text-white hover:bg-emerald-500 transition-all shadow-md shadow-emerald-600/20"
-                      >
-                        {tPhone('WhatsApp লাইভ সাপোর্ট', 'WhatsApp Live Support')}
-                      </a>
                     </div>
                   )}
                     </>
@@ -1668,6 +2092,191 @@ export default function MobileAppViewPage(props: any) {
           language={phoneLang}
           onClose={() => setTotalPrizeMatch(null)}
         />
+      )}
+
+      {/* 5. DEPOSIT & WITHDRAW MODAL */}
+      {showFinanceModal && (
+        <DepositWithdrawModal
+          isOpen={showFinanceModal}
+          initialTab={financeModalTab}
+          onClose={() => setShowFinanceModal(false)}
+        />
+      )}
+
+      {/* 6. AUTH LOGIN & REGISTER MODAL FOR MOBILE CLIENT */}
+      {showAuthModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+          <div className="relative w-full max-w-sm rounded-3xl bg-white dark:bg-[#12121a] border border-gray-200 dark:border-white/10 shadow-2xl overflow-hidden p-6 space-y-4">
+            <button
+              onClick={() => {
+                setShowAuthModal(false);
+                setAuthError(null);
+                setAuthSuccess(null);
+              }}
+              className="absolute top-4 right-4 p-2 rounded-full bg-gray-100 dark:bg-white/10 text-gray-500 hover:text-white"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <div className="text-center space-y-1">
+              <div className="w-12 h-12 rounded-2xl bg-red-600 mx-auto flex items-center justify-center text-white shadow-lg shadow-red-600/30">
+                <Trophy className="w-6 h-6" />
+              </div>
+              <h3 className="text-lg font-black text-gray-900 dark:text-white">
+                {authMode === 'LOGIN' ? 'অ্যাকাউন্টে লগইন করুন' : 'নতুন প্লেয়ার রেজিস্টার'}
+              </h3>
+              <p className="text-[11px] text-gray-400">
+                {authMode === 'LOGIN'
+                  ? 'আপনার ফোন নম্বর ও পাসওয়ার্ড দিয়ে প্রবেশ করুন'
+                  : 'IGN ও UID দিয়ে অ্যাকাউন্ট খুলুন এবং ১০০ টাকা বোনাস পান'}
+              </p>
+            </div>
+
+            {/* Auth Mode Toggle */}
+            <div className="flex p-1 bg-gray-100 dark:bg-white/5 rounded-xl border border-gray-200 dark:border-white/10">
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthMode('LOGIN');
+                  setAuthError(null);
+                }}
+                className={`flex-1 py-1.5 rounded-lg text-xs font-black transition-all ${
+                  authMode === 'LOGIN' ? 'bg-red-600 text-white shadow-sm' : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                লগইন (Login)
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthMode('REGISTER');
+                  setAuthError(null);
+                }}
+                className={`flex-1 py-1.5 rounded-lg text-xs font-black transition-all ${
+                  authMode === 'REGISTER' ? 'bg-red-600 text-white shadow-sm' : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                রেজিস্টার (Register)
+              </button>
+            </div>
+
+            {authError && (
+              <div className="p-2 rounded-xl bg-red-500/10 border border-red-500/30 text-red-500 text-xs font-bold text-center">
+                {authError}
+              </div>
+            )}
+            {authSuccess && (
+              <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-500 text-xs font-bold text-center flex items-center justify-center gap-1">
+                <CheckCircle className="w-4 h-4" /> {authSuccess}
+              </div>
+            )}
+
+            <form onSubmit={handleAuthSubmit} className="space-y-3">
+              <div>
+                <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300 block mb-1">
+                  মোবাইল নম্বর (Phone Number)
+                </label>
+                <div className="relative">
+                  <Phone className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="tel"
+                    required
+                    placeholder="017XXXXXXXX"
+                    value={authPhone}
+                    onChange={(e) => setAuthPhone(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 rounded-xl bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-white/10 text-xs text-gray-900 dark:text-white focus:outline-none focus:border-red-500 font-mono"
+                  />
+                </div>
+              </div>
+
+              {authMode === 'REGISTER' && (
+                <>
+                  <div>
+                    <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300 block mb-1">
+                      ইন-গেম নেম (In-Game Name / IGN)
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. OP_STRIKER"
+                      value={authIgn}
+                      onChange={(e) => setAuthIgn(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-white/10 text-xs text-gray-900 dark:text-white focus:outline-none focus:border-red-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300 block mb-1">
+                      ফ্রি ফায়ার ইউআইডি (Free Fire UID)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. 192837465"
+                      value={authUid}
+                      onChange={(e) => setAuthUid(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-white/10 text-xs text-gray-900 dark:text-white focus:outline-none focus:border-red-500 font-mono"
+                    />
+                  </div>
+                </>
+              )}
+
+              <div>
+                <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300 block mb-1">
+                  পাসওয়ার্ড (Password)
+                </label>
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="password"
+                    required
+                    placeholder="••••••••"
+                    value={authPassword}
+                    onChange={(e) => setAuthPassword(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 rounded-xl bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-white/10 text-xs text-gray-900 dark:text-white focus:outline-none focus:border-red-500"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={authLoading}
+                className="w-full py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-black text-xs shadow-lg shadow-red-600/30 disabled:opacity-50"
+              >
+                {authLoading
+                  ? 'অপেক্ষা করুন...'
+                  : authMode === 'LOGIN'
+                  ? 'লগইন করুন'
+                  : 'রেজিস্ট্রেশন সম্পূর্ণ করুন'}
+              </button>
+            </form>
+
+            {/* 1-Click Fast Fill for 5 Owners */}
+            <div className="pt-2 border-t border-gray-200 dark:border-white/10 space-y-1.5">
+              <span className="text-[10px] font-black text-amber-500 uppercase tracking-wider block text-center flex items-center justify-center gap-1">
+                <Shield className="w-3 h-3 text-amber-500" /> ওনার / অ্যাডমিন আইডি (১-ক্লিক লগইন)
+              </span>
+              <div className="grid grid-cols-3 gap-1">
+                {[
+                  { label: 'ওনার ১', phone: '01700000001', pass: 'admin@owner1' },
+                  { label: 'ওনার ২', phone: '01700000002', pass: 'admin@owner2' },
+                  { label: 'ওনার ৩', phone: '01700000003', pass: 'admin@owner3' },
+                  { label: 'ওনার ৪', phone: '01700000004', pass: 'admin@owner4' },
+                  { label: 'ওনার ৫', phone: '01700000005', pass: 'admin@owner5' },
+                  { label: 'মাস্টার', phone: '01700000000', pass: 'admin123' },
+                ].map((adm) => (
+                  <button
+                    key={adm.phone}
+                    type="button"
+                    onClick={() => fillAuthDemo(adm.phone, adm.pass)}
+                    className="p-1 rounded bg-amber-500/10 hover:bg-amber-500/20 text-center border border-amber-500/25"
+                  >
+                    <div className="text-[9px] font-black text-amber-500">{adm.label}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

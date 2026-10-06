@@ -234,45 +234,64 @@ function AuthContent() {
           </button>
         </form>
 
-        {/* 1-Click Quick Demo Credentials */}
-        <div className="pt-4 border-t border-gray-200 dark:border-white/10 space-y-2">
-          <span className="text-[10px] uppercase font-black text-gray-400 block tracking-wider text-center">
-            ⚡ ডেমো অ্যাকাউন্ট দিয়ে সরাসরি টেস্ট করুন
-          </span>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => fillDemo('01712345678', 'striker@2026')}
-              className="p-2 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 hover:border-red-500 text-left transition-all"
-            >
-              <div className="text-[11px] font-black text-gray-900 dark:text-white">
-                BDX_STRIKER
-              </div>
-              <div className="text-[9px] text-emerald-500 font-bold">ব্যালেন্স: ৳1450.00</div>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => fillDemo('01899887766', 'tanvir#ff99')}
-              className="p-2 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 hover:border-red-500 text-left transition-all"
-            >
-              <div className="text-[11px] font-black text-gray-900 dark:text-white">
-                TANVIR_FF
-              </div>
-              <div className="text-[9px] text-emerald-500 font-bold">ব্যালেন্স: ৳820.00</div>
-            </button>
+        {/* 1-Click Quick Demo & Owner Credentials */}
+        <div className="pt-4 border-t border-gray-200 dark:border-white/10 space-y-3">
+          <div>
+            <span className="text-[10px] uppercase font-black text-amber-500 block tracking-wider text-center mb-1.5 flex items-center justify-center gap-1">
+              <Shield className="w-3 h-3 text-amber-500" /> ৫টি অফিশিয়াল ওনার / অ্যাডমিন অ্যাকাউন্ট (১-ক্লিক লগইন)
+            </span>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+              {[
+                { label: 'ওনার ১', phone: '01700000001', pass: 'admin@owner1', ign: 'OWNER_BOSS_1' },
+                { label: 'ওনার ২', phone: '01700000002', pass: 'admin@owner2', ign: 'OWNER_BOSS_2' },
+                { label: 'ওনার ৩', phone: '01700000003', pass: 'admin@owner3', ign: 'OWNER_BOSS_3' },
+                { label: 'ওনার ৪', phone: '01700000004', pass: 'admin@owner4', ign: 'OWNER_BOSS_4' },
+                { label: 'ওনার ৫', phone: '01700000005', pass: 'admin@owner5', ign: 'OWNER_BOSS_5' },
+                { label: 'মাস্টার অ্যাডমিন', phone: '01700000000', pass: 'admin123', ign: 'ADMIN_MASTER' },
+              ].map((adm) => (
+                <button
+                  key={adm.phone}
+                  type="button"
+                  onClick={() => fillDemo(adm.phone, adm.pass)}
+                  className="p-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 text-left transition-all group"
+                >
+                  <div className="text-[10px] font-black text-amber-600 dark:text-amber-400 group-hover:underline">
+                    {adm.label}
+                  </div>
+                  <div className="text-[9px] text-gray-400 font-mono">{adm.phone}</div>
+                </button>
+              ))}
+            </div>
           </div>
 
-          <button
-            type="button"
-            onClick={() => fillDemo('01700000000', 'admin123')}
-            className="w-full p-2 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 hover:border-red-500 text-center transition-all flex items-center justify-center gap-1.5"
-          >
-            <Shield className="w-3.5 h-3.5 text-red-600" />
-            <span className="text-[11px] font-black text-red-600 dark:text-red-400">
-              অ্যাডমিন অ্যাকাউন্ট (01700000000 / admin123)
+          <div>
+            <span className="text-[10px] uppercase font-black text-gray-400 block tracking-wider text-center mb-1.5">
+              🎮 প্লেয়ার অ্যাকাউন্ট ডেমো
             </span>
-          </button>
+            <div className="grid grid-cols-2 gap-1.5">
+              <button
+                type="button"
+                onClick={() => fillDemo('01712345678', 'striker@2026')}
+                className="p-1.5 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 hover:border-red-500 text-left transition-all"
+              >
+                <div className="text-[10px] font-black text-gray-900 dark:text-white">
+                  BDX_STRIKER
+                </div>
+                <div className="text-[9px] text-emerald-500 font-bold">ব্যালেন্স: ৳1450.00</div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => fillDemo('01899887766', 'tanvir#ff99')}
+                className="p-1.5 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 hover:border-red-500 text-left transition-all"
+              >
+                <div className="text-[10px] font-black text-gray-900 dark:text-white">
+                  TANVIR_FF
+                </div>
+                <div className="text-[9px] text-emerald-500 font-bold">ব্যালেন্স: ৳820.00</div>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

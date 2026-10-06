@@ -203,6 +203,14 @@ export default function Navbar() {
           {/* Profile Button */}
           {user ? (
             <div className="flex items-center gap-2">
+              {user.role === 'ADMIN' && (
+                <Link
+                  href="/admin"
+                  className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-xs font-black transition-all flex items-center gap-1 shadow-sm"
+                >
+                  👑 <span className="hidden md:inline">{t('অ্যাডমিন', 'Admin')}</span>
+                </Link>
+              )}
               <Link
                 href="/profile"
                 className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/15 transition-all border border-gray-200 dark:border-white/10"

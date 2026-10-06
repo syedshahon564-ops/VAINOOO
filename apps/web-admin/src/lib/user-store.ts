@@ -2,6 +2,18 @@
 
 import { useState, useEffect } from 'react';
 
+export interface UserMatchRecord {
+  id: string;
+  matchTitle: string;
+  category: string;
+  date: string;
+  slotNumber: number;
+  kills: number;
+  rank: number;
+  isBooyah: boolean;
+  prizeEarned: number;
+}
+
 export interface UserAccount {
   id: string;
   phone: string;
@@ -14,9 +26,11 @@ export interface UserAccount {
   matchesPlayed: number;
   totalKills: number;
   totalWins: number;
+  totalEarnings?: number;
   createdAt: string;
   avatar?: string;
   notes?: string;
+  matchHistory?: UserMatchRecord[];
 }
 
 export interface BalanceTransaction {
@@ -35,6 +49,148 @@ const USERS_STORAGE_KEY = 'ff_esports_users_db_v1';
 const TRANSACTIONS_STORAGE_KEY = 'ff_esports_balance_tx_v1';
 
 export const INITIAL_USERS: UserAccount[] = [
+  // 5 Official Owner / Super Admin Accounts
+  {
+    id: 'u-owner-1',
+    phone: '01700000001',
+    ign: 'OWNER_BOSS_1',
+    uid: '100000001',
+    password: 'admin@owner1',
+    walletBalance: 50000.0,
+    role: 'ADMIN',
+    status: 'ACTIVE',
+    matchesPlayed: 85,
+    totalKills: 340,
+    totalWins: 52,
+    totalEarnings: 45000,
+    createdAt: '2026-09-01T00:00:00Z',
+    avatar: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=120',
+    notes: 'Platform Founder & Head Administrator 1.',
+    matchHistory: [
+      {
+        id: 'rec-o1-1',
+        matchTitle: 'BR MEGA TOURNAMENT #101',
+        category: 'Classic BR',
+        date: '2026-10-06 18:30',
+        slotNumber: 1,
+        kills: 14,
+        rank: 1,
+        isBooyah: true,
+        prizeEarned: 2500,
+      },
+      {
+        id: 'rec-o1-2',
+        matchTitle: 'CLASH SQUAD 4V4 GRAND #54',
+        category: 'Clash Squad',
+        date: '2026-10-05 21:00',
+        slotNumber: 1,
+        kills: 18,
+        rank: 1,
+        isBooyah: true,
+        prizeEarned: 1800,
+      },
+    ],
+  },
+  {
+    id: 'u-owner-2',
+    phone: '01700000002',
+    ign: 'OWNER_BOSS_2',
+    uid: '100000002',
+    password: 'admin@owner2',
+    walletBalance: 50000.0,
+    role: 'ADMIN',
+    status: 'ACTIVE',
+    matchesPlayed: 72,
+    totalKills: 290,
+    totalWins: 44,
+    totalEarnings: 38000,
+    createdAt: '2026-09-01T00:00:00Z',
+    avatar: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=120',
+    notes: 'Platform Co-Founder & Administrator 2.',
+    matchHistory: [
+      {
+        id: 'rec-o2-1',
+        matchTitle: 'SPECIAL BERMUDA CARNIVAL #88',
+        category: 'Special Match',
+        date: '2026-10-06 17:00',
+        slotNumber: 2,
+        kills: 11,
+        rank: 1,
+        isBooyah: true,
+        prizeEarned: 1500,
+      },
+    ],
+  },
+  {
+    id: 'u-owner-3',
+    phone: '01700000003',
+    ign: 'OWNER_BOSS_3',
+    uid: '100000003',
+    password: 'admin@owner3',
+    walletBalance: 50000.0,
+    role: 'ADMIN',
+    status: 'ACTIVE',
+    matchesPlayed: 65,
+    totalKills: 245,
+    totalWins: 38,
+    totalEarnings: 32000,
+    createdAt: '2026-09-01T00:00:00Z',
+    avatar: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=120',
+    notes: 'Executive Tournament Director & Administrator 3.',
+  },
+  {
+    id: 'u-owner-4',
+    phone: '01700000004',
+    ign: 'OWNER_BOSS_4',
+    uid: '100000004',
+    password: 'admin@owner4',
+    walletBalance: 50000.0,
+    role: 'ADMIN',
+    status: 'ACTIVE',
+    matchesPlayed: 58,
+    totalKills: 210,
+    totalWins: 31,
+    totalEarnings: 27500,
+    createdAt: '2026-09-01T00:00:00Z',
+    avatar: 'https://images.unsplash.com/photo-1563089145-599997674d42?q=80&w=120',
+    notes: 'Tournament Operations Manager & Administrator 4.',
+  },
+  {
+    id: 'u-owner-5',
+    phone: '01700000005',
+    ign: 'OWNER_BOSS_5',
+    uid: '100000005',
+    password: 'admin@owner5',
+    walletBalance: 50000.0,
+    role: 'ADMIN',
+    status: 'ACTIVE',
+    matchesPlayed: 50,
+    totalKills: 195,
+    totalWins: 29,
+    totalEarnings: 25000,
+    createdAt: '2026-09-01T00:00:00Z',
+    avatar: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=120',
+    notes: 'Finance & Security Supervisor & Administrator 5.',
+  },
+  // Master Admin
+  {
+    id: 'u-admin',
+    phone: '01700000000',
+    ign: 'ADMIN_MASTER',
+    uid: '100000000',
+    password: 'admin123',
+    walletBalance: 50000.0,
+    role: 'ADMIN',
+    status: 'ACTIVE',
+    matchesPlayed: 50,
+    totalKills: 200,
+    totalWins: 40,
+    totalEarnings: 35000,
+    createdAt: '2026-09-01T00:00:00Z',
+    avatar: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=120',
+    notes: 'Master Administrator.',
+  },
+  // Player Accounts
   {
     id: 'u-1',
     phone: '01712345678',
@@ -44,12 +200,59 @@ export const INITIAL_USERS: UserAccount[] = [
     walletBalance: 1450.0,
     role: 'PLAYER',
     status: 'ACTIVE',
-    matchesPlayed: 24,
-    totalKills: 87,
-    totalWins: 11,
+    matchesPlayed: 38,
+    totalKills: 142,
+    totalWins: 12,
+    totalEarnings: 8600,
     createdAt: '2026-09-15T10:30:00Z',
     avatar: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=120',
     notes: 'Verified tournament player. Top 10 contender.',
+    matchHistory: [
+      {
+        id: 'rec-1',
+        matchTitle: 'BR SURVIVAL #108 (CLASSIC)',
+        category: 'Classic BR',
+        date: '2026-10-06 19:00',
+        slotNumber: 4,
+        kills: 8,
+        rank: 1,
+        isBooyah: true,
+        prizeEarned: 1200,
+      },
+      {
+        id: 'rec-2',
+        matchTitle: 'CLASH SQUAD 4V4 #92',
+        category: 'Clash Squad',
+        date: '2026-10-05 20:30',
+        slotNumber: 1,
+        kills: 14,
+        rank: 1,
+        isBooyah: true,
+        prizeEarned: 800,
+      },
+      {
+        id: 'rec-3',
+        matchTitle: 'CS HEADSHOT SPECIAL #44',
+        category: 'Headshot Only',
+        date: '2026-10-04 18:00',
+        slotNumber: 2,
+        kills: 11,
+        rank: 2,
+        isBooyah: false,
+        prizeEarned: 450,
+      },
+      {
+        id: 'rec-4',
+        matchTitle: 'LONE WOLF 1V1 #31',
+        category: 'Lone Wolf',
+        date: '2026-10-03 21:15',
+        slotNumber: 1,
+        kills: 5,
+        rank: 1,
+        isBooyah: true,
+        prizeEarned: 300,
+      },
+    ],
   },
   {
     id: 'u-2',
@@ -63,6 +266,7 @@ export const INITIAL_USERS: UserAccount[] = [
     matchesPlayed: 18,
     totalKills: 64,
     totalWins: 7,
+    totalEarnings: 3900,
     createdAt: '2026-09-18T14:15:00Z',
     avatar: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=120',
   },
@@ -78,6 +282,7 @@ export const INITIAL_USERS: UserAccount[] = [
     matchesPlayed: 12,
     totalKills: 38,
     totalWins: 3,
+    totalEarnings: 1800,
     createdAt: '2026-09-22T08:00:00Z',
     avatar: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=120',
   },
@@ -93,6 +298,7 @@ export const INITIAL_USERS: UserAccount[] = [
     matchesPlayed: 35,
     totalKills: 142,
     totalWins: 19,
+    totalEarnings: 9400,
     createdAt: '2026-09-10T16:45:00Z',
     avatar: 'https://images.unsplash.com/photo-1563089145-599997674d42?q=80&w=120',
     notes: 'Pro CS 4v4 headshot specialist.',
@@ -109,25 +315,10 @@ export const INITIAL_USERS: UserAccount[] = [
     matchesPlayed: 8,
     totalKills: 14,
     totalWins: 1,
+    totalEarnings: 400,
     createdAt: '2026-09-28T19:20:00Z',
     avatar: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?q=80&w=120',
     notes: 'Suspicious headshot ratio detected by anti-cheat. Account restricted.',
-  },
-  {
-    id: 'u-admin',
-    phone: '01700000000',
-    ign: 'ADMIN_MASTER',
-    uid: '100000001',
-    password: 'admin123',
-    walletBalance: 50000.0,
-    role: 'ADMIN',
-    status: 'ACTIVE',
-    matchesPlayed: 50,
-    totalKills: 200,
-    totalWins: 40,
-    createdAt: '2026-09-01T00:00:00Z',
-    avatar: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=120',
-    notes: 'Platform Head Administrator & Supervisor.',
   },
 ];
 
@@ -139,29 +330,40 @@ export const INITIAL_TRANSACTIONS: BalanceTransaction[] = [
     userIgn: 'BDX_STRIKER',
     type: 'CREDIT',
     amount: 500,
-    reason: 'Bkash Cash-in verified (TrxID: 9X82KD71)',
+    reason: 'bKash ডিপোজিট সম্পন্ন (TrxID: 9X82KD71)',
     balanceAfter: 1450.0,
-    timestamp: '2026-10-04T09:12:00Z',
+    timestamp: '2026-10-06T14:12:00Z',
   },
   {
     id: 'tx-102',
+    userId: 'u-1',
+    userPhone: '01712345678',
+    userIgn: 'BDX_STRIKER',
+    type: 'DEBIT',
+    amount: 300,
+    reason: 'উইথড্রল রিকোয়েস্ট (Nagad 01712345678)',
+    balanceAfter: 950.0,
+    timestamp: '2026-10-05T19:30:00Z',
+  },
+  {
+    id: 'tx-103',
     userId: 'u-4',
     userPhone: '01644556677',
     userIgn: 'SADIK_HEADSHOT',
     type: 'CREDIT',
     amount: 1000,
-    reason: 'Tournament Booyah 1st Prize Reward',
+    reason: 'টূর্নামেন্ট বুইয়াহ ১ম পুরস্কার',
     balanceAfter: 2100.0,
-    timestamp: '2026-10-03T20:45:00Z',
+    timestamp: '2026-10-04T20:45:00Z',
   },
   {
-    id: 'tx-103',
+    id: 'tx-104',
     userId: 'u-3',
     userPhone: '01911223344',
     userIgn: 'RAKIB_OP',
     type: 'DEBIT',
     amount: 50,
-    reason: 'Classic Match Entry Fee',
+    reason: 'ক্লাসিক ম্যাচ এন্ট্রি ফি',
     balanceAfter: 350.0,
     timestamp: '2026-10-03T18:00:00Z',
   },
@@ -182,7 +384,33 @@ export function getUsers(): UserAccount[] {
       localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(INITIAL_USERS));
       return INITIAL_USERS;
     }
-    return JSON.parse(data);
+    const parsed: UserAccount[] = JSON.parse(data);
+    let updated = false;
+    INITIAL_USERS.forEach((initUser) => {
+      const idx = parsed.findIndex((u) => u.phone === initUser.phone || u.id === initUser.id);
+      if (idx === -1) {
+        parsed.push(initUser);
+        updated = true;
+      } else {
+        // Refresh role and details if owner
+        if (initUser.role === 'ADMIN' && parsed[idx].role !== 'ADMIN') {
+          parsed[idx].role = 'ADMIN';
+          updated = true;
+        }
+        if (!parsed[idx].matchHistory && initUser.matchHistory) {
+          parsed[idx].matchHistory = initUser.matchHistory;
+          updated = true;
+        }
+        if (parsed[idx].totalEarnings === undefined && initUser.totalEarnings !== undefined) {
+          parsed[idx].totalEarnings = initUser.totalEarnings;
+          updated = true;
+        }
+      }
+    });
+    if (updated) {
+      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(parsed));
+    }
+    return parsed;
   } catch (e) {
     console.error('Failed to load users from localStorage:', e);
     return INITIAL_USERS;
@@ -364,6 +592,7 @@ export function loginUser(phone: string, pass: string): { success: boolean; user
   if (typeof window !== 'undefined') {
     localStorage.setItem('ff_user', JSON.stringify(user));
     localStorage.setItem('ff_token', 'local_jwt_' + user.id + '_' + Date.now());
+    window.dispatchEvent(new CustomEvent('ff_users_updated', { detail: getUsers() }));
   }
 
   return { success: true, user };
@@ -391,6 +620,8 @@ export function registerUser(data: {
     matchesPlayed: 0,
     totalKills: 0,
     totalWins: 0,
+    totalEarnings: 0,
+    matchHistory: [],
     avatar: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=120',
     notes: 'Self-registered player via portal.',
   });
@@ -398,6 +629,7 @@ export function registerUser(data: {
   if (typeof window !== 'undefined') {
     localStorage.setItem('ff_user', JSON.stringify(newUser));
     localStorage.setItem('ff_token', 'local_jwt_' + newUser.id + '_' + Date.now());
+    window.dispatchEvent(new CustomEvent('ff_users_updated', { detail: getUsers() }));
   }
 
   return { success: true, user: newUser };
