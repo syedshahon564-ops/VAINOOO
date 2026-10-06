@@ -17,8 +17,8 @@ export default function MobileInstallBanner() {
   useEffect(() => {
     const isInStandalone =
       typeof window !== 'undefined' &&
-      (window.matchMedia('(display-mode: standalone)').matches ||
-        (window.navigator as any).standalone === true);
+      (Boolean(window.matchMedia?.('(display-mode: standalone)')?.matches) ||
+        (window.navigator as any)?.standalone === true);
 
     setIsStandalone(!!isInStandalone);
     if (isInStandalone) return;
@@ -41,7 +41,9 @@ export default function MobileInstallBanner() {
     }
 
     const timer = setTimeout(() => {
-      const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      const isMobile =
+        typeof navigator !== 'undefined' &&
+        /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
       if (isMobile && !isInStandalone && !sessionStorage.getItem('ff_install_banner_dismissed')) {
         setShowBanner(true);
       }

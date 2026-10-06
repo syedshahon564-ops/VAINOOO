@@ -51,7 +51,7 @@ export function useViewMode() {
       const isSmall = typeof window !== 'undefined' && window.innerWidth < 768;
       const isStandalone =
         typeof window !== 'undefined' &&
-        (window.matchMedia('(display-mode: standalone)').matches ||
+        (Boolean(window.matchMedia?.('(display-mode: standalone)')?.matches) ||
           (window.navigator as any)?.standalone === true);
 
       // Desktop gets 'web' by default; Mobile gets 'app' by default

@@ -78,6 +78,18 @@ export default function MobileAppViewPage(props: any) {
   const { categories, matches, settings, topPlayers, updateMatch } = useCMS();
   const { language: globalLang, setLanguage: setGlobalLang } = useLanguage();
 
+  const handleSwitchToWeb = () => {
+    if (typeof onSwitchToWeb === 'function') {
+      onSwitchToWeb();
+    } else {
+      try {
+        sessionStorage.setItem('ff_manual_view_mode', 'web');
+        document.cookie = 'ff_view_mode=web; path=/; max-age=86400';
+      } catch (e) {}
+      window.location.href = '/?view=web';
+    }
+  };
+
   const [isMobileScreen, setIsMobileScreen] = useState(standalone);
   const [forceFullscreen, setForceFullscreen] = useState(false);
 
@@ -601,19 +613,17 @@ export default function MobileAppViewPage(props: any) {
                       </div>
 
                       <div className="flex items-center gap-1.5">
-                        {onSwitchToWeb && (
-                          <button
-                            onClick={onSwitchToWeb}
-                            title={tPhone('ওয়েবসাইট সংস্করণ', 'Switch to Website')}
-                            className={`px-2 py-1 rounded-full text-[9px] font-black border transition-all flex items-center gap-1 shadow-sm ${
-                              phoneTheme === 'dark'
-                                ? 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border-amber-500/30'
-                                : 'bg-amber-100 hover:bg-amber-200 text-amber-900 border-amber-300'
-                            }`}
-                          >
-                            <span>🌐 Web</span>
-                          </button>
-                        )}
+                        <button
+                          onClick={handleSwitchToWeb}
+                          title={tPhone('ওয়েবসাইট সংস্করণ', 'Switch to Website')}
+                          className={`px-2 py-1 rounded-full text-[9px] font-black border transition-all flex items-center gap-1 shadow-sm ${
+                            phoneTheme === 'dark'
+                              ? 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border-amber-500/30'
+                              : 'bg-amber-100 hover:bg-amber-200 text-amber-900 border-amber-300'
+                          }`}
+                        >
+                          <span>🌐 Web</span>
+                        </button>
                         <button
                           onClick={togglePhoneLang}
                           className={`px-2 py-1 rounded-full text-[9px] font-black border transition-all flex items-center gap-1 shadow-sm ${
@@ -817,7 +827,7 @@ export default function MobileAppViewPage(props: any) {
                                       <p className="text-[10px] font-bold text-gray-800 dark:text-gray-200 leading-snug">
                                         কাস্টমে নিজের জায়গায় বসতে হবে বাধ্যতামূলক - আইডি লেভেল ৫৫+ থাকতে হবে -
                                         Normal {m.type} ম্যাচের নিয়ম পড়ে নিন, নিয়ম না মানলে রিফান্ড বা উইনিং
-                                        পাবেন না! {settings.siteName || 'FF RIVAL TOUR BD'}
+                                        পাবেন না! {settings?.siteName || 'FF RIVAL TOUR BD'}
                                       </p>
                                       <div className="flex items-center justify-between pt-1">
                                         <span className="text-[10px] font-bold text-rose-600 dark:text-rose-400">
@@ -1437,8 +1447,8 @@ export default function MobileAppViewPage(props: any) {
                         </span>
                         <div className="grid grid-cols-3 gap-2">
                           {[
-                            { name: 'bKash', number: settings.bkashNumber || '01712345678', color: 'border-pink-500/40 text-pink-500' },
-                            { name: 'Nagad', number: settings.nagadNumber || '01812345678', color: 'border-orange-500/40 text-orange-500' },
+                            { name: 'bKash', number: settings?.bkashNumber || '01712345678', color: 'border-pink-500/40 text-pink-500' },
+                            { name: 'Nagad', number: settings?.nagadNumber || '01812345678', color: 'border-orange-500/40 text-orange-500' },
                             { name: 'Rocket', number: '01912345678', color: 'border-purple-500/40 text-purple-500' },
                           ].map((gw) => (
                             <div
@@ -1603,7 +1613,7 @@ export default function MobileAppViewPage(props: any) {
                             }`}
                           >
                             <div className="relative w-16 h-16 rounded-full bg-gradient-to-tr from-red-600 to-rose-500 mx-auto flex items-center justify-center text-white text-xl font-black shadow-lg shadow-red-500/30">
-                              {currentUser.ign.slice(0, 2).toUpperCase()}
+                              {(currentUser?.ign || 'PL').slice(0, 2).toUpperCase()}
                               <span className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 border-2 border-[#181824] flex items-center justify-center text-[10px]">
                                 ✓
                               </span>
@@ -1612,9 +1622,9 @@ export default function MobileAppViewPage(props: any) {
                             <div>
                               <div className="flex items-center justify-center gap-1.5">
                                 <h3 className="text-sm font-black text-gray-900 dark:text-white">
-                                  {currentUser.ign}
+                                  {currentUser?.ign || 'Player'}
                                 </h3>
-                                {currentUser.role === 'ADMIN' ? (
+                                {currentUser?.role === 'ADMIN' ? (
                                   <span className="px-1.5 py-0.5 rounded bg-amber-500 text-black text-[9px] font-black">
                                     OWNER
                                   </span>
@@ -1625,7 +1635,7 @@ export default function MobileAppViewPage(props: any) {
                                 )}
                               </div>
                               <span className="text-[10px] text-gray-400 font-mono">
-                                UID: {currentUser.uid} | {currentUser.phone}
+                                UID: {currentUser?.uid || '---'} | {currentUser?.phone || '---'}
                               </span>
                             </div>
 
@@ -1714,7 +1724,7 @@ export default function MobileAppViewPage(props: any) {
                               >
                                 <span className="text-[9px] text-gray-400 block">{tPhone('খেলা ম্যাচ', 'Matches')}</span>
                                 <span className="text-xs font-black text-red-500">
-                                  {currentUser.matchesPlayed ?? 38}
+                                  {currentUser?.matchesPlayed ?? 38}
                                 </span>
                               </div>
 
@@ -1727,8 +1737,7 @@ export default function MobileAppViewPage(props: any) {
                                 <span className="text-[9px] text-gray-400 block">{tPhone('উইন রেট', 'Win Rate')}</span>
                                 <span className="text-xs font-black text-purple-500">
                                   {(
-                                    ((currentUser.totalWins || 12) / Math.max(1, currentUser.matchesPlayed || 38)) *
-                                    100
+                                    (((currentUser?.totalWins || 12) / Math.max(1, currentUser?.matchesPlayed || 38)) * 100)
                                   ).toFixed(1)}
                                   %
                                 </span>
@@ -1743,8 +1752,8 @@ export default function MobileAppViewPage(props: any) {
                                 <span className="text-[9px] text-gray-400 block">{tPhone('কে/ডি রেশিও', 'K/D Ratio')}</span>
                                 <span className="text-xs font-black text-teal-500">
                                   {(
-                                    (currentUser.totalKills || 142) /
-                                    Math.max(1, (currentUser.matchesPlayed || 38) - (currentUser.totalWins || 12))
+                                    ((currentUser?.totalKills || 142) /
+                                      Math.max(1, (currentUser?.matchesPlayed || 38) - (currentUser?.totalWins || 12)))
                                   ).toFixed(2)}
                                 </span>
                               </div>
@@ -1851,15 +1860,13 @@ export default function MobileAppViewPage(props: any) {
 
                           {/* 6. SWITCH TO WEB & LOGOUT */}
                           <div className="pt-2 space-y-2">
-                            {onSwitchToWeb && (
-                              <button
-                                onClick={onSwitchToWeb}
-                                className="w-full py-2 rounded-xl border border-gray-300 dark:border-white/10 bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-gray-800 dark:text-gray-200 text-xs font-bold transition-all flex items-center justify-center gap-2"
-                              >
-                                <Globe className="w-3.5 h-3.5 text-blue-500" />
-                                <span>{tPhone('ওয়েবসাইট সংস্করণে যান', 'Switch to Website Version')}</span>
-                              </button>
-                            )}
+                            <button
+                              onClick={handleSwitchToWeb}
+                              className="w-full py-2 rounded-xl border border-gray-300 dark:border-white/10 bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-gray-800 dark:text-gray-200 text-xs font-bold transition-all flex items-center justify-center gap-2"
+                            >
+                              <Globe className="w-3.5 h-3.5 text-blue-500" />
+                              <span>{tPhone('ওয়েবসাইট সংস্করণে যান', 'Switch to Website Version')}</span>
+                            </button>
 
                             <button
                               onClick={() => {
