@@ -90,19 +90,20 @@ export default function MobileAppViewPage(props: any) {
     }
   };
 
-  const [isMobileScreen, setIsMobileScreen] = useState(standalone);
+  const [isMobileScreen, setIsMobileScreen] = useState(false);
   const [forceFullscreen, setForceFullscreen] = useState(false);
 
   useEffect(() => {
-    const handleResize = () => {
-      const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-        typeof navigator !== 'undefined' ? navigator.userAgent : ''
-      );
-      setIsMobileScreen(standalone || (typeof window !== 'undefined' && window.innerWidth < 768) || isMobileUA);
+    const checkMobile = () => {
+      const isMobileUA =
+        typeof navigator !== 'undefined' &&
+        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const isSmall = typeof window !== 'undefined' && window.innerWidth < 768;
+      setIsMobileScreen(Boolean(standalone || isSmall || isMobileUA));
     };
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
   }, [standalone]);
 
   const isMobileView = standalone || isMobileScreen || forceFullscreen;

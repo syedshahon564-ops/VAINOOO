@@ -13,7 +13,7 @@ export function useViewMode() {
       localStorage.removeItem('ff_preferred_view');
     } catch (e) {}
 
-    const update = () => {
+    const checkMobile = () => {
       // Direct navigation to /mobile-app-view is always app
       if (pathname === '/mobile-app-view') {
         setViewModeState('app');
@@ -59,12 +59,12 @@ export function useViewMode() {
       setViewModeState(detected);
     };
 
-    update();
-    window.addEventListener('resize', update);
-    window.addEventListener('ff_view_mode_changed', update);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    window.addEventListener('ff_view_mode_changed', checkMobile);
     return () => {
-      window.removeEventListener('resize', update);
-      window.removeEventListener('ff_view_mode_changed', update);
+      window.removeEventListener('resize', checkMobile);
+      window.removeEventListener('ff_view_mode_changed', checkMobile);
     };
   }, [pathname]);
 
