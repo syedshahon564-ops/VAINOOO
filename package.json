@@ -13,11 +13,16 @@
     "dev": "concurrently \"npm run dev:api\" \"npm run dev:web\"",
     "build:api": "npm --prefix apps/backend-api run build",
     "build:web": "npm --prefix apps/web-admin run build",
-    "build": "npm --prefix apps/web-admin run build",
+    "build": "node scripts/build.js",
     "start": "npm --prefix apps/web-admin run start",
     "db:generate": "npm --prefix packages/database run generate",
     "db:push": "npm --prefix packages/database run push",
     "bot:start": "cd services/bot-observer-engine && python main_observer.py"
+  },
+  "dependencies": {
+    "next": "^14.2.35",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

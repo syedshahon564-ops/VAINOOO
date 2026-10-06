@@ -2,20 +2,42 @@ import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 
-const DATA_FILE = path.join(process.cwd(), 'data', 'cms-data.json');
+function getDataFilePath(): string {
+  const possiblePaths = [
+    path.join(process.cwd(), 'apps', 'web-admin', 'data', 'cms-data.json'),
+    path.join(process.cwd(), 'data', 'cms-data.json'),
+    path.join('/tmp', 'cms-data.json'),
+  ];
 
-function ensureDataFile() {
-  const dir = path.dirname(DATA_FILE);
+  for (const p of possiblePaths) {
+    if (fs.existsSync(p)) return p;
+  }
+
+  // If in Vercel serverless environment, fallback to tmp
+  if (process.env.VERCEL) {
+    return path.join('/tmp', 'cms-data.json');
+  }
+
+  // Default path
+  return path.join(process.cwd(), 'data', 'cms-data.json');
+}
+
+function ensureDataFile(targetPath: string) {
+  const dir = path.dirname(targetPath);
   if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
+    try {
+      fs.mkdirSync(dir, { recursive: true });
+    } catch {
+      // ignore
+    }
   }
 }
 
 export async function GET() {
   try {
-    ensureDataFile();
-    if (fs.existsSync(DATA_FILE)) {
-      const content = fs.readFileSync(DATA_FILE, 'utf-8');
+    const dataFile = getDataFilePath();
+    if (fs.existsSync(dataFile)) {
+      const content = fs.readFileSync(dataFile, 'utf-8');
       const data = JSON.parse(content);
       return NextResponse.json(data);
     }
@@ -27,9 +49,19 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    ensureDataFile();
     const body = await req.json();
-    fs.writeFileSync(DATA_FILE, JSON.stringify(body, null, 2), 'utf-8');
+    let dataFile = getDataFilePath();
+
+    try {
+      ensureDataFile(dataFile);
+      fs.writeFileSync(dataFile, JSON.stringify(body, null, 2), 'utf-8');
+    } catch (writeErr) {
+      // If disk is read-only (e.g. on Vercel), fallback to /tmp
+      const tmpFile = path.join('/tmp', 'cms-data.json');
+      ensureDataFile(tmpFile);
+      fs.writeFileSync(tmpFile, JSON.stringify(body, null, 2), 'utf-8');
+    }
+
     return NextResponse.json({ ok: true, timestamp: Date.now() });
   } catch (error: any) {
     return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
