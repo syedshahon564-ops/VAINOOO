@@ -12,8 +12,6 @@ export default function MobileInstallBanner() {
   const [showBanner, setShowBanner] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
 
-  if (isApp) return null;
-
   useEffect(() => {
     const isInStandalone =
       typeof window !== 'undefined' &&
@@ -73,7 +71,7 @@ export default function MobileInstallBanner() {
     sessionStorage.setItem('ff_install_banner_dismissed', '1');
   };
 
-  if (!showBanner || isStandalone) return null;
+  if (isApp || !showBanner || isStandalone) return null;
 
   return (
     <div className="fixed bottom-4 left-4 right-4 z-50 max-w-md mx-auto animate-slideUp">

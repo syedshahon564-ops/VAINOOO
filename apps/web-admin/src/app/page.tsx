@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Info,
@@ -26,8 +26,13 @@ export default function HomePage() {
   const { categories, matches, settings } = useCMS();
   const { t } = useLanguage();
   const { isApp, setViewMode } = useViewMode();
+  const [mounted, setMounted] = useState(false);
 
-  if (isApp) {
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (mounted && isApp) {
     return <MobileAppViewPage standalone={true} onSwitchToWeb={() => setViewMode('web')} />;
   }
 

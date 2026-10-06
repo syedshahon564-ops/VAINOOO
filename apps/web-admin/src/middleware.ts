@@ -22,7 +22,8 @@ export function middleware(request: NextRequest) {
     if (viewParam === 'app' || cookieView === 'app') {
       const url = request.nextUrl.clone();
       url.pathname = '/mobile-app-view';
-      const response = NextResponse.rewrite(url);
+      url.search = '';
+      const response = NextResponse.redirect(url);
       if (viewParam === 'app') {
         response.cookies.set('ff_view_mode', 'app', { path: '/', maxAge: 60 * 60 * 24 });
       }
@@ -34,11 +35,11 @@ export function middleware(request: NextRequest) {
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(ua);
 
     if (isMobile) {
-      // Server-side rewrite to /mobile-app-view:
-      // Mobile users receive the full mobile app HTML immediately with zero hydration mismatch!
+      // Clean HTTP redirect to /mobile-app-view so client and server both hydrate /mobile-app-view
       const url = request.nextUrl.clone();
       url.pathname = '/mobile-app-view';
-      return NextResponse.rewrite(url);
+      url.search = '';
+      return NextResponse.redirect(url);
     }
   }
 

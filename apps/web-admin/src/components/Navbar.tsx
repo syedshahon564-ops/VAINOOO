@@ -33,8 +33,6 @@ export default function Navbar() {
   const { language, toggleLanguage, t } = useLanguage();
   const { settings } = useCMS();
 
-  if (isApp) return null;
-
   // Hidden secret trigger for owner: 5 clicks on logo within 3 seconds navigates to secret /admin
   const logoClicksRef = useRef<number>(0);
   const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -89,6 +87,8 @@ export default function Navbar() {
     setUser(null);
     window.location.href = '/';
   };
+
+  if (isApp) return null;
 
   return (
     <header className="sticky top-0 z-50 backdrop-blur-md bg-white/95 dark:bg-[#07070a]/90 border-b border-gray-200 dark:border-white/10 transition-colors">
