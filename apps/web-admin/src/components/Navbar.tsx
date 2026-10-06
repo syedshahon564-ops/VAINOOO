@@ -14,6 +14,7 @@ import {
   Globe,
   ArrowDownRight,
   Download,
+  Smartphone,
 } from 'lucide-react';
 import { ApiClient } from '@/lib/api-client';
 import { useTheme } from '@/components/ThemeProvider';
@@ -25,7 +26,7 @@ import { useViewMode } from '@/lib/view-mode';
 
 export default function Navbar() {
   const router = useRouter();
-  const { isApp } = useViewMode();
+  const { isApp, setViewMode } = useViewMode();
   const [user, setUser] = useState<any>(null);
   const [showDepositModal, setShowDepositModal] = useState(false);
   const { theme, toggleTheme } = useTheme();
@@ -137,6 +138,14 @@ export default function Navbar() {
           >
             <Download className="w-4 h-4 text-red-600" /> {t('অ্যাপ ডাউনলোড', 'Download')}
           </Link>
+
+          <button
+            onClick={() => setViewMode('app')}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 transition-all font-black"
+            title={t('মোবাইল অ্যাপ ভিউ ওপেন করুন', 'Switch to Mobile App View')}
+          >
+            <Smartphone className="w-4 h-4 text-amber-500" /> {t('মোবাইল ভিউ', 'App View')}
+          </button>
 
           {/* New Prominent Deposit Button */}
           <button
