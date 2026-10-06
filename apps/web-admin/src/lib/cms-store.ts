@@ -411,26 +411,29 @@ export function useCMS() {
       .then((serverData) => {
         if (serverData && !serverData.error) {
           const current = getCMSData();
+          let effectiveMatches = current.matches;
           if (serverData.matches && serverData.matches.length > 0) {
-            const merged: CMSData = {
-              categories: { ...current.categories, ...(serverData.categories || {}) },
-              matches: serverData.matches,
-              settings: { ...current.settings, ...(serverData.settings || {}) },
-              topPlayers: (serverData.topPlayers && serverData.topPlayers.length > 0) ? serverData.topPlayers : current.topPlayers,
-            };
-            memoryCMSCache = merged;
-            setData(merged);
-            try {
-              localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
-            } catch (e) {}
+            effectiveMatches = serverData.matches;
           } else if (current.matches && current.matches.length > 0) {
             // Push client matches to server so other devices receive them
             fetch('/api/cms', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(current),
+              body: JSON.stringify({ ...current, ...serverData, matches: current.matches }),
             }).catch(() => {});
           }
+
+          const merged: CMSData = {
+            categories: { ...current.categories, ...(serverData.categories || {}) },
+            matches: effectiveMatches,
+            settings: { ...current.settings, ...(serverData.settings || {}) },
+            topPlayers: (serverData.topPlayers && serverData.topPlayers.length > 0) ? serverData.topPlayers : current.topPlayers,
+          };
+          memoryCMSCache = merged;
+          setData(merged);
+          try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+          } catch (e) {}
         }
       })
       .catch(() => {});

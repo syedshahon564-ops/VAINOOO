@@ -49,13 +49,14 @@ import {
   AppNotification,
 } from '@/lib/match-scheduler';
 
-export default function MobileAppViewPage({
-  standalone = false,
-  onSwitchToWeb,
-}: {
-  standalone?: boolean;
-  onSwitchToWeb?: () => void;
-} = {}) {
+export default function MobileAppViewPage(props: any) {
+  const {
+    standalone = false,
+    onSwitchToWeb,
+  }: {
+    standalone?: boolean;
+    onSwitchToWeb?: () => void;
+  } = props || {};
   const { categories, matches, settings, topPlayers, updateMatch } = useCMS();
   const { language: globalLang, setLanguage: setGlobalLang } = useLanguage();
 

@@ -34,7 +34,7 @@ export default function HomePage() {
   const handleDownloadApp = () => {
     const downloadUrl = (settings?.apkDownloadUrl && settings.apkDownloadUrl.trim() !== '')
       ? settings.apkDownloadUrl
-      : '/livetourbd.apk';
+      : '/ffrivals.apk';
 
     const a = document.createElement('a');
     a.href = downloadUrl;

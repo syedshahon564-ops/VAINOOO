@@ -121,7 +121,7 @@ export default function MatchesPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/[0.08] pb-6">
         <div>
-          <h1 className="text-3xl font-extrabold text-white">Live Tournament Arena</h1>
+          <h1 className="text-3xl font-extrabold text-white">FF RIVALS TOUR Arena</h1>
           <p className="text-sm text-gray-400 mt-1">
             Browse active matches, select your custom room slot, and enter the battlefield.
           </p>
