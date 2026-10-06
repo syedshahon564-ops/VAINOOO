@@ -5,9 +5,11 @@ import { usePathname } from 'next/navigation';
 
 export function useViewMode() {
   const pathname = usePathname();
+  const [mounted, setMounted] = useState(false);
   const [viewMode, setViewModeState] = useState<'app' | 'web' | null>(null);
 
   useEffect(() => {
+    setMounted(true);
     // Purge old permanent localStorage flag that prevented mobile/desktop auto-switch
     try {
       localStorage.removeItem('ff_preferred_view');
@@ -76,7 +78,7 @@ export function useViewMode() {
     window.dispatchEvent(new CustomEvent('ff_view_mode_changed', { detail: mode }));
   };
 
-  const isApp = viewMode === 'app' || pathname === '/mobile-app-view';
+  const isApp = pathname === '/mobile-app-view' || (mounted && viewMode === 'app');
 
-  return { viewMode, isApp, setViewMode };
+  return { viewMode, isApp, mounted, setViewMode };
 }

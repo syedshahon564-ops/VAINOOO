@@ -90,10 +90,12 @@ export default function MobileAppViewPage(props: any) {
     }
   };
 
+  const [mounted, setMounted] = useState(false);
   const [isMobileScreen, setIsMobileScreen] = useState(false);
   const [forceFullscreen, setForceFullscreen] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     const checkMobile = () => {
       const isMobileUA =
         typeof navigator !== 'undefined' &&
@@ -106,7 +108,7 @@ export default function MobileAppViewPage(props: any) {
     return () => window.removeEventListener('resize', checkMobile);
   }, [standalone]);
 
-  const isMobileView = standalone || isMobileScreen || forceFullscreen;
+  const isMobileView = standalone || (mounted && (isMobileScreen || forceFullscreen));
 
   // Active Tab & Screen Navigation
   const [activeTab, setActiveTab] = useState<'home' | 'my-matches' | 'top-players' | 'wallet' | 'profile'>('home');

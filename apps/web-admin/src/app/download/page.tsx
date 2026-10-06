@@ -53,7 +53,7 @@ export default function DownloadAppPage() {
     const downloadUrl =
       settings?.apkDownloadUrl && settings.apkDownloadUrl.trim() !== ''
         ? settings.apkDownloadUrl
-        : '/ffrivals.apk';
+        : '/api/download';
 
     window.location.href = downloadUrl;
   };
@@ -221,6 +221,9 @@ export default function DownloadAppPage() {
             </span>
             <p className="text-gray-600 dark:text-gray-300 leading-relaxed text-[11px]">
               যেহেতু অ্যাপটি সরাসরি ওয়েবসাইট থেকে দেওয়া হচ্ছে (Google Play Store এ ছাড়তে লাখ লাখ টাকা ফিস দিতে হয়), তাই যেকোনো অ্যান্ড্রয়েড ফোন আননোন সোর্স হিসেবে সাধারণ ওয়ার্নিং দেখায়। আমাদের অ্যাপটি <strong>১০০% ভাইরাস ও ম্যালওয়্যার মুক্ত</strong> এবং শুধুমাত্র ফ্রি ফায়ার টুর্নামেন্ট রুম জয়েন ও প্রাইজের জন্য ডিজাইন করা হয়েছে।
+            </p>
+            <p className="text-amber-500 font-bold text-[11px] pt-1 border-t border-amber-500/20">
+              💡 টিপস: আপনার ফোনে আগে কোনো টেস্ট অ্যাপ বা পুরোনো ভার্সন ইনস্টল থাকলে, সেটি প্রথমে আনইনস্টল (Uninstall) করে নতুন এই অফিশিয়াল রিলিজটি ইনস্টল করুন। এতে &quot;App not installed&quot; কোনো সমস্যা হবে না।
             </p>
           </div>
         </div>
