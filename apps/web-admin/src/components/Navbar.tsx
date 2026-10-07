@@ -89,7 +89,7 @@ export default function Navbar() {
   };
 
   const pathname = usePathname();
-  if (pathname === '/mobile-app-view') return null;
+  if (pathname === '/mobile-app-view' || (isApp && pathname === '/')) return null;
 
   return (
     <header className="sticky top-0 z-50 backdrop-blur-md bg-white/95 dark:bg-[#07070a]/90 border-b border-gray-200 dark:border-white/10 transition-colors">

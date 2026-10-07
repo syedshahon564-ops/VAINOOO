@@ -119,6 +119,10 @@ export default function HomePage() {
   const match1vs1 = [catLostToWin].filter(Boolean);
   const onlyHeadshot = [catHeadshot].filter(Boolean);
 
+  if (mounted && isApp) {
+    return <MobileAppViewPage standalone={true} />;
+  }
+
   return (
     <main className="w-full pb-16 space-y-8">
       {/* Top Small Announcement Notice Bar (Dynamic from Admin) */}

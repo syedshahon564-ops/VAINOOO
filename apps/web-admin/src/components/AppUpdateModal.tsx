@@ -19,13 +19,21 @@ export default function AppUpdateModal({ forceOpen = false }: AppUpdateModalProp
 
     try {
       if (typeof window !== 'undefined') {
-        const dismissed = sessionStorage.getItem('ff_update_dismissed_v102');
-        // Show update prompt inside Capacitor WebView, mobile devices, or whenever not dismissed
+        const searchParams = new URLSearchParams(window.location.search);
+        const urlVersion = searchParams.get('v');
+        const isAppParam = searchParams.get('app') === 'true';
         const isCapacitor = Boolean((window as any)?.Capacitor);
-        const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry/i.test(navigator.userAgent);
+        const installedVersion = localStorage.getItem('ff_installed_version');
 
-        if (!dismissed && (isCapacitor || isMobileUA)) {
-          // Small delay for smooth entry
+        // CRITICAL: If already running v1.0.2, immediately suppress update modal!
+        if (urlVersion === '1.0.2' || installedVersion === '1.0.2') {
+          setIsOpen(false);
+          return;
+        }
+
+        const dismissed = sessionStorage.getItem('ff_update_dismissed_v102');
+        // Prompt users who are running an older app version
+        if (!dismissed && (isCapacitor || isAppParam)) {
           const timer = setTimeout(() => {
             setIsOpen(true);
           }, 1200);

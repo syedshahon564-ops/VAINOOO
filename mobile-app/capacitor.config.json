@@ -3,7 +3,7 @@
   "appName": "FF Rivals Tour BD",
   "webDir": "www",
   "server": {
-    "url": "https://web-production-2c40b.up.railway.app",
+    "url": "https://web-production-2c40b.up.railway.app/?app=true&v=1.0.2",
     "cleartext": true,
     "androidScheme": "https",
     "errorPath": "offline.html",
