@@ -4,6 +4,18 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  async rewrites() {
+    return [
+      {
+        source: '/downloads/:file*.apk',
+        destination: '/ffrivals.apk',
+      },
+      {
+        source: '/api/download',
+        destination: '/ffrivals.apk',
+      },
+    ];
+  },
   async headers() {
     return [
       {
@@ -33,6 +45,10 @@ const nextConfig = {
           {
             key: 'Content-Disposition',
             value: 'attachment; filename="ffrivals.apk"',
+          },
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=0, must-revalidate',
           },
         ],
       },

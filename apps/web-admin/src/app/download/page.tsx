@@ -53,7 +53,7 @@ export default function DownloadAppPage() {
     const downloadUrl =
       settings?.apkDownloadUrl && settings.apkDownloadUrl.trim() !== ''
         ? settings.apkDownloadUrl
-        : '/downloads/ffrivals.apk';
+        : '/ffrivals.apk';
 
     window.location.href = downloadUrl;
   };

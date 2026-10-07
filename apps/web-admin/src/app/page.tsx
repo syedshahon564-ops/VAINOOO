@@ -49,7 +49,7 @@ export default function HomePage() {
   const handleDownloadApp = () => {
     const downloadUrl = (settings?.apkDownloadUrl && settings.apkDownloadUrl.trim() !== '')
       ? settings.apkDownloadUrl
-      : '/downloads/ffrivals.apk';
+      : '/ffrivals.apk';
 
     const a = document.createElement('a');
     a.href = downloadUrl;

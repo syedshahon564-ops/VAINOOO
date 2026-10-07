@@ -1865,7 +1865,7 @@ export default function MobileAppViewPage(props: any) {
                           {/* 6. SWITCH TO WEB & LOGOUT */}
                           <div className="pt-2 space-y-2">
                             <a
-                              href="/downloads/ffrivals.apk"
+                              href="/ffrivals.apk"
                               download="ffrivals.apk"
                               className="w-full py-2.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-xs font-bold transition-all flex items-center justify-center gap-2"
                             >
