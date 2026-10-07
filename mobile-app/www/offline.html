@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>FF Rivals Tour - Offline</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #0a0a0f; color: #fff; font-family: system-ui, sans-serif; }
+    .wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 14px; padding: 24px; box-sizing: border-box; text-align: center; }
+    h1 { font-size: 22px; margin: 0; color: #ff6a00; }
+    p { margin: 0; color: #bbb; line-height: 1.5; }
+    button { min-height: 48px; min-width: 160px; border: 0; border-radius: 12px; background: #ff6a00; color: #fff; font-size: 16px; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>No Internet Connection</h1>
+    <p>FF Rivals Tour needs an internet connection.<br />Please check your Wi-Fi or mobile data and try again.</p>
+    <button onclick="retry()">Retry</button>
+  </div>
+  <script>
+    function retry() { window.location.replace('https://ggggsdfgds.vercel.app/'); }
+    window.addEventListener('online', retry);
+  </script>
+</body>
+</html>

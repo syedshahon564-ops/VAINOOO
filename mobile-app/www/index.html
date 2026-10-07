@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>FF Rivals Tour</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #0a0a0f; color: #fff; font-family: system-ui, sans-serif; }
+    .wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 16px; }
+    .spin { width: 42px; height: 42px; border: 4px solid #333; border-top-color: #ff6a00; border-radius: 50%; animation: s 0.9s linear infinite; }
+    @keyframes s { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="spin"></div>
+    <div>Loading FF Rivals Tour...</div>
+  </div>
+  <script>
+    // Fallback only: Capacitor loads server.url directly. If this page is ever shown, redirect to the live site.
+    setTimeout(function () { window.location.replace('https://ggggsdfgds.vercel.app/'); }, 300);
+  </script>
+</body>
+</html>

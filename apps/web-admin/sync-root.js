@@ -38,4 +38,13 @@ if (fs.existsSync(srcData)) {
   console.log('✅ Successfully copied apps/web-admin/data -> ./data');
 }
 
+// 4. Sync middleware.ts
+const srcMiddleware = path.join(webAdminDir, 'src', 'middleware.ts');
+const destMiddleware = path.join(rootDir, 'middleware.ts');
+
+if (fs.existsSync(srcMiddleware)) {
+  fs.copyFileSync(srcMiddleware, destMiddleware);
+  console.log('✅ Successfully copied apps/web-admin/src/middleware.ts -> ./middleware.ts');
+}
+
 console.log('✨ Build artifact sync complete!');

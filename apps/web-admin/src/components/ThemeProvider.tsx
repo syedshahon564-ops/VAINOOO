@@ -16,24 +16,31 @@ const ThemeContext = createContext<ThemeContextType>({
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>('light');
-  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const saved = localStorage.getItem('ff_theme') as Theme | null;
-    const initial = saved || 'light'; // Default to light mode as requested!
+    let initial: Theme = 'light';
+    try {
+      const saved = localStorage.getItem('ff_theme') as Theme | null;
+      if (saved === 'dark' || saved === 'light') {
+        initial = saved;
+      }
+    } catch {}
     setTheme(initial);
     applyTheme(initial);
-    setMounted(true);
   }, []);
 
   const applyTheme = (t: Theme) => {
-    const root = document.documentElement;
-    if (t === 'dark') {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
+    if (typeof document !== 'undefined') {
+      const root = document.documentElement;
+      if (t === 'dark') {
+        root.classList.add('dark');
+      } else {
+        root.classList.remove('dark');
+      }
     }
-    localStorage.setItem('ff_theme', t);
+    try {
+      localStorage.setItem('ff_theme', t);
+    } catch {}
   };
 
   const toggleTheme = () => {

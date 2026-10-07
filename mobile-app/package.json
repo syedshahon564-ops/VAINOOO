@@ -1,0 +1,17 @@
+{
+  "name": "ffrivals-mobile-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "FF Rivals Tour - Android app (Capacitor wrapper for https://ggggsdfgds.vercel.app)",
+  "scripts": {
+    "sync": "cap sync android",
+    "build:apk": "node build-apk.js"
+  },
+  "dependencies": {
+    "@capacitor/android": "6.2.1",
+    "@capacitor/core": "6.2.1"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "6.2.1"
+  }
+}

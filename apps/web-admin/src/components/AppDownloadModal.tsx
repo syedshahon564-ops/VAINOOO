@@ -40,7 +40,7 @@ export default function AppDownloadModal({ isOpen, onClose }: AppDownloadModalPr
 
   const apkDownloadUrl = (settings?.apkDownloadUrl && settings.apkDownloadUrl.trim() !== '')
     ? settings.apkDownloadUrl
-    : '/ffrivals.apk';
+    : '/downloads/ffrivals.apk';
 
   const handleInstallPWA = async () => {
     if (deferredPrompt) {

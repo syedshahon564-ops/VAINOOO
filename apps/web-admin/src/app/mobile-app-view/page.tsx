@@ -40,6 +40,7 @@ import {
   Coins,
   Lock,
   Phone,
+  Download,
 } from 'lucide-react';
 import { useCMS, MatchItem, TopPlayerItem } from '@/lib/cms-store';
 import RoomDetailsModal from '@/components/RoomDetailsModal';
@@ -1863,6 +1864,15 @@ export default function MobileAppViewPage(props: any) {
 
                           {/* 6. SWITCH TO WEB & LOGOUT */}
                           <div className="pt-2 space-y-2">
+                            <a
+                              href="/downloads/ffrivals.apk"
+                              download="ffrivals.apk"
+                              className="w-full py-2.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-xs font-bold transition-all flex items-center justify-center gap-2"
+                            >
+                              <Download className="w-3.5 h-3.5 text-emerald-400" />
+                              <span>{tPhone('অফিসিয়াল Android APK ডাউনলোড', 'Download Official Android APK')}</span>
+                            </a>
+
                             <button
                               onClick={handleSwitchToWeb}
                               className="w-full py-2 rounded-xl border border-gray-300 dark:border-white/10 bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-gray-800 dark:text-gray-200 text-xs font-bold transition-all flex items-center justify-center gap-2"

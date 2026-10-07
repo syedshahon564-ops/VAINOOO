@@ -384,8 +384,13 @@ export function getUsers(): UserAccount[] {
       localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(INITIAL_USERS));
       return INITIAL_USERS;
     }
-    const parsed: UserAccount[] = JSON.parse(data);
-    let updated = false;
+    const rawParsed = JSON.parse(data);
+    if (!Array.isArray(rawParsed)) {
+      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(INITIAL_USERS));
+      return INITIAL_USERS;
+    }
+    const parsed: UserAccount[] = rawParsed.filter((u: any) => u && typeof u === 'object');
+    let updated = parsed.length !== rawParsed.length;
     INITIAL_USERS.forEach((initUser) => {
       const idx = parsed.findIndex((u) => u.phone === initUser.phone || u.id === initUser.id);
       if (idx === -1) {

@@ -35,3 +35,15 @@ prisma/*.db
 Thumbs.db
 scratch/
 *.jar
+!mobile-app/android/gradle/wrapper/gradle-wrapper.jar
+
+# Android toolchain & build output
+.toolchain/
+mobile-app/android/.gradle/
+mobile-app/android/build/
+mobile-app/android/app/build/
+mobile-app/android/local.properties
+mobile-app/android/app/release/
+mobile-app/android/keystore.properties
+*.keystore
+*.jks

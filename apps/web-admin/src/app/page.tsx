@@ -30,6 +30,16 @@ export default function HomePage() {
 
   useEffect(() => {
     setMounted(true);
+    try {
+      const isMobile =
+        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+        window.innerWidth < 768;
+      const params = new URLSearchParams(window.location.search);
+      const isExplicitWeb = params.get('view') === 'web' || params.get('mode') === 'web';
+      if (isMobile && !isExplicitWeb) {
+        window.location.replace('/mobile-app-view');
+      }
+    } catch (e) {}
   }, []);
 
   if (mounted && isApp) {
@@ -39,11 +49,11 @@ export default function HomePage() {
   const handleDownloadApp = () => {
     const downloadUrl = (settings?.apkDownloadUrl && settings.apkDownloadUrl.trim() !== '')
       ? settings.apkDownloadUrl
-      : '/api/download';
+      : '/downloads/ffrivals.apk';
 
     const a = document.createElement('a');
     a.href = downloadUrl;
-    a.download = 'FF_Rival_Tour_BD.apk';
+    a.download = 'ffrivals.apk';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

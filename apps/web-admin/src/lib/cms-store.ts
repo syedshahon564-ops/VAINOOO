@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 export interface MatchItem {
   id: string;
@@ -286,24 +286,26 @@ export function getCMSData(): CMSData {
       memoryCMSCache = INITIAL_CMS_DATA;
       return INITIAL_CMS_DATA;
     }
-    const parsed = JSON.parse(raw);
-    let matches: MatchItem[] = parsed.matches || [];
+    const parsed = JSON.parse(raw) || {};
+    let matches: MatchItem[] = Array.isArray(parsed?.matches)
+      ? parsed.matches.filter((m: any) => m && typeof m === 'object')
+      : [];
 
     // One-time cleanup (v4): drop legacy bot demo matches & reset fake joined counters
     if (!localStorage.getItem(MIGRATION_KEY)) {
       matches = matches
-        .filter((m) => !/^(cm-|cs-|lw-|ltw-|sm-|oh-)/.test(m.id))
+        .filter((m) => !/^(cm-|cs-|lw-|ltw-|sm-|oh-)/.test(String(m?.id ?? '')))
         .map((m) => ({ ...m, filledSlots: 0 }));
       localStorage.setItem(MIGRATION_KEY, '1');
       localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...parsed, matches }));
     }
 
-    const merged: CMSData = {
-      categories: { ...INITIAL_CATEGORIES, ...(parsed.categories || {}) },
+    const merged: CMSData = normalizeCMSData({
+      categories: { ...INITIAL_CATEGORIES, ...(parsed?.categories || {}) },
       matches,
-      settings: { ...INITIAL_SETTINGS, ...(parsed.settings || {}) },
-      topPlayers: parsed.topPlayers || INITIAL_TOP_PLAYERS,
-    };
+      settings: { ...INITIAL_SETTINGS, ...(parsed?.settings || {}) },
+      topPlayers: Array.isArray(parsed?.topPlayers) ? parsed.topPlayers : INITIAL_TOP_PLAYERS,
+    });
     memoryCMSCache = merged;
     return merged;
   } catch (e) {
@@ -311,15 +313,35 @@ export function getCMSData(): CMSData {
   }
 }
 
-export function saveCMSData(data: CMSData): void {
+/** Ensure every CMS field has a safe shape (arrays are arrays, objects are objects). */
+export function normalizeCMSData(input: Partial<CMSData> | null | undefined): CMSData {
+  const src: any = input && typeof input === 'object' ? input : {};
+  const categories =
+    src.categories && typeof src.categories === 'object' && !Array.isArray(src.categories)
+      ? src.categories
+      : INITIAL_CATEGORIES;
+  return {
+    categories,
+    matches: Array.isArray(src.matches) ? src.matches.filter((m: any) => m && typeof m === 'object') : [],
+    settings: { ...INITIAL_SETTINGS, ...(src.settings && typeof src.settings === 'object' ? src.settings : {}) },
+    topPlayers: Array.isArray(src.topPlayers)
+      ? src.topPlayers.filter((p: any) => p && typeof p === 'object')
+      : INITIAL_TOP_PLAYERS,
+  };
+}
+
+export function saveCMSData(input: CMSData): void {
   if (typeof window === 'undefined') return;
+  const data = normalizeCMSData(input);
   memoryCMSCache = data;
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch (e) {
     // Ignore storage quota errors
   }
-  window.dispatchEvent(new CustomEvent('ff_cms_updated', { detail: data }));
+  try {
+    window.dispatchEvent(new CustomEvent('ff_cms_updated', { detail: data }));
+  } catch (e) {}
 
   // Background server sync so all phones, emulators and browsers stay updated
   try {
@@ -402,46 +424,63 @@ export function useCMS() {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
+    let active = true;
     setData(getCMSData());
     setLoaded(true);
 
     // Initial background sync with server to pick up matches/categories created on other devices/admin
-    fetch('/api/cms')
-      .then((res) => (res.ok ? res.json() : null))
-      .then((serverData) => {
-        if (serverData && !serverData.error) {
-          const current = getCMSData();
-          let effectiveMatches = current.matches;
-          if (serverData.matches && serverData.matches.length > 0) {
-            effectiveMatches = serverData.matches;
-          } else if (current.matches && current.matches.length > 0) {
-            // Push client matches to server so other devices receive them
-            fetch('/api/cms', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ ...current, ...serverData, matches: current.matches }),
-            }).catch(() => {});
-          }
+    try {
+      fetch('/api/cms', { cache: 'no-store' })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((serverData) => {
+          if (!active) return;
+          if (serverData && typeof serverData === 'object' && !serverData.error) {
+            const current = getCMSData();
+            const serverMatches = Array.isArray(serverData.matches) ? serverData.matches : [];
+            const currentMatches = Array.isArray(current?.matches) ? current.matches : [];
+            let effectiveMatches = currentMatches;
+            if (serverMatches.length > 0) {
+              effectiveMatches = serverMatches;
+            } else if (currentMatches.length > 0) {
+              // Push client matches to server so other devices receive them
+              fetch('/api/cms', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ...current, ...serverData, matches: currentMatches }),
+              }).catch(() => {});
+            }
 
-          const merged: CMSData = {
-            categories: { ...current.categories, ...(serverData.categories || {}) },
-            matches: effectiveMatches,
-            settings: { ...current.settings, ...(serverData.settings || {}) },
-            topPlayers: (serverData.topPlayers && serverData.topPlayers.length > 0) ? serverData.topPlayers : current.topPlayers,
-          };
-          memoryCMSCache = merged;
-          setData(merged);
-          try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
-          } catch (e) {}
-        }
-      })
-      .catch(() => {});
+            const serverCategories =
+              serverData.categories && typeof serverData.categories === 'object' && !Array.isArray(serverData.categories)
+                ? serverData.categories
+                : {};
+            const serverSettings =
+              serverData.settings && typeof serverData.settings === 'object' ? serverData.settings : {};
+            const merged: CMSData = normalizeCMSData({
+              categories: { ...(current?.categories || {}), ...serverCategories },
+              matches: effectiveMatches,
+              settings: { ...(current?.settings || {}), ...serverSettings } as SiteSettings,
+              topPlayers:
+                Array.isArray(serverData.topPlayers) && serverData.topPlayers.length > 0
+                  ? serverData.topPlayers
+                  : current?.topPlayers,
+            });
+            memoryCMSCache = merged;
+            setData(merged);
+            try {
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+            } catch (e) {}
+          }
+        })
+        .catch(() => {});
+    } catch (e) {}
 
     const handleUpdate = (e: any) => {
-      if (e.detail) {
-        memoryCMSCache = e.detail;
-        setData(e.detail);
+      if (!active) return;
+      if (e?.detail && typeof e.detail === 'object') {
+        const next = normalizeCMSData(e.detail);
+        memoryCMSCache = next;
+        setData(next);
       } else {
         memoryCMSCache = null;
         setData(getCMSData());
@@ -451,18 +490,21 @@ export function useCMS() {
     window.addEventListener('ff_cms_updated', handleUpdate);
     window.addEventListener('storage', handleUpdate);
     return () => {
+      active = false;
       window.removeEventListener('ff_cms_updated', handleUpdate);
       window.removeEventListener('storage', handleUpdate);
     };
   }, []);
 
+  const safe = useMemo(() => normalizeCMSData(data), [data]);
+
   return {
-    data,
+    data: safe,
     loaded,
-    categories: data.categories,
-    matches: data.matches,
-    settings: data.settings,
-    topPlayers: data.topPlayers,
+    categories: safe.categories,
+    matches: safe.matches,
+    settings: safe.settings,
+    topPlayers: safe.topPlayers,
     addMatch,
     updateMatch,
     deleteMatch,

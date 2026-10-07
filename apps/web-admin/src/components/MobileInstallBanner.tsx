@@ -21,7 +21,10 @@ export default function MobileInstallBanner() {
     setIsStandalone(!!isInStandalone);
     if (isInStandalone) return;
 
-    const dismissed = sessionStorage.getItem('ff_install_banner_dismissed');
+    let dismissed = false;
+    try {
+      dismissed = !!sessionStorage.getItem('ff_install_banner_dismissed');
+    } catch {}
     if (dismissed) return;
 
     const handleBeforeInstall = (e: Event) => {
@@ -42,7 +45,11 @@ export default function MobileInstallBanner() {
       const isMobile =
         typeof navigator !== 'undefined' &&
         /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-      if (isMobile && !isInStandalone && !sessionStorage.getItem('ff_install_banner_dismissed')) {
+      let isDismissed = false;
+      try {
+        isDismissed = !!sessionStorage.getItem('ff_install_banner_dismissed');
+      } catch {}
+      if (isMobile && !isInStandalone && !isDismissed) {
         setShowBanner(true);
       }
     }, 2500);
@@ -68,7 +75,9 @@ export default function MobileInstallBanner() {
 
   const handleDismiss = () => {
     setShowBanner(false);
-    sessionStorage.setItem('ff_install_banner_dismissed', '1');
+    try {
+      sessionStorage.setItem('ff_install_banner_dismissed', '1');
+    } catch {}
   };
 
   if (isApp || !showBanner || isStandalone) return null;
