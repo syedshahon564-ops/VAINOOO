@@ -289,7 +289,11 @@ export default function MobileAppViewPage(props: any) {
   const unreadCount = notificationsList.filter((n) => !n.read).length;
 
   const handleCopy = (text: string, key: string) => {
-    navigator.clipboard?.writeText(text);
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText(text).catch(() => {});
+      }
+    } catch (e) {}
     setCopiedKey(key);
     setTimeout(() => setCopiedKey(null), 2000);
   };
@@ -617,6 +621,15 @@ export default function MobileAppViewPage(props: any) {
                       </div>
 
                       <div className="flex items-center gap-1.5">
+                        {currentUser?.role === 'ADMIN' && (
+                          <Link
+                            href="/admin"
+                            className="px-2 py-1 rounded-full text-[9px] font-black bg-gradient-to-r from-amber-500 to-amber-600 hover:brightness-110 text-black border border-amber-400 shadow-sm flex items-center gap-1"
+                            title="Admin Panel"
+                          >
+                            <span>👑 Admin</span>
+                          </Link>
+                        )}
                         <button
                           onClick={handleSwitchToWeb}
                           title={tPhone('ওয়েবসাইট সংস্করণ', 'Switch to Website')}
@@ -1965,6 +1978,17 @@ export default function MobileAppViewPage(props: any) {
                     <User className="w-4 h-4" />
                     <span>{tPhone('প্রোফাইল', 'Profile')}</span>
                   </button>
+
+                  {/* 6. ADMIN (VISIBLE FOR ADMIN / OWNER USERS) */}
+                  {currentUser?.role === 'ADMIN' && (
+                    <Link
+                      href="/admin"
+                      className="flex flex-col items-center gap-0.5 text-[9px] font-black text-amber-500 hover:text-amber-400 transition-colors animate-pulse"
+                    >
+                      <Shield className="w-4 h-4 text-amber-500" />
+                      <span>{tPhone('অ্যাডমিন', 'Admin')}</span>
+                    </Link>
+                  )}
                 </div>
               </div>
             </div>

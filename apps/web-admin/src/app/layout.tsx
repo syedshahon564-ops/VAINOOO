@@ -5,7 +5,7 @@ import Footer from '@/components/Footer';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { LanguageProvider } from '@/components/LanguageProvider';
 import AutoSchedulerRunner from '@/components/AutoSchedulerRunner';
-import MobileInstallBanner from '@/components/MobileInstallBanner';
+import AppUpdateModal from '@/components/AppUpdateModal';
 
 export const viewport: Viewport = {
   themeColor: '#dc2626',
@@ -37,7 +37,7 @@ export default function RootLayout({
             <AutoSchedulerRunner />
             <Navbar />
             <div className="min-h-[calc(100vh-160px)]">{children}</div>
-            <MobileInstallBanner />
+            <AppUpdateModal />
             <Footer />
           </LanguageProvider>
         </ThemeProvider>

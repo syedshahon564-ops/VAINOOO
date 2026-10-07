@@ -1,13 +1,16 @@
 {
   "appId": "com.ffrivalstour.app",
-  "appName": "FF Rivals Tour",
+  "appName": "FF Rivals Tour BD",
   "webDir": "www",
   "server": {
-    "url": "https://ggggsdfgds.vercel.app/",
+    "url": "https://web-production-2c40b.up.railway.app",
     "cleartext": true,
     "androidScheme": "https",
     "errorPath": "offline.html",
     "allowNavigation": [
+      "web-production-2c40b.up.railway.app",
+      "*.up.railway.app",
+      "*.railway.app",
       "ggggsdfgds.vercel.app",
       "*.vercel.app",
       "t.me",

@@ -140,10 +140,28 @@ export default function LiveMatchCountdown({
   compact = false,
   className = '',
 }: LiveMatchCountdownProps) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const currentNow = useGlobalSecondTick();
   const targetDate = React.useMemo(() => {
     return parseScheduleTimeToDate(matchTime, startTimeIso);
   }, [matchTime, startTimeIso]);
+
+  if (!mounted) {
+    return (
+      <div
+        className={`w-full py-1.5 rounded-lg bg-emerald-600 text-white font-black ${
+          compact ? 'text-[11px]' : 'text-xs'
+        } flex items-center justify-center gap-1.5 shadow-sm select-none ${className}`}
+      >
+        <Clock className="w-3.5 h-3.5" />
+        <span>STARTS IN - 00m:00s</span>
+      </div>
+    );
+  }
 
   const diffMs = targetDate ? targetDate.getTime() - currentNow : null;
 

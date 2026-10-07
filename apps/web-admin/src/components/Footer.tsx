@@ -60,6 +60,7 @@ export default function Footer() {
               <li><Link href="/" className="hover:text-red-600 transition-colors">Home & Tournaments</Link></li>
               <li><Link href="/leaderboard" className="hover:text-red-600 transition-colors flex items-center gap-1 font-bold text-amber-500"><Trophy className="w-3.5 h-3.5" /> Top Players (Leaderboard)</Link></li>
               <li><Link href="/wallet" className="hover:text-red-600 transition-colors">Deposit & Withdraw</Link></li>
+              <li><Link href="/admin" className="hover:text-amber-500 transition-colors flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">👑 Admin Panel</Link></li>
             </ul>
           </div>
 

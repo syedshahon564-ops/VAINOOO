@@ -29,18 +29,6 @@ export function middleware(request: NextRequest) {
       }
       return response;
     }
-
-    // Auto-detect mobile devices via User-Agent header on the server
-    const ua = request.headers.get('user-agent') || '';
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(ua);
-
-    if (isMobile) {
-      // Clean HTTP redirect to /mobile-app-view so client and server both hydrate /mobile-app-view
-      const url = request.nextUrl.clone();
-      url.pathname = '/mobile-app-view';
-      url.search = '';
-      return NextResponse.redirect(url);
-    }
   }
 
   return NextResponse.next();

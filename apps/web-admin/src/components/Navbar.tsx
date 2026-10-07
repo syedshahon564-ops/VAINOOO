@@ -138,7 +138,18 @@ export default function Navbar() {
         </nav>
 
         {/* Right Action Icons & User Balance */}
-        <div className="flex items-center gap-2.5 sm:gap-3.5">
+        <div className="flex items-center gap-2 sm:gap-3">
+          {/* Download APK Button (Direct 1-click download of ffrivals.apk) */}
+          <a
+            href="/downloads/ffrivals.apk"
+            download="ffrivals.apk"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-black text-xs transition-all shadow-md shadow-red-600/30 active:scale-95 border border-red-500/40"
+            title="Download Android APK"
+          >
+            <Download className="w-3.5 h-3.5 text-white animate-bounce" />
+            <span className="hidden xs:inline sm:inline">{t('ডাউনলোড APK', 'Download APK')}</span>
+            <span className="inline xs:hidden sm:hidden">APK</span>
+          </a>
           {/* Mobile Deposit Quick Button */}
           <button
             onClick={() => setShowDepositModal(true)}
