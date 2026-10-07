@@ -15,19 +15,43 @@ console.log(`WebAdminDir: ${webAdminDir}`);
 
 // 1. Run the build in apps/web-admin
 console.log('\n📦 Step 1: Building apps/web-admin with Next.js...');
-try {
-  execSync('npm --prefix apps/web-admin run build', {
-    cwd: rootDir,
-    stdio: 'inherit',
-    env: {
-      ...process.env,
-      CI: 'false',
-      NEXT_TELEMETRY_DISABLED: '1',
-    },
-  });
-  console.log('✅ Next.js build succeeded in apps/web-admin!');
-} catch (err) {
-  console.error('❌ Build failed in apps/web-admin:', err);
+const env = {
+  ...process.env,
+  CI: 'false',
+  NEXT_TELEMETRY_DISABLED: '1',
+  PATH: [
+    path.join(webAdminDir, 'node_modules', '.bin'),
+    path.join(rootDir, 'node_modules', '.bin'),
+    process.env.PATH || '',
+  ].join(path.delimiter),
+};
+
+let buildSuccess = false;
+const commands = [
+  'npm --prefix apps/web-admin run build',
+  'npm --workspace=@ff-esports/web-admin run build',
+  'npx --prefix apps/web-admin next build',
+  'npx next build apps/web-admin',
+];
+
+for (const cmd of commands) {
+  try {
+    console.log(`Executing: ${cmd}`);
+    execSync(cmd, {
+      cwd: rootDir,
+      stdio: 'inherit',
+      env,
+    });
+    console.log(`✅ Build succeeded with: ${cmd}!`);
+    buildSuccess = true;
+    break;
+  } catch (err) {
+    console.warn(`⚠️ Command failed: ${cmd}, trying next fallback...`);
+  }
+}
+
+if (!buildSuccess) {
+  console.error('❌ All build command fallbacks failed.');
   process.exit(1);
 }
 

@@ -1,13 +1,13 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import { Download, X, ShieldCheck } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageProvider';
-import { useViewMode } from '@/lib/view-mode';
 
 export default function MobileInstallBanner() {
+  const pathname = usePathname();
   const { t } = useLanguage();
-  const { isApp } = useViewMode();
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showBanner, setShowBanner] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
@@ -94,7 +94,7 @@ export default function MobileInstallBanner() {
     } catch {}
   };
 
-  if (isApp || !showBanner || isStandalone) return null;
+  if (pathname === '/mobile-app-view' || !showBanner || isStandalone) return null;
 
   return (
     <div className="fixed bottom-4 left-3 right-3 z-50 max-w-md mx-auto animate-slideUp">

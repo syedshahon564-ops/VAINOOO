@@ -86,21 +86,7 @@ export default function HomePage() {
 
   useEffect(() => {
     setMounted(true);
-    try {
-      const isMobile =
-        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-        window.innerWidth < 768;
-      const params = new URLSearchParams(window.location.search);
-      const isExplicitWeb = params.get('view') === 'web' || params.get('mode') === 'web';
-      if (isMobile && !isExplicitWeb) {
-        window.location.replace('/mobile-app-view');
-      }
-    } catch (e) {}
   }, []);
-
-  if (mounted && isApp) {
-    return <MobileAppViewPage standalone={true} onSwitchToWeb={() => setViewMode('web')} />;
-  }
 
   const handleDownloadApp = () => {
     const downloadUrl = (settings?.apkDownloadUrl && settings.apkDownloadUrl.trim() !== '')
