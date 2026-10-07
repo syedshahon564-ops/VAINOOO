@@ -5,7 +5,6 @@ dist
 **/dist
 .next
 **/.next
-/public
 /data
 out
 build
