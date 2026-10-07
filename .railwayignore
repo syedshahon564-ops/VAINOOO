@@ -1,0 +1,13 @@
+mobile-app/
+services/
+scratch/
+.toolchain/
+*.jar
+*.jks
+*.keystore
+.vscode/
+.idea/
+node_modules/
+**/node_modules/
+.next/
+**/.next/
