@@ -28,7 +28,7 @@ import {
   Cpu,
   Clock,
 } from 'lucide-react';
-import { useCMS, MatchItem } from '@/lib/cms-store';
+import { useCMS, MatchItem, BannerSlide } from '@/lib/cms-store';
 import ImageUploadInput from '@/components/ImageUploadInput';
 import {
   generateAutomatedMatchBatch,
@@ -123,6 +123,7 @@ export default function AdminMasterPage() {
   const [nagadNumber, setNagadNumber] = useState(settings.nagadNumber);
   const [apkDownloadUrl, setApkDownloadUrl] = useState(settings.apkDownloadUrl || '');
   const [customPin, setCustomPin] = useState('7860');
+  const [bannerSlidesList, setBannerSlidesList] = useState<BannerSlide[]>(settings.banners || []);
 
   // Synchronize category form fields whenever selectedCatSlug or categories updates
   useEffect(() => {
@@ -151,6 +152,9 @@ export default function AdminMasterPage() {
       setBkashNumber(settings.bkashNumber || '');
       setNagadNumber(settings.nagadNumber || '');
       setApkDownloadUrl(settings.apkDownloadUrl || '');
+      if (settings.banners && settings.banners.length > 0) {
+        setBannerSlidesList(settings.banners);
+      }
       const savedPin = localStorage.getItem('ff_admin_custom_pin_v1') || '7860';
       setCustomPin(savedPin);
     }
@@ -302,12 +306,15 @@ export default function AdminMasterPage() {
       logoUrl: siteLogo,
       bkashNumber,
       nagadNumber,
+      telegramUrl,
+      whatsappNumber,
       apkDownloadUrl,
+      banners: bannerSlidesList,
     });
     if (customPin && customPin.trim().length >= 4) {
       localStorage.setItem('ff_admin_custom_pin_v1', customPin.trim());
     }
-    showToast('সাইটের নাম, লোগো, APK লিংক ও সিক্রেট পিন সফলভাবে আপডেট হয়েছে!');
+    showToast('সাইটের নাম, লোগো, পেমেন্ট নম্বর, টেলিগ্রাম ও স্লাইডার ব্যানার সফলভাবে আপডেট হয়েছে!');
   };
 
   const categoriesList = Object.values(categories);
@@ -1055,6 +1062,34 @@ export default function AdminMasterPage() {
               </div>
             </div>
 
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
+                  অফিসিয়াল টেলিগ্রাম সাপোর্ট লিংক / চ্যানেল URL
+                </label>
+                <input
+                  type="url"
+                  placeholder="https://t.me/yourchannel"
+                  value={telegramUrl}
+                  onChange={(e) => setTelegramUrl(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/30 text-xs font-mono focus:outline-none focus:border-red-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
+                  অফিসিয়াল হোয়াটসঅ্যাপ হেল্পলাইন নম্বর
+                </label>
+                <input
+                  type="text"
+                  placeholder="01XXXXXXXXX"
+                  value={whatsappNumber}
+                  onChange={(e) => setWhatsappNumber(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/30 text-xs font-mono focus:outline-none focus:border-red-500"
+                />
+              </div>
+            </div>
+
             {/* Android APK Download URL */}
             <div className="pt-2">
               <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
@@ -1098,6 +1133,133 @@ export default function AdminMasterPage() {
                 helperText="স্বচ্ছ ব্যাকগ্রাউন্ডের লোগো ইমেজ (PNG, JPG, WEBP) আপলোড করুন"
                 previewHeight="h-28"
               />
+            </div>
+
+            {/* Banner Carousel Slider Management */}
+            <div className="pt-4 border-t border-gray-200 dark:border-white/10 space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-sm font-black text-gray-900 dark:text-white flex items-center gap-2">
+                    <Image className="w-4 h-4 text-amber-500" />
+                    হোম পেজ ব্যানার স্লাইডার কন্ট্রোল (Home Banner Carousel Manager)
+                  </h4>
+                  <p className="text-[11px] text-gray-500">
+                    মোবাইল অ্যাপ ও ওয়েবসাইটের হোম পেজে স্লাইড হওয়া ব্যানার ইমেজ ও টেক্সট পরিবর্তন বা নতুন যোগ করুন।
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const newSlide: BannerSlide = {
+                      id: `slide-${Date.now()}`,
+                      badge: 'NEW EVENT',
+                      title: 'নতুন মেগা টুর্নামেন্ট লাইভ!',
+                      subtitle: 'বিকাশ ও নগদে সরাসরি প্রাইজ উইথড্র করুন।',
+                      image: '/logo.png',
+                      actionText: 'Join Now',
+                      actionUrl: telegramUrl || 'https://t.me/ffrivaltourbd',
+                    };
+                    setBannerSlidesList((prev) => [...prev, newSlide]);
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-black flex items-center gap-1 shadow-sm"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>স্লাইড যোগ করুন</span>
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                {bannerSlidesList.map((slide, idx) => (
+                  <div
+                    key={slide.id || idx}
+                    className="p-4 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/20 space-y-3"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-black text-amber-600 dark:text-amber-400">
+                        স্লাইডার ব্যানার #{idx + 1}
+                      </span>
+                      {bannerSlidesList.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setBannerSlidesList((prev) => prev.filter((_, i) => i !== idx));
+                          }}
+                          className="text-red-500 hover:text-red-400 text-xs flex items-center gap-1 font-bold"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>মুছে ফেলুন</span>
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div>
+                        <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300 block mb-1">
+                          ব্যাজ টেক্সট (Badge)
+                        </label>
+                        <input
+                          type="text"
+                          value={slide.badge}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setBannerSlidesList((prev) =>
+                              prev.map((s, i) => (i === idx ? { ...s, badge: val } : s))
+                            );
+                          }}
+                          className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-black/30 text-xs font-bold"
+                        />
+                      </div>
+
+                      <div className="sm:col-span-2">
+                        <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300 block mb-1">
+                          শিরোনাম (Title)
+                        </label>
+                        <input
+                          type="text"
+                          value={slide.title}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setBannerSlidesList((prev) =>
+                              prev.map((s, i) => (i === idx ? { ...s, title: val } : s))
+                            );
+                          }}
+                          className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-black/30 text-xs font-bold"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300 block mb-1">
+                        সাবটাইটেল / বিবরণ (Subtitle)
+                      </label>
+                      <input
+                        type="text"
+                        value={slide.subtitle}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setBannerSlidesList((prev) =>
+                            prev.map((s, i) => (i === idx ? { ...s, subtitle: val } : s))
+                          );
+                        }}
+                        className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-black/30 text-xs"
+                      />
+                    </div>
+
+                    <ImageUploadInput
+                      label="ব্যানার ইমেজ আপলোড বা পরিবর্তন করুন"
+                      value={slide.image || '/logo.png'}
+                      onChange={(imgUrl) => {
+                        setBannerSlidesList((prev) =>
+                          prev.map((s, i) => (i === idx ? { ...s, image: imgUrl } : s))
+                        );
+                      }}
+                      helperText="প্রোমোশনাল ব্যানার ইমেজ (16:9 বা প্রশস্ত ফরম্যাট)"
+                      previewHeight="h-28"
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
 
             <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-white/10">

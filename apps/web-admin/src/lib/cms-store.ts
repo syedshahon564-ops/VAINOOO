@@ -82,8 +82,8 @@ export interface CMSData {
   topPlayers: TopPlayerItem[];
 }
 
-const STORAGE_KEY = 'ff_esports_cms_data_v3';
-const MIGRATION_KEY = 'ff_esports_cms_migration_v4';
+const STORAGE_KEY = 'ff_esports_cms_data_v5';
+const MIGRATION_KEY = 'ff_esports_cms_migration_v5';
 
 export const INITIAL_CATEGORIES: Record<string, CategoryItem> = {
   'special-match': {

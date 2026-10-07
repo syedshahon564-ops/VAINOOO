@@ -30,7 +30,8 @@ import {
   Globe,
   Sparkles,
   ExternalLink,
-  RefreshCw,
+  Radio,
+  ChevronLeft,
   Camera,
   ArrowDownRight,
   ArrowUpRight,
@@ -116,9 +117,41 @@ export default function MobileAppViewPage(props: any) {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [categoryTab, setCategoryTab] = useState<'PLAY' | 'RESULT'>('PLAY');
 
-  // Phone Theme & Language (English & Bangla system on the phone side)
-  const [phoneTheme, setPhoneTheme] = useState<'dark' | 'light'>('dark');
+  // Phone Theme & Language (Light White Mode permanent)
+  const [phoneTheme, setPhoneTheme] = useState<'dark' | 'light'>('light');
   const [phoneLang, setPhoneLang] = useState<'bn' | 'en'>(globalLang || 'bn');
+
+  // Interactive Carousel Banner State
+  const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
+  const bannerSlides = React.useMemo(() => {
+    if (settings?.banners && settings.banners.length > 0) {
+      return settings.banners;
+    }
+    return [
+      {
+        id: 'slide-1',
+        badge: 'FF RIVAL TOUR BD 2026',
+        title: phoneLang === 'en' ? 'Daily Free Fire Tournaments Live!' : 'দৈনিক ফ্রি ফায়ার টুর্নামেন্ট লাইভ!',
+        subtitle: phoneLang === 'en' ? 'Low Entry Fee • Instant bKash & Nagad Withdraw' : 'স্বল্প এন্ট্রি ফি • দ্রুত বিকাশ ও নগদে প্রাইজ উইথড্র',
+        image: '/logo.png',
+      },
+      {
+        id: 'slide-2',
+        badge: 'MEGA CASH PRIZE',
+        title: phoneLang === 'en' ? 'Squad & Solo Daily Match Hub' : 'স্কোয়াড ও সোলো মেগা প্রাইজ টুর্নামেন্ট',
+        subtitle: phoneLang === 'en' ? 'Fast Automatic Room Pass in My Matches' : 'ম্যাচ শুরুর আগে মাই ম্যাচেসে দ্রুত রুম আইডি ও পাসওয়ার্ড',
+        image: '/logo.png',
+      },
+    ];
+  }, [settings?.banners, phoneLang]);
+
+  useEffect(() => {
+    if (bannerSlides.length <= 1) return;
+    const interval = setInterval(() => {
+      setCurrentSlideIndex((prev) => (prev + 1) % bannerSlides.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [bannerSlides.length]);
 
   // Copying & Feedback
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
@@ -136,6 +169,20 @@ export default function MobileAppViewPage(props: any) {
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [authSuccess, setAuthSuccess] = useState<string | null>(null);
+
+  // Auto-prompt login/register on first entry for new visitors
+  useEffect(() => {
+    const cur = getCurrentUser();
+    if (!cur) {
+      const hasPrompted = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('ff_auth_prompted_once') : null;
+      if (!hasPrompted) {
+        setShowAuthModal(true);
+        if (typeof sessionStorage !== 'undefined') {
+          sessionStorage.setItem('ff_auth_prompted_once', '1');
+        }
+      }
+    }
+  }, []);
 
   // Finance Modal (Deposit & Withdraw)
   const [showFinanceModal, setShowFinanceModal] = useState(false);
@@ -205,12 +252,6 @@ export default function MobileAppViewPage(props: any) {
     }
   };
 
-  const fillAuthDemo = (phone: string, pass: string) => {
-    setAuthMode('LOGIN');
-    setAuthPhone(phone);
-    setAuthPassword(pass);
-    setAuthError(null);
-  };
 
   // Booked matches list (starts empty with 0 fake participants)
   const [bookedMatchesList, setBookedMatchesList] = useState<
@@ -519,9 +560,7 @@ export default function MobileAppViewPage(props: any) {
               <div
                 className={`relative w-full ${
                   isMobileView ? 'min-h-screen rounded-none' : 'h-full rounded-[40px]'
-                } overflow-hidden flex flex-col font-sans transition-colors ${
-                  phoneTheme === 'dark' ? 'bg-[#0f0f15] text-white' : 'bg-slate-50 text-slate-900'
-                }`}
+                } overflow-hidden flex flex-col font-sans bg-white text-gray-900`}
               >
                 {/* Status Bar */}
                 {!isMobileView && (
@@ -536,20 +575,20 @@ export default function MobileAppViewPage(props: any) {
 
                 {/* Guest Notice Bar if not logged in */}
                 {!currentUser && (
-                  <div className="bg-gradient-to-r from-red-600 via-rose-600 to-amber-600 px-3 py-1.5 text-white flex items-center justify-between text-[11px] font-bold select-none z-40 shadow-sm">
+                  <div className="bg-gradient-to-r from-red-600 via-rose-600 to-amber-600 px-3.5 py-2 text-white flex items-center justify-between text-xs font-bold select-none z-40 shadow-sm">
                     <div className="flex items-center gap-1.5 truncate">
-                      <Sparkles className="w-3.5 h-3.5 text-amber-300 flex-shrink-0 animate-pulse" />
-                      <span className="truncate text-[10px]">
+                      <Sparkles className="w-4 h-4 text-amber-300 flex-shrink-0 animate-pulse" />
+                      <span className="truncate text-[11px] font-bold">
                         {tPhone('টুর্নামেন্টে খেলতে ও উইথড্র করতে লগইন করুন!', 'Sign in to join tournaments & withdraw!')}
                       </span>
                     </div>
-                    <div className="flex items-center gap-1 flex-shrink-0 ml-1.5">
+                    <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
                       <button
                         onClick={() => {
                           setAuthMode('LOGIN');
                           setShowAuthModal(true);
                         }}
-                        className="px-2 py-0.5 rounded bg-white text-red-600 font-black text-[9px] hover:bg-gray-100 shadow-sm"
+                        className="px-3.5 py-1.5 rounded-lg bg-white text-red-600 font-black text-xs hover:bg-gray-100 shadow-md active:scale-95 transition-all"
                       >
                         {tPhone('লগইন', 'Login')}
                       </button>
@@ -558,7 +597,7 @@ export default function MobileAppViewPage(props: any) {
                           setAuthMode('REGISTER');
                           setShowAuthModal(true);
                         }}
-                        className="px-2 py-0.5 rounded bg-black/40 text-white font-black text-[9px] hover:bg-black/60 border border-white/20"
+                        className="px-3.5 py-1.5 rounded-lg bg-black/50 text-white font-black text-xs hover:bg-black/70 border border-white/30 active:scale-95 transition-all"
                       >
                         {tPhone('রেজিস্টার', 'Register')}
                       </button>
@@ -566,22 +605,18 @@ export default function MobileAppViewPage(props: any) {
                   </div>
                 )}
 
-                {/* Mobile App Header (Matching Image 1 when in category: < Solo Full Map 🔄) */}
+                {/* Mobile App Header (Matching Image 1 when in category: < Solo Full Map) */}
                 <div
-                  className={`px-4 py-2.5 flex items-center justify-between border-b relative z-30 ${
-                    phoneTheme === 'dark'
-                      ? 'bg-[#14141c] border-white/10'
-                      : 'bg-white border-slate-200'
-                  }`}
+                  className="px-4 py-3 flex items-center justify-between border-b border-gray-200 bg-white relative z-30 shadow-sm"
                 >
                   {selectedCategory && currentCategoryData ? (
-                    /* EXACT IMAGE 1 TOP HEADER: < Solo Full Map 🔄 */
+                    /* EXACT IMAGE 1 TOP HEADER: < Solo Full Map */
                     <div className="w-full flex items-center justify-between">
                       <button
                         onClick={() => setSelectedCategory(null)}
-                        className="flex items-center gap-2 text-sm font-black text-gray-900 dark:text-white hover:text-red-500 transition-colors"
+                        className="flex items-center gap-2 text-sm font-black text-gray-900 hover:text-red-600 transition-colors"
                       >
-                        <ArrowLeft className="w-4 h-4 text-gray-700 dark:text-gray-200" />
+                        <ArrowLeft className="w-4 h-4 text-gray-800" />
                         <span>{currentCategoryData.name}</span>
                       </button>
 
@@ -589,20 +624,9 @@ export default function MobileAppViewPage(props: any) {
                         {/* In-app Language Switcher */}
                         <button
                           onClick={togglePhoneLang}
-                          className="px-2 py-0.5 rounded-full text-[9px] font-black border border-gray-300 dark:border-white/20 bg-gray-100 dark:bg-white/10 text-gray-800 dark:text-white"
+                          className="px-2.5 py-1 rounded-full text-[10px] font-black border border-gray-300 bg-gray-100 text-gray-800 hover:bg-gray-200"
                         >
                           {phoneLang === 'bn' ? 'বাং' : 'EN'}
-                        </button>
-
-                        {/* Image 1 Refresh Icon */}
-                        <button
-                          onClick={() => {
-                            setExpandedRoomRulesMatchId(null);
-                          }}
-                          className="p-1 rounded-full text-blue-500 hover:text-blue-400 active:rotate-180 transition-transform"
-                          title="Refresh"
-                        >
-                          <RefreshCw className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
@@ -758,19 +782,13 @@ export default function MobileAppViewPage(props: any) {
                       {selectedCategory && currentCategoryData ? (
                         <div className="space-y-3">
                           {/* Sub-tabs: PLAY vs RESULT */}
-                          <div
-                            className={`grid grid-cols-2 p-1 rounded-xl border text-xs font-black ${
-                              phoneTheme === 'dark'
-                                ? 'bg-black/30 border-white/10'
-                                : 'bg-slate-200/70 border-slate-300'
-                            }`}
-                          >
+                          <div className="grid grid-cols-2 p-1 rounded-xl border border-gray-200 bg-gray-100 text-xs font-black shadow-inner">
                             <button
                               onClick={() => setCategoryTab('PLAY')}
-                              className={`py-1.5 rounded-lg flex items-center justify-center gap-1.5 transition-all text-[11px] ${
+                              className={`py-2 rounded-lg flex items-center justify-center gap-1.5 transition-all text-xs ${
                                 categoryTab === 'PLAY'
-                                  ? 'bg-red-600 text-white shadow-sm font-black'
-                                  : 'text-gray-400 hover:text-white'
+                                  ? 'bg-red-600 text-white shadow font-black'
+                                  : 'text-gray-600 hover:text-gray-900 font-bold'
                               }`}
                             >
                               <span>
@@ -779,13 +797,13 @@ export default function MobileAppViewPage(props: any) {
                             </button>
                             <button
                               onClick={() => setCategoryTab('RESULT')}
-                              className={`py-1.5 rounded-lg flex items-center justify-center gap-1.5 transition-all text-[11px] ${
+                              className={`py-2 rounded-lg flex items-center justify-center gap-1.5 transition-all text-xs ${
                                 categoryTab === 'RESULT'
-                                  ? 'bg-red-600 text-white shadow-sm font-black'
-                                  : 'text-gray-400 hover:text-white'
+                                  ? 'bg-red-600 text-white shadow font-black'
+                                  : 'text-gray-600 hover:text-gray-900 font-bold'
                               }`}
                             >
-                              <Award className="w-3.5 h-3.5 text-amber-400" />
+                              <Award className="w-3.5 h-3.5 text-amber-500" />
                               <span>
                                 {tPhone('ম্যাচ ফলাফল', 'Match Results')} ({completedCategoryMatches.length})
                               </span>
@@ -794,13 +812,13 @@ export default function MobileAppViewPage(props: any) {
 
                           {categoryTab === 'PLAY' ? (
                             currentCategoryMatches.length === 0 ? (
-                            <div className="p-8 text-center rounded-2xl border border-dashed border-gray-500/30 text-gray-400 space-y-2">
-                              <Trophy className="w-8 h-8 mx-auto text-gray-500" />
-                              <p className="text-xs font-bold">
+                            <div className="p-8 text-center rounded-2xl border border-dashed border-gray-300 bg-white text-gray-500 space-y-2">
+                              <Trophy className="w-8 h-8 mx-auto text-gray-400" />
+                              <p className="text-xs font-bold text-gray-700">
                                 {tPhone('বর্তমানে কোনো ম্যাচ নেই', 'No Matches Active Currently')}
                               </p>
                               <p className="text-[10px] text-gray-500">
-                                {tPhone('অ্যাডমিন প্যানেলে গিয়ে "অটো বট" বাটনে চাপ দিন।', 'Go to admin panel and tap "Generate Batch" button.')}
+                                {tPhone('অ্যাডমিন প্যানেল থেকে নতুন ম্যাচ শিডিউল করা হলে এখানে দেখতে পাবেন।', 'New tournaments will appear here when scheduled by Admin.')}
                               </p>
                             </div>
                           ) : (
@@ -814,20 +832,16 @@ export default function MobileAppViewPage(props: any) {
                               return (
                                 <div
                                   key={m.id}
-                                  className={`p-3.5 rounded-2xl border space-y-3 shadow-sm transition-all ${
-                                    phoneTheme === 'dark'
-                                      ? 'bg-[#181824] border-white/10'
-                                      : 'bg-white border-slate-200'
-                                  }`}
+                                  className="p-3.5 rounded-2xl border border-gray-200 bg-white space-y-3 shadow-md transition-all"
                                 >
-                                  {/* 1. Top Notice Row with Left Thumbnail (Exact Image 1) - Clickable to open Details Page */}
+                                  {/* 1. Top Notice Row with Left Thumbnail - Clickable to open Details Page */}
                                   <div
                                     onClick={() => setMatchDetailsScreen(m)}
                                     className="flex items-start gap-3 cursor-pointer hover:opacity-90 transition-opacity"
                                     title="Click to view full Details Page & Rules"
                                   >
                                     {/* Thumbnail on left */}
-                                    <div className="w-16 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-amber-900 border border-amber-500/30 flex items-center justify-center relative shadow-sm">
+                                    <div className="w-16 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-slate-900 border border-amber-500/30 flex items-center justify-center relative shadow-sm">
                                       <img
                                         src={m.bannerImage || '/logo.png'}
                                         alt={m.title}
@@ -841,78 +855,78 @@ export default function MobileAppViewPage(props: any) {
 
                                     {/* Notice text on right */}
                                     <div className="flex-1 min-w-0">
-                                      <p className="text-[10px] font-bold text-gray-800 dark:text-gray-200 leading-snug">
+                                      <p className="text-[10px] font-bold text-gray-800 leading-snug">
                                         কাস্টমে নিজের জায়গায় বসতে হবে বাধ্যতামূলক - আইডি লেভেল ৫৫+ থাকতে হবে -
                                         Normal {m.type} ম্যাচের নিয়ম পড়ে নিন, নিয়ম না মানলে রিফান্ড বা উইনিং
                                         পাবেন না! {settings?.siteName || 'FF RIVAL TOUR BD'}
                                       </p>
                                       <div className="flex items-center justify-between pt-1">
-                                        <span className="text-[10px] font-bold text-rose-600 dark:text-rose-400">
+                                        <span className="text-[10px] font-extrabold text-rose-600">
                                           {formatMatchSchedule(m.time)}
                                         </span>
-                                        <span className="text-[9px] font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 px-1.5 py-0.5 rounded border border-blue-200 dark:border-blue-900/40">
+                                        <span className="text-[9px] font-black text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200 shadow-xs">
                                           Details Page ➔
                                         </span>
                                       </div>
                                     </div>
                                   </div>
 
-                                  {/* 2. 6-Cell Stat Grid (Exact Image 1) */}
-                                  <div className="grid grid-cols-3 gap-y-2 gap-x-1 py-1.5 text-center border-t border-b border-gray-100 dark:border-white/5">
+                                  {/* 2. 6-Cell Stat Grid (Crisp White High-Contrast) */}
+                                  <div className="grid grid-cols-3 gap-y-2 gap-x-1 py-2 text-center border-t border-b border-gray-100 bg-gray-50/70 rounded-xl my-1">
                                     <div>
-                                      <span className="text-[9px] uppercase font-bold text-gray-400 block tracking-tight">
+                                      <span className="text-[9px] uppercase font-bold text-gray-500 block tracking-tight">
                                         WIN PRIZE
                                       </span>
-                                      <span className="font-black text-gray-900 dark:text-white text-xs">
+                                      <span className="font-black text-rose-600 text-sm">
                                         {m.prizePool} TK
                                       </span>
                                     </div>
                                     <div>
-                                      <span className="text-[9px] uppercase font-bold text-gray-400 block tracking-tight">
+                                      <span className="text-[9px] uppercase font-bold text-gray-500 block tracking-tight">
                                         ENTRY TYPE
                                       </span>
-                                      <span className="font-black text-gray-900 dark:text-white text-xs">
+                                      <span className="font-black text-gray-900 text-xs">
                                         {m.type}
                                       </span>
                                     </div>
                                     <div>
-                                      <span className="text-[9px] uppercase font-bold text-gray-400 block tracking-tight">
+                                      <span className="text-[9px] uppercase font-bold text-gray-500 block tracking-tight">
                                         ENTRY FEE
                                       </span>
-                                      <span className="font-black text-gray-900 dark:text-white text-xs">
+                                      <span className="font-black text-emerald-600 text-sm">
                                         {m.entryFee} TK
                                       </span>
                                     </div>
                                     <div>
-                                      <span className="text-[9px] uppercase font-bold text-gray-400 block tracking-tight">
+                                      <span className="text-[9px] uppercase font-bold text-gray-500 block tracking-tight">
                                         PER KILL
                                       </span>
-                                      <span className="font-black text-gray-900 dark:text-white text-xs">
+                                      <span className="font-black text-gray-900 text-xs">
                                         {m.perKill} TK
                                       </span>
                                     </div>
                                     <div>
-                                      <span className="text-[9px] uppercase font-bold text-gray-400 block tracking-tight">
+                                      <span className="text-[9px] uppercase font-bold text-gray-500 block tracking-tight">
                                         MAP
                                       </span>
-                                      <span className="font-black text-gray-900 dark:text-white text-xs">
+                                      <span className="font-black text-gray-900 text-xs">
                                         {m.map}
                                       </span>
                                     </div>
                                     <div>
-                                      <span className="text-[9px] uppercase font-bold text-gray-400 block tracking-tight">
+                                      <span className="text-[9px] uppercase font-bold text-gray-500 block tracking-tight">
                                         VERSION
                                       </span>
-                                      <span className="font-black text-gray-900 dark:text-white text-xs">
+                                      <span className="font-black text-gray-900 text-xs">
                                         MOBILE
                                       </span>
                                     </div>
                                   </div>
 
-                                  {/* 3. Progress Bar + Join Button Row (Exact Image 1) */}
+                                  {/* 3. Progress Bar + Join Button Row */}
                                   <div className="flex items-center gap-3 pt-0.5">
                                     <div className="flex-1 space-y-1">
-                                      <div className="w-full bg-gray-200 dark:bg-white/10 rounded-full h-2 overflow-hidden">
+                                      <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
                                         <div
                                           className="bg-emerald-500 h-full rounded-full transition-all"
                                           style={{
@@ -923,15 +937,15 @@ export default function MobileAppViewPage(props: any) {
                                           }}
                                         />
                                       </div>
-                                      <div className="flex items-center justify-between text-[9px] text-gray-400 font-semibold">
+                                      <div className="flex items-center justify-between text-[9px] text-gray-500 font-bold">
                                         <span>Only {spotsLeft} spots are left</span>
-                                        <span className="text-gray-500 font-bold">
+                                        <span className="text-gray-800 font-extrabold">
                                           {filled}/{m.totalSlots}
                                         </span>
                                       </div>
                                     </div>
 
-                                    {/* Join Button (Image 1 Style) */}
+                                    {/* Join Button */}
                                     <button
                                       onClick={() => {
                                         if (!currentUser) {
@@ -940,7 +954,7 @@ export default function MobileAppViewPage(props: any) {
                                         }
                                         setBookingModalMatch(m);
                                       }}
-                                      className="px-5 py-1.5 rounded-lg border border-blue-600 dark:border-blue-500 text-blue-600 dark:text-blue-400 font-bold text-xs hover:bg-blue-600 hover:text-white transition-all flex-shrink-0"
+                                      className="px-6 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs shadow-md active:scale-95 transition-all flex-shrink-0"
                                     >
                                       Join
                                     </button>
@@ -948,34 +962,37 @@ export default function MobileAppViewPage(props: any) {
 
                                   {/* 4. Dual Action Buttons: Room Rules and Total Prize Details */}
                                   <div className="grid grid-cols-2 gap-2 pt-0.5">
-                                    {/* Button 1: Room Rules ➔ (Navigates directly to full Details Page) */}
                                     <button
                                       onClick={() => setMatchDetailsScreen(m)}
-                                      className="py-1.5 px-2 rounded-lg border border-blue-400/50 dark:border-blue-500/40 text-blue-600 dark:text-blue-400 text-[11px] font-bold flex items-center justify-center gap-1.5 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-all shadow-sm"
+                                      className="py-2 px-2.5 rounded-xl border border-blue-200 bg-blue-50/70 text-blue-700 text-[11px] font-black flex items-center justify-center gap-1.5 hover:bg-blue-100 transition-all shadow-xs"
                                     >
-                                      <Key className="w-3.5 h-3.5 text-blue-500" />
+                                      <Key className="w-3.5 h-3.5 text-blue-600" />
                                       <span>Room Rules</span>
-                                      <span className="text-[10px] text-blue-400 font-mono">➔</span>
+                                      <span className="text-[10px] text-blue-500 font-mono">➔</span>
                                     </button>
 
-                                    {/* Button 2: Total Prize Details ⌄ (Opens Image 2 Modal) */}
                                     <button
                                       onClick={() => setTotalPrizeMatch(m)}
-                                      className="py-1.5 px-2 rounded-lg border border-blue-400/50 dark:border-blue-500/40 text-blue-600 dark:text-blue-400 text-[11px] font-bold flex items-center justify-center gap-1 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-all"
+                                      className="py-2 px-2.5 rounded-xl border border-amber-200 bg-amber-50/70 text-amber-800 text-[11px] font-black flex items-center justify-center gap-1 hover:bg-amber-100 transition-all shadow-xs"
                                     >
-                                      <Trophy className="w-3.5 h-3.5 text-amber-500" />
+                                      <Trophy className="w-3.5 h-3.5 text-amber-600" />
                                       <span>Total Prize Details</span>
                                       <span className="text-[10px]">▼</span>
                                     </button>
                                   </div>
 
-                                  {/* 5. Real Live Countdown Bar */}
+                                  {/* 5. Real Live Countdown Bar (Without public Room ID leak) */}
                                   <LiveMatchCountdown
                                     matchTime={m.time}
-                                    roomId={m.roomId}
                                     status={m.status}
                                     compact={true}
                                   />
+
+                                  {/* Room ID Security Notice */}
+                                  <div className="flex items-center justify-center gap-1 text-[9px] text-gray-500 font-semibold pt-0.5">
+                                    <Lock className="w-2.5 h-2.5 text-red-500 flex-shrink-0" />
+                                    <span>{tPhone('রুম আইডি ও পাসওয়ার্ড কেবল বুকিং করা প্লেয়ারদের "মাই ম্যাচেস" অপশনে দৃশ্যমান', 'Room ID & Password is secure in "My Matches" tab for joined players')}</span>
+                                  </div>
                                 </div>
                               );
                             }))
@@ -1052,33 +1069,95 @@ export default function MobileAppViewPage(props: any) {
                       ) : (
                         /* Main Home Category Feed */
                         <div className="space-y-3">
-                          {/* Announcement Ticker */}
-                          <div className="p-2 rounded-xl bg-gradient-to-r from-red-600/10 via-rose-600/10 to-transparent border border-red-500/20 flex items-center gap-2 text-[10px]">
-                            <span className="px-1.5 py-0.5 rounded bg-red-600 text-white font-black text-[9px]">
-                              LIVE
+                          {/* 1. Breaking News Ticker (নিউজ) */}
+                          <div className="px-2.5 py-2 rounded-xl bg-red-50 border border-red-200 flex items-center gap-2 overflow-hidden shadow-xs">
+                            <span className="flex-shrink-0 px-2 py-0.5 rounded-full bg-red-600 text-white font-black text-[9px] uppercase tracking-wide flex items-center gap-1 shadow-xs">
+                              <Radio className="w-3 h-3 animate-pulse text-white" />
+                              <span>{tPhone('নিউজ', 'NEWS')}</span>
                             </span>
-                            <span className="truncate text-gray-700 dark:text-gray-300 font-semibold">
-                              {tPhone(
-                                'রুম আইডি ও পাসওয়ার্ড ম্যাচ শুরুর ১৫ মিনিট আগে দেওয়া হবে।',
-                                'Room ID & Password will be released 15 mins before match.'
-                              )}
-                            </span>
+                            <div className="flex-1 overflow-hidden">
+                              <div className="text-[11px] font-bold text-gray-800 truncate">
+                                {settings?.noticeText || tPhone(
+                                  '🔥 FF RIVAL TOUR BD-তে স্বাগতম! প্রতিদিন টুর্নামেন্ট খেলুন এবং বিকাশ/নগদে প্রাইজ গ্রহণ করুন!',
+                                  '🔥 Welcome to FF RIVAL TOUR BD! Play daily tournaments & win cash via bKash/Nagad!'
+                                )}
+                              </div>
+                            </div>
                           </div>
 
-                          {/* Quick Banner */}
-                          <div className="relative rounded-2xl overflow-hidden h-28 bg-gradient-to-tr from-red-900 to-slate-900 p-3 flex flex-col justify-end text-white shadow-lg">
-                            <span className="text-[10px] font-extrabold uppercase tracking-widest text-amber-400">
-                              FF RIVAL TOUR BD 2026
-                            </span>
-                            <h3 className="text-sm font-black leading-tight">
-                              {tPhone('দৈনিক কাস্টম টুর্নামেন্ট লাইভ!', 'Daily Custom Tournaments Live!')}
-                            </h3>
-                            <p className="text-[9px] text-gray-300 mt-0.5">
-                              {tPhone(
-                                'স্বল্প এন্ট্রি ফি • দ্রুত বিকাশ/নগদে প্রাইজ উইথড্র',
-                                'Low Entry Fee • Instant bKash/Nagad Prize Withdrawal'
-                              )}
-                            </p>
+                          {/* 2. Interactive Image Carousel Slider (Admin Controlled) */}
+                          <div className="relative rounded-2xl overflow-hidden h-36 bg-gradient-to-tr from-slate-900 via-red-950 to-slate-900 border border-gray-200 shadow-md">
+                            {bannerSlides.map((slide, idx) => (
+                              <div
+                                key={slide.id || idx}
+                                className={`absolute inset-0 transition-opacity duration-700 ease-in-out p-3.5 flex flex-col justify-end text-white ${
+                                  idx === currentSlideIndex ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
+                                }`}
+                              >
+                                {slide.image && (
+                                  <img
+                                    src={slide.image}
+                                    alt={slide.title}
+                                    className="absolute inset-0 w-full h-full object-cover opacity-50"
+                                  />
+                                )}
+                                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
+                                <div className="relative z-10 space-y-1">
+                                  <span className="text-[9px] font-black uppercase tracking-wider text-amber-400 bg-black/60 px-2 py-0.5 rounded border border-amber-500/30 inline-block shadow-xs">
+                                    {slide.badge || 'FF RIVAL TOUR BD'}
+                                  </span>
+                                  <h3 className="text-xs sm:text-sm font-black leading-tight text-white drop-shadow">
+                                    {slide.title}
+                                  </h3>
+                                  <p className="text-[9px] text-gray-200 line-clamp-1 leading-snug">
+                                    {slide.subtitle}
+                                  </p>
+                                </div>
+                              </div>
+                            ))}
+
+                            {/* Slider Prev / Next Controls */}
+                            {bannerSlides.length > 1 && (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setCurrentSlideIndex((prev) => (prev - 1 + bannerSlides.length) % bannerSlides.length);
+                                  }}
+                                  className="absolute left-1.5 top-1/2 -translate-y-1/2 z-20 w-6 h-6 rounded-full bg-black/50 text-white hover:bg-black/80 flex items-center justify-center text-xs shadow"
+                                  aria-label="Previous Slide"
+                                >
+                                  ‹
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setCurrentSlideIndex((prev) => (prev + 1) % bannerSlides.length);
+                                  }}
+                                  className="absolute right-1.5 top-1/2 -translate-y-1/2 z-20 w-6 h-6 rounded-full bg-black/50 text-white hover:bg-black/80 flex items-center justify-center text-xs shadow"
+                                  aria-label="Next Slide"
+                                >
+                                  ›
+                                </button>
+
+                                {/* Pagination Dot Indicators */}
+                                <div className="absolute bottom-2 right-3 z-20 flex items-center gap-1">
+                                  {bannerSlides.map((_, dotIdx) => (
+                                    <button
+                                      key={dotIdx}
+                                      type="button"
+                                      onClick={() => setCurrentSlideIndex(dotIdx)}
+                                      className={`h-1.5 rounded-full transition-all ${
+                                        dotIdx === currentSlideIndex ? 'w-4 bg-amber-400' : 'w-1.5 bg-white/50'
+                                      }`}
+                                      aria-label={`Go to slide ${dotIdx + 1}`}
+                                    />
+                                  ))}
+                                </div>
+                              </>
+                            )}
                           </div>
 
                           {/* Category Cards Section */}
@@ -1123,37 +1202,44 @@ export default function MobileAppViewPage(props: any) {
                   {/* TAB 2: MY MATCHES */}
                   {activeTab === 'my-matches' && (
                     <div className="space-y-3">
-                      <div className="text-xs font-black uppercase tracking-wider text-red-500">
-                        {tPhone(`আপনার বুক করা ম্যাচ (${bookedMatchesList.length})`, `Your Booked Matches (${bookedMatchesList.length})`)}
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-black uppercase tracking-wider text-red-600">
+                          {tPhone(`আপনার বুক করা ম্যাচ (${bookedMatchesList.length})`, `Your Booked Matches (${bookedMatchesList.length})`)}
+                        </span>
+                        <span className="text-[10px] font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full border border-gray-200">
+                          🔒 100% Private Pass
+                        </span>
                       </div>
 
                       {bookedMatchesList.length === 0 ? (
-                        <div className="p-8 text-center text-gray-400 border border-dashed border-gray-500/30 rounded-xl">
-                          <Clock className="w-8 h-8 mx-auto mb-2 text-gray-500" />
-                          <p className="text-xs font-bold">
+                        <div className="p-8 text-center text-gray-500 bg-white border border-dashed border-gray-300 rounded-2xl space-y-2">
+                          <Clock className="w-8 h-8 mx-auto text-gray-400" />
+                          <p className="text-xs font-bold text-gray-800">
                             {tPhone('আপনি এখনও কোনো ম্যাচে জয়েন করেননি', 'You have not joined any match yet')}
+                          </p>
+                          <p className="text-[10px] text-gray-500">
+                            {tPhone(
+                              'হোম পেজ থেকে যেকোনো টুর্নামেন্টে জয়েন করুন। বুকিং কনফার্ম হলে এখানে আপনার গোপন রুম আইডি ও পাসওয়ার্ড দেখতে পাবেন।',
+                              'Join any tournament from Home. Your secret Room ID & Password will appear here once booked.'
+                            )}
                           </p>
                         </div>
                       ) : (
                         bookedMatchesList.map((bm) => (
                           <div
                             key={bm.id}
-                            className={`p-3.5 rounded-xl border space-y-3 ${
-                              phoneTheme === 'dark'
-                                ? 'bg-[#181824] border-white/10'
-                                : 'bg-white border-slate-200'
-                            }`}
+                            className="p-4 rounded-2xl border border-gray-200 bg-white space-y-3 shadow-md"
                           >
                             <div className="flex items-center justify-between">
-                              <span className="text-xs font-black text-gray-900 dark:text-white truncate max-w-[200px]">
+                              <span className="text-xs font-black text-gray-900 truncate max-w-[200px]">
                                 {bm.title}
                               </span>
-                              <span className="text-[10px] px-2 py-0.5 rounded-full font-black bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                              <span className="text-[10px] px-2 py-0.5 rounded-full font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
                                 CONFIRMED
                               </span>
                             </div>
 
-                            {/* Player IGN & Slot Info with Click to View Player Details */}
+                            {/* Player IGN & Slot Info */}
                             <div
                               onClick={() =>
                                 setSelectedPlayerForDetails({
@@ -1168,85 +1254,87 @@ export default function MobileAppViewPage(props: any) {
                                   guild: 'BD_RIVALS_ELITE',
                                 })
                               }
-                              className="p-2 rounded-lg bg-black/20 hover:bg-black/30 cursor-pointer border border-white/5 flex items-center justify-between text-[11px] transition-all"
+                              className="p-2.5 rounded-xl bg-gray-50 hover:bg-gray-100 cursor-pointer border border-gray-200 flex items-center justify-between text-xs transition-all"
                               title={tPhone('প্লেয়ার ডিটেইলস দেখুন', 'Click to view player details')}
                             >
                               <div>
-                                <span className="text-gray-400 block text-[9px] flex items-center gap-1">
-                                  Verified IGN <Eye className="w-2.5 h-2.5 text-amber-400" />
+                                <span className="text-gray-500 block text-[9px] font-bold flex items-center gap-1">
+                                  Verified IGN <Eye className="w-2.5 h-2.5 text-amber-500" />
                                 </span>
-                                <span className="font-bold text-amber-400">{bm.ign}</span>
+                                <span className="font-extrabold text-gray-900">{bm.ign}</span>
                               </div>
                               <div className="text-right">
-                                <span className="text-gray-400 block text-[9px]">
+                                <span className="text-gray-500 block text-[9px] font-bold">
                                   {bm.team ? tPhone(`টিম #${bm.team}`, `Team #${bm.team}`) : tPhone('স্লট নম্বর', 'Slot #')}
                                 </span>
-                                <span className="font-black text-emerald-400">
+                                <span className="font-black text-emerald-600 text-sm">
                                   #{bm.slot}
                                 </span>
                               </div>
                             </div>
 
-                            {/* Room Credentials Card */}
-                            <div className="p-2.5 rounded-lg bg-red-500/10 border border-red-500/20 space-y-2">
+                            {/* Private Room Credentials Card */}
+                            <div className="p-3.5 rounded-xl bg-red-50/80 border border-red-200 space-y-2.5 shadow-xs">
                               <div className="flex items-center justify-between text-xs">
-                                <span className="text-gray-400 flex items-center gap-1 text-[11px]">
-                                  <Key className="w-3.5 h-3.5 text-red-500" /> {tPhone('রুম আইডি:', 'Room ID:')}
+                                <span className="text-gray-800 flex items-center gap-1.5 font-extrabold text-xs">
+                                  <Key className="w-4 h-4 text-red-600" /> {tPhone('রুম আইডি:', 'Room ID:')}
                                 </span>
-                                <div className="flex items-center gap-1.5">
-                                  <span className="font-mono font-black text-white bg-black/40 px-2 py-0.5 rounded text-[11px]">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-mono font-black text-gray-950 bg-white px-3 py-1 rounded-lg border border-red-200 text-xs shadow-xs">
                                     {bm.roomId}
                                   </span>
                                   <button
                                     onClick={() => handleCopy(bm.roomId, `room-${bm.id}`)}
-                                    className="text-red-500 hover:text-red-400"
+                                    className="px-2.5 py-1 rounded-lg bg-red-600 hover:bg-red-700 text-white text-[10px] font-black flex items-center gap-1 shadow-xs transition-colors"
                                   >
                                     {copiedKey === `room-${bm.id}` ? (
-                                      <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
+                                      <CheckCircle className="w-3 h-3 text-emerald-200" />
                                     ) : (
-                                      <Copy className="w-3.5 h-3.5" />
+                                      <Copy className="w-3 h-3" />
                                     )}
+                                    <span>{copiedKey === `room-${bm.id}` ? 'কপি' : 'কপি'}</span>
                                   </button>
                                 </div>
                               </div>
 
                               <div className="flex items-center justify-between text-xs">
-                                <span className="text-gray-400 flex items-center gap-1 text-[11px]">
-                                  <Key className="w-3.5 h-3.5 text-red-500" /> {tPhone('পাসওয়ার্ড:', 'Password:')}
+                                <span className="text-gray-800 flex items-center gap-1.5 font-extrabold text-xs">
+                                  <Key className="w-4 h-4 text-red-600" /> {tPhone('পাসওয়ার্ড:', 'Password:')}
                                 </span>
-                                <div className="flex items-center gap-1.5">
-                                  <span className="font-mono font-black text-white bg-black/40 px-2 py-0.5 rounded text-[11px]">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-mono font-black text-gray-950 bg-white px-3 py-1 rounded-lg border border-red-200 text-xs shadow-xs">
                                     {bm.roomPass}
                                   </span>
                                   <button
                                     onClick={() => handleCopy(bm.roomPass, `pass-${bm.id}`)}
-                                    className="text-red-500 hover:text-red-400"
+                                    className="px-2.5 py-1 rounded-lg bg-red-600 hover:bg-red-700 text-white text-[10px] font-black flex items-center gap-1 shadow-xs transition-colors"
                                   >
                                     {copiedKey === `pass-${bm.id}` ? (
-                                      <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
+                                      <CheckCircle className="w-3 h-3 text-emerald-200" />
                                     ) : (
-                                      <Copy className="w-3.5 h-3.5" />
+                                      <Copy className="w-3 h-3" />
                                     )}
+                                    <span>{copiedKey === `pass-${bm.id}` ? 'কপি' : 'কপি'}</span>
                                   </button>
                                 </div>
                               </div>
                             </div>
 
-                            <div className="flex justify-between items-center text-[10px] text-gray-400 pt-1">
+                            <div className="flex justify-between items-center text-[10px] text-gray-500 pt-1 font-semibold">
                               <span>UID: {bm.uid}</span>
-                              <span className="text-amber-400 font-bold">{bm.time}</span>
+                              <span className="text-amber-600 font-bold">{bm.time}</span>
                             </div>
 
                             {/* Match Result Screenshot Proof Upload */}
-                            <div className="pt-2 border-t border-gray-100 dark:border-white/5 space-y-1.5">
+                            <div className="pt-2 border-t border-gray-200 space-y-1.5">
                               <div className="flex items-center justify-between text-[10px]">
-                                <span className="font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1">
-                                  <Camera className="w-3 h-3 text-red-500" />
+                                <span className="font-bold text-gray-800 flex items-center gap-1">
+                                  <Camera className="w-3.5 h-3.5 text-red-600" />
                                   {tPhone('রেজাল্ট স্ক্রিনশট প্রুফ', 'Result Screenshot Proof')}
                                 </span>
                                 {matchScreenshots[bm.id] && (
-                                  <span className="text-emerald-500 font-bold flex items-center gap-0.5">
-                                    <CheckCircle className="w-3 h-3" /> {tPhone('আপলোড সফল', 'Uploaded')}
+                                  <span className="text-emerald-600 font-bold flex items-center gap-0.5">
+                                    <CheckCircle className="w-3.5 h-3.5" /> {tPhone('আপলোড সফল', 'Uploaded')}
                                   </span>
                                 )}
                               </div>
@@ -1263,7 +1351,7 @@ export default function MobileAppViewPage(props: any) {
                         ))
                       )}
 
-                      <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-[10px] text-amber-500 leading-relaxed font-semibold">
+                      <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-[10px] text-amber-800 leading-relaxed font-bold">
                         ⚠️ {tPhone(
                           'সতর্কতা: রুম আইডি ও পাসওয়ার্ড অন্য কাউকে শেয়ার করলে অ্যাকাউন্ট স্থায়ীভাবে ব্যান করা হবে।',
                           'Warning: Sharing Room ID & Password with outsiders will result in an instant permanent ban.'
@@ -1485,32 +1573,36 @@ export default function MobileAppViewPage(props: any) {
                           {tPhone('সাম্প্রতিক লেনদেন হিস্ট্রি', 'Recent Transactions')}
                         </span>
                         <div className="space-y-1.5">
-                          {getTransactions().slice(0, 4).map((tx) => (
-                            <div
-                              key={tx.id}
-                              className={`p-2.5 rounded-xl border flex items-center justify-between text-xs ${
-                                phoneTheme === 'dark' ? 'bg-[#181824] border-white/10' : 'bg-white border-slate-200'
-                              }`}
-                            >
-                              <div>
+                          {getTransactions().length === 0 ? (
+                            <div className="p-4 rounded-xl border border-dashed border-gray-200 bg-gray-50 text-center text-[11px] text-gray-500 font-semibold">
+                              {tPhone('কোনো সাম্প্রতিক লেনদেন নেই', 'No recent transactions found')}
+                            </div>
+                          ) : (
+                            getTransactions().slice(0, 4).map((tx) => (
+                              <div
+                                key={tx.id}
+                                className="p-2.5 rounded-xl border border-gray-200 bg-white flex items-center justify-between text-xs shadow-xs"
+                              >
+                                <div>
+                                  <span
+                                    className={`font-black text-[11px] block ${
+                                      tx.type === 'CREDIT' ? 'text-emerald-600' : 'text-red-600'
+                                    }`}
+                                  >
+                                    {tx.type === 'CREDIT' ? '+ টাকা যোগ (ডিপোজিট)' : '- টাকা উত্তোলন (উইথড্র)'}
+                                  </span>
+                                  <span className="text-[9px] text-gray-500">{tx.reason}</span>
+                                </div>
                                 <span
-                                  className={`font-black text-[11px] block ${
-                                    tx.type === 'CREDIT' ? 'text-emerald-500' : 'text-red-500'
+                                  className={`font-black text-xs ${
+                                    tx.type === 'CREDIT' ? 'text-emerald-600' : 'text-red-600'
                                   }`}
                                 >
-                                  {tx.type === 'CREDIT' ? '+ টাকা যোগ (ডিপোজিট)' : '- টাকা উত্তোলন (উইথড্র)'}
+                                  {tx.type === 'CREDIT' ? '+' : '-'}৳{tx.amount.toFixed(2)}
                                 </span>
-                                <span className="text-[9px] text-gray-400">{tx.reason}</span>
                               </div>
-                              <span
-                                className={`font-black text-xs ${
-                                  tx.type === 'CREDIT' ? 'text-emerald-500' : 'text-red-500'
-                                }`}
-                              >
-                                {tx.type === 'CREDIT' ? '+' : '-'}৳{tx.amount.toFixed(2)}
-                              </span>
-                            </div>
-                          ))}
+                            ))
+                          )}
                         </div>
                       </div>
                     </div>
@@ -1560,34 +1652,6 @@ export default function MobileAppViewPage(props: any) {
                             >
                               {tPhone('নতুন রেজিস্টার', 'Register')}
                             </button>
-                          </div>
-
-                          {/* 5 Owner ID 1-Click Access for Admins */}
-                          <div className="pt-2 border-t border-gray-200 dark:border-white/10 space-y-1.5 text-left">
-                            <span className="text-[10px] font-black text-amber-500 uppercase tracking-wider block text-center flex items-center justify-center gap-1">
-                              <Shield className="w-3 h-3 text-amber-500" /> ওনার / অ্যাডমিন আইডি (১-ক্লিক লগইন)
-                            </span>
-                            <div className="grid grid-cols-2 gap-1.5">
-                              {[
-                                { label: 'ওনার ১', phone: '01700000001', pass: 'admin@owner1' },
-                                { label: 'ওনার ২', phone: '01700000002', pass: 'admin@owner2' },
-                                { label: 'ওনার ৩', phone: '01700000003', pass: 'admin@owner3' },
-                                { label: 'ওনার ৪', phone: '01700000004', pass: 'admin@owner4' },
-                                { label: 'ওনার ৫', phone: '01700000005', pass: 'admin@owner5' },
-                                { label: 'মাস্টার অ্যাডমিন', phone: '01700000000', pass: 'admin123' },
-                              ].map((adm) => (
-                                <button
-                                  key={adm.phone}
-                                  onClick={() => {
-                                    loginUser(adm.phone, adm.pass);
-                                  }}
-                                  className="p-1.5 rounded-lg bg-amber-500/10 border border-amber-500/25 hover:bg-amber-500/20 text-left transition-all"
-                                >
-                                  <div className="text-[10px] font-black text-amber-500">{adm.label}</div>
-                                  <div className="text-[8px] text-gray-400 font-mono">{adm.phone}</div>
-                                </button>
-                              ))}
-                            </div>
                           </div>
                         </div>
                       ) : (
@@ -2293,32 +2357,6 @@ export default function MobileAppViewPage(props: any) {
                   : 'রেজিস্ট্রেশন সম্পূর্ণ করুন'}
               </button>
             </form>
-
-            {/* 1-Click Fast Fill for 5 Owners */}
-            <div className="pt-2 border-t border-gray-200 dark:border-white/10 space-y-1.5">
-              <span className="text-[10px] font-black text-amber-500 uppercase tracking-wider block text-center flex items-center justify-center gap-1">
-                <Shield className="w-3 h-3 text-amber-500" /> ওনার / অ্যাডমিন আইডি (১-ক্লিক লগইন)
-              </span>
-              <div className="grid grid-cols-3 gap-1">
-                {[
-                  { label: 'ওনার ১', phone: '01700000001', pass: 'admin@owner1' },
-                  { label: 'ওনার ২', phone: '01700000002', pass: 'admin@owner2' },
-                  { label: 'ওনার ৩', phone: '01700000003', pass: 'admin@owner3' },
-                  { label: 'ওনার ৪', phone: '01700000004', pass: 'admin@owner4' },
-                  { label: 'ওনার ৫', phone: '01700000005', pass: 'admin@owner5' },
-                  { label: 'মাস্টার', phone: '01700000000', pass: 'admin123' },
-                ].map((adm) => (
-                  <button
-                    key={adm.phone}
-                    type="button"
-                    onClick={() => fillAuthDemo(adm.phone, adm.pass)}
-                    className="p-1 rounded bg-amber-500/10 hover:bg-amber-500/20 text-center border border-amber-500/25"
-                  >
-                    <div className="text-[9px] font-black text-amber-500">{adm.label}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
           </div>
         </div>
       )}

@@ -467,6 +467,19 @@ export default function DepositWithdrawModal({
               </button>
             </form>
           )}
+
+          {/* Telegram Support Link */}
+          <div className="pt-2 border-t border-gray-100 dark:border-white/10 text-center">
+            <a
+              href={settings?.telegramUrl || 'https://t.me/ffrivaltourbd'}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-1.5 text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline"
+            >
+              <span>💬 পেমেন্ট সংক্রান্ত যেকোনো সমস্যায় সরাসরি টেলিগ্রাম সাপোর্টে মেসেজ দিন</span>
+              <ArrowUpRight className="w-3.5 h-3.5" />
+            </a>
+          </div>
         </div>
       </div>
     </div>

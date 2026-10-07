@@ -9,6 +9,15 @@ import { runDailyAutoSchedulerIfDue } from '@/lib/match-scheduler';
  */
 export default function AutoSchedulerRunner() {
   useEffect(() => {
+    // Only run if admin explicitly enabled the automated bot in settings
+    const config = typeof window !== 'undefined' ? localStorage.getItem('ff_scheduler_config_v1') : null;
+    let enabled = false;
+    try {
+      if (config) enabled = JSON.parse(config).autoEnabled === true;
+    } catch (e) {}
+
+    if (!enabled) return;
+
     runDailyAutoSchedulerIfDue();
     const timer = setInterval(() => {
       runDailyAutoSchedulerIfDue();

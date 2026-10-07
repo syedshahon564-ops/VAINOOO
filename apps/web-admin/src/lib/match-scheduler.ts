@@ -50,7 +50,7 @@ export const DEFAULT_DAILY_QUOTA: Record<string, number> = {
 };
 
 export const DEFAULT_SCHEDULER_CONFIG: SchedulerConfig = {
-  autoEnabled: true,
+  autoEnabled: false,
   intervalHours: 24,
   lastRunTimestamp: null,
   nextRunTimestamp: null,

@@ -119,7 +119,24 @@ export default function HomePage() {
   const match1vs1 = [catLostToWin].filter(Boolean);
   const onlyHeadshot = [catHeadshot].filter(Boolean);
 
-  if (mounted && isApp) {
+  if (!mounted) {
+    return (
+      <div className="fixed inset-0 z-50 bg-[#0a0a0f] flex flex-col items-center justify-center p-6 space-y-4 text-center">
+        <div className="w-20 h-20 rounded-2xl bg-black/80 border-2 border-amber-500/40 p-2 flex items-center justify-center shadow-2xl shadow-amber-500/10 animate-pulse">
+          <img src="/logo.png" alt="FF Rivals Tour BD" className="w-full h-full object-contain" />
+        </div>
+        <div className="space-y-1">
+          <h2 className="text-white text-base sm:text-lg font-black uppercase tracking-wider">
+            FF Rivals <span className="text-red-600">Tour BD</span>
+          </h2>
+          <p className="text-gray-400 text-xs font-semibold">লোড হচ্ছে, অপেক্ষা করুন...</p>
+        </div>
+        <div className="w-8 h-8 border-3 border-red-600 border-t-transparent rounded-full animate-spin mt-2" />
+      </div>
+    );
+  }
+
+  if (isApp) {
     return <MobileAppViewPage standalone={true} />;
   }
 
