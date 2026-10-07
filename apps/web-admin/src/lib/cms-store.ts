@@ -50,6 +50,16 @@ export interface TopPlayerItem {
   winRate: string;
 }
 
+export interface BannerSlide {
+  id: string;
+  badge: string;
+  title: string;
+  subtitle: string;
+  image?: string;
+  actionText?: string;
+  actionUrl?: string;
+}
+
 export interface SiteSettings {
   siteName: string;
   tagline: string;
@@ -62,6 +72,7 @@ export interface SiteSettings {
   defaultRules: string;
   howToJoinGuide: string;
   apkDownloadUrl?: string;
+  banners?: BannerSlide[];
 }
 
 export interface CMSData {
@@ -226,6 +237,35 @@ export const INITIAL_SETTINGS: SiteSettings = {
   bkashNumber: '01712345678',
   nagadNumber: '01812345678',
   apkDownloadUrl: '',
+  banners: [
+    {
+      id: 'slide-1',
+      badge: 'CHAMPIONSHIP 2026',
+      title: 'JOIN DAILY FREE FIRE TOURNAMENTS & WIN REAL BDT',
+      subtitle: 'ব্যাটল রয়্যাল, ক্ল্যাশ স্কোয়াড ৪v৪, লোন উলফ এবং ১v১ হেডশট লড়াই। স্বয়ংক্রিয় স্লট বুকিং ও দ্রুত বিকাশ/নগদে প্রাইজ উইথড্র।',
+      image: '/logo.png',
+      actionText: 'Telegram Community',
+      actionUrl: 'https://t.me/ffrivaltourbd',
+    },
+    {
+      id: 'slide-2',
+      badge: 'MEGA PRIZE POOL',
+      title: 'SPECIAL BR SURVIVAL & CLASH SQUAD 4V4',
+      subtitle: 'প্রতিটি বুইয়াহ এবং কিলে নিশ্চিত ক্যাশ রিওয়ার্ড। সরাসরি বিকাশ ও নগদে সুপার ফাস্ট পেমেন্ট উইথড্রল!',
+      image: '/logo.png',
+      actionText: 'Join Community',
+      actionUrl: 'https://t.me/ffrivaltourbd',
+    },
+    {
+      id: 'slide-3',
+      badge: '100% SAFE & AUTOMATED',
+      title: 'ADVANCED ANTI-CHEAT & INSTANT WITHDRAW',
+      subtitle: 'সম্পূর্ণ ফেয়ার টুর্নামেন্ট সিকিউরিটি ও ২৪/৭ লাইভ কাস্টমার সাপোর্ট।',
+      image: '/logo.png',
+      actionText: 'Telegram Support',
+      actionUrl: 'https://t.me/ffrivaltourbd',
+    },
+  ],
   defaultRules: `⚠️ "FF RIVAL TOUR BD" BR Survival এর নিয়মাবলী এবং শর্তসমূহ:-
 
 ✅ ম্যাচের কাস্টমে ঢুকে একটি স্ক্রিনশট নিবেন, এবং আপনি মরে যাওয়ার পর একটি স্ক্রিনশট নিবেন রেজাল্টের, যেখানে আপনি কত নাম্বার হয়েছেন এবং সময় দেখায় ম্যাচটির হিস্ট্রিতে, এগুলো আমাদের এডমিন চাইলে দিতে হবে বাধ্যতামূলক! যদি না দিতে পারেন উইনিং প্রাইজ বাতিল পাবেন না!

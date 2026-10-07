@@ -93,71 +93,51 @@ export default function Navbar() {
   return (
     <header className="sticky top-0 z-50 backdrop-blur-md bg-white/95 dark:bg-[#07070a]/90 border-b border-gray-200 dark:border-white/10 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-        {/* Brand Logo with User-uploaded Logo (with secret owner 5-click entry) */}
-        <Link href="/" onClick={handleSecretLogoClick} className="flex items-center gap-3 group select-none">
-          <div className="w-12 h-12 rounded-xl overflow-hidden border border-amber-500/30 bg-black/60 shadow-lg shadow-amber-500/20 group-hover:scale-105 transition-all flex items-center justify-center p-0.5">
+        {/* Brand Logo with User-uploaded Logo */}
+        <Link href="/" onClick={handleSecretLogoClick} className="flex items-center gap-3 group select-none flex-shrink-0">
+          <div className="w-11 h-11 rounded-2xl overflow-hidden border border-amber-500/40 bg-black/80 shadow-md shadow-amber-500/20 group-hover:scale-105 transition-all flex items-center justify-center p-1">
             <img
-              src={settings?.logoUrl || '/logo.png'}
-              alt={settings?.siteName || 'FF RIVAL TOUR BD'}
+              src="/logo.png"
+              alt="FF Rivals Tour BD"
               className="w-full h-full object-contain"
             />
           </div>
-          <div>
-            <span className="text-xl font-black tracking-wider text-gray-900 dark:text-white flex items-center gap-1.5">
-              {settings?.siteName ? (
-                settings.siteName
-              ) : (
-                <>FF RIVAL <span className="text-red-600">TOUR BD</span></>
-              )}
+          <div className="flex flex-col">
+            <span className="text-base sm:text-lg font-black tracking-wide text-gray-900 dark:text-white leading-tight">
+              FF Rivals <span className="text-red-600">Tour BD</span>
             </span>
-            <p className="text-[10px] text-gray-500 dark:text-gray-400 font-semibold tracking-widest uppercase">
-              {settings?.tagline || t('ফ্রি ফায়ার টুর্নামেন্ট প্ল্যাটফর্ম', 'Free Fire Tournament Platform')}
+            <p className="text-[10px] text-gray-500 dark:text-gray-400 font-semibold tracking-wider uppercase leading-tight">
+              Free Fire Esports Arena
             </p>
           </div>
         </Link>
 
-        {/* Clean Nav Links with Compact Leaderboard and New Deposit Button */}
-        <nav className="hidden md:flex items-center gap-3 text-xs font-bold uppercase tracking-wider">
+        {/* Clean Nav Links (Home, Leaderboard, Deposit & Withdraw) */}
+        <nav className="hidden md:flex items-center gap-2.5 text-xs font-bold uppercase tracking-wider">
           <Link
             href="/"
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-gray-700 dark:text-gray-300 hover:text-red-600 hover:bg-gray-100 dark:hover:bg-white/5 transition-all"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-gray-700 dark:text-gray-300 hover:text-red-600 hover:bg-gray-100 dark:hover:bg-white/5 transition-all"
           >
             <Home className="w-4 h-4" /> {t('হোম', 'Home')}
           </Link>
 
           <Link
             href="/leaderboard"
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 hover:bg-amber-500/20 transition-all font-black"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 hover:bg-amber-500/20 transition-all font-black"
           >
             <Trophy className="w-4 h-4 text-amber-500" /> {t('লিডারবোর্ড', 'Leaderboard')}
           </Link>
 
-          <Link
-            href="/download"
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-gray-700 dark:text-gray-300 hover:text-red-600 hover:bg-gray-100 dark:hover:bg-white/5 transition-all font-black"
-          >
-            <Download className="w-4 h-4 text-red-600" /> {t('অ্যাপ ডাউনলোড', 'Download')}
-          </Link>
-
-          <button
-            onClick={() => setViewMode('app')}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 transition-all font-black"
-            title={t('মোবাইল অ্যাপ ভিউ ওপেন করুন', 'Switch to Mobile App View')}
-          >
-            <Smartphone className="w-4 h-4 text-amber-500" /> {t('মোবাইল ভিউ', 'App View')}
-          </button>
-
-          {/* New Prominent Deposit Button */}
           <button
             onClick={() => setShowDepositModal(true)}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black transition-all shadow-md shadow-emerald-600/20"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black transition-all shadow-md shadow-emerald-600/20"
           >
-            <ArrowDownRight className="w-4 h-4" /> {t('ডিপোজিট', 'Deposit')}
+            <ArrowDownRight className="w-4 h-4" /> {t('ডিপোজিট ও উইথড্র', 'Deposit & Withdraw')}
           </button>
         </nav>
 
         {/* Right Action Icons & User Balance */}
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-2.5 sm:gap-3.5">
           {/* Mobile Deposit Quick Button */}
           <button
             onClick={() => setShowDepositModal(true)}
