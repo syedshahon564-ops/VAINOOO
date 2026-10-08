@@ -153,9 +153,22 @@ export default function MatchDetailsPage({
 
       {/* 8. Full Detailed Rules List (Exact Bengali Text from Screenshots 1, 2, 3, 4) */}
       <div className="text-xs space-y-3.5 pt-2 leading-relaxed text-gray-800 dark:text-gray-200 font-medium">
+        {/* Category Specific Rules (from Admin CMS) */}
+        {settings.categoryRules?.[match.categorySlug] && (
+          <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 space-y-2 mb-3">
+            <h5 className="text-xs font-black text-amber-600 dark:text-amber-400 flex items-center gap-2">
+              <ShieldAlert className="w-4 h-4" />
+              এই ক্যাটাগরির বিশেষ টুর্নামেন্ট রুলস:
+            </h5>
+            <div className="text-xs whitespace-pre-line text-gray-800 dark:text-gray-200 font-mono leading-relaxed">
+              {settings.categoryRules[match.categorySlug]}
+            </div>
+          </div>
+        )}
+
         <p className="font-black text-amber-700 dark:text-amber-400 text-xs flex items-center gap-1.5">
           <span>⚠️</span>
-          <span>&quot;{settings.siteName || 'FF RIVAL TOUR BD'}&quot; BR Survival এর নিয়মাবলী এবং শর্তসমূহ:-</span>
+          <span>&quot;{settings.siteName || 'FF RIVAL TOUR BD'}&quot; এর সার্বজনীন নিয়মাবলী এবং শর্তসমূহ:-</span>
         </p>
 
         <p className="flex items-start gap-2">

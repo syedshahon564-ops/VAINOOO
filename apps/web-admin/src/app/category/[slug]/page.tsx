@@ -60,7 +60,37 @@ export default function CategoryDetailPage() {
     [allCategoryMatches]
   );
 
+  const [matchTypeFilter, setMatchTypeFilter] = useState<'ALL' | 'SOLO' | 'DUO' | 'SQUAD'>('ALL');
   const [activeTab, setActiveTab] = useState<'PLAY' | 'RESULT'>('PLAY');
+
+  const filteredCategoryMatches = React.useMemo(() => {
+    return categoryMatches.filter((m) => {
+      if (matchTypeFilter === 'ALL') return true;
+      const typeStr = (m.type || m.matchType || '').toUpperCase();
+      const titleStr = (m.title || '').toUpperCase();
+      if (matchTypeFilter === 'SOLO') {
+        return (
+          typeStr.includes('SOLO') ||
+          titleStr.includes('SOLO') ||
+          titleStr.includes('সোলো') ||
+          (m.totalSlots <= 2 && !typeStr.includes('DUO') && !titleStr.includes('DUO'))
+        );
+      }
+      if (matchTypeFilter === 'DUO') {
+        return typeStr.includes('DUO') || titleStr.includes('DUO') || titleStr.includes('ডুও');
+      }
+      if (matchTypeFilter === 'SQUAD') {
+        return (
+          typeStr.includes('SQUAD') ||
+          titleStr.includes('SQUAD') ||
+          titleStr.includes('স্কোয়াড') ||
+          typeStr.includes('4V4') ||
+          titleStr.includes('4V4')
+        );
+      }
+      return true;
+    });
+  }, [categoryMatches, matchTypeFilter]);
   const [showHowToPlay, setShowHowToPlay] = useState(false);
   const [detailsMatch, setDetailsMatch] = useState<MatchItem | null>(null);
   const [bookingMatch, setBookingMatch] = useState<MatchItem | null>(null);
@@ -245,9 +275,32 @@ export default function CategoryDetailPage() {
           </button>
         </div>
 
-        {/* Tab 1: PLAY (Match Cards) */}
+          {/* Tab 1: PLAY (Match Cards) */}
         {activeTab === 'PLAY' && (
-          <div className="pt-8 space-y-6">
+          <div className="pt-6 space-y-6">
+            {/* Top Match Type Sub-Filter (Solo, Duo, Squad) */}
+            <div className="flex items-center justify-center gap-2 max-w-lg mx-auto p-1 rounded-2xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10">
+              {[
+                { key: 'ALL', labelBn: 'সব ম্যাচ', labelEn: 'All' },
+                { key: 'SOLO', labelBn: 'সোলো (Solo)', labelEn: 'Solo' },
+                { key: 'DUO', labelBn: 'ডুও (Duo)', labelEn: 'Duo' },
+                { key: 'SQUAD', labelBn: 'স্কোয়াড (Squad)', labelEn: 'Squad' },
+              ].map((item) => (
+                <button
+                  key={item.key}
+                  type="button"
+                  onClick={() => setMatchTypeFilter(item.key as any)}
+                  className={`flex-1 py-2 px-3 rounded-xl text-xs font-black transition-all text-center ${
+                    matchTypeFilter === item.key
+                      ? 'bg-red-600 text-white shadow-md shadow-red-600/30'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                  }`}
+                >
+                  {t(item.labelBn, item.labelEn)}
+                </button>
+              ))}
+            </div>
+
             {matchDetailsScreen ? (
               <MatchDetailsPage
                 match={matchDetailsScreen}
@@ -262,7 +315,7 @@ export default function CategoryDetailPage() {
             ) : (
               <>
                 {/* If matches are empty, show clean empty state */}
-                {categoryMatches.length === 0 ? (
+                {filteredCategoryMatches.length === 0 ? (
                   <div className="p-12 text-center rounded-2xl border-2 border-dashed border-gray-200 dark:border-white/10 bg-white dark:bg-dark-card space-y-4">
                     <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-950/40 text-red-600 mx-auto flex items-center justify-center shadow-inner">
                       <Trophy className="w-8 h-8" />
@@ -272,10 +325,9 @@ export default function CategoryDetailPage() {
                         {t('বর্তমানে এই ক্যাটাগরিতে কোনো সক্রিয় ম্যাচ নেই', 'No Active Matches in This Category')}
                       </h3>
                       <p className="text-xs text-gray-500 dark:text-gray-400 max-w-md mx-auto">
-                        {t(
-                          'নতুন টুর্নামেন্ট খুব শীঘ্রই লাইভ হবে। আপনি চাইলে অ্যাডমিন প্যানেল থেকে যেকোনো সময় নতুন ম্যাচ যোগ করতে পারেন।',
-                          'New tournaments will be live soon. You can schedule or generate matches anytime from the admin panel.'
-                        )}
+                        {matchTypeFilter !== 'ALL'
+                          ? t(`এই ফিল্টারে (${matchTypeFilter}) কোনো সক্রিয় ম্যাচ পাওয়া যায়নি। অন্য ফিল্টার বেছে নিন।`, `No active matches found for this filter (${matchTypeFilter}).`)
+                          : t('নতুন টুর্নামেন্ট খুব শীঘ্রই লাইভ হবে। আপনি চাইলে অ্যাডমিন প্যানেল থেকে যেকোনো সময় নতুন ম্যাচ যোগ করতে পারেন।', 'New tournaments will be live soon.')}
                       </p>
                     </div>
                     <div className="pt-2">
@@ -289,7 +341,7 @@ export default function CategoryDetailPage() {
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {categoryMatches.map((m) => {
+                    {filteredCategoryMatches.map((m) => {
                       const participants = bookedParticipants[m.id] || [];
                       const filled = m.filledSlots || participants.length || 0;
                       const spotsLeft = Math.max(0, m.totalSlots - filled);

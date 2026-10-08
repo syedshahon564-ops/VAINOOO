@@ -42,8 +42,10 @@ import {
   Lock,
   Phone,
   Download,
+  RefreshCw,
 } from 'lucide-react';
 import { useCMS, MatchItem, TopPlayerItem } from '@/lib/cms-store';
+import { checkFreeFireUID } from '@/lib/ff-uid-checker';
 import RoomDetailsModal from '@/components/RoomDetailsModal';
 import SlotBookingModal from '@/components/SlotBookingModal';
 import PlayerDetailsModal, { PlayerDetailsData } from '@/components/PlayerDetailsModal';
@@ -210,6 +212,62 @@ export default function MobileAppViewPage(props: any) {
       }
     }
   }, []);
+
+  // Pull-to-refresh state
+  const [isPulling, setIsPulling] = useState(false);
+  const [pullDistance, setPullDistance] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const touchStartYRef = React.useRef(0);
+  const scrollContainerRef = React.useRef<HTMLDivElement>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (scrollContainerRef.current && scrollContainerRef.current.scrollTop <= 2) {
+      touchStartYRef.current = e.touches[0].clientY;
+    } else {
+      touchStartYRef.current = 0;
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!touchStartYRef.current || isRefreshing) return;
+    const currentY = e.touches[0].clientY;
+    const diff = currentY - touchStartYRef.current;
+    if (diff > 0 && scrollContainerRef.current && scrollContainerRef.current.scrollTop <= 2) {
+      const dist = Math.min(75, diff * 0.45);
+      setPullDistance(dist);
+      setIsPulling(true);
+    }
+  };
+
+  const handleTouchEnd = async () => {
+    if (pullDistance > 45 && !isRefreshing) {
+      setIsRefreshing(true);
+      setPullDistance(45);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('ff_cms_updated'));
+      }
+      const cur = getCurrentUser();
+      if (cur) setCurrentUser(cur);
+      await new Promise((r) => setTimeout(r, 650));
+      setIsRefreshing(false);
+    }
+    setIsPulling(false);
+    setPullDistance(0);
+    touchStartYRef.current = 0;
+  };
+
+  const handleUidChange = async (val: string) => {
+    setAuthUid(val);
+    const clean = val.trim().replace(/\D/g, '');
+    if (clean.length >= 8 && (!authIgn || authIgn.startsWith('OP_') || authIgn.startsWith('BD_') || authIgn.startsWith('RIVAL_'))) {
+      try {
+        const profile = await checkFreeFireUID(clean);
+        if (profile.isValid && profile.ign) {
+          setAuthIgn(profile.ign);
+        }
+      } catch {}
+    }
+  };
 
   // Finance Modal (Deposit & Withdraw)
   const [showFinanceModal, setShowFinanceModal] = useState(false);
@@ -464,6 +522,36 @@ export default function MobileAppViewPage(props: any) {
         : [],
     [selectedCategory, matches]
   );
+
+  const [subTypeFilter, setSubTypeFilter] = useState<'ALL' | 'SOLO' | 'DUO' | 'SQUAD'>('ALL');
+  const filteredCurrentMatches = React.useMemo(() => {
+    return currentCategoryMatches.filter((m) => {
+      if (subTypeFilter === 'ALL') return true;
+      const typeStr = (m.type || m.matchType || '').toUpperCase();
+      const titleStr = (m.title || '').toUpperCase();
+      if (subTypeFilter === 'SOLO') {
+        return (
+          typeStr.includes('SOLO') ||
+          titleStr.includes('SOLO') ||
+          titleStr.includes('সোলো') ||
+          (m.totalSlots <= 2 && !typeStr.includes('DUO') && !titleStr.includes('DUO'))
+        );
+      }
+      if (subTypeFilter === 'DUO') {
+        return typeStr.includes('DUO') || titleStr.includes('DUO') || titleStr.includes('ডুও');
+      }
+      if (subTypeFilter === 'SQUAD') {
+        return (
+          typeStr.includes('SQUAD') ||
+          titleStr.includes('SQUAD') ||
+          titleStr.includes('স্কোয়াড') ||
+          typeStr.includes('4V4') ||
+          titleStr.includes('4V4')
+        );
+      }
+      return true;
+    });
+  }, [currentCategoryMatches, subTypeFilter]);
 
   if (appLoading) {
     return (
@@ -827,8 +915,27 @@ export default function MobileAppViewPage(props: any) {
                   </div>
                 )}
 
-                {/* SCROLLABLE BODY */}
-                <div className="flex-1 overflow-y-auto p-3 space-y-3">
+                {/* SCROLLABLE BODY with Touch Pull-to-Refresh */}
+                <div
+                  ref={scrollContainerRef}
+                  onTouchStart={handleTouchStart}
+                  onTouchMove={handleTouchMove}
+                  onTouchEnd={handleTouchEnd}
+                  className="flex-1 overflow-y-auto p-3 space-y-3 relative"
+                >
+                  {/* Pull-to-refresh spinner indicator */}
+                  {(isPulling || isRefreshing) && (
+                    <div
+                      className="flex items-center justify-center transition-all duration-150 overflow-hidden"
+                      style={{ height: `${pullDistance}px` }}
+                    >
+                      <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/80 text-white text-[10px] font-bold shadow-lg">
+                        <RefreshCw className={`w-3.5 h-3.5 text-amber-400 ${isRefreshing ? 'animate-spin' : ''}`} />
+                        <span>{isRefreshing ? 'রিফ্রেশ হচ্ছে...' : 'ছেড়ে দিলে রিফ্রেশ হবে'}</span>
+                      </div>
+                    </div>
+                  )}
+
                   {/* FULL DETAILS PAGE (Screenshot 4, 3, 2, 1) */}
                   {matchDetailsScreen ? (
                     <MatchDetailsPage
@@ -858,12 +965,12 @@ export default function MobileAppViewPage(props: any) {
                               onClick={() => setCategoryTab('PLAY')}
                               className={`py-2 rounded-lg flex items-center justify-center gap-1.5 transition-all text-xs ${
                                 categoryTab === 'PLAY'
-                                  ? 'bg-red-600 text-white shadow font-black'
+                                    ? 'bg-red-600 text-white shadow font-black'
                                   : 'text-gray-600 hover:text-gray-900 font-bold'
                               }`}
                             >
                               <span>
-                                {tPhone('সক্রিয় ম্যাচ', 'Active Matches')} ({currentCategoryMatches.length})
+                                {tPhone('সক্রিয় ম্যাচ', 'Active Matches')} ({filteredCurrentMatches.length})
                               </span>
                             </button>
                             <button
@@ -881,19 +988,44 @@ export default function MobileAppViewPage(props: any) {
                             </button>
                           </div>
 
+                          {/* Match Sub-Type Switcher (Solo, Duo, Squad) */}
+                          <div className="flex items-center gap-1 p-1 rounded-xl border border-gray-200 bg-white shadow-xs">
+                            {[
+                              { key: 'ALL', labelBn: 'সব ম্যাচ', labelEn: 'All' },
+                              { key: 'SOLO', labelBn: 'সোলো (Solo)', labelEn: 'Solo' },
+                              { key: 'DUO', labelBn: 'ডুও (Duo)', labelEn: 'Duo' },
+                              { key: 'SQUAD', labelBn: 'স্কোয়াড (Squad)', labelEn: 'Squad' },
+                            ].map((item) => (
+                              <button
+                                key={item.key}
+                                type="button"
+                                onClick={() => setSubTypeFilter(item.key as any)}
+                                className={`flex-1 py-1.5 rounded-lg text-[10px] font-black transition-all text-center ${
+                                  subTypeFilter === item.key
+                                    ? 'bg-red-600 text-white shadow font-black'
+                                    : 'text-gray-600 hover:text-gray-900 font-bold'
+                                }`}
+                              >
+                                {tPhone(item.labelBn, item.labelEn)}
+                              </button>
+                            ))}
+                          </div>
+
                           {categoryTab === 'PLAY' ? (
-                            currentCategoryMatches.length === 0 ? (
+                            filteredCurrentMatches.length === 0 ? (
                             <div className="p-8 text-center rounded-2xl border border-dashed border-gray-300 bg-white text-gray-500 space-y-2">
                               <Trophy className="w-8 h-8 mx-auto text-gray-400" />
                               <p className="text-xs font-bold text-gray-700">
                                 {tPhone('বর্তমানে কোনো ম্যাচ নেই', 'No Matches Active Currently')}
                               </p>
                               <p className="text-[10px] text-gray-500">
-                                {tPhone('অ্যাডমিন প্যানেল থেকে নতুন ম্যাচ শিডিউল করা হলে এখানে দেখতে পাবেন।', 'New tournaments will appear here when scheduled by Admin.')}
+                                {subTypeFilter !== 'ALL'
+                                  ? tPhone(`এই ফিল্টারে (${subTypeFilter}) কোনো ম্যাচ পাওয়া যায়নি। অন্য ফিল্টার সিলেক্ট করুন।`, `No matches found for ${subTypeFilter}.`)
+                                  : tPhone('অ্যাডমিন প্যানেল থেকে নতুন ম্যাচ শিডিউল করা হলে এখানে দেখতে পাবেন।', 'New tournaments will appear here when scheduled by Admin.')}
                               </p>
                             </div>
                           ) : (
-                            currentCategoryMatches.map((m) => {
+                            filteredCurrentMatches.map((m) => {
                               const matchBookings = bookedMatchesList
                                 .filter((bm) => bm.title === m.title)
                                 .map((bm) => bm.ign);
@@ -2382,9 +2514,12 @@ export default function MobileAppViewPage(props: any) {
                     </label>
                     <input
                       type="text"
-                      placeholder="e.g. 192837465"
+                      placeholder="e.g. 192837465 (স্বয়ংক্রিয় IGN ডিটেক্ট হবে)"
                       value={authUid}
-                      onChange={(e) => setAuthUid(e.target.value)}
+                      onChange={(e) => handleUidChange(e.target.value)}
+                      onBlur={() => {
+                        if (authUid) handleUidChange(authUid);
+                      }}
                       className="w-full px-3 py-2 rounded-xl bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-white/10 text-xs text-gray-900 dark:text-white focus:outline-none focus:border-red-500 font-mono"
                     />
                   </div>

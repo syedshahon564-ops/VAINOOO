@@ -220,7 +220,7 @@ export default function SlotBookingModal({
       return;
     }
 
-    // Validation for Squad (Requires all 4 players)
+    // Validation for Squad (Requires all 4 players IGN)
     if (isSquad) {
       if (!selectedTeam) {
         setErrorMessage('দয়া করে আপনার পছন্দের স্কোয়াড টিম / স্লট নির্বাচন করুন (যেমন স্লট #৩)।');
@@ -230,11 +230,7 @@ export default function SlotBookingModal({
       for (let i = 0; i < 4; i++) {
         const p = squadPlayers[i];
         if (!p.ign.trim()) {
-          setErrorMessage(`প্লেয়ার #${i + 1} এর ইন-গেম নাম (IGN) লিখুন। ৪ জন প্লেয়ার বাধ্যতামূলক!`);
-          return;
-        }
-        if (!p.uid.trim()) {
-          setErrorMessage(`প্লেয়ার #${i + 1} এর Free Fire UID লিখুন। ৪ জন প্লেয়ার বাধ্যতামূলক!`);
+          setErrorMessage(`প্লেয়ার #${i + 1} এর ইন-গেম নাম (IGN) লিখুন। ৪ জন প্লেয়ারের নাম বাধ্যতামূলক!`);
           return;
         }
       }
@@ -243,8 +239,8 @@ export default function SlotBookingModal({
       setBookedSlotsMap((prev) => ({
         ...prev,
         [selectedTeam]: {
-          ign: squadPlayers[0].ign,
-          uid: squadPlayers[0].uid,
+          ign: squadPlayers[0].ign.trim(),
+          uid: squadPlayers[0].uid || '---',
           badge: 'SQUAD',
         },
       }));
@@ -252,26 +248,26 @@ export default function SlotBookingModal({
       onSuccess({
         slotNumber: selectedTeam,
         teamNumber: selectedTeam,
-        ign: squadPlayers[0].ign,
-        uid: squadPlayers[0].uid,
+        ign: squadPlayers[0].ign.trim(),
+        uid: squadPlayers[0].uid || '---',
         players: squadPlayers.map((p, idx) => ({
           ign: p.ign.trim(),
-          uid: p.uid.trim(),
+          uid: p.uid.trim() || '---',
           slotInTeam: idx + 1,
         })),
       });
       return;
     }
 
-    // Validation for Duo (Requires 2 players)
+    // Validation for Duo (Requires 2 players IGN)
     if (isDuo) {
       if (!selectedSlotNumber) {
         setErrorMessage('দয়া করে ডুও টিম নির্বাচন করুন।');
         return;
       }
       for (let i = 0; i < 2; i++) {
-        if (!duoPlayers[i].ign.trim() || !duoPlayers[i].uid.trim()) {
-          setErrorMessage(`প্লেয়ার #${i + 1} এর নাম ও UID পূরণ করা বাধ্যতামূলক।`);
+        if (!duoPlayers[i].ign.trim()) {
+          setErrorMessage(`প্লেয়ার #${i + 1} এর ইন-গেম নাম (IGN) পূরণ করা বাধ্যতামূলক।`);
           return;
         }
       }
@@ -279,8 +275,8 @@ export default function SlotBookingModal({
       setBookedSlotsMap((prev) => ({
         ...prev,
         [selectedSlotNumber]: {
-          ign: duoPlayers[0].ign,
-          uid: duoPlayers[0].uid,
+          ign: duoPlayers[0].ign.trim(),
+          uid: duoPlayers[0].uid || '---',
           badge: 'DUO',
         },
       }));
@@ -288,32 +284,32 @@ export default function SlotBookingModal({
       onSuccess({
         slotNumber: selectedSlotNumber,
         teamNumber: selectedSlotNumber,
-        ign: duoPlayers[0].ign,
-        uid: duoPlayers[0].uid,
+        ign: duoPlayers[0].ign.trim(),
+        uid: duoPlayers[0].uid || '---',
         players: duoPlayers.map((p, idx) => ({
           ign: p.ign.trim(),
-          uid: p.uid.trim(),
+          uid: p.uid.trim() || '---',
           slotInTeam: idx + 1,
         })),
       });
       return;
     }
 
-    // Validation for Solo / CS / 1v1
+    // Validation for Solo / CS / 1v1 (Requires 1 player IGN)
     if (!selectedSlotNumber) {
       setErrorMessage('দয়া করে একটি খালি স্লট নির্বাচন করুন।');
       return;
     }
-    if (!soloPlayer.ign.trim() || !soloPlayer.uid.trim()) {
-      setErrorMessage('আপনার Free Fire নাম (IGN) ও UID পূরণ করা বাধ্যতামূলক।');
+    if (!soloPlayer.ign.trim()) {
+      setErrorMessage('আপনার Free Fire ইন-গেম নাম (IGN) লিখুন।');
       return;
     }
 
     setBookedSlotsMap((prev) => ({
       ...prev,
       [selectedSlotNumber]: {
-        ign: soloPlayer.ign,
-        uid: soloPlayer.uid,
+        ign: soloPlayer.ign.trim(),
+        uid: soloPlayer.uid || '---',
         badge: 'SOLO',
       },
     }));
@@ -321,11 +317,11 @@ export default function SlotBookingModal({
     onSuccess({
       slotNumber: selectedSlotNumber,
       ign: soloPlayer.ign.trim(),
-      uid: soloPlayer.uid.trim(),
+      uid: soloPlayer.uid || '---',
       players: [
         {
           ign: soloPlayer.ign.trim(),
-          uid: soloPlayer.uid.trim(),
+          uid: soloPlayer.uid || '---',
           slotInTeam: 1,
         },
       ],
@@ -464,36 +460,11 @@ export default function SlotBookingModal({
                         )}
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {/* UID Input with verify button */}
-                        <div className="flex items-center gap-1">
-                          <input
-                            type="text"
-                            placeholder="Free Fire UID (e.g. 192837465)"
-                            value={player.uid}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              setSquadPlayers((prev) =>
-                                prev.map((p, i) => (i === idx ? { ...p, uid: val } : p))
-                              );
-                            }}
-                            className="flex-1 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/40 text-xs font-mono font-bold focus:outline-none focus:border-red-500"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => handleVerifySquadPlayer(idx)}
-                            disabled={player.checking}
-                            className="px-2.5 py-1.5 rounded-lg text-[10px] font-bold bg-gray-200 dark:bg-white/10 hover:bg-red-600 hover:text-white transition-colors"
-                            title="Auto fetch player name from Free Fire"
-                          >
-                            {player.checking ? '...' : 'যাচাই'}
-                          </button>
-                        </div>
-
-                        {/* In-Game Name (IGN) */}
+                      <div>
+                        {/* Only In-Game Name (IGN) */}
                         <input
                           type="text"
-                          placeholder="ইন-গেম নাম / IGN (e.g. BDX_STRIKER)"
+                          placeholder={`প্লেয়ার #${idx + 1} এর ইন-গেম নাম / IGN (যেমন: BDX_STRIKER)`}
                           value={player.ign}
                           onChange={(e) => {
                             const val = e.target.value;
@@ -501,7 +472,7 @@ export default function SlotBookingModal({
                               prev.map((p, i) => (i === idx ? { ...p, ign: val } : p))
                             );
                           }}
-                          className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/40 text-xs font-bold focus:outline-none focus:border-red-500"
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/40 text-xs font-bold text-gray-900 dark:text-white focus:outline-none focus:border-red-500 shadow-xs"
                         />
                       </div>
                     </div>
@@ -552,31 +523,10 @@ export default function SlotBookingModal({
                   ২ জন প্লেয়ারের তথ্য (Both Players Required):
                 </h4>
                 {duoPlayers.map((player, idx) => (
-                  <div key={idx} className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    <div className="flex items-center gap-1">
-                      <input
-                        type="text"
-                        placeholder={`প্লেয়ার #${idx + 1} UID`}
-                        value={player.uid}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setDuoPlayers((prev) =>
-                            prev.map((p, i) => (i === idx ? { ...p, uid: val } : p))
-                          );
-                        }}
-                        className="flex-1 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-white/10 text-xs font-mono"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => handleVerifyDuoPlayer(idx)}
-                        className="px-2 py-1 bg-gray-200 dark:bg-white/10 rounded text-[10px]"
-                      >
-                        যাচাই
-                      </button>
-                    </div>
+                  <div key={idx}>
                     <input
                       type="text"
-                      placeholder={`প্লেয়ার #${idx + 1} IGN`}
+                      placeholder={`প্লেয়ার #${idx + 1} এর ইন-গেম নাম / IGN (যেমন: BDX_STRIKER)`}
                       value={player.ign}
                       onChange={(e) => {
                         const val = e.target.value;
@@ -584,7 +534,7 @@ export default function SlotBookingModal({
                           prev.map((p, i) => (i === idx ? { ...p, ign: val } : p))
                         );
                       }}
-                      className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-white/10 text-xs"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/40 text-xs font-bold text-gray-900 dark:text-white focus:outline-none focus:border-red-500 shadow-xs"
                     />
                   </div>
                 ))}
@@ -628,39 +578,19 @@ export default function SlotBookingModal({
               </div>
 
               {/* Solo Player Details */}
-              <div className="p-4 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 space-y-3">
-                <h4 className="text-xs font-black text-gray-900 dark:text-white">
-                  আপনার প্লেয়ার ডিটেইলস:
-                </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <div className="flex items-center gap-1">
-                    <input
-                      type="text"
-                      placeholder="Free Fire UID"
-                      value={soloPlayer.uid}
-                      onChange={(e) =>
-                        setSoloPlayer((prev) => ({ ...prev, uid: e.target.value }))
-                      }
-                      className="flex-1 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-white/10 text-xs font-mono font-bold"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleVerifySoloPlayer}
-                      className="px-2.5 py-1.5 rounded-lg text-[10px] font-bold bg-gray-200 dark:bg-white/10"
-                    >
-                      যাচাই
-                    </button>
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="ইন-গেম নাম / IGN"
-                    value={soloPlayer.ign}
-                    onChange={(e) =>
-                      setSoloPlayer((prev) => ({ ...prev, ign: e.target.value }))
-                    }
-                    className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-white/10 text-xs font-bold"
-                  />
-                </div>
+              <div className="p-4 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 space-y-2">
+                <label className="text-xs font-black text-gray-900 dark:text-white block">
+                  আপনার Free Fire ইন-গেম নাম (IGN):
+                </label>
+                <input
+                  type="text"
+                  placeholder="যেমন: ꧁★PRO-KILLER★꧂"
+                  value={soloPlayer.ign}
+                  onChange={(e) =>
+                    setSoloPlayer((prev) => ({ ...prev, ign: e.target.value }))
+                  }
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#181824] text-xs font-black placeholder:font-normal focus:outline-none focus:border-red-500 shadow-sm"
+                />
               </div>
             </div>
           )}
@@ -734,29 +664,18 @@ export default function SlotBookingModal({
 
               {/* Player details */}
               <div className="p-4 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 space-y-2">
-                <h4 className="text-xs font-black text-gray-900 dark:text-white">
-                  আপনার প্লেয়ার ডিটেইলস:
-                </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <input
-                    type="text"
-                    placeholder="Free Fire UID"
-                    value={soloPlayer.uid}
-                    onChange={(e) =>
-                      setSoloPlayer((prev) => ({ ...prev, uid: e.target.value }))
-                    }
-                    className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-white/10 text-xs font-mono font-bold"
-                  />
-                  <input
-                    type="text"
-                    placeholder="ইন-গেম নাম / IGN"
-                    value={soloPlayer.ign}
-                    onChange={(e) =>
-                      setSoloPlayer((prev) => ({ ...prev, ign: e.target.value }))
-                    }
-                    className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-white/10 text-xs font-bold"
-                  />
-                </div>
+                <label className="text-xs font-black text-gray-900 dark:text-white block">
+                  আপনার Free Fire ইন-গেম নাম (IGN):
+                </label>
+                <input
+                  type="text"
+                  placeholder="যেমন: ꧁★PRO-KILLER★꧂"
+                  value={soloPlayer.ign}
+                  onChange={(e) =>
+                    setSoloPlayer((prev) => ({ ...prev, ign: e.target.value }))
+                  }
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#181824] text-xs font-black placeholder:font-normal focus:outline-none focus:border-red-500 shadow-sm"
+                />
               </div>
             </div>
           )}
@@ -795,26 +714,18 @@ export default function SlotBookingModal({
 
               {/* Player details */}
               <div className="p-4 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 space-y-2">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <input
-                    type="text"
-                    placeholder="Free Fire UID"
-                    value={soloPlayer.uid}
-                    onChange={(e) =>
-                      setSoloPlayer((prev) => ({ ...prev, uid: e.target.value }))
-                    }
-                    className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-white/10 text-xs font-mono font-bold"
-                  />
-                  <input
-                    type="text"
-                    placeholder="ইন-গেম নাম / IGN"
-                    value={soloPlayer.ign}
-                    onChange={(e) =>
-                      setSoloPlayer((prev) => ({ ...prev, ign: e.target.value }))
-                    }
-                    className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-white/10 text-xs font-bold"
-                  />
-                </div>
+                <label className="text-xs font-black text-gray-900 dark:text-white block">
+                  আপনার Free Fire ইন-গেম নাম (IGN):
+                </label>
+                <input
+                  type="text"
+                  placeholder="যেমন: ꧁★PRO-KILLER★꧂"
+                  value={soloPlayer.ign}
+                  onChange={(e) =>
+                    setSoloPlayer((prev) => ({ ...prev, ign: e.target.value }))
+                  }
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#181824] text-xs font-black placeholder:font-normal focus:outline-none focus:border-red-500 shadow-sm"
+                />
               </div>
             </div>
           )}

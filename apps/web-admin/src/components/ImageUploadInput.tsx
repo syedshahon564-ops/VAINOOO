@@ -34,6 +34,58 @@ export default function ImageUploadInput({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+// Client-side Canvas Image Compression helper to avoid localStorage QuotaExceededError
+async function compressImageToDataUrl(
+  file: File,
+  maxWidth = 900,
+  maxHeight = 900,
+  quality = 0.75
+): Promise<string> {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const src = e.target?.result as string;
+      if (!src) return resolve('');
+
+      const img = new Image();
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth || height > maxHeight) {
+          if (width > height) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          } else {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, width);
+        canvas.height = Math.max(1, height);
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          return resolve(src);
+        }
+
+        ctx.drawImage(img, 0, 0, width, height);
+        try {
+          const dataUrl = canvas.toDataURL('image/jpeg', quality);
+          resolve(dataUrl);
+        } catch {
+          resolve(src);
+        }
+      };
+      img.onerror = () => resolve(src);
+      img.src = src;
+    };
+    reader.onerror = () => resolve('');
+    reader.readAsDataURL(file);
+  });
+}
+
   const processFile = async (file: File) => {
     if (!file.type.startsWith('image/')) {
       setErrorMsg('অনুগ্রহ করে শুধুমাত্র ইমেজ (JPG, PNG, WEBP) ফাইল সিলেক্ট করুন।');
@@ -44,45 +96,42 @@ export default function ImageUploadInput({
     setIsUploading(true);
 
     try {
-      // 1. Try uploading to /api/upload
-      const formData = new FormData();
-      formData.append('file', file);
+      // Step 1: Compress image on client-side to prevent memory overload & quota errors
+      const compressedDataUrl = await compressImageToDataUrl(file);
 
-      const res = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
-      });
+      // Step 2: Try uploading to /api/upload
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
 
-      if (res.ok) {
-        const data = await res.json();
-        if (data.url) {
-          onChange(data.url);
-          setIsUploading(false);
-          return;
+        const res = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.url) {
+            onChange(data.url);
+            setIsUploading(false);
+            return;
+          }
         }
+      } catch (uploadErr) {
+        console.warn('API upload unavailable, using compressed data URL:', uploadErr);
       }
 
-      // 2. Fallback to client-side compressed Data URL
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const result = e.target?.result as string;
-        onChange(result);
-        setIsUploading(false);
-      };
-      reader.onerror = () => {
-        setErrorMsg('ফাইলটি পড়া সম্ভব হয়নি।');
-        setIsUploading(false);
-      };
-      reader.readAsDataURL(file);
+      // Step 3: If API upload didn't return a URL, use compressed data URL directly
+      if (compressedDataUrl) {
+        onChange(compressedDataUrl);
+      } else {
+        setErrorMsg('ইমেজ প্রসেস করতে সমস্যা হয়েছে।');
+      }
+      setIsUploading(false);
     } catch (err: any) {
-      console.warn('API upload fallback to Data URL:', err);
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const result = e.target?.result as string;
-        onChange(result);
-        setIsUploading(false);
-      };
-      reader.readAsDataURL(file);
+      console.error('Image processing error:', err);
+      setErrorMsg('ইমেজ আপলোড ব্যর্থ হয়েছে।');
+      setIsUploading(false);
     }
   };
 

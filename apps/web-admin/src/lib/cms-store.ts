@@ -17,6 +17,7 @@ export interface MatchItem {
   totalSlots: number;
   filledSlots: number;
   type: string; // 'Squad' | 'Solo' | 'Duo' | '4 vs 4' | '1 vs 1'
+  matchType?: string;
   bannerImage?: string;
   rules?: string;
   roomId?: string;
@@ -70,6 +71,7 @@ export interface SiteSettings {
   bkashNumber: string;
   nagadNumber: string;
   defaultRules: string;
+  categoryRules?: Record<string, string>;
   howToJoinGuide: string;
   apkDownloadUrl?: string;
   banners?: BannerSlide[];
@@ -299,6 +301,29 @@ survival match এ বেশিরভাগ ম্যাচে সবাই এ�
 
 ✔️ যেকোন সমস্যা বা সহযোগিতার ক্ষেত্রে আমাদের SUPPORT এ যোগাযোগ করতে হবে।
 FF RIVAL TOUR BD এর সিদ্ধান্ত চূড়ান্ত সিদ্ধান্ত 👌`,
+  categoryRules: {
+    'clash-squad': `🔥 Clash Squad (CS 4v4) বিশেষ নিয়মাবলী:
+1. লিমিটেড এমো (Limited Ammo): Yes / No (ম্যাচ ডিটেইলস অনুযায়ী)।
+2. গ্রেনেড ও স্মোক নিষিদ্ধ (No Grenade & Flashbang)।
+3. ক্যারেক্টার স্কিল (Character Skill): No / Yes।
+4. গান প্রোপার্টি (Gun Attributes): No।
+5. এমুলেটর প্লেয়ার সম্পূর্ণ নিষিদ্ধ (Mobile Only)।
+6. রুম শুরুর ৫ মিনিট পূর্বে আইডি ও পাসওয়ার্ড প্রদান করা হবে।`,
+    'special-match': `⭐ Special Match & Headshot Only নিয়মাবলী:
+1. শুধুমাত্র হেডশট শট গণনা করা হবে (Only Headshot Mode)।
+2. হ্যাক, স্ক্রিপ্ট বা কনফিগ ব্যবহার করলে অ্যাকাউন্ট আজীবনের জন্য ব্যান।
+3. ম্যাচ শেষে উইনিং রেজাল্টের ফুল স্ক্রিনশট নেওয়া বাধ্যতামূলক।
+4. লেভেল সর্বনিম্ন ৫০+ হতে হবে।`,
+    'regular-match': `⚔️ Classic Battle Royale (BR) নিয়মাবলী:
+1. ম্যাপ: Bermuda / Purgatory / Kalahari (ম্যাচ শিডিউল অনুযায়ী)।
+2. টিমমেট কিলিং বা গ্রিফিং করলে কোনো রিফান্ড নেই।
+3. সঠিক স্লটে না বসলে কাস্টম হোস্ট কিক করে দিবে।
+4. প্রতি কিল ও বুইয়াহ প্রাইজ স্বয়ংক্রিয়ভাবে ওয়ালেটে যুক্ত হবে।`,
+    'lone-wolf': `🎯 Lone Wolf / 1v1 Custom Duel নিয়মাবলী:
+1. শুধুমাত্র ডেজার্ট ঈগল / উডপিকার / শটগান দিয়ে ওয়ান ট্যাপ ফাইট।
+2. গ্লু ওয়াল আনলিমিটেড।
+3. হ্যাক বা ম্যাক্রো সম্পূর্ণ নিষিদ্ধ।`,
+  },
   howToJoinGuide: `১. আপনার পছন্দের ক্যাটাগরি বেছে নিন এবং সক্রিয় টুর্নামেন্টে ক্লিক করুন।
 ২. খালি স্লট থেকে আপনার পছন্দের স্লট সিলেক্ট করে 'স্লট বুক করুন' বাটনে ক্লিক করুন।
 ৩. ম্যাচ শুরুর ১৫ মিনিট আগে এই পেজে রুম আইডি ও পাসওয়ার্ড চলে আসবে।

@@ -208,10 +208,34 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
       </div>
 
+      {/* Mobile Horizontal Quick Nav (Visible only on mobile/tablet) */}
+      <div className="lg:hidden mb-6 -mx-4 px-4 overflow-x-auto pb-2 scrollbar-none">
+        <div className="flex items-center gap-2 min-w-max">
+          {links.map((item) => {
+            const Icon = item.icon;
+            const isActive = pathname === item.href;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-black whitespace-nowrap transition-all border ${
+                  isActive
+                    ? 'bg-red-600 text-white border-red-600 shadow-md shadow-red-600/30'
+                    : 'bg-white dark:bg-[#12121a] text-gray-700 dark:text-gray-300 border-gray-200 dark:border-white/10 hover:border-red-500'
+                }`}
+              >
+                <Icon className="w-4 h-4 flex-shrink-0" />
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Sidebar */}
-        <aside className="lg:col-span-3 space-y-6">
-          <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#12121a] p-5 space-y-4 shadow-sm">
+        {/* Desktop Sidebar (Hidden on mobile) */}
+        <aside className="hidden lg:block lg:col-span-3 space-y-6">
+          <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#12121a] p-5 space-y-4 shadow-sm sticky top-24">
             <div className="text-[11px] font-bold text-gray-400 uppercase tracking-wider px-2">
               কন্ট্রোল সেকশনসমূহ
             </div>
