@@ -277,7 +277,8 @@ export default function AdminTournamentsPage() {
             </p>
           </div>
         ) : (
-          <table className="w-full text-left text-xs">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
             <thead className="bg-gray-50 dark:bg-black/40 border-b border-gray-200 dark:border-white/10 text-gray-500 font-bold uppercase tracking-wider">
               <tr>
                 <th className="p-4">ম্যাচ টাইটেল ও ক্যাটাগরি</th>
@@ -369,6 +370,7 @@ export default function AdminTournamentsPage() {
               ))}
             </tbody>
           </table>
+        </div>
         )}
       </div>
 

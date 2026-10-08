@@ -942,7 +942,12 @@ export default function MobileAppViewPage(props: any) {
                       match={matchDetailsScreen}
                       participants={bookedMatchesList
                         .filter((bm) => bm.title === matchDetailsScreen.title)
-                        .map((bm) => bm.ign)}
+                        .map((bm) => ({
+                          ign: bm.ign,
+                          uid: bm.uid,
+                          slot: bm.slot,
+                          team: bm.team,
+                        }))}
                       onBack={() => setMatchDetailsScreen(null)}
                       onJoinClick={(m) => {
                         setMatchDetailsScreen(null);

@@ -95,9 +95,10 @@ export default function CategoryDetailPage() {
   const [detailsMatch, setDetailsMatch] = useState<MatchItem | null>(null);
   const [bookingMatch, setBookingMatch] = useState<MatchItem | null>(null);
   const [totalPrizeMatch, setTotalPrizeMatch] = useState<MatchItem | null>(null);
-  const [expandedRoomRulesMatchId, setExpandedRoomRulesMatchId] = useState<string | null>(null);
   const [matchDetailsScreen, setMatchDetailsScreen] = useState<MatchItem | null>(null);
-  const [bookedParticipants, setBookedParticipants] = useState<{ [matchId: string]: string[] }>({});
+  const [bookedParticipants, setBookedParticipants] = useState<{
+    [matchId: string]: Array<{ ign: string; uid?: string; slot?: number; team?: number }>;
+  }>({});
   const [userBalance, setUserBalance] = useState(1500);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
@@ -121,9 +122,21 @@ export default function CategoryDetailPage() {
       setUserBalance((prev) => Math.max(0, prev - bookingMatch.entryFee));
 
       const registeredCount = slotInfo.players && slotInfo.players.length > 0 ? slotInfo.players.length : 1;
-      const registeredIgns = slotInfo.players && slotInfo.players.length > 0
-        ? slotInfo.players.map((p) => p.ign)
-        : [slotInfo.ign];
+      const registeredEntries = slotInfo.players && slotInfo.players.length > 0
+        ? slotInfo.players.map((p) => ({
+            ign: p.ign,
+            uid: p.uid,
+            slot: slotInfo.slotNumber,
+            team: slotInfo.teamNumber,
+          }))
+        : [
+            {
+              ign: slotInfo.ign,
+              uid: slotInfo.uid,
+              slot: slotInfo.slotNumber,
+              team: slotInfo.teamNumber,
+            },
+          ];
 
       // Update match filled slots count
       updateMatch(bookingMatch.id, {
@@ -132,7 +145,7 @@ export default function CategoryDetailPage() {
 
       setBookedParticipants((prev) => ({
         ...prev,
-        [bookingMatch.id]: [...(prev[bookingMatch.id] || []), ...registeredIgns],
+        [bookingMatch.id]: [...(prev[bookingMatch.id] || []), ...registeredEntries],
       }));
 
       const teamText = slotInfo.teamNumber

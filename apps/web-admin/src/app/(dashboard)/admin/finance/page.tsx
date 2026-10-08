@@ -95,7 +95,8 @@ export default function AdminFinancePage() {
       )}
 
       <div className="glass-panel border border-white/10 overflow-hidden">
-        <table className="w-full text-left text-xs">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs">
           <thead className="bg-black/40 border-b border-white/10 text-gray-400 font-bold uppercase tracking-wider">
             <tr>
               <th className="p-4">Player</th>
@@ -168,6 +169,7 @@ export default function AdminFinancePage() {
           </tbody>
         </table>
       </div>
+    </div>
     </div>
   );
 }

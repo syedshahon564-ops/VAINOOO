@@ -16,9 +16,18 @@ import {
 import { MatchItem, useCMS } from '@/lib/cms-store';
 import { formatMatchSchedule } from '@/components/LiveMatchCountdown';
 
+export type ParticipantItem =
+  | string
+  | {
+      ign: string;
+      uid?: string;
+      slot?: number;
+      team?: number;
+    };
+
 interface MatchDetailsPageProps {
   match: MatchItem;
-  participants?: string[];
+  participants?: ParticipantItem[];
   onBack: () => void;
   onJoinClick: (match: MatchItem) => void;
   language?: 'bn' | 'en';
@@ -36,34 +45,29 @@ export default function MatchDetailsPage({
   const { settings } = useCMS();
   const [showVideoModal, setShowVideoModal] = useState(false);
 
-  const cleanScheduleTime = match.time
-    .replace('আজ ', '')
-    .replace('আজ রাত ', '')
-    .replace('আজ বিকাল ', '');
-
   return (
     <div
-      className={`min-h-full bg-white dark:bg-[#12121a] text-gray-900 dark:text-gray-100 ${
+      className={`min-h-full bg-white text-gray-900 ${
         isPhoneView ? 'p-4 pb-20' : 'max-w-3xl mx-auto p-6 pb-24'
       } space-y-4`}
     >
       {/* 1. Header with Back Arrow and 'Details Page' (Exact Screenshot 4) */}
-      <div className="flex items-center gap-3 pb-2 border-b border-gray-100 dark:border-white/10">
+      <div className="flex items-center gap-3 pb-2 border-b border-gray-200">
         <button
           onClick={onBack}
-          className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 text-gray-800 dark:text-gray-200 transition-colors"
+          className="p-1 rounded-lg hover:bg-gray-100 text-gray-800 transition-colors"
           aria-label="Back"
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <h2 className="text-lg font-black text-gray-900 dark:text-white">
+        <h2 className="text-lg font-black text-gray-900">
           Details Page
         </h2>
       </div>
 
       {/* 2. Top Notice Banner (Exact Screenshot 4) */}
-      <div className="space-y-1">
-        <h3 className="text-sm font-black text-gray-900 dark:text-white leading-snug">
+      <div className="p-3.5 rounded-2xl bg-amber-50/90 border border-amber-200">
+        <h3 className="text-xs sm:text-sm font-bold text-gray-900 leading-snug">
           Prize Pool TOP 12 ✅ HP 500 😉 কাস্টমে নিজের জায়গায় বসতে হবে বাধ্যতামূলক - আইডি লেভেল 40+ থাকতে হবে - {match.categorySlug?.includes('survival') ? 'BR Survival' : match.title || 'BR Survival'} ম্যাচের নিয়ম পড়ে নিন, নিয়ম না মানলে রিফান্ড বা উইনিং পাবেন না! {settings.siteName || 'FF RIVAL TOUR BD'}
         </h3>
       </div>
@@ -71,33 +75,33 @@ export default function MatchDetailsPage({
       {/* 3. Badge Pills Grid (Exact Screenshot 4) */}
       <div className="space-y-2 pt-1">
         {/* Row 1: Type | Version | Map */}
-        <div className="flex flex-wrap gap-2 text-xs font-bold text-gray-700 dark:text-gray-300">
-          <div className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5">
-            Type: <span className="font-black text-gray-900 dark:text-white">{match.type || 'Solo'}</span>
+        <div className="flex flex-wrap gap-2 text-xs font-bold text-gray-700">
+          <div className="px-3 py-1.5 rounded-lg border border-gray-200 bg-gray-50">
+            Type: <span className="font-black text-gray-900">{match.type || 'Solo'}</span>
           </div>
-          <div className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5">
-            Version: <span className="font-black text-gray-900 dark:text-white">TPP</span>
+          <div className="px-3 py-1.5 rounded-lg border border-gray-200 bg-gray-50">
+            Version: <span className="font-black text-gray-900">TPP</span>
           </div>
-          <div className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5">
-            Map: <span className="font-black text-gray-900 dark:text-white">{match.map || 'Bermuda'}</span>
+          <div className="px-3 py-1.5 rounded-lg border border-gray-200 bg-gray-50">
+            Map: <span className="font-black text-gray-900">{match.map || 'Bermuda'}</span>
           </div>
         </div>
 
         {/* Row 2: Match Type | Entry fee */}
-        <div className="flex flex-wrap gap-2 text-xs font-bold text-gray-700 dark:text-gray-300">
-          <div className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5">
+        <div className="flex flex-wrap gap-2 text-xs font-bold text-gray-700">
+          <div className="px-3 py-1.5 rounded-lg border border-gray-200 bg-gray-50">
             Match Type: <span className="font-black text-emerald-600">Paid</span>
           </div>
-          <div className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5">
-            Entry fee: <span className="font-black text-gray-900 dark:text-white">{match.entryFee} TK</span>
+          <div className="px-3 py-1.5 rounded-lg border border-gray-200 bg-gray-50">
+            Entry fee: <span className="font-black text-gray-900">{match.entryFee} TK</span>
           </div>
         </div>
 
         {/* Row 3: Match Schedule */}
-        <div className="flex flex-wrap gap-2 text-xs font-bold text-gray-700 dark:text-gray-300">
-          <div className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5">
+        <div className="flex flex-wrap gap-2 text-xs font-bold text-gray-700">
+          <div className="px-3 py-1.5 rounded-lg border border-gray-200 bg-gray-50">
             Match Schedule:{' '}
-            <span className="font-black text-gray-900 dark:text-white">
+            <span className="font-black text-gray-900">
               {formatMatchSchedule(match.time)}
             </span>
           </div>
@@ -106,19 +110,19 @@ export default function MatchDetailsPage({
 
       {/* 4. Prize Details (Exact Screenshot 4) */}
       <div className="space-y-2 pt-2">
-        <h4 className="text-sm font-black text-gray-900 dark:text-white">
+        <h4 className="text-sm font-black text-gray-900">
           Prize Details
         </h4>
         <div className="flex flex-wrap gap-3">
-          <div className="px-4 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-xs font-bold">
+          <div className="px-4 py-2 rounded-xl border border-gray-200 bg-gray-50 text-xs font-bold text-gray-700">
             Winning Prize:{' '}
-            <span className="font-black text-gray-900 dark:text-white">
+            <span className="font-black text-gray-900">
               {match.firstPrize || match.prizePool || 170} TK
             </span>
           </div>
-          <div className="px-4 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-xs font-bold">
+          <div className="px-4 py-2 rounded-xl border border-gray-200 bg-gray-50 text-xs font-bold text-gray-700">
             Per Kill:{' '}
-            <span className="font-black text-gray-900 dark:text-white">
+            <span className="font-black text-gray-900">
               {match.perKill || 0} TK
             </span>
           </div>
@@ -126,16 +130,16 @@ export default function MatchDetailsPage({
       </div>
 
       {/* 5. Orange Dashed Box: Room ID & Password Notice (Exact Screenshot 4) */}
-      <div className="p-3 rounded-xl border-2 border-dashed border-amber-500 bg-amber-50/90 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 text-center font-bold text-[11px] leading-snug">
+      <div className="p-3.5 rounded-xl border-2 border-dashed border-amber-500 bg-amber-50 text-amber-900 text-center font-bold text-xs leading-snug">
         ম্যাচ শুরু হওয়ার সময়ের ২ থেকে ৪ মিনিট আগে কাস্টমের আইডি পাসওয়ার্ড পাবেন Room Details Button এ
       </div>
 
       {/* 6. Dotted Line Separator (Exact Screenshot 4) */}
-      <div className="border-b border-dotted border-gray-300 dark:border-white/20 pt-1" />
+      <div className="border-b border-dotted border-gray-300 pt-1" />
 
       {/* 7. Match Instructions and Rules Section Header (Exact Screenshot 4) */}
       <div className="space-y-3 pt-1">
-        <h4 className="text-sm font-black text-gray-900 dark:text-white">
+        <h4 className="text-sm font-black text-gray-900">
           Match Instructions and Rules
         </h4>
 
@@ -151,22 +155,22 @@ export default function MatchDetailsPage({
         </button>
       </div>
 
-      {/* 8. Full Detailed Rules List (Exact Bengali Text from Screenshots 1, 2, 3, 4) */}
-      <div className="text-xs space-y-3.5 pt-2 leading-relaxed text-gray-800 dark:text-gray-200 font-medium">
+      {/* 8. Full Detailed Rules List (Exact Bengali Text from Screenshots 1, 2, 3, 4) - PURE WHITE */}
+      <div className="p-4 rounded-2xl bg-gray-50/70 border border-gray-200 text-xs space-y-3.5 leading-relaxed text-gray-800 font-medium">
         {/* Category Specific Rules (from Admin CMS) */}
         {settings.categoryRules?.[match.categorySlug] && (
-          <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 space-y-2 mb-3">
-            <h5 className="text-xs font-black text-amber-600 dark:text-amber-400 flex items-center gap-2">
-              <ShieldAlert className="w-4 h-4" />
+          <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 space-y-2 mb-3">
+            <h5 className="text-xs font-black text-amber-800 flex items-center gap-2">
+              <ShieldAlert className="w-4 h-4 text-amber-600" />
               এই ক্যাটাগরির বিশেষ টুর্নামেন্ট রুলস:
             </h5>
-            <div className="text-xs whitespace-pre-line text-gray-800 dark:text-gray-200 font-mono leading-relaxed">
+            <div className="text-xs whitespace-pre-line text-gray-800 font-mono leading-relaxed">
               {settings.categoryRules[match.categorySlug]}
             </div>
           </div>
         )}
 
-        <p className="font-black text-amber-700 dark:text-amber-400 text-xs flex items-center gap-1.5">
+        <p className="font-black text-amber-700 text-xs flex items-center gap-1.5">
           <span>⚠️</span>
           <span>&quot;{settings.siteName || 'FF RIVAL TOUR BD'}&quot; এর সার্বজনীন নিয়মাবলী এবং শর্তসমূহ:-</span>
         </p>
@@ -242,7 +246,7 @@ export default function MatchDetailsPage({
         </p>
 
         {/* Bullet feature checklist (Screenshot 1) */}
-        <div className="space-y-1.5 pl-6 font-bold text-gray-900 dark:text-white">
+        <div className="space-y-1.5 pl-6 font-bold text-gray-900">
           <div className="flex items-center gap-2">
             <span className="text-emerald-500">✅</span> Character skill on
           </div>
@@ -261,91 +265,119 @@ export default function MatchDetailsPage({
           <div className="flex items-center gap-2">
             <span className="text-emerald-500">✅</span> kill allow
           </div>
-          <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400">
+          <div className="flex items-center gap-2 text-rose-600">
             <span>⚠️</span> zone damage high 🔥
           </div>
         </div>
 
-        <p className="text-gray-700 dark:text-gray-300">
+        <p className="text-gray-700">
           survival match এ বেশিরভাগ ম্যাচে সবাই একসাথে মরে যাওয়ায় রেজাল্ট পাওয়া যায় না মাঝে মাঝে, তাই ম্যাচ শেষ হওয়ার ৩০ মিনিটের মধ্যে উইনিং প্রাইজ না পেলে আমাদের হোয়াটসঅ্যাপ চ্যানেলে দেওয়া ফেসবুক পেইজে সময় সহকারে হিস্ট্রি থেকে স্ক্রিনশট পাঠাবেন ⚠️
         </p>
 
-        <p className="text-gray-700 dark:text-gray-300">
+        <p className="text-gray-700">
           👀 ম্যাচের উইনিং প্রাইজ ম্যাচ শেষ হওয়ার ৩০ মিনিটের মধ্যে পাবেন, না পেলে ম্যাচ হিস্ট্রির সময় সহকারে দেখা যায় এরকম screenshot, আমাদের হোয়াটসঅ্যাপ চ্যানেলে দেওয়া ফেসবুক পেইজে পাঠাতে হবে ১০ ঘণ্টার মধ্যে, মেসেজ করে রাখলে হবে আপনি উইনিং না পেলে আপনাকে উইনিং দিয়ে দেওয়া হবে যেকোনো সময় আপনার মেসেজ দেখার পরেই ✅
         </p>
 
-        <p className="flex items-center gap-2 font-bold text-gray-900 dark:text-white">
+        <p className="flex items-center gap-2 font-bold text-gray-900">
           <span className="text-emerald-600">✔️</span>
           যেকোন সমস্যা বা সহযোগিতার ক্ষেত্রে আমাদের SUPPORT এ যোগাযোগ করতে হবে।
         </p>
 
-        <p className="font-black text-amber-600 dark:text-amber-400 text-sm">
+        <p className="font-black text-amber-600 text-sm">
           {settings.siteName || 'FF RIVAL TOUR BD'} এর সিদ্ধান্ত চূড়ান্ত সিদ্ধান্ত 👌
         </p>
       </div>
 
-      {/* 9. ROOM RULES & REGISTERED PARTICIPANTS (Image 3) */}
-      <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50/70 dark:bg-black/30 p-5 space-y-4">
-        <div className="flex items-center gap-2 pb-2 border-b border-gray-200 dark:border-white/10">
+      {/* 9. ROOM RULES & REGISTERED PARTICIPANTS (Pure White Container) */}
+      <div className="rounded-2xl border border-gray-200 bg-white p-5 space-y-4 shadow-xs">
+        <div className="flex items-center gap-2 pb-2 border-b border-gray-200">
           <Key className="w-4 h-4 text-red-600" />
-          <h4 className="text-sm font-black text-gray-900 dark:text-white">
+          <h4 className="text-sm font-black text-gray-900">
             কাস্টম রুম রুলস ও রেজিস্টার্ড প্লেয়ার তালিকা (Room Rules & Participants)
           </h4>
         </div>
 
-        {/* Rules note from Image 3 */}
-        <div className="text-xs text-gray-700 dark:text-gray-300 space-y-2 leading-relaxed font-medium bg-white dark:bg-[#181824] p-3.5 rounded-xl border border-gray-100 dark:border-white/5">
+        {/* Rules note */}
+        <div className="text-xs text-gray-700 space-y-2 leading-relaxed font-medium bg-gray-50 p-3.5 rounded-xl border border-gray-200">
           <p>
             ফেসবুক পেইজে পাঠাতে হবে ১০ ঘণ্টার মধ্যে, মেসেজ করে রাখলে হবে আপনি উইনিং না পেলে আপনাকে উইনিং দিয়ে দেওয়া হবে যেকোনো সময় আপনার মেসেজ দেখার পরেই✅
           </p>
-          <p className="flex items-center gap-1.5 font-bold text-gray-900 dark:text-white">
+          <p className="flex items-center gap-1.5 font-bold text-gray-900">
             <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" />
             যেকোন সমস্যা বা সহযোগিতার ক্ষেত্রে আমাদের SUPPORT এ যোগাযোগ করতে হবে।
           </p>
-          <p className="font-black text-amber-600 dark:text-amber-400">
+          <p className="font-black text-amber-600">
             {settings.siteName || 'FF RIVAL TOUR BD'} এর সিদ্ধান্ত চূড়ান্ত সিদ্ধান্ত 👌
           </p>
         </div>
 
         {/* Separator */}
-        <div className="border-t border-dashed border-gray-300 dark:border-white/20 pt-2 text-center">
-          <h4 className="text-xs font-black uppercase tracking-wider text-gray-900 dark:text-white flex items-center justify-center gap-1.5">
-            <Users className="w-3.5 h-3.5 text-blue-500" />
+        <div className="border-t border-dashed border-gray-200 pt-3 text-center">
+          <h4 className="text-xs font-black uppercase tracking-wider text-gray-900 flex items-center justify-center gap-1.5">
+            <Users className="w-4 h-4 text-blue-600" />
             REGISTERED PARTICIPANTS ({participants.length}/{match.totalSlots})
           </h4>
         </div>
 
-        {/* Numbered Participants or Empty State */}
+        {/* Numbered Participants with UID & IGN */}
         {participants.length === 0 ? (
-          <div className="py-6 px-4 rounded-xl border border-dashed border-gray-200 dark:border-white/10 bg-white/60 dark:bg-black/20 text-center space-y-1">
-            <Users className="w-7 h-7 mx-auto text-gray-400 opacity-60" />
-            <p className="text-xs font-bold text-gray-700 dark:text-gray-300">
+          <div className="py-8 px-4 rounded-xl border border-dashed border-gray-200 bg-gray-50/60 text-center space-y-1.5">
+            <Users className="w-8 h-8 mx-auto text-gray-400 opacity-60" />
+            <p className="text-xs font-bold text-gray-800">
               এখনো কোনো প্লেয়ার রেজিস্ট্রেশন করেনি
             </p>
-            <p className="text-[11px] text-gray-400">
-              ম্যাচে অংশ নিতে নিচের &quot;স্লট বুক করুন / Join Now&quot; বাটনে ক্লিক করে প্রথম প্লেয়ার হিসেবে আপনার স্লট নিশ্চিত করুন।
+            <p className="text-[11px] text-gray-500">
+              ম্যাচে অংশ নিতে নিচের &quot;Join Now / স্লট বুক করুন&quot; বাটনে ক্লিক করে প্রথম প্লেয়ার হিসেবে আপনার স্লট নিশ্চিত করুন।
             </p>
           </div>
         ) : (
-          <div className="space-y-1.5 max-h-60 overflow-y-auto pr-1 divide-y divide-gray-100 dark:divide-white/5">
-            {participants.map((name, idx) => (
-              <div
-                key={idx}
-                className="flex items-center gap-3 py-2 text-xs font-bold text-gray-800 dark:text-gray-200"
-              >
-                <span className="w-6 text-gray-400 font-mono text-xs">{idx + 1}</span>
-                <span className="font-mono tracking-wide">{name}</span>
-                <span className="ml-auto text-[10px] font-bold text-emerald-500 uppercase px-2 py-0.5 rounded bg-emerald-500/10">
-                  Confirmed
-                </span>
-              </div>
-            ))}
+          <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+            {participants.map((item, idx) => {
+              const ign = typeof item === 'string' ? item : item.ign;
+              const uid = typeof item === 'object' && item.uid && item.uid !== '---' ? item.uid : null;
+              const slotNum = typeof item === 'object' && item.slot ? item.slot : idx + 1;
+              const teamNum = typeof item === 'object' && item.team ? item.team : null;
+
+              return (
+                <div
+                  key={idx}
+                  className="flex items-center justify-between p-3 rounded-xl bg-gray-50 border border-gray-200 text-xs font-bold transition-all hover:bg-gray-100/70"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="w-7 h-7 rounded-lg bg-red-100 text-red-600 font-black text-xs flex items-center justify-center font-mono">
+                      #{slotNum}
+                    </span>
+                    <div>
+                      <span className="font-black text-gray-900 text-xs block">
+                        {ign}
+                      </span>
+                      {uid && (
+                        <span className="text-[10px] text-gray-500 font-mono block">
+                          UID: {uid}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {teamNum && (
+                      <span className="text-[10px] font-bold text-gray-600 bg-gray-200/80 px-2 py-0.5 rounded-md">
+                        Team #{teamNum}
+                      </span>
+                    )}
+                    <span className="text-[10px] font-black text-emerald-600 bg-emerald-100 px-2.5 py-0.5 rounded-full uppercase">
+                      Confirmed
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
 
       {/* Bottom Sticky Join Button */}
-      <div className="pt-4 border-t border-gray-100 dark:border-white/10">
+      <div className="pt-4 border-t border-gray-200">
         <button
           onClick={() => onJoinClick(match)}
           className="w-full py-3.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-black text-sm shadow-lg shadow-red-600/30 transition-all flex items-center justify-center gap-2 active:scale-98"
@@ -357,15 +389,15 @@ export default function MatchDetailsPage({
       {/* HOW TO JOIN VIDEO MODAL */}
       {showVideoModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-lg bg-white dark:bg-[#181824] rounded-2xl p-5 sm:p-6 space-y-4 border border-gray-200 dark:border-white/10 shadow-2xl">
-            <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-white/10">
-              <h3 className="text-base font-black text-gray-900 dark:text-white flex items-center gap-2">
+          <div className="w-full max-w-lg bg-white rounded-2xl p-5 sm:p-6 space-y-4 border border-gray-200 shadow-2xl">
+            <div className="flex items-center justify-between pb-2 border-b border-gray-200">
+              <h3 className="text-base font-black text-gray-900 flex items-center gap-2">
                 <Play className="w-4 h-4 text-red-600" />
                 সঠিক নিয়ম ও কাস্টমে জয়েন করার গাইড
               </h3>
               <button
                 onClick={() => setShowVideoModal(false)}
-                className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 text-gray-500"
+                className="p-1 rounded-lg hover:bg-gray-100 text-gray-500"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -380,7 +412,7 @@ export default function MatchDetailsPage({
               />
             </div>
 
-            <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed font-medium">
+            <p className="text-xs text-gray-600 leading-relaxed font-medium">
               ভিডিওতে দেখানো নিয়ম অনুযায়ী ম্যাচ শুরু হওয়ার ২ মিনিট আগে কাস্টম রুম আইডি ও পাসওয়ার্ড নিয়ে গেমে প্রবেশ করে নির্দিষ্ট স্লটে বসুন।
             </p>
 
