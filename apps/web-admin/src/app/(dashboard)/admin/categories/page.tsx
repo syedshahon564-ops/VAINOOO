@@ -142,21 +142,45 @@ export default function AdminCategoriesPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             {/* Banner Image Upload */}
-            <ImageUploadInput
-              label="ক্যাটাগরি ব্যানার ফটো (Main Banner Photo)"
-              value={bannerImage}
-              onChange={setBannerImage}
-              helperText="ডিভাইস থেকে ফাইল আপলোড করুন অথবা ড্র্যাগ-অ্যান্ড-ড্রপ করুন"
-            />
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-gray-500">ব্যানার ইমেজ</span>
+                <button
+                  type="button"
+                  onClick={() => setBannerImage('https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=640')}
+                  className="text-[10px] font-bold text-red-600 hover:underline"
+                >
+                  ডিফল্ট ব্যানার রিস্টোর
+                </button>
+              </div>
+              <ImageUploadInput
+                label="ক্যাটাগরি ব্যানার ফটো (Main Banner Photo)"
+                value={bannerImage}
+                onChange={setBannerImage}
+                helperText="ডিভাইস থেকে ফাইল আপলোড করুন অথবা ড্র্যাগ-অ্যান্ড-ড্রপ করুন"
+              />
+            </div>
 
             {/* Avatar Icon Upload */}
-            <ImageUploadInput
-              label="ক্যাটাগরি গোল আইকন / অ্যাভাটার (Thumbnail Icon)"
-              value={avatarImage}
-              onChange={setAvatarImage}
-              isCircular={true}
-              helperText="ক্যাটাগরির বৃত্তাকার আইকন আপলোড করুন"
-            />
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-gray-500">আইকন ইমেজ</span>
+                <button
+                  type="button"
+                  onClick={() => setAvatarImage('https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=120')}
+                  className="text-[10px] font-bold text-red-600 hover:underline"
+                >
+                  ডিফল্ট আইকন রিস্টোর
+                </button>
+              </div>
+              <ImageUploadInput
+                label="ক্যাটাগরি গোল আইকন / অ্যাভাটার (Thumbnail Icon)"
+                value={avatarImage}
+                onChange={setAvatarImage}
+                isCircular={true}
+                helperText="ক্যাটাগরির বৃত্তাকার আইকন আপলোড করুন"
+              />
+            </div>
           </div>
 
           <div>

@@ -86,6 +86,12 @@ async function compressImageToDataUrl(
   });
 }
 
+  const [hasLoadError, setHasLoadError] = useState(false);
+
+  React.useEffect(() => {
+    setHasLoadError(false);
+  }, [value]);
+
   const processFile = async (file: File) => {
     if (!file.type.startsWith('image/')) {
       setErrorMsg('অনুগ্রহ করে শুধুমাত্র ইমেজ (JPG, PNG, WEBP) ফাইল সিলেক্ট করুন।');
@@ -94,34 +100,13 @@ async function compressImageToDataUrl(
 
     setErrorMsg(null);
     setIsUploading(true);
+    setHasLoadError(false);
 
     try {
-      // Step 1: Compress image on client-side to prevent memory overload & quota errors
+      // Direct client-side canvas compression: generates portable self-contained data URL
+      // This bypasses server 404s and localStorage QuotaExceededError completely
       const compressedDataUrl = await compressImageToDataUrl(file);
 
-      // Step 2: Try uploading to /api/upload
-      try {
-        const formData = new FormData();
-        formData.append('file', file);
-
-        const res = await fetch('/api/upload', {
-          method: 'POST',
-          body: formData,
-        });
-
-        if (res.ok) {
-          const data = await res.json();
-          if (data.url) {
-            onChange(data.url);
-            setIsUploading(false);
-            return;
-          }
-        }
-      } catch (uploadErr) {
-        console.warn('API upload unavailable, using compressed data URL:', uploadErr);
-      }
-
-      // Step 3: If API upload didn't return a URL, use compressed data URL directly
       if (compressedDataUrl) {
         onChange(compressedDataUrl);
       } else {
@@ -274,12 +259,32 @@ async function compressImageToDataUrl(
             </div>
           </div>
 
-          {isCircular ? (
+          {hasLoadError ? (
+            <div
+              className={`w-full ${previewHeight} rounded-xl border border-red-300 dark:border-red-900/40 bg-red-50 dark:bg-red-950/20 p-4 flex flex-col items-center justify-center text-center space-y-2`}
+            >
+              <ImageIcon className="w-8 h-8 text-red-500" />
+              <div className="text-xs font-bold text-red-600 dark:text-red-400">
+                এই ইমেজটি লোড করা যায়নি (ভুল লিংক বা ফাইল সার্ভারে নেই)
+              </div>
+              <p className="text-[10px] text-gray-500 max-w-xs">
+                উপরে &quot;ফাইল আপলোড&quot; বাটনে ক্লিক করে ডিভাইস থেকে একটি ছবি সিলেক্ট করুন।
+              </p>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="px-3.5 py-1.5 rounded-lg bg-red-600 text-white text-[10px] font-black shadow hover:bg-red-500 transition-all flex items-center gap-1"
+              >
+                <Upload className="w-3 h-3" /> নতুন ছবি সিলেক্ট করুন
+              </button>
+            </div>
+          ) : isCircular ? (
             <div className="flex items-center justify-center p-2">
               <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-red-500 shadow-md bg-black/40">
                 <img
                   src={value}
                   alt="Uploaded Preview"
+                  onError={() => setHasLoadError(true)}
                   className="w-full h-full object-cover"
                 />
               </div>
@@ -291,6 +296,7 @@ async function compressImageToDataUrl(
               <img
                 src={value}
                 alt="Uploaded Preview"
+                onError={() => setHasLoadError(true)}
                 className="w-full h-full object-cover"
               />
             </div>

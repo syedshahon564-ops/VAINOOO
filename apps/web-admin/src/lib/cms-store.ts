@@ -102,7 +102,7 @@ export const INITIAL_CATEGORIES: Record<string, CategoryItem> = {
     id: 80,
     name: 'CLASSIC MATCH',
     section: 'FREE FIRE MATCHES',
-    bannerImage: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?q=80&w=640',
+    bannerImage: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=640',
     avatarImage: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=120',
     description: 'Standard 48-player Free Fire Battle Royale on Bermuda and Purgatory.',
   },
@@ -381,12 +381,43 @@ export function getCMSData(): CMSData {
 /** Ensure every CMS field has a safe shape (arrays are arrays, objects are objects). */
 export function normalizeCMSData(input: Partial<CMSData> | null | undefined): CMSData {
   const src: any = input && typeof input === 'object' ? input : {};
-  const categories =
+  
+  const rawCategories =
     src.categories && typeof src.categories === 'object' && !Array.isArray(src.categories)
       ? src.categories
       : INITIAL_CATEGORIES;
+
+  // Auto-heal any legacy broken paths or /uploads/ 404 paths
+  const healedCategories: Record<string, CategoryItem> = { ...INITIAL_CATEGORIES };
+  for (const [slug, cat] of Object.entries(rawCategories)) {
+    if (cat && typeof cat === 'object') {
+      const item = cat as CategoryItem;
+      const fallbackBanner =
+        INITIAL_CATEGORIES[slug]?.bannerImage ||
+        'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=640';
+      const fallbackAvatar =
+        INITIAL_CATEGORIES[slug]?.avatarImage ||
+        'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=120';
+
+      let bannerImage = item.bannerImage || fallbackBanner;
+      if (
+        bannerImage.startsWith('/uploads/') ||
+        bannerImage.includes('photo-1511512578047')
+      ) {
+        bannerImage = fallbackBanner;
+      }
+
+      healedCategories[slug] = {
+        ...INITIAL_CATEGORIES[slug],
+        ...item,
+        bannerImage,
+        avatarImage: item.avatarImage || fallbackAvatar,
+      };
+    }
+  }
+
   return {
-    categories,
+    categories: healedCategories,
     matches: Array.isArray(src.matches) ? src.matches.filter((m: any) => m && typeof m === 'object') : [],
     settings: { ...INITIAL_SETTINGS, ...(src.settings && typeof src.settings === 'object' ? src.settings : {}) },
     topPlayers: Array.isArray(src.topPlayers)
