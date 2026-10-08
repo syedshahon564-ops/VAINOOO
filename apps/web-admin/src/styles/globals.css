@@ -104,3 +104,25 @@ html.dark ::-webkit-scrollbar-track {
 html.dark ::-webkit-scrollbar-thumb {
   background: #334155;
 }
+
+/* Train-style Marquee Animation (ট্রেনের মতন নিউজ স্ক্রলিং) */
+@keyframes trainMarquee {
+  0% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+.animate-train-marquee {
+  display: inline-block;
+  white-space: nowrap;
+  will-change: transform;
+  animation: trainMarquee 20s linear infinite;
+}
+
+.animate-train-marquee:hover,
+.animate-train-marquee:active {
+  animation-play-state: paused;
+}

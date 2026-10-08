@@ -121,6 +121,33 @@ export default function MobileAppViewPage(props: any) {
   const [phoneTheme, setPhoneTheme] = useState<'dark' | 'light'>('light');
   const [phoneLang, setPhoneLang] = useState<'bn' | 'en'>(globalLang || 'bn');
 
+  // Esports Splash Loading State
+  const [appLoading, setAppLoading] = useState(true);
+  const [loadingProgress, setLoadingProgress] = useState(25);
+  const [loadingStatusText, setLoadingStatusText] = useState('টুর্নামেন্ট সার্ভারের সাথে কানেক্ট হচ্ছে...');
+
+  useEffect(() => {
+    const t1 = setTimeout(() => {
+      setLoadingProgress(65);
+      setLoadingStatusText('অ্যান্টি-চিট সিকিউরিটি ও টুর্নামেন্ট ভেরিফাই হচ্ছে...');
+    }, 450);
+
+    const t2 = setTimeout(() => {
+      setLoadingProgress(100);
+      setLoadingStatusText('স্বাগতম! অ্যাপ প্রস্তুত...');
+    }, 950);
+
+    const t3 = setTimeout(() => {
+      setAppLoading(false);
+    }, 1350);
+
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+    };
+  }, []);
+
   // Interactive Carousel Banner State
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const bannerSlides = React.useMemo(() => {
@@ -228,6 +255,7 @@ export default function MobileAppViewPage(props: any) {
           password: authPassword,
         });
         if (!res.success) throw new Error(res.error || 'রেজিস্ট্রেশন ব্যর্থ হয়েছে');
+        if (res.user) setCurrentUser(res.user);
         setAuthSuccess(`রেজিস্ট্রেশন সফল! স্বাগতম ${res.user?.ign}`);
         setTimeout(() => {
           setShowAuthModal(false);
@@ -235,10 +263,11 @@ export default function MobileAppViewPage(props: any) {
         }, 800);
       } else {
         if (!authPhone || !authPassword) {
-          throw new Error('ফোন নম্বর এবং পাসওয়ার্ড লিখুন');
+          throw new Error('ফোন নম্বর বা ওনার আইডি এবং পাসওয়ার্ড লিখুন');
         }
         const res = loginUser(authPhone.trim(), authPassword);
         if (!res.success) throw new Error(res.error || 'লগইন ব্যর্থ হয়েছে।');
+        if (res.user) setCurrentUser(res.user);
         setAuthSuccess(`লগইন সফল! স্বাগতম ${res.user?.ign}`);
         setTimeout(() => {
           setShowAuthModal(false);
@@ -435,6 +464,59 @@ export default function MobileAppViewPage(props: any) {
         : [],
     [selectedCategory, matches]
   );
+
+  if (appLoading) {
+    return (
+      <div className="fixed inset-0 z-[100] bg-[#07070d] flex flex-col items-center justify-center p-6 text-center select-none overflow-hidden animate-fadeIn">
+        {/* Ambient background glow */}
+        <div className="absolute top-1/4 w-72 h-72 bg-red-600/20 rounded-full blur-3xl pointer-events-none animate-pulse" />
+        <div className="absolute bottom-1/4 w-60 h-60 bg-amber-500/15 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="relative z-10 flex flex-col items-center space-y-6 max-w-xs w-full">
+          {/* Logo with esports pulsing aura */}
+          <div className="relative">
+            <div className="w-24 h-24 rounded-3xl bg-gradient-to-tr from-red-600 via-rose-700 to-amber-500 p-1 shadow-2xl shadow-red-600/40 animate-pulse">
+              <div className="w-full h-full rounded-[22px] bg-black/90 p-2.5 flex items-center justify-center backdrop-blur-md">
+                <img
+                  src="/logo.png"
+                  alt="FF Rivals Tour BD"
+                  className="w-full h-full object-contain filter drop-shadow-md"
+                />
+              </div>
+            </div>
+            <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full bg-red-600 text-white text-[9px] font-black tracking-widest uppercase border border-red-400 shadow-md">
+              LIVE ARENA
+            </span>
+          </div>
+
+          <div className="space-y-1.5 pt-1">
+            <h1 className="text-xl sm:text-2xl font-black text-white tracking-wider uppercase">
+              FF RIVAL <span className="text-red-500">TOUR BD</span>
+            </h1>
+            <p className="text-gray-400 text-xs font-bold tracking-wide">
+              {loadingStatusText}
+            </p>
+          </div>
+
+          {/* Progress Bar & Counter */}
+          <div className="w-full space-y-2 pt-2">
+            <div className="w-full h-2.5 rounded-full bg-white/10 overflow-hidden border border-white/10 p-0.5">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-red-600 via-amber-500 to-emerald-400 transition-all duration-300 ease-out shadow-lg shadow-red-500/50"
+                style={{ width: `${loadingProgress}%` }}
+              />
+            </div>
+            <div className="flex justify-between items-center text-[10px] text-gray-400 font-mono font-bold px-1">
+              <span className="text-emerald-400 flex items-center gap-1">
+                <Shield className="w-3 h-3" /> Anti-Cheat Active
+              </span>
+              <span className="text-amber-400">{loadingProgress}%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -648,23 +730,12 @@ export default function MobileAppViewPage(props: any) {
                         {currentUser?.role === 'ADMIN' && (
                           <Link
                             href="/admin"
-                            className="px-2 py-1 rounded-full text-[9px] font-black bg-gradient-to-r from-amber-500 to-amber-600 hover:brightness-110 text-black border border-amber-400 shadow-sm flex items-center gap-1"
-                            title="Admin Panel"
+                            className="px-2.5 py-1 rounded-full text-[9px] font-black bg-gradient-to-r from-amber-400 to-amber-500 hover:brightness-110 text-black border border-amber-300 shadow-sm flex items-center gap-1"
+                            title="Admin / Owner Panel"
                           >
-                            <span>👑 Admin</span>
+                            <span>👑 ওনার প্যানেল</span>
                           </Link>
                         )}
-                        <button
-                          onClick={handleSwitchToWeb}
-                          title={tPhone('ওয়েবসাইট সংস্করণ', 'Switch to Website')}
-                          className={`px-2 py-1 rounded-full text-[9px] font-black border transition-all flex items-center gap-1 shadow-sm ${
-                            phoneTheme === 'dark'
-                              ? 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border-amber-500/30'
-                              : 'bg-amber-100 hover:bg-amber-200 text-amber-900 border-amber-300'
-                          }`}
-                        >
-                          <span>🌐 Web</span>
-                        </button>
                         <button
                           onClick={togglePhoneLang}
                           className={`px-2 py-1 rounded-full text-[9px] font-black border transition-all flex items-center gap-1 shadow-sm ${
@@ -1069,17 +1140,17 @@ export default function MobileAppViewPage(props: any) {
                       ) : (
                         /* Main Home Category Feed */
                         <div className="space-y-3">
-                          {/* 1. Breaking News Ticker (নিউজ) */}
-                          <div className="px-2.5 py-2 rounded-xl bg-red-50 border border-red-200 flex items-center gap-2 overflow-hidden shadow-xs">
-                            <span className="flex-shrink-0 px-2 py-0.5 rounded-full bg-red-600 text-white font-black text-[9px] uppercase tracking-wide flex items-center gap-1 shadow-xs">
+                          {/* 1. Breaking News Ticker (নিউজ - ট্রেনের মতন স্লাইড) */}
+                          <div className="px-2.5 py-2 rounded-xl bg-red-50 border border-red-200 flex items-center gap-2 overflow-hidden shadow-xs relative">
+                            <span className="flex-shrink-0 px-2 py-0.5 rounded-full bg-red-600 text-white font-black text-[9px] uppercase tracking-wide flex items-center gap-1 shadow-xs z-10">
                               <Radio className="w-3 h-3 animate-pulse text-white" />
-                              <span>{tPhone('নিউজ', 'NEWS')}</span>
+                              <span>{tPhone('📢 নিউজ', '📢 NEWS')}</span>
                             </span>
-                            <div className="flex-1 overflow-hidden">
-                              <div className="text-[11px] font-bold text-gray-800 truncate">
+                            <div className="flex-1 overflow-hidden relative whitespace-nowrap">
+                              <div className="animate-train-marquee text-[11px] font-black text-gray-900 tracking-wide inline-block">
                                 {settings?.noticeText || tPhone(
-                                  '🔥 FF RIVAL TOUR BD-তে স্বাগতম! প্রতিদিন টুর্নামেন্ট খেলুন এবং বিকাশ/নগদে প্রাইজ গ্রহণ করুন!',
-                                  '🔥 Welcome to FF RIVAL TOUR BD! Play daily tournaments & win cash via bKash/Nagad!'
+                                  '🔥 FF RIVAL TOUR BD-তে স্বাগতম! প্রতিদিন টুর্নামেন্ট খেলুন এবং বিকাশ/নগদে প্রাইজ গ্রহণ করুন! 🏆 আইডি লেভেল ৫৫+ বাধ্যতামূলক • ১০০% ফেয়ার ও হ্যাকমুক্ত টুর্নামেন্ট!',
+                                  '🔥 Welcome to FF RIVAL TOUR BD! Play daily tournaments & win cash via bKash/Nagad! 🏆 Level 55+ Required • 100% Fair Gameplay!'
                                 )}
                               </div>
                             </div>
@@ -1706,8 +1777,8 @@ export default function MobileAppViewPage(props: any) {
                                   {currentUser?.ign || 'Player'}
                                 </h3>
                                 {currentUser?.role === 'ADMIN' ? (
-                                  <span className="px-1.5 py-0.5 rounded bg-amber-500 text-black text-[9px] font-black">
-                                    OWNER
+                                  <span className="px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 text-black text-[9px] font-black border border-amber-300 shadow-sm flex items-center gap-1">
+                                    👑 OWNER
                                   </span>
                                 ) : (
                                   <span className="px-1.5 py-0.5 rounded bg-red-600 text-white text-[9px] font-black">
@@ -1944,19 +2015,11 @@ export default function MobileAppViewPage(props: any) {
                             <a
                               href="/ffrivals.apk"
                               download="ffrivals.apk"
-                              className="w-full py-2.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-xs font-bold transition-all flex items-center justify-center gap-2"
+                              className="w-full py-2.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold transition-all flex items-center justify-center gap-2"
                             >
-                              <Download className="w-3.5 h-3.5 text-emerald-400" />
+                              <Download className="w-3.5 h-3.5 text-emerald-500" />
                               <span>{tPhone('অফিসিয়াল Android APK ডাউনলোড', 'Download Official Android APK')}</span>
                             </a>
-
-                            <button
-                              onClick={handleSwitchToWeb}
-                              className="w-full py-2 rounded-xl border border-gray-300 dark:border-white/10 bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-gray-800 dark:text-gray-200 text-xs font-bold transition-all flex items-center justify-center gap-2"
-                            >
-                              <Globe className="w-3.5 h-3.5 text-blue-500" />
-                              <span>{tPhone('ওয়েবসাইট সংস্করণে যান', 'Switch to Website Version')}</span>
-                            </button>
 
                             <button
                               onClick={() => {
@@ -2282,14 +2345,14 @@ export default function MobileAppViewPage(props: any) {
             <form onSubmit={handleAuthSubmit} className="space-y-3">
               <div>
                 <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                  মোবাইল নম্বর (Phone Number)
+                  {authMode === 'LOGIN' ? 'মোবাইল নম্বর বা ওনার আইডি (Phone / Owner ID)' : 'মোবাইল নম্বর (Phone Number)'}
                 </label>
                 <div className="relative">
                   <Phone className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
-                    type="tel"
+                    type="text"
                     required
-                    placeholder="017XXXXXXXX"
+                    placeholder={authMode === 'LOGIN' ? '017XXXXXXXX বা ওনার আইডি (যেমন: OWNER_MAIN)' : '017XXXXXXXX'}
                     value={authPhone}
                     onChange={(e) => setAuthPhone(e.target.value)}
                     className="w-full pl-9 pr-3 py-2 rounded-xl bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-white/10 text-xs text-gray-900 dark:text-white focus:outline-none focus:border-red-500 font-mono"

@@ -49,11 +49,11 @@ const USERS_STORAGE_KEY = 'ff_esports_users_db_v2';
 const TRANSACTIONS_STORAGE_KEY = 'ff_esports_balance_tx_v2';
 
 export const INITIAL_USERS: UserAccount[] = [
-  // Master Admin Account
+  // 1. Master Owner Account
   {
-    id: 'u-admin',
+    id: 'u-owner-main',
     phone: '01700000000',
-    ign: 'ADMIN_MASTER',
+    ign: 'OWNER_MAIN',
     uid: '100000000',
     password: 'admin123',
     walletBalance: 50000.0,
@@ -65,7 +65,43 @@ export const INITIAL_USERS: UserAccount[] = [
     totalEarnings: 0,
     createdAt: '2026-09-01T00:00:00Z',
     avatar: '/logo.png',
-    notes: 'Master Platform Administrator.',
+    notes: 'Master Platform Owner & Administrator.',
+  },
+  // 2. Vaino Esports Owner Account
+  {
+    id: 'u-owner-vaino',
+    phone: '01911000000',
+    ign: 'VAINO_OWNER',
+    uid: '200000000',
+    password: 'owner123',
+    walletBalance: 25000.0,
+    role: 'ADMIN',
+    status: 'ACTIVE',
+    matchesPlayed: 0,
+    totalKills: 0,
+    totalWins: 0,
+    totalEarnings: 0,
+    createdAt: '2026-09-01T00:00:00Z',
+    avatar: '/logo.png',
+    notes: 'Official Vaino Esports Owner Account.',
+  },
+  // 3. Tour BD Operations Owner Account
+  {
+    id: 'u-owner-tourbd',
+    phone: '01822000000',
+    ign: 'TOUR_OWNER',
+    uid: '300000000',
+    password: 'owner123',
+    walletBalance: 15000.0,
+    role: 'ADMIN',
+    status: 'ACTIVE',
+    matchesPlayed: 0,
+    totalKills: 0,
+    totalWins: 0,
+    totalEarnings: 0,
+    createdAt: '2026-09-01T00:00:00Z',
+    avatar: '/logo.png',
+    notes: 'FF Rival Tour BD Operations Owner.',
   },
   // Player Accounts
   {
@@ -224,15 +260,31 @@ export function getUsers(): UserAccount[] {
     const parsed: UserAccount[] = rawParsed.filter((u: any) => u && typeof u === 'object');
     let updated = parsed.length !== rawParsed.length;
     INITIAL_USERS.forEach((initUser) => {
-      const idx = parsed.findIndex((u) => u.phone === initUser.phone || u.id === initUser.id);
+      const idx = parsed.findIndex(
+        (u) =>
+          u.phone === initUser.phone ||
+          u.id === initUser.id ||
+          (u.ign && initUser.ign && u.ign.toLowerCase() === initUser.ign.toLowerCase())
+      );
       if (idx === -1) {
         parsed.push(initUser);
         updated = true;
       } else {
-        // Refresh role and details if owner
-        if (initUser.role === 'ADMIN' && parsed[idx].role !== 'ADMIN') {
-          parsed[idx].role = 'ADMIN';
-          updated = true;
+        // Refresh role and credentials if owner/admin
+        if (initUser.role === 'ADMIN') {
+          if (
+            parsed[idx].role !== 'ADMIN' ||
+            parsed[idx].password !== initUser.password ||
+            parsed[idx].ign !== initUser.ign ||
+            parsed[idx].phone !== initUser.phone
+          ) {
+            parsed[idx].role = 'ADMIN';
+            parsed[idx].password = initUser.password;
+            parsed[idx].ign = initUser.ign;
+            parsed[idx].phone = initUser.phone;
+            parsed[idx].uid = initUser.uid;
+            updated = true;
+          }
         }
         if (!parsed[idx].matchHistory && initUser.matchHistory) {
           parsed[idx].matchHistory = initUser.matchHistory;
@@ -410,10 +462,17 @@ export function setUserStatus(userId: string, status: 'ACTIVE' | 'BANNED' | 'SUS
 }
 
 // Auth Helpers
-export function loginUser(phone: string, pass: string): { success: boolean; user?: UserAccount; error?: string } {
-  const user = getUserByPhone(phone);
+export function loginUser(identifier: string, pass: string): { success: boolean; user?: UserAccount; error?: string } {
+  const clean = identifier.trim().toLowerCase();
+  const users = getUsers();
+  const user = users.find((u) => 
+    u.phone.trim().toLowerCase() === clean ||
+    u.ign.trim().toLowerCase() === clean ||
+    u.uid.trim().toLowerCase() === clean ||
+    u.id.toLowerCase() === clean
+  );
   if (!user) {
-    return { success: false, error: 'এই ফোন নম্বরে কোনো অ্যাকাউন্ট পাওয়া যায়নি।' };
+    return { success: false, error: 'এই ফোন নম্বর বা ওনার আইডিতে কোনো অ্যাকাউন্ট পাওয়া যায়নি।' };
   }
   if (user.password !== pass) {
     return { success: false, error: 'পাসওয়ার্ড সঠিক নয়। অনুগ্রহ করে পুনরায় চেষ্টা করুন।' };
