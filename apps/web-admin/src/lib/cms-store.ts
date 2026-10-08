@@ -25,6 +25,14 @@ export interface MatchItem {
   status?: 'UPCOMING' | 'ROOM_OPEN' | 'LIVE' | 'COMPLETED';
   /** Published after the match ends: who placed where, kills and prize won. */
   results?: Array<{ rank: number; ign: string; kills: number; prize: number }>;
+  participants?: Array<{ ign: string; uid?: string; slot?: number; team?: number }>;
+}
+
+export interface MatchParticipant {
+  ign: string;
+  uid?: string;
+  slot?: number;
+  team?: number;
 }
 
 export interface CategoryItem {

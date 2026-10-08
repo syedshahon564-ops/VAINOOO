@@ -45,6 +45,35 @@ export default function MatchDetailsPage({
   const { settings } = useCMS();
   const [showVideoModal, setShowVideoModal] = useState(false);
 
+  const activeParticipants = React.useMemo(() => {
+    const list: ParticipantItem[] = [];
+    const seen = new Set<string>();
+
+    if (match.participants && match.participants.length > 0) {
+      match.participants.forEach((p) => {
+        const key = `${p.ign}-${p.slot || 0}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          list.push(p);
+        }
+      });
+    }
+
+    if (participants && participants.length > 0) {
+      participants.forEach((p) => {
+        const ign = typeof p === 'string' ? p : p.ign;
+        const slot = typeof p === 'object' ? p.slot || 0 : 0;
+        const key = `${ign}-${slot}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          list.push(p);
+        }
+      });
+    }
+
+    return list;
+  }, [match.participants, participants]);
+
   return (
     <div
       className={`min-h-full bg-white text-gray-900 ${
@@ -315,24 +344,24 @@ export default function MatchDetailsPage({
         <div className="border-t border-dashed border-gray-200 pt-3 text-center">
           <h4 className="text-xs font-black uppercase tracking-wider text-gray-900 flex items-center justify-center gap-1.5">
             <Users className="w-4 h-4 text-blue-600" />
-            REGISTERED PARTICIPANTS ({participants.length}/{match.totalSlots})
+            REGISTERED PARTICIPANTS ({activeParticipants.length}/{match.totalSlots})
           </h4>
         </div>
 
         {/* Numbered Participants with UID & IGN */}
-        {participants.length === 0 ? (
+        {activeParticipants.length === 0 ? (
           <div className="py-8 px-4 rounded-xl border border-dashed border-gray-200 bg-gray-50/60 text-center space-y-1.5">
             <Users className="w-8 h-8 mx-auto text-gray-400 opacity-60" />
             <p className="text-xs font-bold text-gray-800">
               এখনো কোনো প্লেয়ার রেজিস্ট্রেশন করেনি
             </p>
             <p className="text-[11px] text-gray-500">
-              ম্যাচে অংশ নিতে নিচের &quot;Join Now / স্লট বুক করুন&quot; বাটনে ক্লিক করে প্রথম প্লেয়ার হিসেবে আপনার স্লট নিশ্চিত করুন।
+              ম্যাচে অংশ নিতে নিচের &quot;Join Now / স্লট বুক করুন&quot; বাটনে ক্লিক করে আপনার নাম যুক্ত করুন।
             </p>
           </div>
         ) : (
           <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
-            {participants.map((item, idx) => {
+            {activeParticipants.map((item, idx) => {
               const ign = typeof item === 'string' ? item : item.ign;
               const uid = typeof item === 'object' && item.uid && item.uid !== '---' ? item.uid : null;
               const slotNum = typeof item === 'object' && item.slot ? item.slot : idx + 1;

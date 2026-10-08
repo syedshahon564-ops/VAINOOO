@@ -138,9 +138,13 @@ export default function CategoryDetailPage() {
             },
           ];
 
-      // Update match filled slots count
+      // Update match filled slots count and participants list
+      const existingParticipants = bookingMatch.participants || [];
+      const updatedParticipants = [...existingParticipants, ...registeredEntries];
+
       updateMatch(bookingMatch.id, {
         filledSlots: Math.min(bookingMatch.totalSlots, (bookingMatch.filledSlots || 0) + registeredCount),
+        participants: updatedParticipants,
       });
 
       setBookedParticipants((prev) => ({
@@ -173,11 +177,12 @@ export default function CategoryDetailPage() {
 
   // Render Full Match Details Page (Image 1, 2, 3, 4)
   if (matchDetailsScreen) {
-    const currentParticipants = bookedParticipants[matchDetailsScreen.id] || [];
+    const activeMatch = matches.find((m) => m.id === matchDetailsScreen.id) || matchDetailsScreen;
+    const currentParticipants = activeMatch.participants || bookedParticipants[matchDetailsScreen.id] || [];
     return (
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 animate-in fade-in duration-200">
         <MatchDetailsPage
-          match={matchDetailsScreen}
+          match={activeMatch}
           participants={currentParticipants}
           onBack={() => setMatchDetailsScreen(null)}
           onJoinClick={(m) => {

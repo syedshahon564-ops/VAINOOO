@@ -461,11 +461,32 @@ export default function MobileAppViewPage(props: any) {
       const registeredCount =
         slotInfo.players && slotInfo.players.length > 0 ? slotInfo.players.length : 1;
 
+      const newParticipantItems =
+        slotInfo.players && slotInfo.players.length > 0
+          ? slotInfo.players.map((p) => ({
+              ign: p.ign,
+              uid: p.uid,
+              slot: slotInfo.slotNumber,
+              team: slotInfo.teamNumber,
+            }))
+          : [
+              {
+                ign: slotInfo.ign,
+                uid: slotInfo.uid,
+                slot: slotInfo.slotNumber,
+                team: slotInfo.teamNumber,
+              },
+            ];
+
+      const existingParticipants = bookingModalMatch.participants || [];
+      const updatedParticipants = [...existingParticipants, ...newParticipantItems];
+
       updateMatch(bookingModalMatch.id, {
         filledSlots: Math.min(
           bookingModalMatch.totalSlots,
           (bookingModalMatch.filledSlots || 0) + registeredCount
         ),
+        participants: updatedParticipants,
       });
 
       const newEntries =
@@ -939,15 +960,20 @@ export default function MobileAppViewPage(props: any) {
                   {/* FULL DETAILS PAGE (Screenshot 4, 3, 2, 1) */}
                   {matchDetailsScreen ? (
                     <MatchDetailsPage
-                      match={matchDetailsScreen}
-                      participants={bookedMatchesList
-                        .filter((bm) => bm.title === matchDetailsScreen.title)
-                        .map((bm) => ({
-                          ign: bm.ign,
-                          uid: bm.uid,
-                          slot: bm.slot,
-                          team: bm.team,
-                        }))}
+                      match={
+                        matches.find((m) => m.id === matchDetailsScreen.id) || matchDetailsScreen
+                      }
+                      participants={
+                        (matches.find((m) => m.id === matchDetailsScreen.id)?.participants) ||
+                        bookedMatchesList
+                          .filter((bm) => bm.title === matchDetailsScreen.title)
+                          .map((bm) => ({
+                            ign: bm.ign,
+                            uid: bm.uid,
+                            slot: bm.slot,
+                            team: bm.team,
+                          }))
+                      }
                       onBack={() => setMatchDetailsScreen(null)}
                       onJoinClick={(m) => {
                         setMatchDetailsScreen(null);
