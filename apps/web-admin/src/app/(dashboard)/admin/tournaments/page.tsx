@@ -14,9 +14,12 @@ import {
   Clock,
   ArrowLeft,
   Award,
+  Bot,
+  Zap,
 } from 'lucide-react';
 import { useCMS, MatchItem } from '@/lib/cms-store';
 import ImageUploadInput from '@/components/ImageUploadInput';
+import { autoDeliverRoomCredentials } from '@/lib/match-scheduler';
 
 export default function AdminTournamentsPage() {
   const { categories, matches, addMatch, updateMatch, deleteMatch, clearAllMatches } = useCMS();
@@ -355,6 +358,19 @@ export default function AdminTournamentsPage() {
                         className="px-2.5 py-1.5 rounded-lg bg-gray-100 dark:bg-white/10 hover:bg-gray-200 text-gray-800 dark:text-gray-200 font-bold text-[11px] flex items-center gap-1"
                       >
                         <Key className="w-3.5 h-3.5 text-amber-500" /> রুম পাস
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          const res = autoDeliverRoomCredentials(m.id);
+                          if (res) {
+                            showNotification(`বট সফলভাবে রুম আইডি (${res.roomId}) ও পাসওয়ার্ড (${res.roomPass}) ডেলিভারি করেছে!`);
+                          }
+                        }}
+                        className="px-2.5 py-1.5 rounded-lg bg-red-50 dark:bg-red-950/40 hover:bg-red-100 text-red-600 font-bold text-[11px] flex items-center gap-1 transition-all"
+                        title="বট দ্বারা স্বয়ংক্রিয়ভাবে রুম আইডি ও পাসওয়ার্ড জেনারেট ও ডেলিভারি করুন"
+                      >
+                        <Bot className="w-3.5 h-3.5 text-red-600" /> বট রুম
                       </button>
 
                       <button

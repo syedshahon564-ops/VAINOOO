@@ -23,14 +23,32 @@ import {
   saveSchedulerConfig,
   sendBroadcastNotification,
   SchedulerConfig,
+  getBotMonitoredMatches,
+  autoDeliverRoomCredentials,
+  runBotRoomManagerCycle,
+  BotMonitoredMatch,
 } from '@/lib/match-scheduler';
 import { useCMS } from '@/lib/cms-store';
 
 export default function BotControlsPage() {
   const { matches } = useCMS();
   const [config, setConfig] = useState<SchedulerConfig>(getSchedulerConfig());
+  const [monitoredMatches, setMonitoredMatches] = useState<BotMonitoredMatch[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  useEffect(() => {
+    setMonitoredMatches(getBotMonitoredMatches());
+    const handleUpdate = () => setMonitoredMatches(getBotMonitoredMatches());
+    window.addEventListener('ff_bot_matches_updated', handleUpdate);
+    window.addEventListener('ff_cms_updated', handleUpdate);
+    window.addEventListener('ff_room_credentials_delivered', handleUpdate);
+    return () => {
+      window.removeEventListener('ff_bot_matches_updated', handleUpdate);
+      window.removeEventListener('ff_cms_updated', handleUpdate);
+      window.removeEventListener('ff_room_credentials_delivered', handleUpdate);
+    };
+  }, []);
 
   // Broadcast Notification Form
   const [broadcastTitle, setBroadcastTitle] = useState('🚨 নতুন টুর্নামেন্ট শুরু হতে যাচ্ছে!');
@@ -325,6 +343,137 @@ export default function BotControlsPage() {
             </button>
           </form>
         </div>
+      </div>
+
+      {/* Section 3: Bot Monitored Matches & Auto Room Credentials Delivery Center */}
+      <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#12121a] p-6 space-y-4 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-100 dark:border-white/5">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-950/50 flex items-center justify-center text-red-600">
+              <Bot className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-black text-gray-900 dark:text-white flex items-center gap-2">
+                বট মনিটরিং সেন্টার ও অটো রুম আইডি ডেলিভারি
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold border border-emerald-300">
+                  {monitoredMatches.length}টি ম্যাচ মনিটর হচ্ছে
+                </span>
+              </h3>
+              <p className="text-[11px] text-gray-500">
+                নতুন যেকোনো ম্যাচ তৈরি হলে তা বটের কাছে স্বয়ংক্রিয়ভাবে সেভ হয় এবং শিডিউল অনুযায়ী প্লেয়ারদের কাছে রুম আইডি ও পাসওয়ার্ড ডেলিভারি করে।
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                const count = runBotRoomManagerCycle();
+                setMonitoredMatches(getBotMonitoredMatches());
+                showToast(`বট সাইকেল সফলভাবে সম্পন্ন হয়েছে (${count} টি রুমে ডেলিভারি হয়েছে)।`);
+              }}
+              className="px-3 py-2 rounded-xl bg-gray-100 dark:bg-white/10 hover:bg-gray-200 text-gray-800 dark:text-white text-xs font-bold flex items-center gap-1.5 transition-all"
+            >
+              <RotateCcw className="w-3.5 h-3.5" /> রিফ্রেশ মনিটর
+            </button>
+
+            {monitoredMatches.length > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  let delivered = 0;
+                  monitoredMatches.forEach((m) => {
+                    if (!m.roomId) {
+                      autoDeliverRoomCredentials(m.id);
+                      delivered++;
+                    }
+                  });
+                  setMonitoredMatches(getBotMonitoredMatches());
+                  showToast(`বট সব ${delivered || monitoredMatches.length}টি ম্যাচের রুম আইডি ও পাসওয়ার্ড ডেলিভারি করেছে!`);
+                }}
+                className="px-3.5 py-2 rounded-xl btn-red text-xs font-black flex items-center gap-1.5 shadow-md shadow-red-600/20 active:scale-95 transition-all"
+              >
+                <Zap className="w-3.5 h-3.5" /> সব রুম এখনই ডেলিভার করুন
+              </button>
+            )}
+          </div>
+        </div>
+
+        {monitoredMatches.length === 0 ? (
+          <div className="py-12 text-center text-gray-500 space-y-2">
+            <Bot className="w-10 h-10 mx-auto text-gray-400 opacity-60" />
+            <p className="text-xs font-bold text-gray-700 dark:text-gray-300">
+              বর্তমানে বটের মেমোরিতে কোনো ম্যাচ সংরক্ষিত নেই (০ ম্যাচ)।
+            </p>
+            <p className="text-[11px] text-gray-400">
+              নতুন ম্যাচ তৈরি করলে বা স্বয়ংক্রিয় ব্যাচ দিলে তা বটের তালিকায় স্বয়ংক্রিয়ভাবে প্রদর্শিত হবে।
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left">
+              <thead>
+                <tr className="border-b border-gray-100 dark:border-white/5 text-[10px] text-gray-500 uppercase">
+                  <th className="py-2.5 px-3">ম্যাচের নাম</th>
+                  <th className="py-2.5 px-3">ক্যাটাগরি</th>
+                  <th className="py-2.5 px-3">শিডিউল টাইম</th>
+                  <th className="py-2.5 px-3">স্লট</th>
+                  <th className="py-2.5 px-3">রুম ডেলিভারি স্ট্যাটাস</th>
+                  <th className="py-2.5 px-3 text-right">অ্যাকশন</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-white/5">
+                {monitoredMatches.map((m) => (
+                  <tr key={m.id} className="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                    <td className="py-3 px-3 font-extrabold text-gray-900 dark:text-white">
+                      {m.title}
+                    </td>
+                    <td className="py-3 px-3">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-300">
+                        {m.categorySlug}
+                      </span>
+                    </td>
+                    <td className="py-3 px-3 font-mono text-gray-600 dark:text-gray-300">
+                      {m.time}
+                    </td>
+                    <td className="py-3 px-3 font-mono font-bold">
+                      {m.filledSlots}/{m.totalSlots}
+                    </td>
+                    <td className="py-3 px-3">
+                      {m.roomId ? (
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] font-black px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300">
+                            ✅ ডেলিভার্ড: {m.roomId} (Pass: {m.roomPass || '1234'})
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-300">
+                          ⏳ অপেক্ষমাণ (ম্যাচ শুরুর ১৫ মিনিট আগে)
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-3 px-3 text-right">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const res = autoDeliverRoomCredentials(m.id);
+                          if (res) {
+                            showToast(`"${m.title}" এর জন্য রুম আইডি: ${res.roomId} তৈরি ও ডেলিভারি করা হয়েছে!`);
+                            setMonitoredMatches(getBotMonitoredMatches());
+                          }
+                        }}
+                        className="px-2.5 py-1 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold text-[10px] transition-colors"
+                      >
+                        ⚡ {m.roomId ? 'পুনরায় ডেলিভার' : 'রুম আইডি দিন'}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

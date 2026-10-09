@@ -430,6 +430,9 @@ export function generateAutomatedMatchBatch(options?: {
   cfg.batchCount += 1;
   saveSchedulerConfig(cfg);
 
+  // Register all newly generated matches with the Bot system
+  generatedMatches.forEach((m) => registerMatchWithBot(m));
+
   // Dispatch App Notification to all active mobile users
   sendBroadcastNotification(
     '🔥 নতুন টুর্নামেন্ট যুক্ত হয়েছে!',
@@ -472,4 +475,315 @@ export function runDailyAutoSchedulerIfDue(): boolean {
 
   generateAutomatedMatchBatch({ targetDay: publishTomorrow ? 'tomorrow' : 'today' });
   return true;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Bot Monitored Matches Registry & Auto Room Delivery               */
+/* ------------------------------------------------------------------ */
+
+export interface BotMonitoredMatch {
+  id: string;
+  categorySlug: string;
+  title: string;
+  time: string;
+  map?: string;
+  type?: string;
+  status: 'UPCOMING' | 'ROOM_OPEN' | 'LIVE' | 'COMPLETED';
+  roomId?: string;
+  roomPass?: string;
+  roomDelivered: boolean;
+  deliveredAt?: string;
+  registeredAt: string;
+  totalSlots: number;
+  filledSlots: number;
+}
+
+export interface UserBookedMatch {
+  id: string;
+  matchId: string;
+  categorySlug?: string;
+  title: string;
+  map?: string;
+  type?: string;
+  slot: number;
+  team?: number;
+  ign: string;
+  uid: string;
+  time: string;
+  roomId?: string;
+  roomPass?: string;
+  bookedAt: string;
+}
+
+const BOT_MONITORED_STORAGE_KEY = 'ff_bot_monitored_matches_v2';
+const USER_BOOKINGS_STORAGE_KEY = 'ff_user_booked_matches_v2';
+
+export function getBotMonitoredMatches(): BotMonitoredMatch[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(BOT_MONITORED_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+export function saveBotMonitoredMatches(matches: BotMonitoredMatch[]): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(BOT_MONITORED_STORAGE_KEY, JSON.stringify(matches));
+    window.dispatchEvent(new CustomEvent('ff_bot_matches_updated', { detail: matches }));
+  } catch (e) {}
+}
+
+export function registerMatchWithBot(match: MatchItem): void {
+  if (typeof window === 'undefined') return;
+  const current = getBotMonitoredMatches();
+  const existingIdx = current.findIndex((m) => m.id === match.id);
+  const isDelivered = Boolean(match.roomId && match.status === 'ROOM_OPEN');
+  const nowIso = new Date().toISOString();
+
+  const monitoredItem: BotMonitoredMatch = {
+    id: match.id,
+    categorySlug: match.categorySlug,
+    title: match.title,
+    time: match.time,
+    map: match.map,
+    type: match.type,
+    status: match.status || 'UPCOMING',
+    roomId: match.roomId,
+    roomPass: match.roomPass,
+    roomDelivered: isDelivered,
+    deliveredAt: match.roomId ? (existingIdx !== -1 && current[existingIdx].deliveredAt ? current[existingIdx].deliveredAt : nowIso) : undefined,
+    registeredAt: existingIdx !== -1 ? current[existingIdx].registeredAt : nowIso,
+    totalSlots: match.totalSlots,
+    filledSlots: match.filledSlots || 0,
+  };
+
+  if (existingIdx !== -1) {
+    current[existingIdx] = monitoredItem;
+  } else {
+    current.unshift(monitoredItem);
+  }
+  saveBotMonitoredMatches(current);
+}
+
+export function unregisterMatchFromBot(matchId: string): void {
+  if (typeof window === 'undefined') return;
+  const current = getBotMonitoredMatches();
+  const updated = current.filter((m) => m.id !== matchId);
+  saveBotMonitoredMatches(updated);
+}
+
+export function clearBotMatches(): void {
+  if (typeof window === 'undefined') return;
+  saveBotMonitoredMatches([]);
+}
+
+/**
+ * Generates a realistic 7-digit Free Fire Custom Room ID (e.g. "8492015")
+ */
+export function generateRandomRoomId(): string {
+  return Math.floor(1000000 + Math.random() * 9000000).toString();
+}
+
+/**
+ * Generates a realistic 4-digit PIN Room Password (e.g. "1234", "7890")
+ */
+export function generateRandomRoomPass(): string {
+  return Math.random() > 0.35 ? '1234' : Math.floor(1000 + Math.random() * 9000).toString();
+}
+
+/**
+ * Automatically generates & delivers Room ID and Password for a match,
+ * updates CMS data, notifies mobile users, and updates player bookings.
+ */
+export function autoDeliverRoomCredentials(matchId: string): { roomId: string; roomPass: string } | null {
+  if (typeof window === 'undefined') return null;
+  const cmsData = getCMSData();
+  const matchIndex = cmsData.matches.findIndex((m) => m.id === matchId);
+  if (matchIndex === -1) return null;
+
+  const match = cmsData.matches[matchIndex];
+  const roomId = match.roomId || generateRandomRoomId();
+  const roomPass = match.roomPass || generateRandomRoomPass();
+
+  // 1. Update Match in CMS store
+  cmsData.matches[matchIndex] = {
+    ...match,
+    roomId,
+    roomPass,
+    status: 'ROOM_OPEN',
+  };
+  saveCMSData(cmsData);
+
+  // 2. Update Bot Monitored match
+  const monitored = getBotMonitoredMatches();
+  const monIdx = monitored.findIndex((m) => m.id === matchId);
+  const nowIso = new Date().toISOString();
+  if (monIdx !== -1) {
+    monitored[monIdx] = {
+      ...monitored[monIdx],
+      roomId,
+      roomPass,
+      status: 'ROOM_OPEN',
+      roomDelivered: true,
+      deliveredAt: nowIso,
+    };
+  } else {
+    monitored.unshift({
+      id: match.id,
+      categorySlug: match.categorySlug,
+      title: match.title,
+      time: match.time,
+      map: match.map,
+      type: match.type,
+      status: 'ROOM_OPEN',
+      roomId,
+      roomPass,
+      roomDelivered: true,
+      deliveredAt: nowIso,
+      registeredAt: nowIso,
+      totalSlots: match.totalSlots,
+      filledSlots: match.filledSlots || 0,
+    });
+  }
+  saveBotMonitoredMatches(monitored);
+
+  // 3. Update User Bookings storage if user has booked this match
+  updateUserBookingsWithRoomCredentials(matchId, roomId, roomPass);
+
+  // 4. Dispatch notification to all users
+  sendBroadcastNotification(
+    '🔑 রুম আইডি ও পাসওয়ার্ড ডেলিভারি!',
+    `"${match.title}" ম্যাচের রুম আইডি: ${roomId} এবং পাসওয়ার্ড: ${roomPass} উন্মুক্ত করা হয়েছে। দ্রুত ফ্রি ফায়ারে জয়েন করুন!`,
+    match.categorySlug
+  );
+
+  window.dispatchEvent(
+    new CustomEvent('ff_room_credentials_delivered', {
+      detail: { matchId, roomId, roomPass },
+    })
+  );
+
+  return { roomId, roomPass };
+}
+
+/**
+ * Checks all matches and auto-delivers Room ID & Password if scheduled time is due
+ * (or <= 15 minutes before start).
+ */
+export function runBotRoomManagerCycle(): number {
+  if (typeof window === 'undefined') return 0;
+  const cmsData = getCMSData();
+  if (!cmsData.matches || cmsData.matches.length === 0) return 0;
+
+  const now = new Date();
+  let deliveredCount = 0;
+
+  const monitored = getBotMonitoredMatches();
+  const monitoredMap = new Map(monitored.map((m) => [m.id, m]));
+
+  for (const match of cmsData.matches) {
+    if (match.status === 'COMPLETED') continue;
+
+    // Register if not monitored yet
+    if (!monitoredMap.has(match.id)) {
+      registerMatchWithBot(match);
+    }
+
+    // Check if room needs delivery
+    if (!match.roomId || match.status !== 'ROOM_OPEN') {
+      const matchDate = parseScheduleTimeToDate(match.time);
+      let isDue = false;
+
+      if (matchDate) {
+        // Room opens 15 minutes before match start
+        const diffMinutes = (matchDate.getTime() - now.getTime()) / 60000;
+        // If within 15 minutes before start or already past start time
+        if (diffMinutes <= 15) {
+          isDue = true;
+        }
+      } else {
+        // If time format cannot be parsed, deliver if match has participants or marked ROOM_OPEN
+        if ((match.filledSlots || 0) > 0 || match.status === 'ROOM_OPEN') {
+          isDue = true;
+        }
+      }
+
+      if (isDue) {
+        autoDeliverRoomCredentials(match.id);
+        deliveredCount++;
+      }
+    }
+  }
+
+  return deliveredCount;
+}
+
+/* ------------------------------------------------------------------ */
+/*  User Booked Matches Persistent Helpers                            */
+/* ------------------------------------------------------------------ */
+
+export function getUserBookedMatches(): UserBookedMatch[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(USER_BOOKINGS_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+export function saveUserBookedMatches(list: UserBookedMatch[]): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(USER_BOOKINGS_STORAGE_KEY, JSON.stringify(list));
+    window.dispatchEvent(new CustomEvent('ff_user_bookings_updated', { detail: list }));
+  } catch (e) {}
+}
+
+export function addUserBooking(booking: Omit<UserBookedMatch, 'id' | 'bookedAt'>): UserBookedMatch {
+  const current = getUserBookedMatches();
+  const newEntry: UserBookedMatch = {
+    ...booking,
+    id: 'bm-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+    bookedAt: new Date().toISOString(),
+  };
+  const updated = [newEntry, ...current];
+  saveUserBookedMatches(updated);
+  return newEntry;
+}
+
+export function updateUserBookingsWithRoomCredentials(
+  matchId: string,
+  roomId: string,
+  roomPass: string
+): void {
+  const current = getUserBookedMatches();
+  let modified = false;
+  const updated = current.map((b) => {
+    if (b.matchId === matchId || b.id === matchId) {
+      modified = true;
+      return { ...b, roomId, roomPass };
+    }
+    return b;
+  });
+  if (modified) {
+    saveUserBookedMatches(updated);
+  }
+}
+
+// Global listener: when a match is added from anywhere, register with bot
+if (typeof window !== 'undefined') {
+  window.addEventListener('ff_match_added', (e: any) => {
+    if (e.detail) {
+      registerMatchWithBot(e.detail);
+    }
+  });
+  window.addEventListener('ff_match_deleted', (e: any) => {
+    if (e.detail?.matchId) {
+      unregisterMatchFromBot(e.detail.matchId);
+    }
+  });
 }

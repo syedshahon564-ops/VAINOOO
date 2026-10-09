@@ -29,6 +29,7 @@ import SlotBookingModal from '@/components/SlotBookingModal';
 import TotalPrizeDetailsModal from '@/components/TotalPrizeDetailsModal';
 import MatchDetailsPage from '@/components/MatchDetailsPage';
 import LiveMatchCountdown, { formatMatchSchedule, parseScheduleTimeToDate } from '@/components/LiveMatchCountdown';
+import { addUserBooking } from '@/lib/match-scheduler';
 
 export default function CategoryDetailPage() {
   const params = useParams();
@@ -141,6 +142,24 @@ export default function CategoryDetailPage() {
       // Update match filled slots count and participants list
       const existingParticipants = bookingMatch.participants || [];
       const updatedParticipants = [...existingParticipants, ...registeredEntries];
+
+      // Save to user persistent bookings for My Matches
+      registeredEntries.forEach((entry) => {
+        addUserBooking({
+          matchId: bookingMatch.id,
+          categorySlug: bookingMatch.categorySlug,
+          title: bookingMatch.title,
+          map: bookingMatch.map,
+          type: bookingMatch.type,
+          slot: entry.slot || 1,
+          team: entry.team,
+          ign: entry.ign,
+          uid: entry.uid || '',
+          time: bookingMatch.time,
+          roomId: bookingMatch.roomId,
+          roomPass: bookingMatch.roomPass,
+        });
+      });
 
       updateMatch(bookingMatch.id, {
         filledSlots: Math.min(bookingMatch.totalSlots, (bookingMatch.filledSlots || 0) + registeredCount),

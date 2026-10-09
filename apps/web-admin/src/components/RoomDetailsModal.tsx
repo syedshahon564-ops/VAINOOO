@@ -15,6 +15,7 @@ import {
   Flame,
 } from 'lucide-react';
 import { MatchItem } from '@/lib/cms-store';
+import { autoDeliverRoomCredentials } from '@/lib/match-scheduler';
 
 interface RoomDetailsModalProps {
   match: MatchItem;
@@ -122,8 +123,17 @@ export default function RoomDetailsModal({ match, onClose, onJoinClick }: RoomDe
               </div>
             </div>
           ) : (
-            <div className="p-2.5 rounded-xl bg-black/10 dark:bg-black/40 text-center text-xs font-mono text-gray-500">
-              🔒 Room ID: [ম্যাচ শুরুর ১৫ মিনিট আগে আনলক হবে]
+            <div className="p-2.5 rounded-xl bg-black/10 dark:bg-black/40 text-xs font-mono text-gray-500 flex flex-col sm:flex-row items-center justify-between gap-2">
+              <span>🔒 Room ID: [ম্যাচ শুরুর ১৫ মিনিট আগে বট আনলক করবে]</span>
+              <button
+                type="button"
+                onClick={() => {
+                  autoDeliverRoomCredentials(match.id);
+                }}
+                className="px-2.5 py-1 rounded-lg bg-red-600 hover:bg-red-700 text-white text-[10px] font-bold shadow-xs transition-colors"
+              >
+                🤖 এখনই আনলক করুন
+              </button>
             </div>
           )}
         </div>

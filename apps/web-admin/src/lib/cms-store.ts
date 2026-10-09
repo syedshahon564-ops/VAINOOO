@@ -92,8 +92,9 @@ export interface CMSData {
   topPlayers: TopPlayerItem[];
 }
 
-const STORAGE_KEY = 'ff_esports_cms_data_v5';
-const MIGRATION_KEY = 'ff_esports_cms_migration_v5';
+const STORAGE_KEY = 'ff_esports_cms_data_v6';
+const MIGRATION_KEY = 'ff_esports_cms_migration_v6';
+const ZERO_RESET_KEY = 'ff_esports_matches_zero_reset_v6';
 
 export const INITIAL_CATEGORIES: Record<string, CategoryItem> = {
   'special-match': {
@@ -364,13 +365,16 @@ export function getCMSData(): CMSData {
       ? parsed.matches.filter((m: any) => m && typeof m === 'object')
       : [];
 
-    // One-time cleanup (v4): drop legacy bot demo matches & reset fake joined counters
-    if (!localStorage.getItem(MIGRATION_KEY)) {
-      matches = matches
-        .filter((m) => !/^(cm-|cs-|lw-|ltw-|sm-|oh-)/.test(String(m?.id ?? '')))
-        .map((m) => ({ ...m, filledSlots: 0 }));
-      localStorage.setItem(MIGRATION_KEY, '1');
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...parsed, matches }));
+    // One-time zero-matches cleanup across all categories as requested by user
+    if (!localStorage.getItem(ZERO_RESET_KEY)) {
+      matches = [];
+      localStorage.setItem(ZERO_RESET_KEY, '1');
+      if (parsed) {
+        parsed.matches = [];
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...parsed, matches: [] }));
+        } catch (e) {}
+      }
     }
 
     const merged: CMSData = normalizeCMSData({
@@ -463,10 +467,13 @@ export function addMatch(match: Omit<MatchItem, 'id' | 'filledSlots'>): MatchIte
     ...match,
     id: 'm-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
     filledSlots: 0,
-    status: 'UPCOMING',
+    status: match.status || 'UPCOMING',
   };
   data.matches.unshift(newMatch);
   saveCMSData(data);
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('ff_match_added', { detail: newMatch }));
+  }
   return newMatch;
 }
 
@@ -483,12 +490,18 @@ export function deleteMatch(matchId: string): void {
   const data = getCMSData();
   data.matches = data.matches.filter((m) => m.id !== matchId);
   saveCMSData(data);
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('ff_match_deleted', { detail: { matchId } }));
+  }
 }
 
 export function clearAllMatches(): void {
   const data = getCMSData();
   data.matches = [];
   saveCMSData(data);
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('ff_matches_cleared'));
+  }
 }
 
 export function updateCategory(slug: string, updated: Partial<CategoryItem>): void {

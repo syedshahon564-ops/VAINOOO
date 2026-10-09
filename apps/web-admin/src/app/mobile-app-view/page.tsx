@@ -69,6 +69,12 @@ import {
   getNotifications,
   markNotificationsAsRead,
   AppNotification,
+  getUserBookedMatches,
+  saveUserBookedMatches,
+  addUserBooking,
+  autoDeliverRoomCredentials,
+  runBotRoomManagerCycle,
+  UserBookedMatch,
 } from '@/lib/match-scheduler';
 
 export default function MobileAppViewPage(props: any) {
@@ -340,20 +346,44 @@ export default function MobileAppViewPage(props: any) {
   };
 
 
-  // Booked matches list (starts empty with 0 fake participants)
-  const [bookedMatchesList, setBookedMatchesList] = useState<
-    Array<{
-      id: string;
-      title: string;
-      slot: number;
-      team?: number;
-      ign: string;
-      uid: string;
-      time: string;
-      roomId: string;
-      roomPass: string;
-    }>
-  >([]);
+  // Booked matches list (hydrated from persistent storage, starts 0)
+  const [bookedMatchesList, setBookedMatchesList] = useState<UserBookedMatch[]>([]);
+  const [botToast, setBotToast] = useState<string | null>(null);
+
+  const showPhoneToast = (msg: string) => {
+    setBotToast(msg);
+    setTimeout(() => setBotToast(null), 3000);
+  };
+
+  useEffect(() => {
+    // Hydrate user booked matches from persistent storage
+    const storedBookings = getUserBookedMatches();
+    if (storedBookings.length > 0) {
+      setBookedMatchesList(storedBookings);
+    }
+
+    const handleBookingsUpdated = (e: any) => {
+      setBookedMatchesList(e.detail || getUserBookedMatches());
+    };
+    const handleCredentialsDelivered = () => {
+      setBookedMatchesList(getUserBookedMatches());
+    };
+
+    window.addEventListener('ff_user_bookings_updated', handleBookingsUpdated);
+    window.addEventListener('ff_room_credentials_delivered', handleCredentialsDelivered);
+
+    // Initial check & interval runner for Bot Room Credentials Manager
+    runBotRoomManagerCycle();
+    const botInterval = setInterval(() => {
+      runBotRoomManagerCycle();
+    }, 4000);
+
+    return () => {
+      window.removeEventListener('ff_user_bookings_updated', handleBookingsUpdated);
+      window.removeEventListener('ff_room_credentials_delivered', handleCredentialsDelivered);
+      clearInterval(botInterval);
+    };
+  }, []);
 
   // Deposit simulation
   const [depositMethod, setDepositMethod] = useState<'bkash' | 'nagad' | 'rocket'>('bkash');
@@ -489,34 +519,40 @@ export default function MobileAppViewPage(props: any) {
         participants: updatedParticipants,
       });
 
-      const newEntries =
+      const newEntries: UserBookedMatch[] =
         slotInfo.players && slotInfo.players.length > 0
-          ? slotInfo.players.map((p, i) => ({
-              id: 'bm-' + Date.now() + '-' + i,
-              title: bookingModalMatch.title,
-              slot: slotInfo.slotNumber,
-              team: slotInfo.teamNumber,
-              ign: p.ign,
-              uid: p.uid,
-              time: bookingModalMatch.time,
-              roomId: bookingModalMatch.roomId || '9948210',
-              roomPass: bookingModalMatch.roomPass || '1234',
-            }))
-          : [
-              {
-                id: 'bm-' + Date.now(),
+          ? slotInfo.players.map((p) =>
+              addUserBooking({
+                matchId: bookingModalMatch.id,
+                categorySlug: bookingModalMatch.categorySlug,
                 title: bookingModalMatch.title,
+                map: bookingModalMatch.map,
+                type: bookingModalMatch.type,
+                slot: slotInfo.slotNumber,
+                team: slotInfo.teamNumber,
+                ign: p.ign,
+                uid: p.uid,
+                time: bookingModalMatch.time,
+                roomId: bookingModalMatch.roomId,
+                roomPass: bookingModalMatch.roomPass,
+              })
+            )
+          : [
+              addUserBooking({
+                matchId: bookingModalMatch.id,
+                categorySlug: bookingModalMatch.categorySlug,
+                title: bookingModalMatch.title,
+                map: bookingModalMatch.map,
+                type: bookingModalMatch.type,
                 slot: slotInfo.slotNumber,
                 team: slotInfo.teamNumber,
                 ign: slotInfo.ign,
                 uid: slotInfo.uid,
                 time: bookingModalMatch.time,
-                roomId: bookingModalMatch.roomId || '9948210',
-                roomPass: bookingModalMatch.roomPass || '1234',
-              },
+                roomId: bookingModalMatch.roomId,
+                roomPass: bookingModalMatch.roomPass,
+              }),
             ];
-
-      setBookedMatchesList((prev) => [...newEntries, ...prev]);
 
       setJoinedSuccess(true);
       setTimeout(() => {
@@ -635,6 +671,14 @@ export default function MobileAppViewPage(props: any) {
           : 'min-h-screen bg-slate-100 dark:bg-[#07070a] py-8 px-4 transition-colors'
       }
     >
+      {/* Bot Action Toast */}
+      {botToast && (
+        <div className="fixed top-12 left-1/2 -translate-x-1/2 z-[110] bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-black shadow-2xl animate-bounce flex items-center gap-2 border border-emerald-400">
+          <Sparkles className="w-4 h-4 text-amber-300" />
+          <span>{botToast}</span>
+        </div>
+      )}
+
       <div className={isMobileView ? 'w-full min-h-screen' : 'max-w-7xl mx-auto'}>
         {/* Top Breadcrumb & Controls */}
         {!isMobileView && (
@@ -1459,7 +1503,16 @@ export default function MobileAppViewPage(props: any) {
                           </p>
                         </div>
                       ) : (
-                        bookedMatchesList.map((bm) => (
+                        bookedMatchesList.map((bm) => {
+                          const liveMatch = matches.find((m) => m.id === bm.matchId || m.title === bm.title);
+                          const currentRoomId = liveMatch?.roomId || bm.roomId;
+                          const currentRoomPass = liveMatch?.roomPass || bm.roomPass;
+                          const isRoomReady = Boolean(
+                            currentRoomId &&
+                            (liveMatch?.status === 'ROOM_OPEN' || liveMatch?.status === 'LIVE' || currentRoomPass)
+                          );
+
+                          return (
                           <div
                             key={bm.id}
                             className="p-4 rounded-2xl border border-gray-200 bg-white space-y-3 shadow-md"
@@ -1507,52 +1560,100 @@ export default function MobileAppViewPage(props: any) {
                               </div>
                             </div>
 
-                            {/* Private Room Credentials Card */}
-                            <div className="p-3.5 rounded-xl bg-red-50/80 border border-red-200 space-y-2.5 shadow-xs">
-                              <div className="flex items-center justify-between text-xs">
-                                <span className="text-gray-800 flex items-center gap-1.5 font-extrabold text-xs">
-                                  <Key className="w-4 h-4 text-red-600" /> {tPhone('রুম আইডি:', 'Room ID:')}
-                                </span>
-                                <div className="flex items-center gap-2">
-                                  <span className="font-mono font-black text-gray-950 bg-white px-3 py-1 rounded-lg border border-red-200 text-xs shadow-xs">
-                                    {bm.roomId}
+                            {/* Private Room Credentials Card (Bot Delivered) */}
+                            {isRoomReady ? (
+                              <div className="p-3.5 rounded-xl bg-emerald-50/80 border border-emerald-200 space-y-2.5 shadow-xs">
+                                <div className="flex items-center justify-between text-[11px] pb-1 border-b border-emerald-200/60">
+                                  <span className="font-black text-emerald-800 flex items-center gap-1">
+                                    <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                                    🤖 {tPhone('বট অটো-ডেলিভারি সম্পন্ন', 'Bot Auto Delivered')}
                                   </span>
-                                  <button
-                                    onClick={() => handleCopy(bm.roomId, `room-${bm.id}`)}
-                                    className="px-2.5 py-1 rounded-lg bg-red-600 hover:bg-red-700 text-white text-[10px] font-black flex items-center gap-1 shadow-xs transition-colors"
-                                  >
-                                    {copiedKey === `room-${bm.id}` ? (
-                                      <CheckCircle className="w-3 h-3 text-emerald-200" />
-                                    ) : (
-                                      <Copy className="w-3 h-3" />
-                                    )}
-                                    <span>{copiedKey === `room-${bm.id}` ? 'কপি' : 'কপি'}</span>
-                                  </button>
+                                  <span className="text-[9px] font-extrabold bg-emerald-600 text-white px-2 py-0.5 rounded-full">
+                                    ROOM OPEN
+                                  </span>
                                 </div>
-                              </div>
 
-                              <div className="flex items-center justify-between text-xs">
-                                <span className="text-gray-800 flex items-center gap-1.5 font-extrabold text-xs">
-                                  <Key className="w-4 h-4 text-red-600" /> {tPhone('পাসওয়ার্ড:', 'Password:')}
-                                </span>
-                                <div className="flex items-center gap-2">
-                                  <span className="font-mono font-black text-gray-950 bg-white px-3 py-1 rounded-lg border border-red-200 text-xs shadow-xs">
-                                    {bm.roomPass}
+                                <div className="flex items-center justify-between text-xs">
+                                  <span className="text-gray-800 flex items-center gap-1.5 font-extrabold text-xs">
+                                    <Key className="w-4 h-4 text-emerald-600" /> {tPhone('রুম আইডি:', 'Room ID:')}
                                   </span>
-                                  <button
-                                    onClick={() => handleCopy(bm.roomPass, `pass-${bm.id}`)}
-                                    className="px-2.5 py-1 rounded-lg bg-red-600 hover:bg-red-700 text-white text-[10px] font-black flex items-center gap-1 shadow-xs transition-colors"
-                                  >
-                                    {copiedKey === `pass-${bm.id}` ? (
-                                      <CheckCircle className="w-3 h-3 text-emerald-200" />
-                                    ) : (
-                                      <Copy className="w-3 h-3" />
-                                    )}
-                                    <span>{copiedKey === `pass-${bm.id}` ? 'কপি' : 'কপি'}</span>
-                                  </button>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-mono font-black text-gray-950 bg-white px-3 py-1 rounded-lg border border-emerald-300 text-xs shadow-xs">
+                                      {currentRoomId}
+                                    </span>
+                                    <button
+                                      onClick={() => handleCopy(currentRoomId!, `room-${bm.id}`)}
+                                      className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black flex items-center gap-1 shadow-xs transition-colors"
+                                    >
+                                      {copiedKey === `room-${bm.id}` ? (
+                                        <CheckCircle className="w-3 h-3 text-emerald-200" />
+                                      ) : (
+                                        <Copy className="w-3 h-3" />
+                                      )}
+                                      <span>{copiedKey === `room-${bm.id}` ? 'কপি হয়েছে' : 'কপি'}</span>
+                                    </button>
+                                  </div>
                                 </div>
+
+                                <div className="flex items-center justify-between text-xs">
+                                  <span className="text-gray-800 flex items-center gap-1.5 font-extrabold text-xs">
+                                    <Key className="w-4 h-4 text-emerald-600" /> {tPhone('পাসওয়ার্ড:', 'Password:')}
+                                  </span>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-mono font-black text-gray-950 bg-white px-3 py-1 rounded-lg border border-emerald-300 text-xs shadow-xs">
+                                      {currentRoomPass || '1234'}
+                                    </span>
+                                    <button
+                                      onClick={() => handleCopy(currentRoomPass || '1234', `pass-${bm.id}`)}
+                                      className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black flex items-center gap-1 shadow-xs transition-colors"
+                                    >
+                                      {copiedKey === `pass-${bm.id}` ? (
+                                        <CheckCircle className="w-3 h-3 text-emerald-200" />
+                                      ) : (
+                                        <Copy className="w-3 h-3" />
+                                      )}
+                                      <span>{copiedKey === `pass-${bm.id}` ? 'কপি হয়েছে' : 'কপি'}</span>
+                                    </button>
+                                  </div>
+                                </div>
+
+                                <p className="text-[9px] text-emerald-800 bg-white/70 p-1.5 rounded-lg border border-emerald-200 leading-tight">
+                                  🎮 {tPhone(`ফ্রি ফায়ারে কাস্টম রুমে গিয়ে আইডি ও পাসওয়ার্ড দিন এবং স্লট #${bm.slot} এ গিয়ে বসুন।`, `Open Free Fire Custom Room, enter credentials, and sit in Slot #${bm.slot}.`)}
+                                </p>
                               </div>
-                            </div>
+                            ) : (
+                              <div className="p-3.5 rounded-xl bg-amber-50/90 border border-amber-200 space-y-2 shadow-xs">
+                                <div className="flex items-center justify-between text-[11px]">
+                                  <span className="font-black text-amber-800 flex items-center gap-1">
+                                    <Clock className="w-3.5 h-3.5 text-amber-600" />
+                                    ⏳ {tPhone('রুম আইডি প্রকাশের সময় বাকি', 'Room Release Pending')}
+                                  </span>
+                                  <span className="text-[9px] font-bold bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full">
+                                    AUTO BOT
+                                  </span>
+                                </div>
+                                <p className="text-[10px] text-gray-600 leading-relaxed">
+                                  🤖 {tPhone(
+                                    'বট ম্যাচ শুরুর ১০-১৫ মিনিট পূর্বে স্বয়ংক্রিয়ভাবে রুম আইডি ও পাসওয়ার্ড ডেলিভারি করবে।',
+                                    'The Bot will automatically deliver the Room ID & Password 10-15 minutes before the match starts.'
+                                  )}
+                                </p>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const matchToDeliver = liveMatch?.id || bm.matchId || bm.id;
+                                    const delivered = autoDeliverRoomCredentials(matchToDeliver);
+                                    if (delivered) {
+                                      showPhoneToast('🤖 বট সফলভাবে রুম আইডি ও পাসওয়ার্ড ডেলিভারি করেছে!');
+                                    }
+                                  }}
+                                  className="w-full py-2 px-3 rounded-lg bg-red-600 hover:bg-red-700 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all"
+                                >
+                                  <Zap className="w-3.5 h-3.5" />
+                                  {tPhone('⚡ বট থেকে এখনই রুম আইডি আনুন', '⚡ Get Room ID from Bot Now')}
+                                </button>
+                              </div>
+                            )}
 
                             <div className="flex justify-between items-center text-[10px] text-gray-500 pt-1 font-semibold">
                               <span>UID: {bm.uid}</span>
@@ -1582,8 +1683,9 @@ export default function MobileAppViewPage(props: any) {
                               />
                             </div>
                           </div>
-                        ))
-                      )}
+                        );
+                      })
+                    )}
 
                       <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-[10px] text-amber-800 leading-relaxed font-bold">
                         ⚠️ {tPhone(
