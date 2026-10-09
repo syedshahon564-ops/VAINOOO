@@ -123,6 +123,78 @@ export function markNotificationsAsRead(): void {
   }
 }
 
+export function safeFormatDate(val?: string | null): string {
+  if (!val) return 'এখনো রান হয়নি';
+  try {
+    const d = new Date(val);
+    if (!isNaN(d.getTime())) {
+      return d.toLocaleString('bn-BD', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    }
+  } catch (e) {}
+  return val;
+}
+
+export async function requestNotificationPermission(): Promise<boolean> {
+  if (typeof window === 'undefined' || !('Notification' in window)) return false;
+  try {
+    const perm = await Notification.requestPermission();
+    return perm === 'granted';
+  } catch (e) {
+    return false;
+  }
+}
+
+export function dispatchDevicePushNotification(
+  title: string,
+  message: string,
+  categorySlug?: string
+): AppNotification {
+  // 1. In-app notification
+  const notif = sendBroadcastNotification(title, message, categorySlug);
+
+  // 2. Real Browser / OS Notification
+  if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+    try {
+      new Notification(title, {
+        body: message,
+        icon: '/logo.png',
+        badge: '/logo.png',
+      });
+    } catch (e) {
+      // In mobile WebViews Notification constructor might require Service Worker
+    }
+  }
+
+  // 3. Audio chime if supported
+  if (typeof window !== 'undefined') {
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (AudioCtx) {
+        const audioCtx = new AudioCtx();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5
+        osc.frequency.setValueAtTime(880, audioCtx.currentTime + 0.1); // A5
+        gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.35);
+      }
+    } catch (e) {}
+  }
+
+  return notif;
+}
+
 export function generateDynamicScheduleTimes(): string[] {
   const now = new Date();
   const times: string[] = [];
@@ -653,8 +725,8 @@ export function autoDeliverRoomCredentials(matchId: string): { roomId: string; r
   // 3. Update User Bookings storage if user has booked this match
   updateUserBookingsWithRoomCredentials(matchId, roomId, roomPass);
 
-  // 4. Dispatch notification to all users
-  sendBroadcastNotification(
+  // 4. Dispatch notification to all users (both in-app and browser/device push)
+  dispatchDevicePushNotification(
     '🔑 রুম আইডি ও পাসওয়ার্ড ডেলিভারি!',
     `"${match.title}" ম্যাচের রুম আইডি: ${roomId} এবং পাসওয়ার্ড: ${roomPass} উন্মুক্ত করা হয়েছে। দ্রুত ফ্রি ফায়ারে জয়েন করুন!`,
     match.categorySlug
@@ -787,3 +859,149 @@ if (typeof window !== 'undefined') {
     }
   });
 }
+
+/* ------------------------------------------------------------------ */
+/*  Scheduled & Draft Matches Queue System                            */
+/* ------------------------------------------------------------------ */
+
+export interface ScheduledBotMatch {
+  id: string;
+  title: string;
+  categorySlug: string;
+  map: string;
+  type: 'Solo' | 'Duo' | 'Squad';
+  version: string;
+  entryFee: number;
+  prizePool: number;
+  firstPrize: number;
+  secondPrize?: number;
+  thirdPrize?: number;
+  perKill: number;
+  totalSlots: number;
+  publishAt: string; // ISO or local date-time string e.g. "2026-10-09T22:00"
+  matchPlayTime: string; // e.g. "আজ রাত ১০:০০ PM" or schedule string
+  rules?: string;
+  createdAt: string;
+  status: 'SCHEDULED' | 'PUBLISHED';
+}
+
+const SCHEDULED_MATCHES_STORAGE_KEY = 'ff_scheduled_matches_queue_v1';
+
+export function getScheduledBotMatches(): ScheduledBotMatch[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(SCHEDULED_MATCHES_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+export function saveScheduledBotMatches(list: ScheduledBotMatch[]): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(SCHEDULED_MATCHES_STORAGE_KEY, JSON.stringify(list));
+    window.dispatchEvent(new CustomEvent('ff_scheduled_matches_updated', { detail: list }));
+  } catch (e) {}
+}
+
+export function addScheduledBotMatch(
+  match: Omit<ScheduledBotMatch, 'id' | 'createdAt' | 'status'>
+): ScheduledBotMatch {
+  const current = getScheduledBotMatches();
+  const newMatch: ScheduledBotMatch = {
+    ...match,
+    id: 'sched-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+    createdAt: new Date().toISOString(),
+    status: 'SCHEDULED',
+  };
+  const updated = [newMatch, ...current];
+  saveScheduledBotMatches(updated);
+  return newMatch;
+}
+
+export function deleteScheduledBotMatch(id: string): void {
+  const current = getScheduledBotMatches();
+  const updated = current.filter((m) => m.id !== id);
+  saveScheduledBotMatches(updated);
+}
+
+export function publishScheduledBotMatch(id: string): boolean {
+  if (typeof window === 'undefined') return false;
+  const current = getScheduledBotMatches();
+  const target = current.find((m) => m.id === id);
+  if (!target) return false;
+
+  const cmsData = getCMSData();
+  const newMatchItem: MatchItem = {
+    id: 'm-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+    categorySlug: target.categorySlug,
+    title: target.title,
+    time: target.matchPlayTime,
+    map: target.map,
+    type: target.type,
+    version: target.version || 'MOBILE',
+    entryFee: target.entryFee,
+    prizePool: target.prizePool,
+    firstPrize: target.firstPrize,
+    secondPrize: target.secondPrize || 0,
+    thirdPrize: target.thirdPrize || 0,
+    perKill: target.perKill,
+    totalSlots: target.totalSlots,
+    filledSlots: 0,
+    status: 'UPCOMING',
+    rules: target.rules || 'সব নিয়ম মেনে খেলুন। কোনো হ্যাকিং বা ইললিগ্যাল কার্যকলাপ নিষিদ্ধ।',
+    bannerImage: '/logo.png',
+  };
+
+  // Add to CMS data matches
+  cmsData.matches = [newMatchItem, ...cmsData.matches];
+  saveCMSData(cmsData);
+
+  // Register with bot monitoring
+  registerMatchWithBot(newMatchItem);
+
+  // Remove from scheduled queue
+  const updatedScheduled = current.filter((m) => m.id !== id);
+  saveScheduledBotMatches(updatedScheduled);
+
+  // Notify players with device push notification
+  dispatchDevicePushNotification(
+    '🔥 নতুন ম্যাচ লাইভ পাবলিশ হয়েছে!',
+    `"${newMatchItem.title}" (${newMatchItem.type}) টুর্নামেন্ট শুরু হতে যাচ্ছে। এখনই আপনার পছন্দের স্লট বুক করুন!`,
+    newMatchItem.categorySlug
+  );
+
+  return true;
+}
+
+export function runScheduledBotPublishCycle(): number {
+  if (typeof window === 'undefined') return 0;
+  const scheduled = getScheduledBotMatches();
+  if (scheduled.length === 0) return 0;
+
+  const now = Date.now();
+  let publishedCount = 0;
+
+  for (const item of scheduled) {
+    if (item.status === 'SCHEDULED' && item.publishAt) {
+      const pubTime = new Date(item.publishAt).getTime();
+      if (!isNaN(pubTime) && pubTime <= now) {
+        if (publishScheduledBotMatch(item.id)) {
+          publishedCount++;
+        }
+      }
+    }
+  }
+
+  return publishedCount;
+}
+
+// Global auto-publish and room check cycle every 15s in browser
+if (typeof window !== 'undefined') {
+  setInterval(() => {
+    runScheduledBotPublishCycle();
+    runBotRoomManagerCycle();
+  }, 15000);
+}
+

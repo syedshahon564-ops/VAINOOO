@@ -14,7 +14,13 @@ import {
 } from 'lucide-react';
 import { useCMS } from '@/lib/cms-store';
 import { useLanguage } from '@/components/LanguageProvider';
-import { getCurrentUser, addBalance, deductBalance } from '@/lib/user-store';
+import {
+  getCurrentUser,
+  addBalance,
+  deductBalance,
+  submitDepositRequest,
+  submitWithdrawRequest,
+} from '@/lib/user-store';
 
 interface DepositWithdrawModalProps {
   isOpen: boolean;
@@ -55,8 +61,8 @@ export default function DepositWithdrawModal({
       type: 'Personal (Send Money)',
     },
     ROCKET: {
-      label: 'DBBL Rocket (রকেট)',
-      number: '01912345678-5',
+      label: 'Dutch-Bangla Rocket (ডাচ-বাংলা/রকেট)',
+      number: settings?.rocketNumber || '01912345678-5',
       type: 'Personal (Send Money)',
     },
   };
@@ -93,18 +99,36 @@ export default function DepositWithdrawModal({
     }
 
     const userId = currentUser?.id || 'u-1';
-    addBalance(userId, Number(amount), `${method} Deposit (TrxID: ${trxId})`);
-    setSubmitting(false);
-    setMessage({
-      type: 'success',
-      text: `৳${amount} ডিপোজিট সফল হয়েছে! ব্যালেন্সে তাৎক্ষণিক যোগ করা হয়েছে।`,
+    const userPhone = currentUser?.phone || phone;
+    const userName = currentUser?.ign || 'Player';
+    const autoVerify = settings?.autoWebhookVerification !== false;
+
+    const res = submitDepositRequest({
+      userId,
+      userPhone,
+      userName,
+      method,
+      amount: Number(amount),
+      accountNumber: phone,
+      trxId,
+      autoVerify,
     });
-    setTrxId('');
-    setPhone('');
-    setTimeout(() => {
-      setMessage(null);
-      onClose();
-    }, 1200);
+    setSubmitting(false);
+
+    if (res.success) {
+      setMessage({
+        type: 'success',
+        text: res.message,
+      });
+      setTrxId('');
+      setPhone('');
+      setTimeout(() => {
+        setMessage(null);
+        onClose();
+      }, 1500);
+    } else {
+      setMessage({ type: 'error', text: 'ডিপোজিট সম্পন্ন করা যায়নি।' });
+    }
   };
 
   const handleWithdrawSubmit = (e: React.FormEvent) => {
@@ -131,18 +155,29 @@ export default function DepositWithdrawModal({
     }
 
     const userId = currentUser?.id || 'u-1';
-    const res = deductBalance(userId, Number(amount), `Withdrawal to ${phone} via ${method}`);
+    const userPhone = currentUser?.phone || phone;
+    const userName = currentUser?.ign || 'Player';
+
+    const res = submitWithdrawRequest({
+      userId,
+      userPhone,
+      userName,
+      method,
+      amount: Number(amount),
+      accountNumber: phone,
+    });
     setSubmitting(false);
+
     if (res.success) {
       setMessage({
         type: 'success',
-        text: `৳${amount} উইথড্রল রিকোয়েস্ট সফল হয়েছে! খুব শীঘ্রই পেমেন্ট পাঠানো হবে।`,
+        text: `৳${amount} উইথড্রল রিকোয়েস্ট সফল হয়েছে! খুব শীঘ্রই ${method} নম্বরে (${phone}) পেমেন্ট পাঠানো হবে।`,
       });
       setPhone('');
       setTimeout(() => {
         setMessage(null);
         onClose();
-      }, 1200);
+      }, 1500);
     } else {
       setMessage({ type: 'error', text: res.error || 'উইথড্রল ব্যর্থ হয়েছে।' });
     }
@@ -298,6 +333,28 @@ export default function DepositWithdrawModal({
                   ⚠️ উপরের নম্বরে Send Money করে নিচের বক্সে আপনার মোবাইল নম্বর ও TrxID দিন।
                 </p>
               </div>
+
+              {/* Payment Instruction Banner & Text from Settings */}
+              {settings?.paymentInstructionText && (
+                <div className="p-3.5 rounded-2xl bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-white/10 space-y-2">
+                  <div className="flex items-center gap-2 text-xs font-bold text-gray-800 dark:text-gray-200">
+                    <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                    <span>সেন্ড মানি নির্দেশাবলী:</span>
+                  </div>
+                  <p className="text-[11px] text-gray-600 dark:text-gray-400 whitespace-pre-line leading-relaxed">
+                    {settings.paymentInstructionText}
+                  </p>
+                  {settings.paymentInstructionImage && settings.paymentInstructionImage !== '/logo.png' && (
+                    <div className="pt-1">
+                      <img
+                        src={settings.paymentInstructionImage}
+                        alt="Payment QR/Guide"
+                        className="max-h-36 rounded-xl border border-gray-200 dark:border-white/10 object-contain mx-auto"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Amount Quick Pills */}
               <div className="space-y-1.5">

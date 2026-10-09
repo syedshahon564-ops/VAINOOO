@@ -1,6 +1,24 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { dispatchDevicePushNotification } from './match-scheduler';
+
+export interface PaymentRequest {
+  id: string;
+  userId: string;
+  userPhone: string;
+  userName?: string;
+  type: 'DEPOSIT' | 'WITHDRAW';
+  method: 'BKASH' | 'NAGAD' | 'ROCKET';
+  amount: number;
+  accountNumber: string; // sender number for deposit, receiver number for withdraw
+  trxId?: string; // for deposit
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  createdAt: string;
+  updatedAt?: string;
+  adminNote?: string;
+  autoVerified?: boolean;
+}
 
 export interface UserMatchRecord {
   id: string;
@@ -599,5 +617,270 @@ export function useUserStore() {
     registerUser,
     logoutUser,
     refresh,
+    getPaymentRequests,
+    submitDepositRequest,
+    submitWithdrawRequest,
+    approveWithdrawRequest,
+    rejectWithdrawRequest,
+    approveDepositRequest,
+    rejectDepositRequest,
   };
 }
+
+/* ------------------------------------------------------------------ */
+/*  Payment Requests (Deposit & Withdrawal)                           */
+/* ------------------------------------------------------------------ */
+
+const PAYMENT_REQUESTS_STORAGE_KEY = 'ff_esports_payment_requests_v1';
+
+export function getPaymentRequests(): PaymentRequest[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(PAYMENT_REQUESTS_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+export function savePaymentRequests(list: PaymentRequest[]): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(PAYMENT_REQUESTS_STORAGE_KEY, JSON.stringify(list));
+    window.dispatchEvent(new CustomEvent('ff_payment_requests_updated', { detail: list }));
+  } catch (e) {}
+}
+
+export function submitDepositRequest(data: {
+  userId: string;
+  userPhone: string;
+  userName?: string;
+  method: 'BKASH' | 'NAGAD' | 'ROCKET';
+  amount: number;
+  accountNumber: string;
+  trxId: string;
+  autoVerify?: boolean;
+}): { success: boolean; request: PaymentRequest; message: string } {
+  const current = getPaymentRequests();
+  const now = new Date().toISOString();
+
+  // If autoVerify is enabled
+  const shouldAutoApprove = Boolean(data.autoVerify && data.trxId && data.trxId.trim().length >= 6);
+
+  const newReq: PaymentRequest = {
+    id: 'pay-dep-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+    userId: data.userId,
+    userPhone: data.userPhone,
+    userName: data.userName,
+    type: 'DEPOSIT',
+    method: data.method,
+    amount: Number(data.amount),
+    accountNumber: data.accountNumber,
+    trxId: data.trxId.toUpperCase().trim(),
+    status: shouldAutoApprove ? 'APPROVED' : 'PENDING',
+    autoVerified: shouldAutoApprove,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  const updated = [newReq, ...current];
+  savePaymentRequests(updated);
+
+  if (shouldAutoApprove) {
+    // Add balance to user immediately
+    addBalance(data.userId, Number(data.amount), `${data.method} Auto-Verified Deposit (TrxID: ${newReq.trxId})`);
+    dispatchDevicePushNotification(
+      '💰 ডিপোজিট সফল হয়েছে!',
+      `আপনার ${data.method} ডিপোজিট (TrxID: ${newReq.trxId}) সফল হয়েছে এবং ৳${data.amount} ওয়ালেটে যোগ করা হয়েছে।`
+    );
+    return {
+      success: true,
+      request: newReq,
+      message: `৳${data.amount} ডিপোজিট স্বয়ংক্রিয়ভাবে ভেরিফাই হয়ে ওয়ালেটে যোগ করা হয়েছে!`,
+    };
+  } else {
+    dispatchDevicePushNotification(
+      '⏳ ডিপোজিট রিকোয়েস্ট পেন্ডিং',
+      `৳${data.amount} ডিপোজিট রিকোয়েস্ট জমা হয়েছে। এডমিন যাচাই করে ব্যালেন্স যোগ করবেন।`
+    );
+    return {
+      success: true,
+      request: newReq,
+      message: `৳${data.amount} ডিপোজিট রিকোয়েস্ট জমা হয়েছে! এডমিন খুব শীঘ্রই যাচাই করে ব্যালেন্স যোগ করবেন।`,
+    };
+  }
+}
+
+export function submitWithdrawRequest(data: {
+  userId: string;
+  userPhone: string;
+  userName?: string;
+  method: 'BKASH' | 'NAGAD' | 'ROCKET';
+  amount: number;
+  accountNumber: string;
+}): { success: boolean; error?: string; request?: PaymentRequest } {
+  const user = getUserById(data.userId) || getUserByPhone(data.userPhone);
+  if (!user) {
+    return { success: false, error: 'ইউজার খুঁজে পাওয়া যায়নি।' };
+  }
+
+  if (user.walletBalance < data.amount) {
+    return { success: false, error: 'আপনার ওয়ালেটে পর্যাপ্ত ব্যালেন্স নেই।' };
+  }
+
+  // Deduct balance from wallet immediately to prevent double spending
+  const deductRes = deductBalance(
+    data.userId,
+    Number(data.amount),
+    `উইথড্রল রিকোয়েস্ট (${data.method}: ${data.accountNumber})`
+  );
+
+  if (!deductRes.success) {
+    return { success: false, error: deductRes.error || 'উইথড্রল ব্যর্থ হয়েছে।' };
+  }
+
+  const current = getPaymentRequests();
+  const now = new Date().toISOString();
+  const newReq: PaymentRequest = {
+    id: 'pay-wth-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+    userId: data.userId,
+    userPhone: data.userPhone,
+    userName: data.userName,
+    type: 'WITHDRAW',
+    method: data.method,
+    amount: Number(data.amount),
+    accountNumber: data.accountNumber,
+    status: 'PENDING',
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  const updated = [newReq, ...current];
+  savePaymentRequests(updated);
+
+  dispatchDevicePushNotification(
+    '💸 উইথড্রল রিকোয়েস্ট জমা হয়েছে',
+    `৳${data.amount} উইথড্রল (${data.method}) পেন্ডিং আছে। এডমিন পেমেন্ট পাঠানোর পর কনফার্মেশন পাবেন।`
+  );
+
+  return { success: true, request: newReq };
+}
+
+export function approveWithdrawRequest(requestId: string, adminNote?: string): boolean {
+  const current = getPaymentRequests();
+  const req = current.find((r) => r.id === requestId);
+  if (!req || req.status !== 'PENDING') return false;
+
+  const now = new Date().toISOString();
+  const updated = current.map((r) =>
+    r.id === requestId
+      ? {
+          ...r,
+          status: 'APPROVED' as const,
+          adminNote: adminNote || 'টাকা পাঠানো হয়েছে',
+          updatedAt: now,
+        }
+      : r
+  );
+  savePaymentRequests(updated);
+
+  // Send real-time notification to user
+  dispatchDevicePushNotification(
+    '✅ টাকা পাঠানো হয়েছে!',
+    `আপনার ৳${req.amount} টাকা উইথড্রল সফলভাবে ${req.method} (${req.accountNumber}) নম্বরে পাঠানো হয়েছে। একাউন্ট চেক করুন।`
+  );
+
+  return true;
+}
+
+export function rejectWithdrawRequest(requestId: string, reason?: string): boolean {
+  const current = getPaymentRequests();
+  const req = current.find((r) => r.id === requestId);
+  if (!req || req.status !== 'PENDING') return false;
+
+  // Refund the deducted amount back to user's wallet
+  addBalance(
+    req.userId,
+    req.amount,
+    `উইথড্রল বাতিল ও রিফান্ড: ${reason || 'এডমিন দ্বারা বাতিল'}`
+  );
+
+  const now = new Date().toISOString();
+  const updated = current.map((r) =>
+    r.id === requestId
+      ? {
+          ...r,
+          status: 'REJECTED' as const,
+          adminNote: reason || 'বাতিল করা হয়েছে ও টাকা ফেরত দেওয়া হয়েছে',
+          updatedAt: now,
+        }
+      : r
+  );
+  savePaymentRequests(updated);
+
+  dispatchDevicePushNotification(
+    '❌ উইথড্রল বাতিল ও রিফান্ড',
+    `আপনার ৳${req.amount} উইথড্রল রিকোয়েস্ট বাতিল করা হয়েছে এবং পুরো টাকা ওয়ালেটে রিফান্ড করা হয়েছে।`
+  );
+
+  return true;
+}
+
+export function approveDepositRequest(requestId: string): boolean {
+  const current = getPaymentRequests();
+  const req = current.find((r) => r.id === requestId);
+  if (!req || req.status !== 'PENDING') return false;
+
+  // Add balance to user
+  addBalance(
+    req.userId,
+    req.amount,
+    `${req.method} Deposit Approved (TrxID: ${req.trxId || 'N/A'})`
+  );
+
+  const now = new Date().toISOString();
+  const updated = current.map((r) =>
+    r.id === requestId
+      ? {
+          ...r,
+          status: 'APPROVED' as const,
+          updatedAt: now,
+        }
+      : r
+  );
+  savePaymentRequests(updated);
+
+  dispatchDevicePushNotification(
+    '💰 ডিপোজিট অনুমোদিত!',
+    `আপনার ৳${req.amount} ডিপোজিট সফলভাবে অনুমোদিত হয়েছে এবং ওয়ালেটে যোগ করা হয়েছে।`
+  );
+
+  return true;
+}
+
+export function rejectDepositRequest(requestId: string, reason?: string): boolean {
+  const current = getPaymentRequests();
+  const req = current.find((r) => r.id === requestId);
+  if (!req || req.status !== 'PENDING') return false;
+
+  const now = new Date().toISOString();
+  const updated = current.map((r) =>
+    r.id === requestId
+      ? {
+          ...r,
+          status: 'REJECTED' as const,
+          adminNote: reason || 'ভুল TrxID বা অপ্রমাণিত লেনদেন',
+          updatedAt: now,
+        }
+      : r
+  );
+  savePaymentRequests(updated);
+
+  dispatchDevicePushNotification(
+    '❌ ডিপোজিট বাতিল',
+    `আপনার ৳${req.amount} ডিপোজিট রিকোয়েস্ট বাতিল করা হয়েছে (${reason || 'ভুল TrxID'})।`
+  );
+
+  return true;
+}
+

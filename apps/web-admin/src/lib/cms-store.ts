@@ -18,6 +18,7 @@ export interface MatchItem {
   filledSlots: number;
   type: string; // 'Squad' | 'Solo' | 'Duo' | '4 vs 4' | '1 vs 1'
   matchType?: string;
+  version?: string;
   bannerImage?: string;
   rules?: string;
   roomId?: string;
@@ -78,6 +79,10 @@ export interface SiteSettings {
   whatsappNumber: string;
   bkashNumber: string;
   nagadNumber: string;
+  rocketNumber?: string; // ডাচ-বাংলা (DBBL Rocket)
+  paymentInstructionImage?: string; // সেন্ড মানি নির্দেশিকা ইমেজ
+  paymentInstructionText?: string; // সেন্ড মানি নির্দেশিকা বার্তা
+  autoWebhookVerification?: boolean; // স্বয়ংক্রিয় ওয়েবক ও ট্রানজেকশন বট ভেরিফিকেশন
   defaultRules: string;
   categoryRules?: Record<string, string>;
   howToJoinGuide: string;
@@ -247,6 +252,10 @@ export const INITIAL_SETTINGS: SiteSettings = {
   whatsappNumber: '8801700000000',
   bkashNumber: '01712345678',
   nagadNumber: '01812345678',
+  rocketNumber: '01912345678-5',
+  paymentInstructionImage: '/logo.png',
+  paymentInstructionText: '১. আমাদের বিকাশ/নগদ/ডাচ-বাংলা রকেট নাম্বারে Send Money করুন।\n২. নিচে আপনার প্রেরক মোবাইল নম্বর ও TrxID লিখুন।\n৩. বট স্বয়ংক্রিয়ভাবে ট্রানজেকশন যাচাই করে সাথে সাথে ওয়ালেটে ব্যালেন্স যুক্ত করে দিবে।',
+  autoWebhookVerification: true,
   apkDownloadUrl: '',
   banners: [
     {

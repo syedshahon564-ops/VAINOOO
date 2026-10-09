@@ -75,6 +75,8 @@ import {
   autoDeliverRoomCredentials,
   runBotRoomManagerCycle,
   UserBookedMatch,
+  requestNotificationPermission,
+  dispatchDevicePushNotification,
 } from '@/lib/match-scheduler';
 
 export default function MobileAppViewPage(props: any) {
@@ -291,6 +293,28 @@ export default function MobileAppViewPage(props: any) {
   // Notifications
   const [notificationsList, setNotificationsList] = useState<AppNotification[]>([]);
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
+  const [showPushBanner, setShowPushBanner] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      if (Notification.permission === 'default') {
+        setShowPushBanner(true);
+      }
+    }
+  }, []);
+
+  const handleEnablePushNotification = async () => {
+    const granted = await requestNotificationPermission();
+    if (granted) {
+      setShowPushBanner(false);
+      dispatchDevicePushNotification(
+        '🔔 নোটিফিকেশন চালু হয়েছে!',
+        'ম্যাচের রুম আইডি ও পাসওয়ার্ড ডেলিভারি হওয়ার সাথে সাথে নোটিফিকেশন পাবেন।'
+      );
+    } else {
+      setShowPushBanner(false);
+    }
+  };
 
   // Translation helper for the phone side
   const tPhone = (bn: string, en: string) => (phoneLang === 'en' ? en : bn);
@@ -972,6 +996,36 @@ export default function MobileAppViewPage(props: any) {
                     </div>
                   )}
                 </div>
+
+                {/* Mobile Push Notification Permission Request Banner */}
+                {showPushBanner && (
+                  <div className="bg-gradient-to-r from-red-950 via-black to-red-950 border-b border-red-500/30 text-white px-3 py-2 flex items-center justify-between gap-2 shadow-md animate-fadeIn">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-lg bg-red-600/30 border border-red-500/50 flex items-center justify-center text-amber-400">
+                        <Bell className="w-3.5 h-3.5 animate-bounce" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black text-amber-300">🔔 নোটিফিকেশন এলাও করুন</p>
+                        <p className="text-[8px] text-gray-300">রুম আইডি ও পাসওয়ার্ড ডেলিভারি পাওয়ার সাথে সাথে অ্যালার্ট পান</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={handleEnablePushNotification}
+                        className="px-2.5 py-1 rounded-lg bg-red-600 hover:bg-red-500 text-white text-[9px] font-black shadow transition-all active:scale-95"
+                      >
+                        অন করুন
+                      </button>
+                      <button
+                        onClick={() => setShowPushBanner(false)}
+                        className="p-1 text-gray-400 hover:text-white"
+                        title="বন্ধ করুন"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 {/* Success Banner */}
                 {joinedSuccess && (
