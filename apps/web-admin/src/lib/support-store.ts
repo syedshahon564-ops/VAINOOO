@@ -1,6 +1,7 @@
 'use client';
 
 import { dispatchDevicePushNotification } from './match-scheduler';
+import { addBalance } from './user-store';
 
 export interface TicketMessage {
   id: string;
@@ -25,181 +26,17 @@ export interface SupportTicket {
   createdAt: string;
   updatedAt: string;
   messages: TicketMessage[];
+  paymentVerified?: boolean;
+  verifiedTrxId?: string;
+  verifiedAmount?: number;
 }
 
-const SUPPORT_TICKETS_KEY = 'ff_support_tickets_v1';
+const SUPPORT_TICKETS_KEY = 'ff_support_tickets_v2';
+const ZERO_RESET_KEY = 'ff_support_tickets_zero_v3';
+const CREDITED_TICKETS_KEY = 'ff_credited_ai_tickets_v1';
 
-export const INITIAL_TICKETS: SupportTicket[] = [
-  {
-    id: 't-101',
-    userId: 'u-1',
-    userPhone: '01712345678',
-    userIgn: 'BDX_STRIKER',
-    subject: 'bKash Deposit not reflected in balance (TrxID: BKA89212)',
-    category: 'PAYMENT',
-    status: 'IN_PROGRESS',
-    priority: 'HIGH',
-    createdAt: new Date(Date.now() - 3600000).toISOString(),
-    updatedAt: new Date(Date.now() - 3500000).toISOString(),
-    messages: [
-      {
-        id: 'msg-1',
-        senderRole: 'USER',
-        senderName: 'BDX_STRIKER',
-        message: 'Hello, I deposited 500 BDT via bKash 20 minutes ago. Transaction ID is BKA89212. Please add to my balance.',
-        timestamp: new Date(Date.now() - 3600000).toISOString(),
-      },
-      {
-        id: 'msg-1-ai',
-        senderRole: 'AI_BOT',
-        senderName: 'AI Support',
-        isAi: true,
-        message: 'Hello BDX_STRIKER! 🤖 I am AI Support. Your bKash deposit with TrxID "BKA89212" is currently queued in verification. Manual deposits are credited within 5-15 minutes once verified by our finance desk.',
-        timestamp: new Date(Date.now() - 3500000).toISOString(),
-      },
-    ],
-  },
-  {
-    id: 't-102',
-    userId: 'u-2',
-    userPhone: '01899112233',
-    userIgn: 'OP_NINJA_99',
-    subject: 'Room ID & Password issue for match #42',
-    category: 'MATCH',
-    status: 'RESOLVED',
-    priority: 'MEDIUM',
-    matchId: 'm-1',
-    createdAt: new Date(Date.now() - 7200000).toISOString(),
-    updatedAt: new Date(Date.now() - 1800000).toISOString(),
-    messages: [
-      {
-        id: 'msg-2',
-        senderRole: 'USER',
-        senderName: 'OP_NINJA_99',
-        message: 'Room password showed invalid when entered. Please provide the correct room pass.',
-        timestamp: new Date(Date.now() - 7200000).toISOString(),
-      },
-      {
-        id: 'msg-2-ai',
-        senderRole: 'AI_BOT',
-        senderName: 'AI Support',
-        isAi: true,
-        message: 'Hello OP_NINJA_99! 🤖 Room credentials are refreshed automatically under the "My Matches" tab. Our supervisor updated the password to 5566.',
-        timestamp: new Date(Date.now() - 7100000).toISOString(),
-      },
-      {
-        id: 'msg-3',
-        senderRole: 'ADMIN',
-        senderName: 'Admin Supervisor',
-        message: 'Room password reset to 5566. Please join custom room immediately.',
-        timestamp: new Date(Date.now() - 1800000).toISOString(),
-      },
-    ],
-  },
-];
-
-/**
- * Generates an intelligent, contextual AI response tailored for Free Fire tournament issues
- */
-export function generateAiSupportResponse(
-  userQuery: string,
-  category: 'PAYMENT' | 'MATCH' | 'ACCOUNT' | 'OTHER',
-  subject: string,
-  ign: string = 'Player'
-): string {
-  const q = (userQuery + ' ' + subject).toLowerCase();
-
-  // Payment / Deposit / TrxID
-  if (
-    category === 'PAYMENT' ||
-    q.includes('bkash') ||
-    q.includes('nagad') ||
-    q.includes('deposit') ||
-    q.includes('trx') ||
-    q.includes('টাকা') ||
-    q.includes('ব্যালেন্স') ||
-    q.includes('পেমেন্ট')
-  ) {
-    return `Hello ${ign}! 🤖 AI Support here.
-
-We noticed your payment query regarding "${subject}".
-• Deposit Verification: Manual bKash/Nagad deposits are verified within 5 to 15 minutes.
-• Please ensure the Transaction ID (TrxID) and sender number match your confirmation SMS exactly.
-• If verified, your balance will reflect immediately. Our admin desk has also been alerted!`;
-  }
-
-  // Room ID / Password / Match Join
-  if (
-    category === 'MATCH' ||
-    q.includes('room') ||
-    q.includes('pass') ||
-    q.includes('id') ||
-    q.includes('রুম') ||
-    q.includes('পাসওয়ার্ড') ||
-    q.includes('start') ||
-    q.includes('join')
-  ) {
-    return `Hello ${ign}! 🤖 AI Support here.
-
-Regarding match access for "${subject}":
-• Room ID & Password are automatically delivered to your registered match card under "My Matches" 10 to 15 minutes before match start.
-• When the status displays "ROOM OPEN", click "View Room ID & Password".
-• Please enter the custom room within 5 minutes to secure your slot.`;
-  }
-
-  // Withdrawal / Payout
-  if (
-    q.includes('withdraw') ||
-    q.includes('উইথড্র') ||
-    q.includes('ক্যাশআউট') ||
-    q.includes('টাকা তোলা') ||
-    q.includes('payout')
-  ) {
-    return `Hello ${ign}! 🤖 AI Support here.
-
-Regarding your withdrawal request:
-• All verified withdrawals are processed within 1 to 2 hours directly to your designated bKash or Nagad personal wallet.
-• Minimum withdrawal is 100 BDT. You will receive an automatic push notification once payout completes.`;
-  }
-
-  // Slots / Squad booking
-  if (
-    q.includes('slot') ||
-    q.includes('squad') ||
-    q.includes('স্লট') ||
-    q.includes('team') ||
-    q.includes('স্কোয়াড')
-  ) {
-    return `Hello ${ign}! 🤖 AI Support here.
-
-Regarding slot bookings:
-• Solo & Duo matches: Your slot is assigned automatically upon registration with your Free Fire UID and IGN.
-• Squad matches: You can select any vacant slot (1–12) during registration.
-• Remember to sit in your exact designated slot in the custom lobby.`;
-  }
-
-  // Cheating / Hacks / Anti-Cheat
-  if (
-    q.includes('hack') ||
-    q.includes('cheat') ||
-    q.includes('হ্যাক') ||
-    q.includes('চিটার') ||
-    q.includes('ban') ||
-    q.includes('emulator')
-  ) {
-    return `Hello ${ign}! 🤖 AI Support here.
-
-🛡️ Fair Play & Anti-Cheat Notice:
-• Emulators, config files, and 3rd-party mods are strictly prohibited and auto-detected.
-• If you are reporting a suspect, please attach a screenshot or video link. Violators face permanent bans and prize forfeit.`;
-  }
-
-  // General fallback
-  return `Hello ${ign}! 🤖 I am your 24/7 AI Support Assistant.
-
-We have received your ticket regarding: "${subject}".
-Our automated tournament management system has recorded this request, and a human supervisor has been notified. We will update you here shortly!`;
-}
+// Initial tickets are strictly 0 (Clean Slate, no mock tickets)
+export const INITIAL_TICKETS: SupportTicket[] = [];
 
 /**
  * Synthesizes a distinctive alert chime for incoming support tickets
@@ -234,22 +71,92 @@ export function playSupportAlertSound(): void {
 export function getSupportTickets(): SupportTicket[] {
   if (typeof window === 'undefined') return INITIAL_TICKETS;
   try {
+    // One-time cleanup to zero out old mock tickets (t-101, t-102)
+    if (!localStorage.getItem(ZERO_RESET_KEY)) {
+      localStorage.removeItem('ff_support_tickets_v1');
+      localStorage.setItem(SUPPORT_TICKETS_KEY, JSON.stringify([]));
+      localStorage.setItem(ZERO_RESET_KEY, '1');
+      return [];
+    }
+
     const raw = localStorage.getItem(SUPPORT_TICKETS_KEY);
     if (!raw) {
       localStorage.setItem(SUPPORT_TICKETS_KEY, JSON.stringify(INITIAL_TICKETS));
       return INITIAL_TICKETS;
     }
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
   } catch (e) {
     return INITIAL_TICKETS;
   }
 }
 
-export function saveSupportTickets(list: SupportTicket[]): void {
+export function saveSupportTickets(list: SupportTicket[], broadcast = true): void {
   if (typeof window === 'undefined') return;
   try {
     localStorage.setItem(SUPPORT_TICKETS_KEY, JSON.stringify(list));
-    window.dispatchEvent(new CustomEvent('ff_support_tickets_updated', { detail: list }));
+    if (broadcast) {
+      window.dispatchEvent(new CustomEvent('ff_support_tickets_updated', { detail: list }));
+    }
+  } catch (e) {}
+}
+
+/**
+ * Synchronizes support tickets with the central server (/api/support/tickets)
+ */
+export async function syncSupportTicketsFromServer(
+  userId?: string,
+  userPhone?: string
+): Promise<SupportTicket[]> {
+  try {
+    let url = '/api/support/tickets';
+    const params = new URLSearchParams();
+    if (userId) params.set('userId', userId);
+    if (userPhone) params.set('userPhone', userPhone);
+    const qs = params.toString();
+    if (qs) url += '?' + qs;
+
+    const res = await fetch(url, { cache: 'no-store' });
+    if (res.ok) {
+      const data = await res.json();
+      if (data && Array.isArray(data.tickets)) {
+        const serverTickets: SupportTicket[] = data.tickets;
+
+        if (!userId && !userPhone) {
+          saveSupportTickets(serverTickets, true);
+        }
+
+        // Check if any tickets have AI-verified payments that need wallet credit
+        handleAiAutoCredits(serverTickets);
+
+        return serverTickets;
+      }
+    }
+  } catch (e) {}
+  return getSupportTickets();
+}
+
+function handleAiAutoCredits(tickets: SupportTicket[]) {
+  if (typeof window === 'undefined') return;
+  try {
+    const creditedRaw = localStorage.getItem(CREDITED_TICKETS_KEY) || '[]';
+    const creditedSet = new Set<string>(JSON.parse(creditedRaw));
+
+    for (const t of tickets) {
+      if (t.paymentVerified && t.verifiedAmount && !creditedSet.has(t.id)) {
+        creditedSet.add(t.id);
+        addBalance(
+          t.userId,
+          t.verifiedAmount,
+          `AI Auto-Verified Deposit (TrxID: ${t.verifiedTrxId || 'PROOF'})`
+        );
+        dispatchDevicePushNotification(
+          '🤖 Payment Auto-Verified by AI',
+          `৳${t.verifiedAmount} has been instantly credited to your wallet (TrxID: ${t.verifiedTrxId || 'OK'})`
+        );
+      }
+    }
+    localStorage.setItem(CREDITED_TICKETS_KEY, JSON.stringify(Array.from(creditedSet)));
   } catch (e) {}
 }
 
@@ -259,54 +166,8 @@ export function getUserTickets(userId: string, userPhone?: string): SupportTicke
 }
 
 /**
- * Triggers automated AI Bot reply after a realistic delay (e.g. 500ms)
+ * Creates a support ticket and syncs to backend API
  */
-export function scheduleAiSupportReply(
-  ticketId: string,
-  userMessage: string,
-  category: 'PAYMENT' | 'MATCH' | 'ACCOUNT' | 'OTHER',
-  subject: string,
-  userIgn: string
-): void {
-  if (typeof window === 'undefined') return;
-
-  setTimeout(() => {
-    const all = getSupportTickets();
-    const ticketIndex = all.findIndex((t) => t.id === ticketId);
-    if (ticketIndex === -1) return;
-
-    const ticket = all[ticketIndex];
-    const aiMessageText = generateAiSupportResponse(userMessage, category, subject, userIgn);
-    const now = new Date().toISOString();
-
-    const aiMsg: TicketMessage = {
-      id: 'msg-ai-' + Date.now(),
-      senderRole: 'AI_BOT',
-      senderName: 'AI Support',
-      message: aiMessageText,
-      timestamp: now,
-      isAi: true,
-    };
-
-    const updatedTicket: SupportTicket = {
-      ...ticket,
-      updatedAt: now,
-      status: ticket.status === 'RESOLVED' ? 'RESOLVED' : 'IN_PROGRESS',
-      messages: [...ticket.messages, aiMsg],
-    };
-
-    all[ticketIndex] = updatedTicket;
-    saveSupportTickets(all);
-
-    playSupportAlertSound();
-
-    dispatchDevicePushNotification(
-      '🤖 AI Support Replied',
-      `Ticket #${ticket.id}: ${aiMessageText.slice(0, 90)}...`
-    );
-  }, 600);
-}
-
 export function createSupportTicket(data: {
   userId: string;
   userPhone: string;
@@ -321,8 +182,9 @@ export function createSupportTicket(data: {
   const all = getSupportTickets();
   const now = new Date().toISOString();
 
+  const tempId = 't-' + Date.now().toString().slice(-6);
   const newTicket: SupportTicket = {
-    id: 't-' + Date.now().toString().slice(-6),
+    id: tempId,
     userId: data.userId,
     userPhone: data.userPhone,
     userIgn: data.userIgn,
@@ -348,25 +210,39 @@ export function createSupportTicket(data: {
   const updated = [newTicket, ...all];
   saveSupportTickets(updated);
 
-  // Play audio sound and notify admin
   playSupportAlertSound();
   dispatchDevicePushNotification(
     '🎧 New Support Ticket Received',
     `[${data.category}] ${data.userIgn} (${data.userPhone}): "${data.subject}"`
   );
 
-  // Automatically trigger AI Support Bot instant reply!
-  scheduleAiSupportReply(
-    newTicket.id,
-    data.message,
-    data.category,
-    data.subject,
-    data.userIgn
-  );
+  // Background sync with server route which executes AI rules & payment auto-verification
+  fetch('/api/support/tickets', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+    .then((res) => (res.ok ? res.json() : null))
+    .then((resData) => {
+      if (resData && resData.ok && resData.ticket) {
+        const serverTicket: SupportTicket = resData.ticket;
+        const currentList = getSupportTickets();
+        const replaced = currentList.map((t) => (t.id === tempId ? serverTicket : t));
+        saveSupportTickets(replaced);
+
+        if (serverTicket.paymentVerified && serverTicket.verifiedAmount) {
+          handleAiAutoCredits([serverTicket]);
+        }
+      }
+    })
+    .catch(() => {});
 
   return newTicket;
 }
 
+/**
+ * Adds a reply to a support ticket and syncs to backend API
+ */
 export function addTicketReply(
   ticketId: string,
   reply: {
@@ -402,31 +278,37 @@ export function addTicketReply(
 
   all[ticketIndex] = updatedTicket;
   saveSupportTickets(all);
-
   playSupportAlertSound();
 
   if (reply.senderRole === 'ADMIN') {
-    // Notify player that admin replied
     dispatchDevicePushNotification(
       '💬 Admin Support Response',
       `Ticket "${ticket.subject}": "${reply.message.slice(0, 80)}"`
     );
-  } else if (reply.senderRole === 'USER') {
-    // Notify admin that user replied
-    dispatchDevicePushNotification(
-      '💬 User Support Message',
-      `Ticket #${ticket.id} (${ticket.userIgn}): "${reply.message.slice(0, 80)}"`
-    );
-
-    // Automatically trigger AI Support Bot reply for the user query!
-    scheduleAiSupportReply(
-      ticket.id,
-      reply.message,
-      ticket.category,
-      ticket.subject,
-      ticket.userIgn
-    );
   }
+
+  // Push to server API
+  fetch('/api/support/tickets', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ticketId, reply }),
+  })
+    .then((res) => (res.ok ? res.json() : null))
+    .then((resData) => {
+      if (resData && resData.ok && resData.ticket) {
+        const serverTicket: SupportTicket = resData.ticket;
+        const currentList = getSupportTickets();
+        const idx = currentList.findIndex((t) => t.id === ticketId);
+        if (idx !== -1) {
+          currentList[idx] = serverTicket;
+          saveSupportTickets(currentList);
+          if (serverTicket.paymentVerified) {
+            handleAiAutoCredits([serverTicket]);
+          }
+        }
+      }
+    })
+    .catch(() => {});
 
   return updatedTicket;
 }
@@ -451,5 +333,35 @@ export function updateTicketStatus(
     );
   }
 
+  // Sync to server
+  fetch('/api/support/tickets', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ticketId, status }),
+  }).catch(() => {});
+
+  return true;
+}
+
+/**
+ * Resets all tickets to 0 both locally and on server
+ */
+export async function resetAllSupportTickets(): Promise<boolean> {
+  try {
+    await fetch('/api/support/tickets?all=true', { method: 'DELETE' });
+  } catch (e) {}
+  saveSupportTickets([]);
+  return true;
+}
+
+/**
+ * Deletes a single support ticket
+ */
+export async function deleteSupportTicket(ticketId: string): Promise<boolean> {
+  try {
+    await fetch(`/api/support/tickets?id=${ticketId}`, { method: 'DELETE' });
+  } catch (e) {}
+  const all = getSupportTickets().filter((t) => t.id !== ticketId);
+  saveSupportTickets(all);
   return true;
 }

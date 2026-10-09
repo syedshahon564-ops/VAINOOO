@@ -26,7 +26,7 @@ import {
   LifeBuoy,
 } from 'lucide-react';
 import { getCurrentUser } from '@/lib/user-store';
-import { getSupportTickets } from '@/lib/support-store';
+import { getSupportTickets, syncSupportTicketsFromServer } from '@/lib/support-store';
 
 const ADMIN_AUTH_KEY = 'ff_admin_secret_auth_v1';
 const ADMIN_PIN_KEY = 'ff_admin_custom_pin_v1';
@@ -61,13 +61,22 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const checkTickets = () => {
       const all = getSupportTickets();
       setOpenTicketsCount(all.filter((t) => t.status === 'OPEN').length);
+      syncSupportTicketsFromServer()
+        .then((srv) => {
+          if (Array.isArray(srv)) {
+            setOpenTicketsCount(srv.filter((t) => t.status === 'OPEN').length);
+          }
+        })
+        .catch(() => {});
     };
     checkTickets();
 
+    const interval = setInterval(checkTickets, 5000);
     window.addEventListener('ff_support_tickets_updated', checkTickets);
     window.addEventListener('storage', checkTickets);
 
     return () => {
+      clearInterval(interval);
       window.removeEventListener('ff_support_tickets_updated', checkTickets);
       window.removeEventListener('storage', checkTickets);
     };

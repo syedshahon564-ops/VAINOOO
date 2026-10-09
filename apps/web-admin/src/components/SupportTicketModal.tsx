@@ -21,6 +21,7 @@ import {
   getUserTickets,
   createSupportTicket,
   addTicketReply,
+  syncSupportTicketsFromServer,
   SupportTicket,
 } from '@/lib/support-store';
 
@@ -52,6 +53,16 @@ export default function SupportTicketModal({ isOpen, onClose }: SupportTicketMod
       const refreshed = list.find((t) => t.id === selectedTicket.id);
       if (refreshed) setSelectedTicket(refreshed);
     }
+    syncSupportTicketsFromServer(currentUser.id, currentUser.phone).then((serverList) => {
+      const filtered = serverList.filter(
+        (t) => t.userId === currentUser.id || (currentUser.phone && t.userPhone === currentUser.phone)
+      );
+      setTickets(filtered);
+      if (selectedTicket) {
+        const found = filtered.find((t) => t.id === selectedTicket.id);
+        if (found) setSelectedTicket(found);
+      }
+    }).catch(() => {});
   };
 
   useEffect(() => {
@@ -417,6 +428,25 @@ export default function SupportTicketModal({ isOpen, onClose }: SupportTicketMod
                 <h4 className="text-xs font-black text-gray-900 dark:text-white">
                   {selectedTicket.subject}
                 </h4>
+
+                {selectedTicket.paymentVerified && (
+                  <div className="mt-2 p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-1.5">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                      <div>
+                        <p className="font-bold text-emerald-700 dark:text-emerald-400 text-[11px]">
+                          Payment Auto-Verified by AI ✅
+                        </p>
+                        <p className="text-[10px] font-mono text-gray-500">
+                          TrxID: {selectedTicket.verifiedTrxId || 'APPROVED'}
+                        </p>
+                      </div>
+                    </div>
+                    <span className="px-2 py-0.5 rounded bg-emerald-600 text-white font-black text-[10px] font-mono">
+                      +৳{selectedTicket.verifiedAmount || 100} Credited
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Messages Thread */}

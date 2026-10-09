@@ -420,19 +420,14 @@ export function normalizeCMSData(input: Partial<CMSData> | null | undefined): CM
         INITIAL_CATEGORIES[slug]?.avatarImage ||
         'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=120';
 
-      let bannerImage = item.bannerImage || fallbackBanner;
-      if (
-        bannerImage.startsWith('/uploads/') ||
-        bannerImage.includes('photo-1511512578047')
-      ) {
-        bannerImage = fallbackBanner;
-      }
+      const bannerImage = item.bannerImage || fallbackBanner;
+      const avatarImage = item.avatarImage || fallbackAvatar;
 
       healedCategories[slug] = {
-        ...INITIAL_CATEGORIES[slug],
+        ...(INITIAL_CATEGORIES[slug] || {}),
         ...item,
         bannerImage,
-        avatarImage: item.avatarImage || fallbackAvatar,
+        avatarImage,
       };
     }
   }
