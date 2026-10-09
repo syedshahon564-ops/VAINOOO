@@ -43,6 +43,7 @@ import {
   Phone,
   Download,
   RefreshCw,
+  LifeBuoy,
 } from 'lucide-react';
 import { useCMS, MatchItem, TopPlayerItem } from '@/lib/cms-store';
 import { checkFreeFireUID } from '@/lib/ff-uid-checker';
@@ -54,6 +55,7 @@ import MatchDetailsPage from '@/components/MatchDetailsPage';
 import ImageUploadInput from '@/components/ImageUploadInput';
 import LiveMatchCountdown, { formatMatchSchedule } from '@/components/LiveMatchCountdown';
 import DepositWithdrawModal from '@/components/DepositWithdrawModal';
+import SupportTicketModal from '@/components/SupportTicketModal';
 import { useLanguage } from '@/components/LanguageProvider';
 import {
   getCurrentUser,
@@ -294,6 +296,7 @@ export default function MobileAppViewPage(props: any) {
   const [notificationsList, setNotificationsList] = useState<AppNotification[]>([]);
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
   const [showPushBanner, setShowPushBanner] = useState(false);
+  const [showSupportModal, setShowSupportModal] = useState(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && 'Notification' in window) {
@@ -949,6 +952,18 @@ export default function MobileAppViewPage(props: any) {
                               {unreadCount}
                             </span>
                           )}
+                        </button>
+
+                        <button
+                          onClick={() => setShowSupportModal(true)}
+                          title="লাইভ সাপোর্ট হেল্প ডেস্ক"
+                          className={`p-1.5 rounded-full relative transition-all ${
+                            phoneTheme === 'dark'
+                              ? 'bg-white/5 text-gray-400 hover:text-white'
+                              : 'bg-slate-100 text-slate-600 hover:text-slate-900'
+                          }`}
+                        >
+                          <LifeBuoy className="w-3.5 h-3.5 text-blue-500" />
                         </button>
                       </div>
                     </div>
@@ -2331,6 +2346,15 @@ export default function MobileAppViewPage(props: any) {
 
                           {/* 6. SWITCH TO WEB & LOGOUT */}
                           <div className="pt-2 space-y-2">
+                            <button
+                              type="button"
+                              onClick={() => setShowSupportModal(true)}
+                              className="w-full py-2.5 rounded-xl border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 text-xs font-black transition-all flex items-center justify-center gap-2"
+                            >
+                              <LifeBuoy className="w-3.5 h-3.5 text-blue-500" />
+                              <span>{tPhone('সাপোর্ট ও হেল্প ডেস্ক (Live Tickets)', 'Support & Help Desk (Live Tickets)')}</span>
+                            </button>
+
                             <a
                               href="/ffrivals.apk"
                               download="ffrivals.apk"
@@ -2745,6 +2769,12 @@ export default function MobileAppViewPage(props: any) {
           </div>
         </div>
       )}
+
+      {/* Support Ticket Modal */}
+      <SupportTicketModal
+        isOpen={showSupportModal}
+        onClose={() => setShowSupportModal(false)}
+      />
     </div>
   );
 }

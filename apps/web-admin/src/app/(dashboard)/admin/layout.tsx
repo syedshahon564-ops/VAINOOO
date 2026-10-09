@@ -22,8 +22,11 @@ import {
   AlertCircle,
   Eye,
   EyeOff,
+  Scan,
+  LifeBuoy,
 } from 'lucide-react';
 import { getCurrentUser } from '@/lib/user-store';
+import { getSupportTickets } from '@/lib/support-store';
 
 const ADMIN_AUTH_KEY = 'ff_admin_secret_auth_v1';
 const ADMIN_PIN_KEY = 'ff_admin_custom_pin_v1';
@@ -37,6 +40,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [pinInput, setPinInput] = useState('');
   const [showPin, setShowPin] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [openTicketsCount, setOpenTicketsCount] = useState<number>(0);
 
   // Check existing session on load
   useEffect(() => {
@@ -45,14 +49,28 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       sessionStorage.setItem(ADMIN_AUTH_KEY, 'unlocked_owner');
       localStorage.setItem(ADMIN_AUTH_KEY, 'unlocked_owner');
       setIsAuthenticated(true);
-      return;
-    }
-    const savedAuth = sessionStorage.getItem(ADMIN_AUTH_KEY) || localStorage.getItem(ADMIN_AUTH_KEY);
-    if (savedAuth === 'unlocked_owner') {
-      setIsAuthenticated(true);
     } else {
-      setIsAuthenticated(false);
+      const savedAuth = sessionStorage.getItem(ADMIN_AUTH_KEY) || localStorage.getItem(ADMIN_AUTH_KEY);
+      if (savedAuth === 'unlocked_owner') {
+        setIsAuthenticated(true);
+      } else {
+        setIsAuthenticated(false);
+      }
     }
+
+    const checkTickets = () => {
+      const all = getSupportTickets();
+      setOpenTicketsCount(all.filter((t) => t.status === 'OPEN').length);
+    };
+    checkTickets();
+
+    window.addEventListener('ff_support_tickets_updated', checkTickets);
+    window.addEventListener('storage', checkTickets);
+
+    return () => {
+      window.removeEventListener('ff_support_tickets_updated', checkTickets);
+      window.removeEventListener('storage', checkTickets);
+    };
   }, []);
 
   const handleLogin = (e: React.FormEvent) => {
@@ -215,6 +233,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const links = [
     { label: '📊 মাস্টার ড্যাশবোর্ড', href: '/admin', icon: LayoutDashboard },
     { label: '🎮 ম্যাচ ম্যানেজমেন্ট', href: '/admin/tournaments', icon: Trophy },
+    { label: '🏆 OCR ম্যাচ পে-আউট', href: '/admin/match-results', icon: Scan },
+    { label: '🎧 সাপোর্ট ডেস্ক', href: '/admin/support', icon: LifeBuoy, badge: openTicketsCount },
     { label: '📁 ক্যাটাগরি ও ইমেজ', href: '/admin/categories', icon: FolderEdit },
     { label: '👥 ইউজার ও ব্যালেন্স', href: '/admin/users', icon: Users },
     { label: '💳 ফাইনান্স ও লেজার', href: '/admin/finance', icon: CreditCard },
@@ -281,6 +301,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               >
                 <Icon className="w-4 h-4 flex-shrink-0" />
                 <span>{item.label}</span>
+                {item.badge && item.badge > 0 ? (
+                  <span className="w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center animate-pulse">
+                    {item.badge}
+                  </span>
+                ) : null}
               </Link>
             );
           })}
@@ -303,14 +328,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                    className={`flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
                       isActive
                         ? 'bg-red-600 text-white shadow-md shadow-red-600/30'
                         : 'text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5'
                     }`}
                   >
-                    <Icon className="w-4 h-4 flex-shrink-0" />
-                    <span>{item.label}</span>
+                    <div className="flex items-center gap-3">
+                      <Icon className="w-4 h-4 flex-shrink-0" />
+                      <span>{item.label}</span>
+                    </div>
+                    {item.badge && item.badge > 0 ? (
+                      <span className="w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center animate-pulse">
+                        {item.badge}
+                      </span>
+                    ) : null}
                   </Link>
                 );
               })}

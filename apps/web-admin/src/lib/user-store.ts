@@ -61,6 +61,9 @@ export interface BalanceTransaction {
   reason: string;
   balanceAfter: number;
   timestamp: string;
+  category?: 'match_winning' | 'deposit' | 'withdraw' | 'manual_adjustment' | string;
+  referenceId?: string;
+  status?: 'completed' | 'pending' | 'failed' | string;
 }
 
 const USERS_STORAGE_KEY = 'ff_esports_users_db_v2';
@@ -409,7 +412,13 @@ export function deleteUser(id: string): boolean {
 }
 
 // Balance Management: Add Balance (+ টাকা যোগ)
-export function addBalance(userId: string, amount: number, reason: string): { success: boolean; newBalance?: number; error?: string } {
+export function addBalance(
+  userId: string,
+  amount: number,
+  reason: string,
+  category?: string,
+  referenceId?: string
+): { success: boolean; newBalance?: number; error?: string } {
   if (amount <= 0) return { success: false, error: 'টাকার পরিমাণ ০ এর বেশি হতে হবে' };
 
   const users = getUsers();
@@ -422,7 +431,7 @@ export function addBalance(userId: string, amount: number, reason: string): { su
 
   // Record audit transaction
   const tx: BalanceTransaction = {
-    id: 'tx-' + Date.now(),
+    id: 'tx-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
     userId: user.id,
     userPhone: user.phone,
     userIgn: user.ign,
@@ -431,12 +440,100 @@ export function addBalance(userId: string, amount: number, reason: string): { su
     reason: reason || 'অ্যাডমিন কর্তৃক ব্যালেন্স যোগ',
     balanceAfter: newBalance,
     timestamp: new Date().toISOString(),
+    category: category || 'manual_adjustment',
+    referenceId: referenceId || undefined,
+    status: 'completed',
   };
   const txList = getTransactions();
   txList.unshift(tx);
   saveTransactions(txList);
 
   return { success: true, newBalance };
+}
+
+/**
+ * Executes ACID-safe automated match prize payouts to winners
+ */
+export function processMatchPrizePayout(
+  matchId: string,
+  matchTitle: string,
+  winners: Array<{
+    userId?: string;
+    ign: string;
+    uid?: string;
+    rank: number;
+    kills: number;
+    prize: number;
+  }>
+): {
+  success: boolean;
+  totalDistributed: number;
+  payoutsCount: number;
+  errors: string[];
+} {
+  const users = getUsers();
+  const errors: string[] = [];
+  let totalDistributed = 0;
+  let payoutsCount = 0;
+
+  for (const winner of winners) {
+    if (!winner.prize || winner.prize <= 0) continue;
+
+    // Match player in DB by userId, or ign (case-insensitive), or uid
+    let targetUser = winner.userId ? users.find((u) => u.id === winner.userId) : null;
+    if (!targetUser && winner.ign) {
+      targetUser = users.find(
+        (u) => u.ign.toUpperCase().trim() === winner.ign.toUpperCase().trim()
+      );
+    }
+    if (!targetUser && winner.uid) {
+      targetUser = users.find((u) => u.uid === winner.uid);
+    }
+
+    if (!targetUser) {
+      errors.push(`প্লেয়ার ${winner.ign} (UID: ${winner.uid || 'N/A'}) রেজিস্টার্ড নয়`);
+      continue;
+    }
+
+    // Atomically credit user balance
+    const payoutReason = `🏆 টুর্নামেন্ট প্রাইজ: ${matchTitle} (${winner.rank}ম স্থান, ${winner.kills} কিল)`;
+    const creditRes = addBalance(
+      targetUser.id,
+      winner.prize,
+      payoutReason,
+      'match_winning',
+      matchId
+    );
+
+    if (creditRes.success) {
+      totalDistributed += winner.prize;
+      payoutsCount++;
+
+      // Update player profile statistics
+      targetUser.matchesPlayed = (targetUser.matchesPlayed || 0) + 1;
+      targetUser.totalKills = (targetUser.totalKills || 0) + winner.kills;
+      targetUser.totalEarnings = (targetUser.totalEarnings || 0) + winner.prize;
+      if (winner.rank === 1) {
+        targetUser.totalWins = (targetUser.totalWins || 0) + 1;
+      }
+      saveUsers(users);
+
+      // Instant device push notification
+      dispatchDevicePushNotification(
+        '🎉 অভিনন্দন! প্রাইজ মানি যুক্ত হয়েছে!',
+        `আপনি "${matchTitle}" টুর্নামেন্টে ${winner.rank}ম স্থান ও ${winner.kills}টি কিল অর্জন করে ৳${winner.prize} টাকা জিতেছেন!`
+      );
+    } else {
+      errors.push(`ইউজার ${winner.ign} এর ব্যালেন্স যোগ করতে সমস্যা: ${creditRes.error}`);
+    }
+  }
+
+  return {
+    success: payoutsCount > 0 || winners.length === 0,
+    totalDistributed,
+    payoutsCount,
+    errors,
+  };
 }
 
 // Balance Management: Deduct / Cut Balance (- টাকা কাটা)
@@ -624,6 +721,7 @@ export function useUserStore() {
     rejectWithdrawRequest,
     approveDepositRequest,
     rejectDepositRequest,
+    processMatchPrizePayout,
   };
 }
 
