@@ -92,7 +92,7 @@ export default function AdminUsersPage() {
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
-    showToast(`${label} কপি করা হয়েছে!`, 'success');
+    showToast(`${label} copied to clipboard!`, 'success');
   };
 
   // Open Balance Modal
@@ -100,7 +100,7 @@ export default function AdminUsersPage() {
     setBalanceModalUser(user);
     setBalanceActionType(type);
     setBalanceAmount(type === 'ADD' ? 100 : 50);
-    setBalanceReason(type === 'ADD' ? 'বিকাশ ডিপোজিট ভেরিফাইড' : 'উইথড্র কমপ্লিট');
+    setBalanceReason(type === 'ADD' ? 'Deposit Approved' : 'Withdrawal Processed');
   };
 
   const handleBalanceSubmit = (e: React.FormEvent) => {
@@ -111,25 +111,25 @@ export default function AdminUsersPage() {
       const res = addBalance(balanceModalUser.id, Number(balanceAmount), balanceReason);
       if (res.success) {
         showToast(
-          `৳${balanceAmount} টাকা যোগ করা হয়েছে (${balanceModalUser.ign})! নতুন ব্যালেন্স: ৳${res.newBalance}`,
+          `৳${balanceAmount} added to (${balanceModalUser.ign})! New balance: ৳${res.newBalance}`,
           'success'
         );
         setBalanceModalUser(null);
         refresh();
       } else {
-        showToast(res.error || 'টাকা যোগ করা যায়নি', 'error');
+        showToast(res.error || 'Failed to credit balance', 'error');
       }
     } else {
       const res = deductBalance(balanceModalUser.id, Number(balanceAmount), balanceReason);
       if (res.success) {
         showToast(
-          `৳${balanceAmount} টাকা কাটা হয়েছে (${balanceModalUser.ign})! নতুন ব্যালেন্স: ৳${res.newBalance}`,
+          `৳${balanceAmount} deducted from (${balanceModalUser.ign})! New balance: ৳${res.newBalance}`,
           'success'
         );
         setBalanceModalUser(null);
         refresh();
       } else {
-        showToast(res.error || 'টাকা কাটা যায়নি', 'error');
+        showToast(res.error || 'Failed to debit balance', 'error');
       }
     }
   };
@@ -160,7 +160,7 @@ export default function AdminUsersPage() {
       notes: editNotes,
     });
 
-    showToast(`ইউজার "${editIgn}" এর তথ্য সফলভাবে আপডেট হয়েছে!`, 'success');
+    showToast(`User "${editIgn}" updated successfully!`, 'success');
     setEditingUser(null);
     refresh();
   };
@@ -169,7 +169,7 @@ export default function AdminUsersPage() {
   const handleCreateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newIgn || !newPhone || !newPassword) {
-      showToast('নাম, ফোন নম্বর ও পাসওয়ার্ড আবশ্যক!', 'error');
+      showToast('IGN, phone number, and password are required!', 'error');
       return;
     }
 
@@ -188,7 +188,7 @@ export default function AdminUsersPage() {
       notes: 'Created manually by Admin.',
     });
 
-    showToast(`নতুন ইউজার "${created.ign}" সফলভাবে যুক্ত করা হয়েছে!`, 'success');
+    showToast(`New user "${created.ign}" added successfully!`, 'success');
     setShowCreateModal(false);
     setNewIgn('');
     setNewUid('');
@@ -203,7 +203,7 @@ export default function AdminUsersPage() {
     const newStatus = user.status === 'BANNED' ? 'ACTIVE' : 'BANNED';
     setUserStatus(user.id, newStatus);
     showToast(
-      `ইউজার ${user.ign} কে ${newStatus === 'BANNED' ? 'ব্যান (Banned)' : 'আনব্যান (Active)'} করা হয়েছে!`,
+      `User ${user.ign} marked as ${newStatus === 'BANNED' ? 'Banned' : 'Active'}!`,
       newStatus === 'BANNED' ? 'error' : 'success'
     );
     refresh();
@@ -211,9 +211,9 @@ export default function AdminUsersPage() {
 
   // Delete User
   const handleDeleteUser = (user: UserAccount) => {
-    if (confirm(`আপনি কি নিশ্চিত যে "${user.ign}" অ্যাকাউন্টটি সম্পূর্ণ ডিলিট করতে চান?`)) {
+    if (confirm(`Are you sure you want to permanently delete user "${user.ign}"?`)) {
       deleteUser(user.id);
-      showToast(`ইউজার ${user.ign} ডিলিট করা হয়েছে!`, 'success');
+      showToast(`User ${user.ign} deleted!`, 'success');
       refresh();
     }
   };
@@ -252,10 +252,10 @@ export default function AdminUsersPage() {
         <div>
           <h1 className="text-2xl font-black text-gray-900 dark:text-white flex items-center gap-2">
             <Users className="w-6 h-6 text-red-600" />
-            ইউজার ম্যানেজমেন্ট ও প্লেয়ার অ্যাকাউন্টস
+            User Management & Player Balances
           </h1>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            সকল ইউজারের বিস্তারিত তথ্য, পাসওয়ার্ড, অ্যাকাউন্ট ব্যালেন্স ম্যানেজমেন্ট (+ যোগ / - কাটা) ও পূর্ণ নিয়ন্ত্রণ।
+            Player credentials, passwords, wallet balance modifications (+ Credit / - Debit), and access control.
           </p>
         </div>
 
@@ -265,14 +265,14 @@ export default function AdminUsersPage() {
             className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#12121a] hover:bg-gray-50 dark:hover:bg-white/5 text-xs font-bold text-gray-700 dark:text-gray-300 transition-all"
           >
             <History className="w-4 h-4 text-amber-500" />
-            লেনদেন হিস্টোরি ({transactions.length})
+            Audit Ledger ({transactions.length})
           </button>
           <button
             onClick={() => setShowCreateModal(true)}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl btn-red text-xs font-black shadow-md shadow-red-600/30"
           >
             <Plus className="w-4 h-4" />
-            নতুন ইউজার যোগ করুন
+            Add New User
           </button>
         </div>
       </div>
@@ -280,38 +280,38 @@ export default function AdminUsersPage() {
       {/* Stats Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="p-4 rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#12121a] shadow-sm">
-          <span className="text-[10px] font-black uppercase text-gray-500">মোট ইউজার</span>
+          <span className="text-[10px] font-black uppercase text-gray-500">Total Users</span>
           <div className="text-2xl font-black text-gray-900 dark:text-white mt-1 flex items-center gap-1.5">
             <Users className="w-5 h-5 text-blue-500" />
             {users.length}
           </div>
-          <span className="text-[10px] text-gray-400 mt-1 block">নিবন্ধিত প্লেয়ার অ্যাকাউন্ট</span>
+          <span className="text-[10px] text-gray-400 mt-1 block">Registered Players</span>
         </div>
 
         <div className="p-4 rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#12121a] shadow-sm">
-          <span className="text-[10px] font-black uppercase text-gray-500">মোট প্ল্যাটফর্ম ব্যালেন্স</span>
+          <span className="text-[10px] font-black uppercase text-gray-500">Platform Balance</span>
           <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-1.5">
             <Coins className="w-5 h-5" />৳ {totalBalanceSum.toLocaleString('en-US', { minimumFractionDigits: 2 })}
           </div>
-          <span className="text-[10px] text-gray-400 mt-1 block">সব ইউজারের মোট টাকা</span>
+          <span className="text-[10px] text-gray-400 mt-1 block">Total Aggregate Wallet Fund</span>
         </div>
 
         <div className="p-4 rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#12121a] shadow-sm">
-          <span className="text-[10px] font-black uppercase text-gray-500">অ্যাক্টিভ প্লেয়ার</span>
+          <span className="text-[10px] font-black uppercase text-gray-500">Active Players</span>
           <div className="text-2xl font-black text-emerald-500 mt-1 flex items-center gap-1.5">
             <UserCheck className="w-5 h-5" />
             {activeCount}
           </div>
-          <span className="text-[10px] text-emerald-600/80 mt-1 block">ম্যাচ খেলার জন্য প্রস্তুত</span>
+          <span className="text-[10px] text-emerald-600/80 mt-1 block">Eligible to participate</span>
         </div>
 
         <div className="p-4 rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#12121a] shadow-sm">
-          <span className="text-[10px] font-black uppercase text-gray-500">ব্যানড অ্যাকাউন্ট</span>
+          <span className="text-[10px] font-black uppercase text-gray-500">Banned Accounts</span>
           <div className="text-2xl font-black text-rose-500 mt-1 flex items-center gap-1.5">
             <UserX className="w-5 h-5" />
             {bannedCount}
           </div>
-          <span className="text-[10px] text-rose-400 mt-1 block">সাসপেন্ড বা নিষিদ্ধ</span>
+          <span className="text-[10px] text-rose-400 mt-1 block">Suspended or Restricted</span>
         </div>
       </div>
 
@@ -324,7 +324,7 @@ export default function AdminUsersPage() {
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="ইউজারের নাম (IGN), ফোন নম্বর অথবা Free Fire UID লিখে খুঁজুন..."
+            placeholder="Search by IGN, Phone Number, or Free Fire UID..."
             className="w-full pl-10 pr-4 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/30 text-xs font-medium focus:outline-none focus:border-red-500 text-gray-900 dark:text-white"
           />
         </div>
@@ -339,7 +339,7 @@ export default function AdminUsersPage() {
                 : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
             }`}
           >
-            সব ({users.length})
+            All ({users.length})
           </button>
           <button
             onClick={() => setStatusFilter('ACTIVE')}
@@ -349,7 +349,7 @@ export default function AdminUsersPage() {
                 : 'text-gray-500 hover:text-emerald-500'
             }`}
           >
-            অ্যাক্টিভ ({activeCount})
+            Active ({activeCount})
           </button>
           <button
             onClick={() => setStatusFilter('BANNED')}
@@ -359,31 +359,31 @@ export default function AdminUsersPage() {
                 : 'text-gray-500 hover:text-rose-500'
             }`}
           >
-            ব্যানড ({bannedCount})
+            Banned ({bannedCount})
           </button>
         </div>
       </div>
 
-      {/* Users List Table & Cards */}
+      {/* Users List Table */}
       <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#12121a] overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-gray-200 dark:border-white/10 bg-gray-50/80 dark:bg-black/40 text-[10px] font-black uppercase text-gray-500 tracking-wider">
-                <th className="py-3.5 px-4">প্লেয়ার / IGN</th>
-                <th className="py-3.5 px-4">ফোন ও UID</th>
-                <th className="py-3.5 px-4">পাসওয়ার্ড (Password)</th>
-                <th className="py-3.5 px-4">ওয়ালেট ব্যালেন্স</th>
-                <th className="py-3.5 px-4">স্ট্যাটাস</th>
-                <th className="py-3.5 px-4">ম্যাচ / কিল</th>
-                <th className="py-3.5 px-4 text-right">অ্যাকশন ও ব্যালেন্স কন্ট্রোল</th>
+                <th className="py-3.5 px-4">Player / IGN</th>
+                <th className="py-3.5 px-4">Phone & UID</th>
+                <th className="py-3.5 px-4">Password</th>
+                <th className="py-3.5 px-4">Wallet Balance</th>
+                <th className="py-3.5 px-4">Status</th>
+                <th className="py-3.5 px-4">Matches / Kills</th>
+                <th className="py-3.5 px-4 text-right">Actions & Balance Control</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-white/5 text-xs">
               {filteredUsers.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-12 text-center text-gray-400">
-                    কোনো ইউজার খুঁজে পাওয়া যায়নি।
+                    No users matching criteria.
                   </td>
                 </tr>
               ) : (
@@ -433,9 +433,9 @@ export default function AdminUsersPage() {
                             <Phone className="w-3.5 h-3.5 text-gray-400" />
                             <span>{user.phone}</span>
                             <button
-                              onClick={() => copyToClipboard(user.phone, 'ফোন নম্বর')}
+                              onClick={() => copyToClipboard(user.phone, 'Phone number')}
                               className="p-1 hover:text-red-500 text-gray-400 transition-colors"
-                              title="কপি করুন"
+                              title="Copy"
                             >
                               <Copy className="w-3 h-3" />
                             </button>
@@ -447,7 +447,7 @@ export default function AdminUsersPage() {
                         </div>
                       </td>
 
-                      {/* Password (Visible or toggle reveal) */}
+                      {/* Password */}
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-2">
                           <div className="px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-black/50 border border-gray-200 dark:border-white/10 font-mono text-xs font-bold text-gray-800 dark:text-gray-200 min-w-[100px] flex items-center justify-between">
@@ -458,7 +458,7 @@ export default function AdminUsersPage() {
                               type="button"
                               onClick={() => togglePasswordVisibility(user.id)}
                               className="ml-2 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
-                              title={isPasswordRevealed ? 'লুকান' : 'পাসওয়ার্ড দেখুন'}
+                              title={isPasswordRevealed ? 'Hide' : 'Reveal'}
                             >
                               {isPasswordRevealed ? (
                                 <EyeOff className="w-3.5 h-3.5 text-red-500" />
@@ -468,9 +468,9 @@ export default function AdminUsersPage() {
                             </button>
                           </div>
                           <button
-                            onClick={() => copyToClipboard(user.password, 'পাসওয়ার্ড')}
+                            onClick={() => copyToClipboard(user.password, 'Password')}
                             className="p-1 hover:text-red-500 text-gray-400 transition-colors"
-                            title="পাসওয়ার্ড কপি করুন"
+                            title="Copy Password"
                           >
                             <Copy className="w-3 h-3" />
                           </button>
@@ -494,15 +494,15 @@ export default function AdminUsersPage() {
                               : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/30'
                           }`}
                         >
-                          {user.status === 'ACTIVE' ? 'অ্যাক্টিভ' : 'ব্যানড'}
+                          {user.status === 'ACTIVE' ? 'ACTIVE' : 'BANNED'}
                         </span>
                       </td>
 
                       {/* Matches / Stats */}
                       <td className="py-3.5 px-4">
                         <div className="text-[11px] text-gray-600 dark:text-gray-300">
-                          <span className="font-bold">{user.matchesPlayed}</span> ম্যাচ •{' '}
-                          <span className="font-bold text-amber-500">{user.totalKills}</span> কিল
+                          <span className="font-bold">{user.matchesPlayed}</span> matches •{' '}
+                          <span className="font-bold text-amber-500">{user.totalKills}</span> kills
                         </div>
                         <span className="text-[10px] text-emerald-500 font-bold">
                           {user.totalWins} Booyah
@@ -516,27 +516,27 @@ export default function AdminUsersPage() {
                           <button
                             onClick={() => openBalanceModal(user, 'ADD')}
                             className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-black transition-all shadow-sm"
-                            title="টাকা যোগ করুন (+ Add Balance)"
+                            title="+ Add Balance"
                           >
                             <Plus className="w-3 h-3" />
-                            <span>টাকা যোগ</span>
+                            <span>Add</span>
                           </button>
 
                           {/* Deduct Balance Button */}
                           <button
                             onClick={() => openBalanceModal(user, 'DEDUCT')}
                             className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-black transition-all shadow-sm"
-                            title="টাকা কাটুন (- Deduct Balance)"
+                            title="- Deduct Balance"
                           >
                             <Minus className="w-3 h-3" />
-                            <span>টাকা কাটুন</span>
+                            <span>Deduct</span>
                           </button>
 
                           {/* Edit User Button */}
                           <button
                             onClick={() => openEditModal(user)}
                             className="p-1.5 rounded-lg bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 text-gray-700 dark:text-gray-200 transition-colors"
-                            title="তথ্য ও পাসওয়ার্ড এডিট করুন"
+                            title="Edit details & password"
                           >
                             <Edit3 className="w-3.5 h-3.5" />
                           </button>
@@ -549,7 +549,7 @@ export default function AdminUsersPage() {
                                 ? 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30'
                                 : 'bg-rose-500/10 text-rose-500 hover:bg-rose-500/20'
                             }`}
-                            title={user.status === 'BANNED' ? 'আনব্যান করুন' : 'ব্যান করুন'}
+                            title={user.status === 'BANNED' ? 'Unban User' : 'Ban User'}
                           >
                             {user.status === 'BANNED' ? (
                               <UserCheck className="w-3.5 h-3.5" />
@@ -562,7 +562,7 @@ export default function AdminUsersPage() {
                           <button
                             onClick={() => handleDeleteUser(user)}
                             className="p-1.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 text-gray-400 hover:text-rose-600 transition-colors"
-                            title="অ্যাকাউন্ট ডিলিট করুন"
+                            title="Delete Account"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -596,10 +596,10 @@ export default function AdminUsersPage() {
                 </div>
                 <div>
                   <h3 className="text-sm font-black text-gray-900 dark:text-white">
-                    {balanceActionType === 'ADD' ? 'টাকা যোগ করুন (+ Credit)' : 'টাকা কাটুন (- Debit)'}
+                    {balanceActionType === 'ADD' ? 'Add Balance (+ Credit)' : 'Deduct Balance (- Debit)'}
                   </h3>
                   <span className="text-[11px] text-gray-500">
-                    প্লেয়ার: <span className="font-bold text-red-500">{balanceModalUser.ign}</span> (
+                    Player: <span className="font-bold text-red-500">{balanceModalUser.ign}</span> (
                     {balanceModalUser.phone})
                   </span>
                 </div>
@@ -614,7 +614,7 @@ export default function AdminUsersPage() {
 
             {/* Current Balance Display */}
             <div className="p-3.5 rounded-xl bg-gray-50 dark:bg-black/40 border border-gray-200 dark:border-white/10 flex items-center justify-between">
-              <span className="text-xs text-gray-500 font-semibold">ইউজারের বর্তমান ব্যালেন্স:</span>
+              <span className="text-xs text-gray-500 font-semibold">Current Wallet Balance:</span>
               <span className="text-base font-black text-emerald-600 dark:text-emerald-400">
                 ৳ {balanceModalUser.walletBalance.toFixed(2)}
               </span>
@@ -623,7 +623,7 @@ export default function AdminUsersPage() {
             <form onSubmit={handleBalanceSubmit} className="space-y-4">
               <div>
                 <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                  টাকার পরিমাণ (BDT ৳)
+                  Amount (BDT ৳)
                 </label>
                 <div className="relative">
                   <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-bold text-gray-400">
@@ -661,14 +661,14 @@ export default function AdminUsersPage() {
 
               <div>
                 <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                  কারণ / রেফারেন্স নোট (Reason / Note)
+                  Reason / Reference Note
                 </label>
                 <input
                   type="text"
                   required
                   value={balanceReason}
                   onChange={(e) => setBalanceReason(e.target.value)}
-                  placeholder="যেমন: বিকাশ ডিপোজিট (TrxID), উইথড্রয়াল, পেনাল্টি ইত্যাদি..."
+                  placeholder="e.g. Deposit verified (TrxID), Tournament Prize, Withdrawal..."
                   className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/30 text-xs font-medium focus:outline-none focus:border-red-500 text-gray-900 dark:text-white"
                 />
               </div>
@@ -679,7 +679,7 @@ export default function AdminUsersPage() {
                   onClick={() => setBalanceModalUser(null)}
                   className="px-4 py-2.5 rounded-xl text-xs font-bold text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 transition-all"
                 >
-                  বাতিল
+                  Cancel
                 </button>
                 <button
                   type="submit"
@@ -689,7 +689,7 @@ export default function AdminUsersPage() {
                       : 'bg-amber-600 hover:bg-amber-700 shadow-amber-600/30'
                   }`}
                 >
-                  {balanceActionType === 'ADD' ? 'ব্যালেন্স নিশ্চিত করুন (+)' : 'ব্যালেন্স কেটে নিন (-)'}
+                  {balanceActionType === 'ADD' ? 'Confirm Credit (+)' : 'Confirm Debit (-)'}
                 </button>
               </div>
             </form>
@@ -706,9 +706,9 @@ export default function AdminUsersPage() {
                 <Edit3 className="w-5 h-5 text-red-600" />
                 <div>
                   <h3 className="text-sm font-black text-gray-900 dark:text-white">
-                    ইউজার তথ্য ও পাসওয়ার্ড পরিবর্তন
+                    Edit User Profile & Password
                   </h3>
-                  <span className="text-[11px] text-gray-500">অ্যাকাউন্ট ID: {editingUser.id}</span>
+                  <span className="text-[11px] text-gray-500">Account ID: {editingUser.id}</span>
                 </div>
               </div>
               <button
@@ -723,7 +723,7 @@ export default function AdminUsersPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                    ইন-গেম নেম (In-Game Name / IGN)
+                    In-Game Name (IGN)
                   </label>
                   <input
                     type="text"
@@ -751,7 +751,7 @@ export default function AdminUsersPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                    ফোন নম্বর (Phone Number)
+                    Phone Number
                   </label>
                   <input
                     type="text"
@@ -764,8 +764,8 @@ export default function AdminUsersPage() {
 
                 <div>
                   <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1 flex items-center justify-between">
-                    <span>পাসওয়ার্ড (Password)</span>
-                    <span className="text-[10px] text-amber-500">সরাসরি পরিবর্তনযোগ্য</span>
+                    <span>Password</span>
+                    <span className="text-[10px] text-amber-500">Directly Editable</span>
                   </label>
                   <input
                     type="text"
@@ -780,43 +780,43 @@ export default function AdminUsersPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                    ইউজার রোল (Role)
+                    Role
                   </label>
                   <select
                     value={editRole}
                     onChange={(e: any) => setEditRole(e.target.value)}
                     className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/30 text-xs font-bold focus:outline-none focus:border-red-500 text-gray-900 dark:text-white"
                   >
-                    <option value="PLAYER">PLAYER (প্লেয়ার)</option>
-                    <option value="ADMIN">ADMIN (অ্যাডমিন / সুপারভাইজার)</option>
+                    <option value="PLAYER">PLAYER</option>
+                    <option value="ADMIN">ADMIN</option>
                   </select>
                 </div>
 
                 <div>
                   <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                    অ্যাকাউন্ট স্ট্যাটাস (Status)
+                    Account Status
                   </label>
                   <select
                     value={editStatus}
                     onChange={(e: any) => setEditStatus(e.target.value)}
                     className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/30 text-xs font-bold focus:outline-none focus:border-red-500 text-gray-900 dark:text-white"
                   >
-                    <option value="ACTIVE">ACTIVE (সক্রিয়)</option>
-                    <option value="BANNED">BANNED (ব্যানড / নিষিদ্ধ)</option>
-                    <option value="SUSPENDED">SUSPENDED (স্থগিত)</option>
+                    <option value="ACTIVE">ACTIVE</option>
+                    <option value="BANNED">BANNED</option>
+                    <option value="SUSPENDED">SUSPENDED</option>
                   </select>
                 </div>
               </div>
 
               <div>
                 <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                  অ্যাডমিন নোট (Admin Notes)
+                  Admin Notes
                 </label>
                 <textarea
                   rows={2}
                   value={editNotes}
                   onChange={(e) => setEditNotes(e.target.value)}
-                  placeholder="প্লেয়ার সংক্রান্ত কোনো নোট বা সতর্কবার্তা..."
+                  placeholder="Notes or annotations regarding this player..."
                   className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/30 text-xs focus:outline-none focus:border-red-500"
                 />
               </div>
@@ -827,13 +827,13 @@ export default function AdminUsersPage() {
                   onClick={() => setEditingUser(null)}
                   className="px-4 py-2.5 rounded-xl text-xs font-bold text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5"
                 >
-                  বাতিল
+                  Cancel
                 </button>
                 <button
                   type="submit"
                   className="px-5 py-2.5 rounded-xl text-xs font-black btn-red shadow-md shadow-red-600/30"
                 >
-                  তথ্য সেভ করুন
+                  Save Profile
                 </button>
               </div>
             </form>
@@ -849,7 +849,7 @@ export default function AdminUsersPage() {
               <div className="flex items-center gap-2">
                 <Plus className="w-5 h-5 text-red-600" />
                 <h3 className="text-sm font-black text-gray-900 dark:text-white">
-                  নতুন প্লেয়ার অ্যাকাউন্ট তৈরি করুন
+                  Create New Player Account
                 </h3>
               </div>
               <button
@@ -863,12 +863,12 @@ export default function AdminUsersPage() {
             <form onSubmit={handleCreateSubmit} className="space-y-4">
               <div>
                 <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                  ইন-গেম নেম (IGN)
+                  In-Game Name (IGN)
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="যেমন: BDX_STRIKER"
+                  placeholder="e.g. BDX_STRIKER"
                   value={newIgn}
                   onChange={(e) => setNewIgn(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/30 text-xs font-bold focus:outline-none focus:border-red-500"
@@ -878,7 +878,7 @@ export default function AdminUsersPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                    ফোন নম্বর
+                    Phone Number
                   </label>
                   <input
                     type="text"
@@ -906,12 +906,12 @@ export default function AdminUsersPage() {
 
               <div>
                 <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                  পাসওয়ার্ড (Password)
+                  Password
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="পাসওয়ার্ড লিখুন..."
+                  placeholder="Enter user password..."
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/30 text-xs font-mono focus:outline-none focus:border-red-500"
@@ -921,7 +921,7 @@ export default function AdminUsersPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                    প্রারম্ভিক ব্যালেন্স (৳)
+                    Initial Balance (৳)
                   </label>
                   <input
                     type="number"
@@ -934,7 +934,7 @@ export default function AdminUsersPage() {
 
                 <div>
                   <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                    রোল (Role)
+                    Role
                   </label>
                   <select
                     value={newRole}
@@ -953,13 +953,13 @@ export default function AdminUsersPage() {
                   onClick={() => setShowCreateModal(false)}
                   className="px-4 py-2.5 rounded-xl text-xs font-bold text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5"
                 >
-                  বাতিল
+                  Cancel
                 </button>
                 <button
                   type="submit"
                   className="px-5 py-2.5 rounded-xl text-xs font-black btn-red shadow-md shadow-red-600/30"
                 >
-                  অ্যাকাউন্ট তৈরি করুন
+                  Create Account
                 </button>
               </div>
             </form>
@@ -976,10 +976,10 @@ export default function AdminUsersPage() {
                 <History className="w-5 h-5 text-amber-500" />
                 <div>
                   <h3 className="text-sm font-black text-gray-900 dark:text-white">
-                    ব্যালেন্স লেনদেন ও অ্যাডমিন অ্যাকশন হিস্টোরি
+                    Balance Transactions & Admin Ledger
                   </h3>
                   <span className="text-[11px] text-gray-500">
-                    ইউজারদের ব্যালেন্স যোগ ও কর্তনের সম্পূর্ণ অডিট লগ
+                    Audit trail of all credits, debits, and balance updates
                   </span>
                 </div>
               </div>
@@ -994,7 +994,7 @@ export default function AdminUsersPage() {
             <div className="space-y-2">
               {transactions.length === 0 ? (
                 <div className="py-8 text-center text-gray-400 text-xs">
-                  এখনও কোনো লেনদেনের রেকর্ড তৈরি হয়নি।
+                  No transaction records logged yet.
                 </div>
               ) : (
                 transactions.map((tx) => (

@@ -57,7 +57,7 @@ export default function AdminCategoriesPage() {
       description,
       customRules,
     });
-    setToast({ text: `ক্যাটাগরি "${name}" সফলভাবে আপডেট করা হয়েছে!`, type: 'success' });
+    setToast({ text: `Category "${name}" updated successfully!`, type: 'success' });
     setTimeout(() => setToast(null), 3000);
   };
 
@@ -79,10 +79,10 @@ export default function AdminCategoriesPage() {
       <div className="pb-4 border-b border-gray-200 dark:border-white/10">
         <h1 className="text-2xl font-black text-gray-900 dark:text-white flex items-center gap-2">
           <FolderEdit className="w-6 h-6 text-red-600" />
-          ক্যাটাগরি, ব্যানার ও ইমেজ এডিটর
+          Categories, Banners & Images Editor
         </h1>
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-          ওয়েবসাইটের ৬টি মূল ক্যাটাগরির নাম, সেকশন হেডার, ব্যানার ফটো এবং আইকন ছবি পরিবর্তন করুন।
+          Configure tournament category names, section headers, banner artwork, and thumbnail icons.
         </p>
       </div>
 
@@ -115,7 +115,7 @@ export default function AdminCategoriesPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                ক্যাটাগরির নাম (Category Name)
+                Category Name
               </label>
               <input
                 type="text"
@@ -128,7 +128,7 @@ export default function AdminCategoriesPage() {
 
             <div>
               <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                সেকশন হেডার (Section Title)
+                Section Title
               </label>
               <input
                 type="text"
@@ -144,48 +144,48 @@ export default function AdminCategoriesPage() {
             {/* Banner Image Upload */}
             <div className="space-y-1">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-gray-500">ব্যানার ইমেজ</span>
+                <span className="text-[11px] font-bold text-gray-500">Banner Artwork</span>
                 <button
                   type="button"
                   onClick={() => setBannerImage('https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=640')}
                   className="text-[10px] font-bold text-red-600 hover:underline"
                 >
-                  ডিফল্ট ব্যানার রিস্টোর
+                  Restore Default
                 </button>
               </div>
               <ImageUploadInput
-                label="ক্যাটাগরি ব্যানার ফটো (Main Banner Photo)"
+                label="Category Banner (Main Photo)"
                 value={bannerImage}
                 onChange={setBannerImage}
-                helperText="ডিভাইস থেকে ফাইল আপলোড করুন অথবা ড্র্যাগ-অ্যান্ড-ড্রপ করুন"
+                helperText="Upload image from device or drag-and-drop file"
               />
             </div>
 
             {/* Avatar Icon Upload */}
             <div className="space-y-1">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-gray-500">আইকন ইমেজ</span>
+                <span className="text-[11px] font-bold text-gray-500">Icon Thumbnail</span>
                 <button
                   type="button"
                   onClick={() => setAvatarImage('https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=120')}
                   className="text-[10px] font-bold text-red-600 hover:underline"
                 >
-                  ডিফল্ট আইকন রিস্টোর
+                  Restore Default
                 </button>
               </div>
               <ImageUploadInput
-                label="ক্যাটাগরি গোল আইকন / অ্যাভাটার (Thumbnail Icon)"
+                label="Circular Thumbnail / Avatar"
                 value={avatarImage}
                 onChange={setAvatarImage}
                 isCircular={true}
-                helperText="ক্যাটাগরির বৃত্তাকার আইকন আপলোড করুন"
+                helperText="Upload circular avatar icon for category list"
               />
             </div>
           </div>
 
           <div>
             <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-              ক্যাটাগরির বিবরণ (Description)
+              Description
             </label>
             <input
               type="text"
@@ -197,11 +197,11 @@ export default function AdminCategoriesPage() {
 
           <div>
             <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-              এই ক্যাটাগরির জন্য নির্দিষ্ট কাস্টম রুলস (Category Specific Rules)
+              Category-Specific Rules & Guidelines
             </label>
             <textarea
               rows={3}
-              placeholder="এই ক্যাটাগরির জন্য কোনো বিশেষ নিয়ম থাকলে এখানে লিখুন..."
+              placeholder="Enter special instructions or tournament rules for this category..."
               value={customRules}
               onChange={(e) => setCustomRules(e.target.value)}
               className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/30 text-xs font-medium focus:outline-none focus:border-red-500"
@@ -213,7 +213,7 @@ export default function AdminCategoriesPage() {
               type="submit"
               className="px-6 py-3 rounded-xl text-xs font-black btn-red shadow-md shadow-red-600/30"
             >
-              ক্যাটাগরি তথ্য সেভ করুন
+              Save Category Information
             </button>
           </div>
         </form>

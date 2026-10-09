@@ -51,7 +51,7 @@ export default function AdminRulesPage() {
       bkashNumber,
       nagadNumber,
     });
-    setToast({ text: 'টুর্নামেন্ট রুলস, ক্যাটাগরি নিয়ম ও পেমেন্ট নম্বর সফলভাবে সংরক্ষিত হয়েছে!', type: 'success' });
+    setToast({ text: 'Tournament rules, notices, and payment numbers saved successfully!', type: 'success' });
     setTimeout(() => setToast(null), 3000);
   };
 
@@ -75,10 +75,10 @@ export default function AdminRulesPage() {
       <div className="pb-4 border-b border-gray-200 dark:border-white/10">
         <h1 className="text-2xl font-black text-gray-900 dark:text-white flex items-center gap-2">
           <FileText className="w-6 h-6 text-red-600" />
-          টুর্নামেন্ট রুলস ও লাইভ নোটিশ কন্ট্রোল
+          Tournament Rules & Live Notice Desk
         </h1>
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-          সাইটের শীর্ষে নোটিশ, সার্বজনীন নিয়ম এবং প্রতিটি ক্যাটাগরির (CS 4v4, BR, Special Match ইত্যাদি) জন্য আলাদা নিয়ম সেট করুন।
+          Manage header marquee notices, universal tournament rules, and category-specific rulesets (CS 4v4, BR, Special Match).
         </p>
       </div>
 
@@ -88,7 +88,7 @@ export default function AdminRulesPage() {
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-xs font-bold text-gray-900 dark:text-white">
               <Info className="w-4 h-4 text-red-600" />
-              <span>শীর্ষ লাল নোটিশ বার টেক্সট (Top Announcement Marquee)</span>
+              <span>Top Announcement Marquee Text</span>
             </div>
             <textarea
               rows={3}
@@ -98,7 +98,7 @@ export default function AdminRulesPage() {
               className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/30 text-xs font-medium focus:outline-none focus:border-red-500"
             />
             <span className="text-[11px] text-gray-500">
-              * এই টেক্সটটি ওয়েবসাইটের একদম উপরে লাল ব্যানারে ট্রেন অ্যানিমেশনের মতো স্ক্রল আকারে প্লেয়ারদের কাছে প্রদর্শিত হবে।
+              * This text scrolls continuously in the red top announcement bar across all client pages.
             </span>
           </div>
 
@@ -107,10 +107,10 @@ export default function AdminRulesPage() {
             <div className="flex items-center justify-between flex-wrap gap-2">
               <div className="flex items-center gap-2 text-xs font-black text-amber-500">
                 <ShieldAlert className="w-4 h-4" />
-                <span>ক্যাটাগরি অনুযায়ী আলাদা আলাদা রুলস (Category-Specific Rules)</span>
+                <span>Category-Specific Rules</span>
               </div>
               <span className="text-[10px] text-amber-500/80 font-bold">
-                ক্যাটাগরি সিলেক্ট করে ভিন্ন ভিন্ন নিয়ম লিখুন
+                Select a category below to configure custom rules
               </span>
             </div>
 
@@ -134,26 +134,26 @@ export default function AdminRulesPage() {
 
             <div className="space-y-1.5">
               <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300 block">
-                {categories[selectedRuleCategory]?.name || selectedRuleCategory} এর জন্য নির্ধারিত নিয়মাবলী:
+                Rules for {categories[selectedRuleCategory]?.name || selectedRuleCategory}:
               </label>
               <textarea
                 rows={6}
                 value={categoryRules[selectedRuleCategory] || ''}
-                placeholder={`এখানে ${categories[selectedRuleCategory]?.name || 'এই ক্যাটাগরির'} বিশেষ রুলস ও শর্তসমূহ লিখুন...`}
+                placeholder={`Enter custom rules, gun restrictions, or format guidelines for ${categories[selectedRuleCategory]?.name || 'this category'}...`}
                 onChange={(e) => handleCategoryRuleChange(selectedRuleCategory, e.target.value)}
                 className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-black/40 text-xs font-medium leading-relaxed focus:outline-none focus:border-amber-500 font-mono"
               />
               <span className="text-[10px] text-gray-500 block">
-                * যখন প্লেয়ার এই ক্যাটাগরির ম্যাচ খেলবে, তখন তার সামনে এই ক্যাটাগরির নির্দিষ্ট নিয়মটি সবার আগে প্রদর্শিত হবে।
+                * When a player joins a match in this category, these specific rules will take priority.
               </span>
             </div>
           </div>
 
-          {/* Universal 18+ Rules */}
+          {/* Universal Rules */}
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-xs font-bold text-gray-900 dark:text-white">
               <ShieldAlert className="w-4 h-4 text-red-600" />
-              <span>১৮+ টুর্নামেন্ট ও রুমের সার্বজনীন সাধারণ নিয়মাবলী (General Default Rules)</span>
+              <span>Universal Platform Rules (Default Fallback)</span>
             </div>
             <textarea
               rows={6}
@@ -163,19 +163,19 @@ export default function AdminRulesPage() {
               className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/30 text-xs font-medium leading-relaxed focus:outline-none focus:border-red-500"
             />
             <span className="text-[11px] text-gray-500">
-              * কোনো ক্যাটাগরির আলাদা নিয়ম না থাকলে স্বয়ংক্রিয়ভাবে এই সার্বজনীন নিয়মগুলো প্রদর্শিত হবে।
+              * Displayed automatically whenever a category does not have dedicated custom rules.
             </span>
           </div>
 
           {/* Official Payment Numbers */}
           <div className="p-4 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 space-y-3">
             <h3 className="text-xs font-black text-gray-900 dark:text-white">
-              অফিশিয়াল পেমেন্ট নম্বর (Official Deposit / Withdraw Numbers)
+              Official Payment Numbers (Deposit / Withdrawal)
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-[11px] font-bold text-pink-600 block mb-1">
-                  bKash পার্সোনাল নম্বর
+                  bKash Personal Number
                 </label>
                 <input
                   type="text"
@@ -186,7 +186,7 @@ export default function AdminRulesPage() {
               </div>
               <div>
                 <label className="text-[11px] font-bold text-amber-600 block mb-1">
-                  Nagad পার্সোনাল নম্বর
+                  Nagad Personal Number
                 </label>
                 <input
                   type="text"
@@ -201,7 +201,7 @@ export default function AdminRulesPage() {
           {/* How to Join */}
           <div className="space-y-2">
             <label className="text-xs font-bold text-gray-900 dark:text-white block">
-              'টুর্নামেন্টে কিভাবে যোগদান করবেন ?' পপ-আপ গাইড
+              "How to Join Tournament" Instruction Modal
             </label>
             <textarea
               rows={3}
@@ -216,7 +216,7 @@ export default function AdminRulesPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
             <div>
               <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                টেলিগ্রাম সাপোর্ট গ্রুপ লিংক
+                Telegram Support Channel / Group URL
               </label>
               <input
                 type="text"
@@ -228,7 +228,7 @@ export default function AdminRulesPage() {
 
             <div>
               <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                হোয়াটসঅ্যাপ সাপোর্ট নম্বর (e.g. 8801700000000)
+                WhatsApp Support Number (e.g. 8801700000000)
               </label>
               <input
                 type="text"
@@ -244,7 +244,7 @@ export default function AdminRulesPage() {
               type="submit"
               className="px-6 py-3 rounded-xl text-xs font-black btn-red shadow-md shadow-red-600/30"
             >
-              সব রুলস ও সেটিংস সেভ করুন
+              Save All Rules & Notices
             </button>
           </div>
         </form>

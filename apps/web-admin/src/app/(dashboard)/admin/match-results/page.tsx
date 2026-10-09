@@ -67,7 +67,7 @@ export default function MatchResultsOCRPage() {
 
   const handleRunOCR = async () => {
     if (!selectedMatch) {
-      showToast('অনুগ্রহ করে একটি ম্যাচ নির্বাচন করুন', 'error');
+      showToast('Please select a tournament match first', 'error');
       return;
     }
 
@@ -111,7 +111,7 @@ export default function MatchResultsOCRPage() {
       }
 
       showToast(
-        `OCR সফল হয়েছে! ${data.matchedCount || data.results?.length} জন প্লেয়ার ফাজি-ম্যাচ করা হয়েছে।`,
+        `OCR succeeded! ${data.matchedCount || data.results?.length} player(s) fuzzy matched.`,
         'success'
       );
     } catch (err) {
@@ -127,7 +127,7 @@ export default function MatchResultsOCRPage() {
 
       const localResult = parseScoreboardText(rawOcrText, selectedMatch, fallbackRegistered);
       setParsedRows(localResult);
-      showToast('লোকাল ফাজি পার্সার দিয়ে সফলভাবে রেজাল্ট প্রসেস করা হয়েছে!', 'success');
+      showToast('Scoreboard processed using local fuzzy parser engine!', 'success');
     } finally {
       setIsProcessing(false);
     }
@@ -159,7 +159,7 @@ export default function MatchResultsOCRPage() {
 
   const handleProcessInstantPayout = () => {
     if (!selectedMatch || parsedRows.length === 0) {
-      showToast('প্রসেস করার মতো কোনো রেজাল্ট নেই', 'error');
+      showToast('No scoreboard results to process payout', 'error');
       return;
     }
 
@@ -200,7 +200,7 @@ export default function MatchResultsOCRPage() {
     setAuditLogs(getOcrAuditLogs());
     setPayoutDone(true);
     showToast(
-      `🎉 সফল পে-আউট! মোট ৳${payoutResult.totalDistributed} টাকা বিজয়ীদের ওয়ালেটে যোগ করা হয়েছে!`,
+      `🎉 Successful Payout! ৳${payoutResult.totalDistributed} BDT credited to winners' wallets!`,
       'success'
     );
   };
@@ -226,17 +226,17 @@ export default function MatchResultsOCRPage() {
         <div>
           <h1 className="text-2xl font-black text-gray-900 dark:text-white flex items-center gap-2">
             <Scan className="w-6 h-6 text-red-600" />
-            ম্যাচ স্কোরবোর্ড OCR ও অটো প্রাইজ পে-আউট (Automated OCR Payout)
+            Match Scoreboard OCR & Instant Wallet Payout
           </h1>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            ম্যাচ শেষের স্ক্রিনশট আপলোড করে প্লেয়ারদের র‍্যাংক ও কিল শনাক্ত করুন এবং এক ক্লিকে ওয়ালেটে টাকা পাঠিয়ে দিন।
+            Upload match result screenshots, auto-extract player kills and rank positions, and distribute prize pools.
           </p>
         </div>
 
         {selectedMatch && (
           <div className="flex items-center gap-2">
             <span className="text-xs font-bold px-3 py-1.5 rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/20">
-              পুল: ৳{selectedMatch.prizePool} | প্রতি কিল: ৳{selectedMatch.perKill}
+              Pool: ৳{selectedMatch.prizePool} | Per Kill: ৳{selectedMatch.perKill}
             </span>
           </div>
         )}
@@ -247,7 +247,7 @@ export default function MatchResultsOCRPage() {
         {/* Match Selection */}
         <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#12121a] p-5 space-y-4 shadow-sm">
           <label className="text-xs font-black text-gray-900 dark:text-white block">
-            ১. ম্যাচ নির্বাচন করুন:
+            1. Select Match:
           </label>
           <select
             value={selectedMatchId}
@@ -268,20 +268,20 @@ export default function MatchResultsOCRPage() {
           {selectedMatch && (
             <div className="p-3.5 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 space-y-2 text-xs">
               <div className="flex justify-between">
-                <span className="text-gray-500">ক্যাটাগরি:</span>
+                <span className="text-gray-500">Category:</span>
                 <span className="font-bold">{selectedMatch.categorySlug}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-500">১ম পুরস্কার:</span>
+                <span className="text-gray-500">1st Prize:</span>
                 <span className="font-bold text-emerald-500">৳{selectedMatch.firstPrize}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-500">প্রতি কিল:</span>
+                <span className="text-gray-500">Per Kill:</span>
                 <span className="font-bold text-amber-500">৳{selectedMatch.perKill}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-500">স্ট্যাটাস:</span>
-                <span className="font-bold px-2 py-0.5 rounded bg-red-100 text-red-600 text-[10px]">
+                <span className="text-gray-500">Status:</span>
+                <span className="font-bold px-2 py-0.5 rounded bg-red-100 dark:bg-red-950/60 text-red-600 text-[10px]">
                   {selectedMatch.status || 'UPCOMING'}
                 </span>
               </div>
@@ -293,17 +293,17 @@ export default function MatchResultsOCRPage() {
         <div className="lg:col-span-2 rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#12121a] p-5 space-y-4 shadow-sm">
           <div className="flex items-center justify-between">
             <label className="text-xs font-black text-gray-900 dark:text-white block">
-              ২. স্কোরবোর্ড স্ক্রিনশট আপলোড (JPEG/PNG):
+              2. Upload Scoreboard Screenshot (JPEG/PNG):
             </label>
             <button
               type="button"
               onClick={() => {
                 setRawOcrText(`#1 BDX_STRIKER 7 Kills\n#2 OP_NINJA_99 4 Kills\n#3 VIPER_ROYAL 2 Kills\n#4 HEADSHOT_KING 1 Kills`);
-                showToast('নমুনা স্কোরবোর্ড ডাটা লোড করা হয়েছে');
+                showToast('Sample scoreboard test data loaded');
               }}
               className="text-[11px] font-bold text-red-600 hover:underline"
             >
-              + নমুনা ডাটা লোড করুন
+              + Load Sample Data
             </button>
           </div>
 
@@ -317,9 +317,9 @@ export default function MatchResultsOCRPage() {
               />
               <Upload className="w-8 h-8 text-red-500 mb-2" />
               <span className="text-xs font-bold text-gray-800 dark:text-gray-200">
-                ছবি সিলেক্ট করতে ক্লিক করুন
+                Click to browse image
               </span>
-              <span className="text-[10px] text-gray-400 mt-1">ফ্রি ফায়ার এন্ড-ম্যাচ রেজাল্ট স্ক্রিনশট</span>
+              <span className="text-[10px] text-gray-400 mt-1">Free Fire end-match scoreboard screenshot</span>
             </div>
 
             {imagePreview ? (
@@ -332,7 +332,7 @@ export default function MatchResultsOCRPage() {
               </div>
             ) : (
               <div className="flex items-center justify-center rounded-2xl border border-gray-200 dark:border-white/10 h-[140px] bg-gray-50 dark:bg-white/5 text-gray-400 text-xs font-bold">
-                কোনো ছবি আপলোড হয়নি
+                No image selected
               </div>
             )}
           </div>
@@ -340,7 +340,7 @@ export default function MatchResultsOCRPage() {
           {/* Raw Text Input */}
           <div className="space-y-1">
             <label className="text-[11px] font-bold text-gray-500">
-              OCR টেক্সট (স্বয়ংক্রিয় এক্সট্রাকশন বা সরাসরি পেস্ট করুন):
+              OCR Text (Extracted or Paste directly):
             </label>
             <textarea
               rows={2}
@@ -358,7 +358,7 @@ export default function MatchResultsOCRPage() {
             className="w-full py-3 rounded-xl btn-red text-xs font-black flex items-center justify-center gap-2 shadow-lg shadow-red-600/20 active:scale-95 transition-all disabled:opacity-50"
           >
             <Scan className="w-4 h-4" />
-            <span>{isProcessing ? 'OCR ও ফাজি ম্যাচিং হচ্ছে...' : '🤖 OCR প্রসেসিং চালান (Parse & Match)'}</span>
+            <span>{isProcessing ? 'Processing OCR & Fuzzy Matching...' : '🤖 Run OCR Engine (Parse & Match)'}</span>
           </button>
         </div>
       </div>
@@ -370,19 +370,19 @@ export default function MatchResultsOCRPage() {
             <div>
               <h3 className="text-base font-black text-gray-900 dark:text-white flex items-center gap-2">
                 <Trophy className="w-5 h-5 text-amber-500" />
-                শনাক্তকৃত প্লেয়ার ও প্রাইজ ক্যালকুলেশন
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold border border-emerald-300">
-                  {parsedRows.length} জন শনাক্ত
+                Parsed Players & Prize Calculation
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 font-bold border border-emerald-300 dark:border-emerald-800">
+                  {parsedRows.length} Detected
                 </span>
               </h3>
               <p className="text-[11px] text-gray-500">
-                নিচের তথ্যগুলো যাচাই করুন। প্রয়োজনে কিল বা র‍্যাংক ম্যানুয়ালি পরিবর্তন করতে পারেন।
+                Review verified players, kills, and ranks. You can manually adjust any field before executing payouts.
               </p>
             </div>
 
             <div className="flex items-center gap-3">
               <div className="text-right">
-                <span className="text-[10px] text-gray-400 block">মোট প্রাইজ বণ্টন:</span>
+                <span className="text-[10px] text-gray-400 block">Total Distribution:</span>
                 <span className="text-base font-black font-mono text-emerald-500">
                   ৳ {totalPrizeCalculated}
                 </span>
@@ -400,11 +400,11 @@ export default function MatchResultsOCRPage() {
               >
                 {payoutDone ? (
                   <>
-                    <CheckCircle2 className="w-4 h-4" /> পে-আউট সম্পন্ন হয়েছে
+                    <CheckCircle2 className="w-4 h-4" /> Payout Completed
                   </>
                 ) : (
                   <>
-                    <Zap className="w-4 h-4" /> 💰 প্রাইজ বিতরণ ও ওয়ালেটে টাকা পাঠান
+                    <Zap className="w-4 h-4" /> 💰 Execute Instant Wallet Payout
                   </>
                 )}
               </button>
@@ -415,13 +415,13 @@ export default function MatchResultsOCRPage() {
             <table className="w-full text-xs text-left">
               <thead>
                 <tr className="border-b border-gray-100 dark:border-white/5 text-[10px] text-gray-500 uppercase">
-                  <th className="py-2.5 px-3">র‍্যাংক</th>
-                  <th className="py-2.5 px-3">OCR নেম</th>
-                  <th className="py-2.5 px-3">ফাজি-ম্যাচড প্লেয়ার (IGN)</th>
-                  <th className="py-2.5 px-3">কিল সংখ্যা</th>
-                  <th className="py-2.5 px-3">কিল প্রাইজ</th>
-                  <th className="py-2.5 px-3">র‍্যাংক প্রাইজ</th>
-                  <th className="py-2.5 px-3 text-right">মোট পুরস্কার (BDT)</th>
+                  <th className="py-2.5 px-3">Rank</th>
+                  <th className="py-2.5 px-3">OCR Name</th>
+                  <th className="py-2.5 px-3">Matched Player (IGN)</th>
+                  <th className="py-2.5 px-3">Kills</th>
+                  <th className="py-2.5 px-3">Kill Prize</th>
+                  <th className="py-2.5 px-3">Rank Prize</th>
+                  <th className="py-2.5 px-3 text-right">Total Prize (BDT)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-white/5">
@@ -443,12 +443,12 @@ export default function MatchResultsOCRPage() {
                           {row.matchedPlayerIgn}
                         </span>
                         {row.isMatched ? (
-                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold">
+                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 font-bold">
                             {(row.confidence * 100).toFixed(0)}% Match
                           </span>
                         ) : (
-                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 font-bold">
-                            ম্যানুয়াল
+                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 font-bold">
+                            Manual
                           </span>
                         )}
                       </div>
@@ -487,28 +487,28 @@ export default function MatchResultsOCRPage() {
           </div>
           <div>
             <h3 className="text-sm font-black text-gray-900 dark:text-white">
-              OCR পে-আউট অডিট লগ (Audit Trail)
+              OCR Payout Audit Trail
             </h3>
             <p className="text-[11px] text-gray-500">
-              অতীতে প্রক্রিয়াজাত সকল ম্যাচ রেজাল্ট ও প্রাইজ লেনদেনের ইতিহাস।
+              Historical record of past processed match results and verified wallet disbursements.
             </p>
           </div>
         </div>
 
         {auditLogs.length === 0 ? (
           <div className="py-8 text-center text-gray-500 text-xs">
-            এখনো কোনো অডিট লগ জমা হয়নি।
+            No audit records saved yet.
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-xs text-left">
               <thead>
                 <tr className="border-b border-gray-100 dark:border-white/5 text-[10px] text-gray-500 uppercase">
-                  <th className="py-2 px-3">ম্যাচ</th>
-                  <th className="py-2 px-3">তারিখ ও সময়</th>
-                  <th className="py-2 px-3">প্রসেস করেছেন</th>
-                  <th className="py-2 px-3">বিজয়ী সংখ্যা</th>
-                  <th className="py-2 px-3 text-right">মোট বিতরণকৃত প্রাইজ</th>
+                  <th className="py-2 px-3">Match</th>
+                  <th className="py-2 px-3">Date & Time</th>
+                  <th className="py-2 px-3">Processed By</th>
+                  <th className="py-2 px-3">Winners Matched</th>
+                  <th className="py-2 px-3 text-right">Prize Disbursed</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-white/5">
@@ -516,10 +516,10 @@ export default function MatchResultsOCRPage() {
                   <tr key={log.id} className="hover:bg-gray-50 dark:hover:bg-white/5">
                     <td className="py-2.5 px-3 font-bold">{log.matchTitle}</td>
                     <td className="py-2.5 px-3 text-gray-500">
-                      {new Date(log.processedAt).toLocaleString('bn-BD')}
+                      {new Date(log.processedAt).toLocaleString('en-US')}
                     </td>
                     <td className="py-2.5 px-3">{log.processedBy}</td>
-                    <td className="py-2.5 px-3 font-mono">{log.totalParticipantsMatched} জন</td>
+                    <td className="py-2.5 px-3 font-mono">{log.totalParticipantsMatched}</td>
                     <td className="py-2.5 px-3 text-right font-mono font-bold text-emerald-500">
                       ৳ {log.totalPrizeDistributed}
                     </td>

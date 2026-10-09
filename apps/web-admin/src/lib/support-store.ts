@@ -4,11 +4,12 @@ import { dispatchDevicePushNotification } from './match-scheduler';
 
 export interface TicketMessage {
   id: string;
-  senderRole: 'USER' | 'ADMIN';
+  senderRole: 'USER' | 'ADMIN' | 'AI_BOT';
   senderName: string;
   message: string;
   imageUrl?: string;
   timestamp: string;
+  isAi?: boolean;
 }
 
 export interface SupportTicket {
@@ -34,19 +35,27 @@ export const INITIAL_TICKETS: SupportTicket[] = [
     userId: 'u-1',
     userPhone: '01712345678',
     userIgn: 'BDX_STRIKER',
-    subject: 'বিকাশ ডিপোজিট ব্যালেন্সে যোগ হয়নি (TrxID: BKA89212)',
+    subject: 'bKash Deposit not reflected in balance (TrxID: BKA89212)',
     category: 'PAYMENT',
-    status: 'OPEN',
+    status: 'IN_PROGRESS',
     priority: 'HIGH',
     createdAt: new Date(Date.now() - 3600000).toISOString(),
-    updatedAt: new Date(Date.now() - 3600000).toISOString(),
+    updatedAt: new Date(Date.now() - 3500000).toISOString(),
     messages: [
       {
         id: 'msg-1',
         senderRole: 'USER',
         senderName: 'BDX_STRIKER',
-        message: 'ভাইয়া আমি ৫০০ টাকা বিকাশ করেছি ২০ মিনিট আগে। ট্রানজেকশন আইডি BKA89212। দ্রুত ব্যালেন্স দিন টুর্নামেন্ট খেলব।',
+        message: 'Hello, I deposited 500 BDT via bKash 20 minutes ago. Transaction ID is BKA89212. Please add to my balance.',
         timestamp: new Date(Date.now() - 3600000).toISOString(),
+      },
+      {
+        id: 'msg-1-ai',
+        senderRole: 'AI_BOT',
+        senderName: 'AI Support',
+        isAi: true,
+        message: 'Hello BDX_STRIKER! 🤖 I am AI Support. Your bKash deposit with TrxID "BKA89212" is currently queued in verification. Manual deposits are credited within 5-15 minutes once verified by our finance desk.',
+        timestamp: new Date(Date.now() - 3500000).toISOString(),
       },
     ],
   },
@@ -55,31 +64,142 @@ export const INITIAL_TICKETS: SupportTicket[] = [
     userId: 'u-2',
     userPhone: '01899112233',
     userIgn: 'OP_NINJA_99',
-    subject: 'ম্যাচের রুম আইডি পাসওয়ার্ডে সমস্যা হচ্ছে',
+    subject: 'Room ID & Password issue for match #42',
     category: 'MATCH',
-    status: 'IN_PROGRESS',
+    status: 'RESOLVED',
     priority: 'MEDIUM',
     matchId: 'm-1',
     createdAt: new Date(Date.now() - 7200000).toISOString(),
     updatedAt: new Date(Date.now() - 1800000).toISOString(),
     messages: [
       {
-        id: 'msg-1',
+        id: 'msg-2',
         senderRole: 'USER',
         senderName: 'OP_NINJA_99',
-        message: 'রুম পাসওয়ার্ড ১২৩৪ দিলে ইনভ্যালিড দেখাচ্ছে। দয়া করে সঠিক পাস দিন।',
+        message: 'Room password showed invalid when entered. Please provide the correct room pass.',
         timestamp: new Date(Date.now() - 7200000).toISOString(),
       },
       {
-        id: 'msg-2',
+        id: 'msg-2-ai',
+        senderRole: 'AI_BOT',
+        senderName: 'AI Support',
+        isAi: true,
+        message: 'Hello OP_NINJA_99! 🤖 Room credentials are refreshed automatically under the "My Matches" tab. Our supervisor updated the password to 5566.',
+        timestamp: new Date(Date.now() - 7100000).toISOString(),
+      },
+      {
+        id: 'msg-3',
         senderRole: 'ADMIN',
-        senderName: 'Admin Support',
-        message: 'রুম পাসওয়ার্ড রিসেট করে ৫৫৬৬ দেওয়া হয়েছে। দ্রুত জয়েন করুন।',
+        senderName: 'Admin Supervisor',
+        message: 'Room password reset to 5566. Please join custom room immediately.',
         timestamp: new Date(Date.now() - 1800000).toISOString(),
       },
     ],
   },
 ];
+
+/**
+ * Generates an intelligent, contextual AI response tailored for Free Fire tournament issues
+ */
+export function generateAiSupportResponse(
+  userQuery: string,
+  category: 'PAYMENT' | 'MATCH' | 'ACCOUNT' | 'OTHER',
+  subject: string,
+  ign: string = 'Player'
+): string {
+  const q = (userQuery + ' ' + subject).toLowerCase();
+
+  // Payment / Deposit / TrxID
+  if (
+    category === 'PAYMENT' ||
+    q.includes('bkash') ||
+    q.includes('nagad') ||
+    q.includes('deposit') ||
+    q.includes('trx') ||
+    q.includes('টাকা') ||
+    q.includes('ব্যালেন্স') ||
+    q.includes('পেমেন্ট')
+  ) {
+    return `Hello ${ign}! 🤖 AI Support here.
+
+We noticed your payment query regarding "${subject}".
+• Deposit Verification: Manual bKash/Nagad deposits are verified within 5 to 15 minutes.
+• Please ensure the Transaction ID (TrxID) and sender number match your confirmation SMS exactly.
+• If verified, your balance will reflect immediately. Our admin desk has also been alerted!`;
+  }
+
+  // Room ID / Password / Match Join
+  if (
+    category === 'MATCH' ||
+    q.includes('room') ||
+    q.includes('pass') ||
+    q.includes('id') ||
+    q.includes('রুম') ||
+    q.includes('পাসওয়ার্ড') ||
+    q.includes('start') ||
+    q.includes('join')
+  ) {
+    return `Hello ${ign}! 🤖 AI Support here.
+
+Regarding match access for "${subject}":
+• Room ID & Password are automatically delivered to your registered match card under "My Matches" 10 to 15 minutes before match start.
+• When the status displays "ROOM OPEN", click "View Room ID & Password".
+• Please enter the custom room within 5 minutes to secure your slot.`;
+  }
+
+  // Withdrawal / Payout
+  if (
+    q.includes('withdraw') ||
+    q.includes('উইথড্র') ||
+    q.includes('ক্যাশআউট') ||
+    q.includes('টাকা তোলা') ||
+    q.includes('payout')
+  ) {
+    return `Hello ${ign}! 🤖 AI Support here.
+
+Regarding your withdrawal request:
+• All verified withdrawals are processed within 1 to 2 hours directly to your designated bKash or Nagad personal wallet.
+• Minimum withdrawal is 100 BDT. You will receive an automatic push notification once payout completes.`;
+  }
+
+  // Slots / Squad booking
+  if (
+    q.includes('slot') ||
+    q.includes('squad') ||
+    q.includes('স্লট') ||
+    q.includes('team') ||
+    q.includes('স্কোয়াড')
+  ) {
+    return `Hello ${ign}! 🤖 AI Support here.
+
+Regarding slot bookings:
+• Solo & Duo matches: Your slot is assigned automatically upon registration with your Free Fire UID and IGN.
+• Squad matches: You can select any vacant slot (1–12) during registration.
+• Remember to sit in your exact designated slot in the custom lobby.`;
+  }
+
+  // Cheating / Hacks / Anti-Cheat
+  if (
+    q.includes('hack') ||
+    q.includes('cheat') ||
+    q.includes('হ্যাক') ||
+    q.includes('চিটার') ||
+    q.includes('ban') ||
+    q.includes('emulator')
+  ) {
+    return `Hello ${ign}! 🤖 AI Support here.
+
+🛡️ Fair Play & Anti-Cheat Notice:
+• Emulators, config files, and 3rd-party mods are strictly prohibited and auto-detected.
+• If you are reporting a suspect, please attach a screenshot or video link. Violators face permanent bans and prize forfeit.`;
+  }
+
+  // General fallback
+  return `Hello ${ign}! 🤖 I am your 24/7 AI Support Assistant.
+
+We have received your ticket regarding: "${subject}".
+Our automated tournament management system has recorded this request, and a human supervisor has been notified. We will update you here shortly!`;
+}
 
 /**
  * Synthesizes a distinctive alert chime for incoming support tickets
@@ -138,6 +258,55 @@ export function getUserTickets(userId: string, userPhone?: string): SupportTicke
   return all.filter((t) => t.userId === userId || (userPhone && t.userPhone === userPhone));
 }
 
+/**
+ * Triggers automated AI Bot reply after a realistic delay (e.g. 500ms)
+ */
+export function scheduleAiSupportReply(
+  ticketId: string,
+  userMessage: string,
+  category: 'PAYMENT' | 'MATCH' | 'ACCOUNT' | 'OTHER',
+  subject: string,
+  userIgn: string
+): void {
+  if (typeof window === 'undefined') return;
+
+  setTimeout(() => {
+    const all = getSupportTickets();
+    const ticketIndex = all.findIndex((t) => t.id === ticketId);
+    if (ticketIndex === -1) return;
+
+    const ticket = all[ticketIndex];
+    const aiMessageText = generateAiSupportResponse(userMessage, category, subject, userIgn);
+    const now = new Date().toISOString();
+
+    const aiMsg: TicketMessage = {
+      id: 'msg-ai-' + Date.now(),
+      senderRole: 'AI_BOT',
+      senderName: 'AI Support',
+      message: aiMessageText,
+      timestamp: now,
+      isAi: true,
+    };
+
+    const updatedTicket: SupportTicket = {
+      ...ticket,
+      updatedAt: now,
+      status: ticket.status === 'RESOLVED' ? 'RESOLVED' : 'IN_PROGRESS',
+      messages: [...ticket.messages, aiMsg],
+    };
+
+    all[ticketIndex] = updatedTicket;
+    saveSupportTickets(all);
+
+    playSupportAlertSound();
+
+    dispatchDevicePushNotification(
+      '🤖 AI Support Replied',
+      `Ticket #${ticket.id}: ${aiMessageText.slice(0, 90)}...`
+    );
+  }, 600);
+}
+
 export function createSupportTicket(data: {
   userId: string;
   userPhone: string;
@@ -182,8 +351,17 @@ export function createSupportTicket(data: {
   // Play audio sound and notify admin
   playSupportAlertSound();
   dispatchDevicePushNotification(
-    '🎧 নতুন সাপোর্ট টিকেট জমা পড়েছে!',
+    '🎧 New Support Ticket Received',
     `[${data.category}] ${data.userIgn} (${data.userPhone}): "${data.subject}"`
+  );
+
+  // Automatically trigger AI Support Bot instant reply!
+  scheduleAiSupportReply(
+    newTicket.id,
+    data.message,
+    data.category,
+    data.subject,
+    data.userIgn
   );
 
   return newTicket;
@@ -192,7 +370,7 @@ export function createSupportTicket(data: {
 export function addTicketReply(
   ticketId: string,
   reply: {
-    senderRole: 'USER' | 'ADMIN';
+    senderRole: 'USER' | 'ADMIN' | 'AI_BOT';
     senderName: string;
     message: string;
     imageUrl?: string;
@@ -212,6 +390,7 @@ export function addTicketReply(
     message: reply.message.trim(),
     imageUrl: reply.imageUrl,
     timestamp: now,
+    isAi: reply.senderRole === 'AI_BOT',
   };
 
   const updatedTicket: SupportTicket = {
@@ -229,14 +408,23 @@ export function addTicketReply(
   if (reply.senderRole === 'ADMIN') {
     // Notify player that admin replied
     dispatchDevicePushNotification(
-      '💬 অ্যাডমিন থেকে সাপোর্ট উত্তর এসেছে!',
-      `আপনার টিকেট "${ticket.subject}" এর উত্তর দেওয়া হয়েছে: "${reply.message.slice(0, 80)}"`
+      '💬 Admin Support Response',
+      `Ticket "${ticket.subject}": "${reply.message.slice(0, 80)}"`
     );
-  } else {
+  } else if (reply.senderRole === 'USER') {
     // Notify admin that user replied
     dispatchDevicePushNotification(
-      '💬 ইউজারের নতুন সাপোর্ট মেসেজ!',
-      `টিকেট #${ticket.id} (${ticket.userIgn}): "${reply.message.slice(0, 80)}"`
+      '💬 User Support Message',
+      `Ticket #${ticket.id} (${ticket.userIgn}): "${reply.message.slice(0, 80)}"`
+    );
+
+    // Automatically trigger AI Support Bot reply for the user query!
+    scheduleAiSupportReply(
+      ticket.id,
+      reply.message,
+      ticket.category,
+      ticket.subject,
+      ticket.userIgn
     );
   }
 
@@ -258,8 +446,8 @@ export function updateTicketStatus(
 
   if (status === 'RESOLVED') {
     dispatchDevicePushNotification(
-      '✅ সাপোর্ট টিকেট সম্পন্ন হয়েছে',
-      `আপনার টিকেট #${ticket.id} (${ticket.subject}) সফলভাবে সমাধান (Resolved) করা হয়েছে।`
+      '✅ Support Ticket Resolved',
+      `Ticket #${ticket.id} (${ticket.subject}) has been successfully resolved.`
     );
   }
 

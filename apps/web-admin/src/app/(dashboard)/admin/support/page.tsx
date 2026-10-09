@@ -17,6 +17,8 @@ import {
   Filter,
   Volume2,
   Sparkles,
+  Bot,
+  Zap,
 } from 'lucide-react';
 import {
   getSupportTickets,
@@ -76,7 +78,7 @@ export default function AdminSupportPage() {
     if (res) {
       setReplyText('');
       refreshTickets();
-      showToast('উত্তর পাঠানো হয়েছে এবং প্লেয়ারের কাছে নোটিফিকেশন পৌঁছে গেছে!', 'success');
+      showToast('Reply dispatched and push notification sent to player!', 'success');
     }
   };
 
@@ -84,15 +86,15 @@ export default function AdminSupportPage() {
     if (!selectedTicket) return;
     updateTicketStatus(selectedTicket.id, status);
     refreshTickets();
-    showToast(`টিকেটের স্ট্যাটাস "${status}" এ আপডেট করা হয়েছে!`, 'success');
+    showToast(`Ticket status updated to "${status}"!`, 'success');
   };
 
-  // Quick reply presets
+  // Quick reply presets in English
   const quickReplies = [
-    'আপনার সমস্যাটি সমাধান করা হয়েছে, অনুগ্রহ করে একাউন্ট চেক করুন।',
-    'আপনার বিকাশ/নগদ পেমেন্ট ভেরিফাই করে ওয়ালেটে ব্যালেন্স যোগ করে দেওয়া হয়েছে।',
-    'রুম আইডি ও পাসওয়ার্ড মাই ম্যাচেসে দেওয়া হয়েছে, দ্রুত জয়েন করুন।',
-    'ম্যাচ রেজাল্ট স্ক্রিনশট যাচাই সম্পন্ন হয়েছে। প্রাইজ মানি আপনার ওয়ালেটে ক্রেডিট করা হয়েছে।',
+    'Your issue has been resolved. Please verify your balance.',
+    'Your bKash/Nagad payment was verified and added to wallet.',
+    'Room ID & password are now posted in My Matches. Please join room.',
+    'Scoreboard verification completed. Prize money credited to wallet.',
   ];
 
   const filteredTickets = tickets.filter((t) => {
@@ -130,48 +132,53 @@ export default function AdminSupportPage() {
       {/* Header */}
       <div className="pb-4 border-b border-gray-200 dark:border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-gray-900 dark:text-white flex items-center gap-2">
-            <LifeBuoy className="w-6 h-6 text-red-600" />
-            রিয়েল-টাইম সাপোর্ট ও হেল্প ডেস্ক (Support Ticketing Center)
-          </h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-black text-gray-900 dark:text-white flex items-center gap-2">
+              <LifeBuoy className="w-6 h-6 text-red-600" />
+              Live Support & Ticketing Desk
+            </h1>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-black border border-emerald-500/20 shadow-sm animate-pulse">
+              <Bot className="w-3.5 h-3.5" /> AI Support Active 24/7
+            </span>
+          </div>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            প্লেয়ারদের পেমেন্ট, রুম ইস্যু ও টুর্নামেন্ট অভিযোগ সরাসরি উত্তর দিন এবং তাৎক্ষণিক নোটিফিকেশন পাঠান।
+            Resolve player inquiries, manage payment proofs, and monitor automated AI Support Bot responses.
           </p>
         </div>
 
         <button
           onClick={() => {
             playSupportAlertSound();
-            showToast('অ্যালার্ট সাউন্ড সফলভাবে টেস্ট করা হয়েছে!');
+            showToast('Chime alert sound tested successfully!');
           }}
-          className="px-3.5 py-2 rounded-xl bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 text-xs font-bold flex items-center gap-1.5 hover:bg-gray-200"
+          className="px-3.5 py-2 rounded-xl bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 text-xs font-bold flex items-center gap-1.5 hover:bg-gray-200 transition-all border border-gray-200 dark:border-white/10"
         >
-          <Volume2 className="w-4 h-4 text-amber-500" /> সাউন্ড টেস্ট
+          <Volume2 className="w-4 h-4 text-amber-500" /> Test Sound Alert
         </button>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="p-4 rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#12121a]">
-          <span className="text-[10px] text-gray-400 font-bold uppercase block">সর্বমোট টিকেট</span>
+          <span className="text-[10px] text-gray-400 font-bold uppercase block">Total Tickets</span>
           <span className="text-xl font-black text-gray-900 dark:text-white font-mono">
             {tickets.length}
           </span>
         </div>
         <div className="p-4 rounded-2xl border border-rose-500/30 bg-rose-500/5">
-          <span className="text-[10px] text-rose-500 font-bold uppercase block">নতুন ওপেন টিকেট</span>
+          <span className="text-[10px] text-rose-500 font-bold uppercase block">New Open Tickets</span>
           <span className="text-xl font-black text-rose-600 font-mono flex items-center gap-2">
             {openCount} {openCount > 0 && <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping" />}
           </span>
         </div>
         <div className="p-4 rounded-2xl border border-blue-500/30 bg-blue-500/5">
-          <span className="text-[10px] text-blue-500 font-bold uppercase block">প্রসেসিং হচ্ছে</span>
+          <span className="text-[10px] text-blue-500 font-bold uppercase block">In Progress</span>
           <span className="text-xl font-black text-blue-600 font-mono">
             {inProgressCount}
           </span>
         </div>
         <div className="p-4 rounded-2xl border border-emerald-500/30 bg-emerald-500/5">
-          <span className="text-[10px] text-emerald-500 font-bold uppercase block">সমাধানকৃত (Resolved)</span>
+          <span className="text-[10px] text-emerald-500 font-bold uppercase block">Resolved</span>
           <span className="text-xl font-black text-emerald-600 font-mono">
             {resolvedCount}
           </span>
@@ -190,7 +197,7 @@ export default function AdminSupportPage() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="ফোন নম্বর, নাম বা বিষয় দিয়ে খুঁজুন..."
+                placeholder="Search by phone, IGN, or subject..."
                 className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black text-xs font-medium focus:outline-none focus:border-red-500"
               />
             </div>
@@ -207,12 +214,12 @@ export default function AdminSupportPage() {
                   }`}
                 >
                   {st === 'ALL'
-                    ? 'সব'
+                    ? 'All'
                     : st === 'OPEN'
-                    ? `ওপেন (${openCount})`
+                    ? `Open (${openCount})`
                     : st === 'IN_PROGRESS'
-                    ? `প্রসেসিং (${inProgressCount})`
-                    : `সমাধান`}
+                    ? `Processing (${inProgressCount})`
+                    : `Resolved`}
                 </button>
               ))}
             </div>
@@ -222,7 +229,7 @@ export default function AdminSupportPage() {
           <div className="flex-1 overflow-y-auto space-y-2 pr-1">
             {filteredTickets.length === 0 ? (
               <div className="py-12 text-center text-gray-400 text-xs">
-                কোনো সাপোর্ট টিকেট পাওয়া যায়নি।
+                No support tickets found matching criteria.
               </div>
             ) : (
               filteredTickets.map((t) => {
@@ -251,10 +258,10 @@ export default function AdminSupportPage() {
                         }`}
                       >
                         {t.status === 'OPEN'
-                          ? 'নতুন'
+                          ? 'NEW'
                           : t.status === 'IN_PROGRESS'
-                          ? 'প্রসেসিং'
-                          : 'সমাধানকৃত'}
+                          ? 'IN PROGRESS'
+                          : 'RESOLVED'}
                       </span>
                     </div>
 
@@ -266,7 +273,7 @@ export default function AdminSupportPage() {
                       <span className="font-bold text-gray-700 dark:text-gray-300">
                         {t.userIgn} ({t.userPhone})
                       </span>
-                      <span>{new Date(t.updatedAt).toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit' })}</span>
+                      <span className="font-mono">{new Date(t.updatedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
                     </div>
                   </div>
                 );
@@ -289,6 +296,9 @@ export default function AdminSupportPage() {
                     <span className="text-[10px] px-2 py-0.5 rounded font-bold bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-300">
                       {selectedTicket.category}
                     </span>
+                    <span className="text-[10px] px-2 py-0.5 rounded font-bold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                      {selectedTicket.priority} Priority
+                    </span>
                   </div>
                   <h3 className="text-sm font-black text-gray-900 dark:text-white mt-1">
                     {selectedTicket.subject}
@@ -308,16 +318,16 @@ export default function AdminSupportPage() {
                   <button
                     type="button"
                     onClick={() => handleStatusChange('IN_PROGRESS')}
-                    className="px-2.5 py-1.5 rounded-lg bg-blue-100 hover:bg-blue-200 text-blue-800 text-[10px] font-bold transition-all"
+                    className="px-2.5 py-1.5 rounded-lg bg-blue-100 hover:bg-blue-200 dark:bg-blue-950/60 dark:text-blue-300 text-blue-800 text-[10px] font-bold transition-all"
                   >
-                    প্রসেসিং এ নিন
+                    Set In Progress
                   </button>
                   <button
                     type="button"
                     onClick={() => handleStatusChange('RESOLVED')}
                     className="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold transition-all flex items-center gap-1 shadow-sm"
                   >
-                    <Check className="w-3 h-3" /> সমাধান করুন
+                    <Check className="w-3 h-3" /> Mark Resolved
                   </button>
                 </div>
               </div>
@@ -326,23 +336,32 @@ export default function AdminSupportPage() {
               <div className="flex-1 overflow-y-auto py-4 space-y-3 pr-2">
                 {selectedTicket.messages.map((m) => {
                   const isAdmin = m.senderRole === 'ADMIN';
+                  const isAi = m.senderRole === 'AI_BOT' || m.senderName.toLowerCase().includes('ai support');
                   return (
                     <div
                       key={m.id}
                       className={`flex flex-col ${isAdmin ? 'items-end' : 'items-start'}`}
                     >
                       <div className="flex items-center gap-1.5 text-[10px] text-gray-400 mb-1 px-1">
-                        <span className="font-bold text-gray-700 dark:text-gray-300">
-                          {m.senderName}
-                        </span>
+                        {isAi ? (
+                          <span className="inline-flex items-center gap-1 font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded text-[10px]">
+                            <Bot className="w-3 h-3" /> AI Support
+                          </span>
+                        ) : (
+                          <span className="font-bold text-gray-700 dark:text-gray-300">
+                            {m.senderName}
+                          </span>
+                        )}
                         <span>•</span>
-                        <span>{new Date(m.timestamp).toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit' })}</span>
+                        <span className="font-mono">{new Date(m.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
                       </div>
 
                       <div
                         className={`max-w-[85%] p-3.5 rounded-2xl text-xs space-y-2 shadow-sm ${
                           isAdmin
                             ? 'bg-red-600 text-white rounded-br-xs'
+                            : isAi
+                            ? 'bg-emerald-950/10 dark:bg-emerald-950/30 border border-emerald-500/30 text-gray-900 dark:text-gray-100 rounded-bl-xs'
                             : 'bg-gray-100 dark:bg-white/10 text-gray-900 dark:text-gray-100 rounded-bl-xs'
                         }`}
                       >
@@ -373,7 +392,7 @@ export default function AdminSupportPage() {
                     onClick={() => setReplyText(qr)}
                     className="text-[10px] px-2.5 py-1 rounded-lg bg-gray-50 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-gray-600 dark:text-gray-400 whitespace-nowrap transition-colors border border-gray-200 dark:border-white/10"
                   >
-                    ⚡ {qr.slice(0, 30)}...
+                    ⚡ {qr.slice(0, 32)}...
                   </button>
                 ))}
               </div>
@@ -385,20 +404,20 @@ export default function AdminSupportPage() {
                   required
                   value={replyText}
                   onChange={(e) => setReplyText(e.target.value)}
-                  placeholder="ইউজারের উদ্দেশ্যে উত্তর লিখুন..."
+                  placeholder="Type official response to player..."
                   className="flex-1 px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black text-xs font-medium focus:outline-none focus:border-red-500"
                 />
                 <button
                   type="submit"
                   className="px-4 py-2.5 rounded-xl btn-red text-xs font-black flex items-center gap-1.5 shadow-md shadow-red-600/30 active:scale-95 transition-all"
                 >
-                  <Send className="w-3.5 h-3.5" /> পাঠান
+                  <Send className="w-3.5 h-3.5" /> Send
                 </button>
               </form>
             </>
           ) : (
             <div className="h-full flex items-center justify-center text-gray-400 text-xs">
-              বাম পাশের তালিকা থেকে একটি সাপোর্ট টিকেট নির্বাচন করুন।
+              Select a support ticket from the list on the left.
             </div>
           )}
         </div>

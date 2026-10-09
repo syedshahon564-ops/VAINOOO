@@ -80,7 +80,7 @@ export default function AdminTournamentsPage() {
     if (!resultMatch) return;
     const validResults = resultEntries.filter((r) => r.ign.trim().length > 0);
     if (validResults.length === 0) {
-      showNotification('অনুগ্রহ করে অন্তত একজন বিজয়ীর নাম (IGN) দিন', 'error');
+      showNotification('Please enter at least one winning player IGN', 'error');
       return;
     }
 
@@ -89,14 +89,14 @@ export default function AdminTournamentsPage() {
       results: validResults,
     });
 
-    showNotification(`"${resultMatch.title}" ম্যাচের রেজাল্ট সফলভাবে প্রকাশ করা হয়েছে!`);
+    showNotification(`Results published for match "${resultMatch.title}"!`);
     setResultMatch(null);
   };
 
   const handleCreateTournament = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) {
-      showNotification('অনুগ্রহ করে ম্যাচের একটি নাম দিন', 'error');
+      showNotification('Please provide a match title', 'error');
       return;
     }
 
@@ -117,7 +117,7 @@ export default function AdminTournamentsPage() {
       rules,
     });
 
-    showNotification(`ম্যাচ "${title}" সফলভাবে তৈরি করা হয়েছে!`);
+    showNotification(`Match "${title}" created successfully!`);
     setShowCreateModal(false);
     setTitle('');
   };
@@ -132,23 +132,23 @@ export default function AdminTournamentsPage() {
       status: 'ROOM_OPEN',
     });
 
-    showNotification('রুম আইডি ও পাসওয়ার্ড সফলভাবে পাবলিশ করা হয়েছে!');
+    showNotification('Room ID & Password published successfully!');
     setEditingRoomMatch(null);
     setRoomId('');
     setRoomPass('');
   };
 
   const handleDelete = (matchId: string, matchTitle: string) => {
-    if (confirm(`আপনি কি "${matchTitle}" ম্যাচটি ডিলিট করতে চান?`)) {
+    if (confirm(`Are you sure you want to delete match "${matchTitle}"?`)) {
       deleteMatch(matchId);
-      showNotification('ম্যাচটি সফলভাবে ডিলিট করা হয়েছে!');
+      showNotification('Match deleted successfully!');
     }
   };
 
   const handleClearAll = () => {
-    if (confirm('⚠️ আপনি কি নিশ্চিত যে সমস্ত ক্যাটাগরির সব ম্যাচ ডিলিট করে শূন্য করতে চান?')) {
+    if (confirm('⚠️ Are you sure you want to delete ALL matches across all categories?')) {
       clearAllMatches();
-      showNotification('সব ম্যাচ মুছে ফেলা হয়েছে! বর্তমানে কোনো ম্যাচ নেই।');
+      showNotification('All matches cleared! Match pool is now zero.');
     }
   };
 
@@ -208,10 +208,10 @@ export default function AdminTournamentsPage() {
         <div>
           <h1 className="text-2xl font-black text-gray-900 dark:text-white flex items-center gap-2">
             <Trophy className="w-6 h-6 text-red-600" />
-            টুর্নামেন্ট ও ম্যাচ ম্যানেজমেন্ট (Tournament Dispatcher)
+            Tournament & Match Dispatcher
           </h1>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            ক্যাটাগরি অনুযায়ী কাস্টম ম্যাচ তৈরি করুন, এন্ট্রি ফি ও প্রাইজ নির্ধারণ করুন এবং রুম আইডি প্রকাশ করুন।
+            Create custom matches by category, configure entry fees, prize pools, and release room credentials.
           </p>
         </div>
 
@@ -221,7 +221,7 @@ export default function AdminTournamentsPage() {
               onClick={handleClearAll}
               className="px-3 py-2 rounded-xl text-xs font-bold bg-red-50 dark:bg-red-950/40 text-red-600 hover:bg-red-100 transition-all border border-red-200 dark:border-red-900 flex items-center gap-1.5"
             >
-              <Trash2 className="w-3.5 h-3.5" /> সব ক্লিয়ার করুন ({matches.length})
+              <Trash2 className="w-3.5 h-3.5" /> Clear All ({matches.length})
             </button>
           )}
 
@@ -229,7 +229,7 @@ export default function AdminTournamentsPage() {
             onClick={() => setShowCreateModal(true)}
             className="px-4 py-2.5 rounded-xl btn-red text-xs font-black flex items-center gap-1.5 shadow-md shadow-red-600/30"
           >
-            <Plus className="w-4 h-4" /> নতুন ম্যাচ তৈরি করুন
+            <Plus className="w-4 h-4" /> Create New Match
           </button>
         </div>
       </div>
@@ -237,7 +237,7 @@ export default function AdminTournamentsPage() {
       {/* Filter Bar */}
       <div className="flex items-center gap-2 overflow-x-auto pb-2">
         <span className="text-xs font-bold text-gray-500 flex items-center gap-1">
-          <Filter className="w-3.5 h-3.5" /> ফিল্টার:
+          <Filter className="w-3.5 h-3.5" /> Filter:
         </span>
         <button
           onClick={() => setFilterCategory('ALL')}
@@ -247,7 +247,7 @@ export default function AdminTournamentsPage() {
               : 'bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-300'
           }`}
         >
-          সব ক্যাটাগরি ({matches.length})
+          All Categories ({matches.length})
         </button>
         {categoriesList.map((cat) => {
           const count = matches.filter((m) => m.categorySlug === cat.slug).length;
@@ -273,10 +273,10 @@ export default function AdminTournamentsPage() {
           <div className="p-12 text-center text-gray-400 space-y-3">
             <Trophy className="w-12 h-12 mx-auto text-gray-400" />
             <h3 className="text-base font-bold text-gray-800 dark:text-gray-200">
-              কোনো ম্যাচ পাওয়া যায়নি
+              No Matches Found
             </h3>
             <p className="text-xs text-gray-500 max-w-sm mx-auto">
-              এই ফিল্টারে বর্তমানে কোনো সক্রিয় ম্যাচ নেই। আপনি নতুন ম্যাচ যোগ করতে উপরের 'নতুন ম্যাচ তৈরি করুন' বাটনে ক্লিক করতে পারেন।
+              There are currently no active matches under this category. Click 'Create New Match' above to schedule one.
             </p>
           </div>
         ) : (
@@ -284,12 +284,12 @@ export default function AdminTournamentsPage() {
             <table className="w-full text-left text-xs">
             <thead className="bg-gray-50 dark:bg-black/40 border-b border-gray-200 dark:border-white/10 text-gray-500 font-bold uppercase tracking-wider">
               <tr>
-                <th className="p-4">ম্যাচ টাইটেল ও ক্যাটাগরি</th>
-                <th className="p-4">মোড ও ম্যাপ</th>
-                <th className="p-4">ফি / প্রাইজপুল</th>
-                <th className="p-4">স্লট সংখ্যা</th>
-                <th className="p-4">রুম পাসওয়ার্ড</th>
-                <th className="p-4 text-right">অ্যাকশন</th>
+                <th className="p-4">Match Title & Category</th>
+                <th className="p-4">Type & Map</th>
+                <th className="p-4">Fee / Prize Pool</th>
+                <th className="p-4">Slots</th>
+                <th className="p-4">Room Credentials</th>
+                <th className="p-4 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-white/5 text-gray-700 dark:text-gray-300">
@@ -331,7 +331,7 @@ export default function AdminTournamentsPage() {
                         {m.roomId} : {m.roomPass}
                       </span>
                     ) : (
-                      <span className="text-gray-400 italic text-[11px]">পাবলিশ করা হয়নি</span>
+                      <span className="text-gray-400 italic text-[11px]">Not Published</span>
                     )}
                   </td>
                   <td className="p-4 text-right">
@@ -343,10 +343,10 @@ export default function AdminTournamentsPage() {
                             ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 border border-emerald-300 dark:border-emerald-800'
                             : 'bg-amber-100 dark:bg-amber-950/40 hover:bg-amber-200 text-amber-700 dark:text-amber-300'
                         }`}
-                        title="ম্যাচ শেষে রেজাল্ট ও উইনার প্রকাশ করুন"
+                        title="Publish match winner results"
                       >
                         <Award className="w-3.5 h-3.5 text-amber-600" />
-                        {m.status === 'COMPLETED' ? 'রেজাল্ট এডিট' : 'রেজাল্ট দিন'}
+                        {m.status === 'COMPLETED' ? 'Edit Result' : 'Publish Result'}
                       </button>
 
                       <button
@@ -357,26 +357,26 @@ export default function AdminTournamentsPage() {
                         }}
                         className="px-2.5 py-1.5 rounded-lg bg-gray-100 dark:bg-white/10 hover:bg-gray-200 text-gray-800 dark:text-gray-200 font-bold text-[11px] flex items-center gap-1"
                       >
-                        <Key className="w-3.5 h-3.5 text-amber-500" /> রুম পাস
+                        <Key className="w-3.5 h-3.5 text-amber-500" /> Room Pass
                       </button>
 
                       <button
                         onClick={() => {
                           const res = autoDeliverRoomCredentials(m.id);
                           if (res) {
-                            showNotification(`বট সফলভাবে রুম আইডি (${res.roomId}) ও পাসওয়ার্ড (${res.roomPass}) ডেলিভারি করেছে!`);
+                            showNotification(`Bot auto-delivered Room ID (${res.roomId}) & Password (${res.roomPass})!`);
                           }
                         }}
                         className="px-2.5 py-1.5 rounded-lg bg-red-50 dark:bg-red-950/40 hover:bg-red-100 text-red-600 font-bold text-[11px] flex items-center gap-1 transition-all"
-                        title="বট দ্বারা স্বয়ংক্রিয়ভাবে রুম আইডি ও পাসওয়ার্ড জেনারেট ও ডেলিভারি করুন"
+                        title="Automatically generate & dispatch room credentials via Bot"
                       >
-                        <Bot className="w-3.5 h-3.5 text-red-600" /> বট রুম
+                        <Bot className="w-3.5 h-3.5 text-red-600" /> Bot Room
                       </button>
 
                       <button
                         onClick={() => handleDelete(m.id, m.title)}
                         className="p-1.5 rounded-lg bg-red-50 dark:bg-red-950/40 text-red-600 hover:bg-red-100 transition-colors"
-                        title="ম্যাচ ডিলিট করুন"
+                        title="Delete Match"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -396,13 +396,13 @@ export default function AdminTournamentsPage() {
           <div className="w-full max-w-xl bg-white dark:bg-[#14141c] rounded-2xl p-6 sm:p-8 space-y-4 max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-white/10 shadow-2xl">
             <h3 className="text-lg font-black text-gray-900 dark:text-white flex items-center gap-2">
               <Plus className="w-5 h-5 text-red-600" />
-              নতুন কাস্টম ম্যাচ তৈরি করুন
+              Create New Custom Match
             </h3>
 
             <form onSubmit={handleCreateTournament} className="space-y-4">
               <div>
                 <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                  ক্যাটাগরি নির্বাচন
+                  Select Category
                 </label>
                 <select
                   value={categorySlug}
@@ -419,7 +419,7 @@ export default function AdminTournamentsPage() {
 
               <div>
                 <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                  ম্যাচ টাইটেল
+                  Match Title
                 </label>
                 <input
                   type="text"
@@ -434,7 +434,7 @@ export default function AdminTournamentsPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                    মোড (Type)
+                    Mode (Type)
                   </label>
                   <select
                     value={type}
@@ -458,7 +458,7 @@ export default function AdminTournamentsPage() {
 
                 <div>
                   <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                    ম্যাপ (Map)
+                    Map
                   </label>
                   <select
                     value={mapType}
@@ -477,7 +477,7 @@ export default function AdminTournamentsPage() {
               <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                    এন্ট্রি ফি (৳)
+                    Entry Fee (৳)
                   </label>
                   <input
                     type="number"
@@ -489,7 +489,7 @@ export default function AdminTournamentsPage() {
 
                 <div>
                   <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                    প্রাইজপুল (৳)
+                    Prize Pool (৳)
                   </label>
                   <input
                     type="number"
@@ -501,7 +501,7 @@ export default function AdminTournamentsPage() {
 
                 <div>
                   <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                    পার কিল (৳)
+                    Per Kill (৳)
                   </label>
                   <input
                     type="number"
@@ -516,26 +516,26 @@ export default function AdminTournamentsPage() {
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <label className="text-xs font-bold text-gray-700 dark:text-gray-300">
-                      ম্যাচ সময়সূচী (Schedule Time)
+                      Schedule Time
                     </label>
-                    <span className="text-[10px] text-gray-500 font-mono">লাইভ কাউন্টডাউন</span>
+                    <span className="text-[10px] text-gray-500 font-mono">Live Countdown</span>
                   </div>
                   <input
                     type="text"
                     value={time}
                     onChange={(e) => setTime(e.target.value)}
-                    placeholder="e.g. Today 08:30 PM বা আজ রাত ০৮:০০ PM"
+                    placeholder="e.g. Today 08:30 PM"
                     className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/40 text-xs font-bold focus:outline-none focus:border-red-500"
                   />
                   {/* Quick Preset Buttons */}
                   <div className="flex flex-wrap gap-1.5 mt-2">
                     {[
-                      { label: '+১ ঘণ্টা', offset: 1 },
-                      { label: '+২ ঘণ্টা', offset: 2 },
-                      { label: '+৪ ঘণ্টা', offset: 4 },
-                      { label: 'আজ রাত ৮:০০ PM', fixed: 'আজ রাত ০৮:০০ PM' },
-                      { label: 'আজ রাত ১০:০০ PM', fixed: 'আজ রাত ১০:০০ PM' },
-                      { label: 'আগামীকাল সকাল ১০:০০ AM', fixed: 'আগামীকাল ১০:০০ AM' },
+                      { label: '+1 Hour', offset: 1 },
+                      { label: '+2 Hours', offset: 2 },
+                      { label: '+4 Hours', offset: 4 },
+                      { label: 'Tonight 08:00 PM', fixed: 'Today 08:00 PM' },
+                      { label: 'Tonight 10:00 PM', fixed: 'Today 10:00 PM' },
+                      { label: 'Tomorrow 10:00 AM', fixed: 'Tomorrow 10:00 AM' },
                     ].map((preset, idx) => (
                       <button
                         key={idx}
@@ -564,7 +564,7 @@ export default function AdminTournamentsPage() {
 
                 <div>
                   <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                    মোট স্লট
+                    Total Slots
                   </label>
                   <select
                     value={totalSlots}
@@ -580,10 +580,10 @@ export default function AdminTournamentsPage() {
               </div>
 
               <ImageUploadInput
-                label="ম্যাচ ব্যানার ফটো (Match Banner Image)"
+                label="Match Banner Image"
                 value={bannerImage}
                 onChange={setBannerImage}
-                helperText="ম্যাচের ব্যানার ফটো ডিভাইস থেকে সিলেক্ট বা ড্রপ করুন"
+                helperText="Select or drop match banner image file"
               />
 
               <div className="flex items-center justify-end gap-3 pt-4">
@@ -592,10 +592,10 @@ export default function AdminTournamentsPage() {
                   onClick={() => setShowCreateModal(false)}
                   className="px-4 py-2 rounded-xl bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-300 text-xs font-bold hover:bg-gray-200"
                 >
-                  বাতিল
+                  Cancel
                 </button>
                 <button type="submit" className="px-6 py-2.5 rounded-xl btn-red text-xs font-black shadow-md">
-                  ম্যাচ তৈরি করুন
+                  Create Match
                 </button>
               </div>
             </form>
@@ -609,7 +609,7 @@ export default function AdminTournamentsPage() {
           <div className="w-full max-w-md bg-white dark:bg-[#14141c] rounded-2xl p-6 space-y-4 border border-gray-200 dark:border-white/10 shadow-2xl">
             <h3 className="text-base font-black text-gray-900 dark:text-white flex items-center gap-2">
               <Key className="w-5 h-5 text-red-600" />
-              রুম ক্রেডেনশিয়াল প্রকাশ করুন
+              Publish Room Credentials
             </h3>
             <p className="text-xs text-gray-500">{editingRoomMatch.title}</p>
 
@@ -648,10 +648,10 @@ export default function AdminTournamentsPage() {
                   onClick={() => setEditingRoomMatch(null)}
                   className="px-4 py-2 rounded-xl bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-300 text-xs font-bold hover:bg-gray-200"
                 >
-                  বাতিল
+                  Cancel
                 </button>
                 <button type="submit" className="px-5 py-2 rounded-xl btn-red text-xs font-black shadow-md">
-                  পাবলিশ করুন
+                  Publish Credentials
                 </button>
               </div>
             </form>
@@ -666,7 +666,7 @@ export default function AdminTournamentsPage() {
             <div className="flex items-center justify-between pb-3 border-b border-gray-200 dark:border-white/10">
               <h3 className="text-base font-black text-gray-900 dark:text-white flex items-center gap-2">
                 <Award className="w-5 h-5 text-amber-500" />
-                ম্যাচ রেজাল্ট ও উইনার তালিকা প্রকাশ
+                Publish Match Results & Winner Prizes
               </h3>
               <button
                 onClick={() => setResultMatch(null)}
@@ -679,7 +679,7 @@ export default function AdminTournamentsPage() {
             <div className="p-3 rounded-xl bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-white/10 text-xs">
               <span className="font-black text-gray-900 dark:text-white block">{resultMatch.title}</span>
               <span className="text-gray-500 font-semibold">
-                মোড: {resultMatch.type} • ম্যাপ: {resultMatch.map} • মোট প্রাইজপুল: ৳{resultMatch.prizePool}
+                Type: {resultMatch.type} • Map: {resultMatch.map} • Total Prize Pool: ৳{resultMatch.prizePool}
               </span>
             </div>
 
@@ -692,14 +692,14 @@ export default function AdminTournamentsPage() {
                   >
                     <div className="flex items-center justify-between font-black">
                       <span className="text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
-                        {idx === 0 ? '👑 ১ম স্থান (Winner)' : idx === 1 ? '🥈 ২য় স্থান (2nd)' : '🥉 ৩য় স্থান (3rd)'}
+                        {idx === 0 ? '👑 1st Place (Winner)' : idx === 1 ? '🥈 2nd Place' : '🥉 3rd Place'}
                       </span>
                     </div>
 
                     <div className="grid grid-cols-3 gap-2">
                       <div className="col-span-1">
                         <label className="text-[10px] font-bold text-gray-500 block mb-0.5">
-                          প্লেয়ার IGN / টিম
+                          Player IGN / Team
                         </label>
                         <input
                           type="text"
@@ -717,7 +717,7 @@ export default function AdminTournamentsPage() {
 
                       <div>
                         <label className="text-[10px] font-bold text-gray-500 block mb-0.5">
-                          কিল সংখ্যা
+                          Kills
                         </label>
                         <input
                           type="number"
@@ -733,7 +733,7 @@ export default function AdminTournamentsPage() {
 
                       <div>
                         <label className="text-[10px] font-bold text-gray-500 block mb-0.5">
-                          প্রাইজ মানি (৳)
+                          Prize Money (৳)
                         </label>
                         <input
                           type="number"
@@ -752,7 +752,7 @@ export default function AdminTournamentsPage() {
               </div>
 
               <p className="text-[11px] text-gray-500">
-                💡 সেভ করার সাথে সাথে ম্যাচটি &quot;MATCH FINISHED&quot; স্ট্যাটাসে চলে যাবে এবং ইউজারদের জন্য ক্যাটাগরি পেজের <strong>ম্যাচ ফলাফল (Match Results)</strong> ট্যাবে প্রদর্শিত হবে।
+                💡 Upon saving, match status will transition to &quot;MATCH FINISHED&quot; and display under the <strong>Match Results</strong> tab on category pages.
               </p>
 
               <div className="flex items-center justify-end gap-3 pt-2">
@@ -761,13 +761,13 @@ export default function AdminTournamentsPage() {
                   onClick={() => setResultMatch(null)}
                   className="px-4 py-2 rounded-xl bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-300 font-bold hover:bg-gray-200"
                 >
-                  বাতিল
+                  Cancel
                 </button>
                 <button
                   type="submit"
                   className="px-5 py-2 rounded-xl btn-red font-black shadow-md flex items-center gap-1.5"
                 >
-                  <Check className="w-4 h-4" /> রেজাল্ট প্রকাশ করুন
+                  <Check className="w-4 h-4" /> Publish Results
                 </button>
               </div>
             </form>

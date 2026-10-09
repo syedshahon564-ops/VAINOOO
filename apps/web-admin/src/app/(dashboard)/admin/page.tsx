@@ -58,8 +58,8 @@ export default function AdminMasterPage() {
   // BOT & SCHEDULER STATE
   const [schedulerConfig, setSchedulerConfig] = useState<SchedulerConfig>(getSchedulerConfig());
   const [isGeneratingBatch, setIsGeneratingBatch] = useState(false);
-  const [broadcastTitle, setBroadcastTitle] = useState('🚨 নতুন টুর্নামেন্ট শুরু হতে যাচ্ছে!');
-  const [broadcastMessage, setBroadcastMessage] = useState('সব ক্যাটাগরির জন্য নতুন স্লট উন্মুক্ত করা হয়েছে। এখনই আপনার স্কোয়াড বুক করুন!');
+  const [broadcastTitle, setBroadcastTitle] = useState('🚨 New Tournament Starting Soon!');
+  const [broadcastMessage, setBroadcastMessage] = useState('New slots have been opened for all categories. Book your squad now!');
 
   // MATCH CREATION FORM STATE
   const [matchCategory, setMatchCategory] = useState('classic-match');
@@ -171,22 +171,22 @@ export default function AdminMasterPage() {
     try {
       const result = generateAutomatedMatchBatch({ clearExisting });
       sendBroadcastNotification(
-        '🤖 নতুন টুর্নামেন্ট লাইভ!',
-        'স্বয়ংক্রিয় বট সব ৬টি ক্যাটাগরির ফ্রেশ টুর্নামেন্ট শিডিউল করেছে। এখনই স্লট বুক করুন!'
+        '🤖 New Tournaments Live!',
+        'Autonomous Bot has scheduled fresh matches across all 6 categories. Book your slot now!'
       );
       const updated: SchedulerConfig = {
         ...schedulerConfig,
-        lastRunTimestamp: new Date().toLocaleTimeString('bn-BD'),
+        lastRunTimestamp: new Date().toLocaleTimeString('en-US'),
         batchCount: (schedulerConfig.batchCount || 0) + 1,
       };
       setSchedulerConfig(updated);
       saveSchedulerConfig(updated);
       showToast(
-        `বট সফলভাবে ${result.createdCount} টি নতুন ম্যাচ তৈরি করেছে এবং নোটিফিকেশন পাঠিয়েছে!`,
+        `Bot successfully generated ${result.createdCount} new matches and dispatched push alerts!`,
         'success'
       );
     } catch (err) {
-      showToast('ম্যাচ জেনারেট করতে সমস্যা হয়েছে', 'error');
+      showToast('Failed to generate matches', 'error');
     } finally {
       setIsGeneratingBatch(false);
     }
@@ -195,14 +195,14 @@ export default function AdminMasterPage() {
   const handleSaveSchedulerSettings = (e: React.FormEvent) => {
     e.preventDefault();
     saveSchedulerConfig(schedulerConfig);
-    showToast('বট শিডিউলিং কনফিগারেশন সফলভাবে আপডেট হয়েছে!');
+    showToast('Bot scheduling configuration saved successfully!');
   };
 
   const handleSendCustomBroadcast = (e: React.FormEvent) => {
     e.preventDefault();
     if (!broadcastTitle.trim() || !broadcastMessage.trim()) return;
     sendBroadcastNotification(broadcastTitle, broadcastMessage);
-    showToast('মোবাইল অ্যাপ ব্যবহারকারীদের কাছে পুশ অ্যালার্ট পাঠানো হয়েছে!');
+    showToast('Push alert broadcast dispatched to mobile players!');
     setBroadcastTitle('');
     setBroadcastMessage('');
   };
@@ -211,7 +211,7 @@ export default function AdminMasterPage() {
   const handleCreateMatch = (e: React.FormEvent) => {
     e.preventDefault();
     if (!matchTitle.trim()) {
-      showToast('ম্যাচের একটি নাম বা টাইটেল দিন', 'error');
+      showToast('Please provide a match name or title', 'error');
       return;
     }
 
@@ -232,7 +232,7 @@ export default function AdminMasterPage() {
       rules: matchRules,
     });
 
-    showToast(`নতুন ম্যাচ "${matchTitle}" সফলভাবে তৈরি হয়েছে!`);
+    showToast(`New match "${matchTitle}" created successfully!`);
     setMatchTitle('');
     setMatchRules('');
   };
@@ -247,14 +247,14 @@ export default function AdminMasterPage() {
     setEditingRoomMatchId(null);
     setRoomIdInput('');
     setRoomPassInput('');
-    showToast('রুম আইডি ও পাসওয়ার্ড সফলভাবে পাবলিশ ও প্লেয়ারদের জানানো হয়েছে!');
+    showToast('Room ID & password published and sent to players!');
   };
 
   // 3. HANDLE DELETE MATCH
   const handleDeleteMatch = (matchId: string, title: string) => {
-    if (confirm(`আপনি কি নিশ্চিত যে "${title}" ম্যাচটি মুছে ফেলতে চান?`)) {
+    if (confirm(`Are you sure you want to delete the match "${title}"?`)) {
       deleteMatch(matchId);
-      showToast('ম্যাচটি সফলভাবে ডিলিট করা হয়েছে!');
+      showToast('Match deleted successfully!');
     }
   };
 
@@ -262,11 +262,11 @@ export default function AdminMasterPage() {
   const handleClearAll = () => {
     if (
       confirm(
-        '⚠️ আপনি কি নিশ্চিত যে সমস্ত ক্যাটাগরির সব ম্যাচ ডিলিট করে শূন্য করতে চান? (সবকিছু ফ্রেশ ও খালি হয়ে যাবে)'
+        '⚠️ Are you sure you want to delete all matches across all categories? (This will clear the entire match list)'
       )
     ) {
       clearAllMatches();
-      showToast('সব ম্যাচ সফলভাবে মুছে ফেলা হয়েছে! বর্তমানে কোনো ম্যাচ নেই।');
+      showToast('All matches cleared successfully! The match list is now empty.');
     }
   };
 
@@ -281,7 +281,7 @@ export default function AdminMasterPage() {
       description: catDescription,
       customRules: catCustomRules,
     });
-    showToast(`ক্যাটাগরি "${catName}" সফলভাবে আপডেট করা হয়েছে!`);
+    showToast(`Category "${catName}" updated successfully!`);
   };
 
   // 6. HANDLE SAVE RULES
@@ -294,7 +294,7 @@ export default function AdminMasterPage() {
       telegramUrl,
       whatsappNumber,
     });
-    showToast('টুর্নামেন্ট রুলস ও নোটিশ সফলভাবে সংরক্ষিত হয়েছে!');
+    showToast('Tournament rules & announcements saved successfully!');
   };
 
   // 7. HANDLE SAVE SITE SETTINGS
@@ -314,7 +314,7 @@ export default function AdminMasterPage() {
     if (customPin && customPin.trim().length >= 4) {
       localStorage.setItem('ff_admin_custom_pin_v1', customPin.trim());
     }
-    showToast('সাইটের নাম, লোগো, পেমেন্ট নম্বর, টেলিগ্রাম ও স্লাইডার ব্যানার সফলভাবে আপডেট হয়েছে!');
+    showToast('Site settings, logo, payment numbers, and banner slider saved successfully!');
   };
 
   const categoriesList = Object.values(categories);
@@ -340,10 +340,10 @@ export default function AdminMasterPage() {
         <div>
           <h1 className="text-2xl font-black text-gray-900 dark:text-white flex items-center gap-2">
             <Settings className="w-6 h-6 text-red-600" />
-            অ্যাডমিন মাস্টার কন্ট্রোল প্যানেল (Full Dynamic CMS)
+            Admin Master Control Panel (Dynamic CMS)
           </h1>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            ম্যাচ তৈরি, এডিট ও ডিলিট করুন। ক্যাটাগরির নাম ও ইমেজ পরিবর্তন করুন। টুর্নামেন্টের রুলস ও নোটিশ নিয়ন্ত্রণ করুন।
+            Create, edit, and delete matches. Customize categories and banners. Manage universal rules and notices.
           </p>
         </div>
 
@@ -351,9 +351,9 @@ export default function AdminMasterPage() {
           <button
             onClick={handleClearAll}
             className="px-3 py-2 rounded-xl text-xs font-bold bg-red-100 dark:bg-red-950/60 text-red-600 hover:bg-red-200 transition-all border border-red-200 dark:border-red-900 flex items-center gap-1.5"
-            title="সব ক্যাটাগরির ম্যাচ সম্পূর্ণ খালি করতে ক্লিক করুন"
+            title="Click to delete all matches across all categories"
           >
-            <Trash2 className="w-3.5 h-3.5" /> সব ম্যাচ মুছুন ({matches.length})
+            <Trash2 className="w-3.5 h-3.5" /> Clear All Matches ({matches.length})
           </button>
 
           <Link
@@ -361,7 +361,7 @@ export default function AdminMasterPage() {
             target="_blank"
             className="px-3 py-2 rounded-xl text-xs font-bold bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-200 hover:bg-gray-200 transition-all flex items-center gap-1.5"
           >
-            <ExternalLink className="w-3.5 h-3.5" /> সাইট প্রিভিউ
+            <ExternalLink className="w-3.5 h-3.5" /> Site Preview
           </Link>
         </div>
       </div>
@@ -369,25 +369,25 @@ export default function AdminMasterPage() {
       {/* Stats Summary Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="p-4 rounded-2xl bg-white dark:bg-[#12121a] border border-gray-200 dark:border-white/10 shadow-sm space-y-1">
-          <span className="text-[11px] font-bold text-gray-500">মোট ক্যাটাগরি</span>
+          <span className="text-[11px] font-bold text-gray-500">Total Categories</span>
           <div className="text-2xl font-black text-red-600">{categoriesList.length}</div>
         </div>
 
         <div className="p-4 rounded-2xl bg-white dark:bg-[#12121a] border border-gray-200 dark:border-white/10 shadow-sm space-y-1">
-          <span className="text-[11px] font-bold text-gray-500">সক্রিয় ম্যাচ সংখ্যা</span>
+          <span className="text-[11px] font-bold text-gray-500">Active Matches</span>
           <div className="text-2xl font-black text-emerald-600">{matches.length}</div>
         </div>
 
         <div className="p-4 rounded-2xl bg-white dark:bg-[#12121a] border border-gray-200 dark:border-white/10 shadow-sm space-y-1">
-          <span className="text-[11px] font-bold text-gray-500">সাইটের নাম</span>
+          <span className="text-[11px] font-bold text-gray-500">Site Name</span>
           <div className="text-sm font-black text-gray-900 dark:text-white truncate">
             {settings.siteName}
           </div>
         </div>
 
         <div className="p-4 rounded-2xl bg-white dark:bg-[#12121a] border border-gray-200 dark:border-white/10 shadow-sm space-y-1">
-          <span className="text-[11px] font-bold text-gray-500">লাইভ নোটিশ বার</span>
-          <div className="text-xs font-bold text-amber-500 truncate">সক্রিয় আছে</div>
+          <span className="text-[11px] font-bold text-gray-500">Live Notice Bar</span>
+          <div className="text-xs font-bold text-amber-500 truncate">Active 24/7</div>
         </div>
       </div>
 
@@ -401,7 +401,7 @@ export default function AdminMasterPage() {
               : 'border-transparent text-gray-500 hover:text-gray-900 dark:hover:text-white'
           }`}
         >
-          <Trophy className="w-4 h-4" /> 🎮 ম্যাচ ম্যানেজমেন্ট ({matches.length})
+          <Trophy className="w-4 h-4" /> 🎮 Match Management ({matches.length})
         </button>
 
         <button
@@ -412,7 +412,7 @@ export default function AdminMasterPage() {
               : 'border-transparent text-gray-500 hover:text-gray-900 dark:hover:text-white'
           }`}
         >
-          <FolderEdit className="w-4 h-4" /> 📁 ক্যাটাগরি ও ইমেজ এডিটর
+          <FolderEdit className="w-4 h-4" /> 📁 Category & Image Editor
         </button>
 
         <button
@@ -423,7 +423,7 @@ export default function AdminMasterPage() {
               : 'border-transparent text-gray-500 hover:text-gray-900 dark:hover:text-white'
           }`}
         >
-          <FileText className="w-4 h-4" /> 📜 টুর্নামেন্ট রুলস ও নোটিশ
+          <FileText className="w-4 h-4" /> 📜 Tournament Rules & Notices
         </button>
 
         <button
@@ -434,7 +434,7 @@ export default function AdminMasterPage() {
               : 'border-transparent text-gray-500 hover:text-gray-900 dark:hover:text-white'
           }`}
         >
-          <Settings className="w-4 h-4" /> ⚙️ সাইট সেটিংস ও নাম
+          <Settings className="w-4 h-4" /> ⚙️ Site Settings & Branding
         </button>
 
         <button
@@ -445,7 +445,7 @@ export default function AdminMasterPage() {
               : 'border-transparent text-gray-500 hover:text-gray-900 dark:hover:text-white'
           }`}
         >
-          <Bot className="w-4 h-4 text-amber-500" /> 🤖 অটো সিডিউলার বট
+          <Bot className="w-4 h-4 text-amber-500" /> 🤖 Auto Scheduler Bot
         </button>
       </div>
 
@@ -461,10 +461,10 @@ export default function AdminMasterPage() {
                 <Bot className="w-3.5 h-3.5" /> Autonomous Match Dispatcher Bot
               </div>
               <h3 className="text-base font-black">
-                ৬টি ক্যাটাগরির জন্য এক-ক্লিকে স্বয়ংক্রিয় টুর্নামেন্ট তৈরি করুন
+                One-Click Batch Tournament Generator for All 6 Categories
               </h3>
               <p className="text-xs text-gray-400 max-w-xl">
-                হাতে একটি একটি করে ম্যাচ তৈরি করার প্রয়োজন নেই। বাটনে চাপ দিলেই Classic (Squad 12 Teams, Solo, Duo), Clash Squad, Lone Wolf, Lost to Win ও CS Only Headshot স্বয়ংক্রিয়ভাবে শিডিউল হয়ে যাবে।
+                No need to create matches manually one by one. With one click, Classic (Squad 12 Teams, Solo, Duo), Clash Squad 4v4, Lone Wolf, Lost to Win, and CS Only Headshot matches are generated automatically.
               </p>
             </div>
 
@@ -476,7 +476,7 @@ export default function AdminMasterPage() {
                 className="px-5 py-3 rounded-xl text-xs font-black bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white shadow-lg shadow-red-600/30 flex items-center gap-2 transition-all active:scale-95"
               >
                 <Sparkles className="w-4 h-4 text-amber-300" />
-                {isGeneratingBatch ? 'ম্যাচ তৈরি হচ্ছে...' : '⚡ নতুন ম্যাচ ব্যাচ তৈরি করুন'}
+                {isGeneratingBatch ? 'Generating Matches...' : '⚡ Generate New Match Batch'}
               </button>
             </div>
           </div>
@@ -485,10 +485,10 @@ export default function AdminMasterPage() {
           <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#12121a] p-6 space-y-4 shadow-sm">
             <h3 className="text-base font-black text-gray-900 dark:text-white flex items-center gap-2">
               <Plus className="w-5 h-5 text-red-600" />
-              নতুন ম্যাচ তৈরি করুন (Add New Match)
+              Add New Match
             </h3>
             <p className="text-xs text-gray-500">
-              যেকোনো ক্যাটাগরিতে নতুন কাস্টম ম্যাচ যুক্ত করুন। ইমেজ, প্রাইজপুল এবং নিয়মাবলী নির্ধারণ করুন।
+              Add a new custom match to any category. Define map, slots, entry fee, prize pool, and custom rules.
             </p>
 
             <form onSubmit={handleCreateMatch} className="space-y-4 pt-2">
@@ -496,7 +496,7 @@ export default function AdminMasterPage() {
                 {/* Category Selector */}
                 <div>
                   <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                    ক্যাটাগরি নির্বাচন করুন
+                    Select Category
                   </label>
                   <select
                     value={matchCategory}
@@ -514,7 +514,7 @@ export default function AdminMasterPage() {
                 {/* Match Title */}
                 <div>
                   <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                    ম্যাচের নাম / টাইটেল
+                    Match Name / Title
                   </label>
                   <input
                     type="text"
@@ -529,7 +529,7 @@ export default function AdminMasterPage() {
                 {/* Match Time */}
                 <div>
                   <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                    ম্যাচের সময়সূচী (Time)
+                    Match Schedule (Time)
                   </label>
                   <input
                     type="text"
@@ -546,7 +546,7 @@ export default function AdminMasterPage() {
                 {/* Map Type */}
                 <div>
                   <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                    ম্যাপ (Map)
+                    Map
                   </label>
                   <select
                     value={matchMap}
@@ -565,7 +565,7 @@ export default function AdminMasterPage() {
                 {/* Mode Type */}
                 <div>
                   <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                    মোড (Type)
+                    Mode / Type
                   </label>
                   <select
                     value={matchType}
@@ -583,7 +583,7 @@ export default function AdminMasterPage() {
                 {/* Total Slots */}
                 <div>
                   <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                    মোট স্লট (Slots)
+                    Total Slots
                   </label>
                   <select
                     value={matchTotalSlots}
@@ -600,7 +600,7 @@ export default function AdminMasterPage() {
                 {/* Entry Fee */}
                 <div>
                   <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                    এন্ট্রি ফি (৳)
+                    Entry Fee (৳)
                   </label>
                   <input
                     type="number"
@@ -615,7 +615,7 @@ export default function AdminMasterPage() {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 rounded-xl bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-white/5">
                 <div>
                   <label className="text-xs font-bold text-emerald-600 block mb-1">
-                    মোট প্রাইজপুল (৳)
+                    Total Prize Pool (৳)
                   </label>
                   <input
                     type="number"
@@ -627,7 +627,7 @@ export default function AdminMasterPage() {
 
                 <div>
                   <label className="text-xs font-bold text-blue-600 block mb-1">
-                    প্রতি কিল রিওয়ার্ড (৳)
+                    Per Kill Reward (৳)
                   </label>
                   <input
                     type="number"
@@ -639,7 +639,7 @@ export default function AdminMasterPage() {
 
                 <div>
                   <label className="text-xs font-bold text-amber-600 block mb-1">
-                    ১ম পুরস্কার (৳)
+                    1st Prize (৳)
                   </label>
                   <input
                     type="number"
@@ -651,7 +651,7 @@ export default function AdminMasterPage() {
 
                 <div>
                   <label className="text-xs font-bold text-gray-500 block mb-1">
-                    ২য় ও ৩য় পুরস্কার (৳)
+                    2nd & 3rd Prize (৳)
                   </label>
                   <div className="flex gap-2">
                     <input
@@ -674,10 +674,10 @@ export default function AdminMasterPage() {
 
               {/* Match Banner Image with File Upload & Preview */}
               <ImageUploadInput
-                label="ম্যাচ ব্যানার ইমেজ আপলোড করুন (Match Banner Image)"
+                label="Match Banner Image"
                 value={matchBannerImage}
                 onChange={setMatchBannerImage}
-                helperText="PNG, JPG, WEBP ফাইল আপলোড করুন বা লিংক দিন"
+                helperText="Upload PNG, JPG, WEBP file or paste an image URL"
                 previewHeight="h-40"
               />
 
@@ -687,7 +687,7 @@ export default function AdminMasterPage() {
                   type="submit"
                   className="px-6 py-3 rounded-xl text-xs font-black btn-red shadow-lg shadow-red-600/30 flex items-center gap-2"
                 >
-                  <Plus className="w-4 h-4" /> নতুন টুর্নামেন্ট পাবলিশ করুন
+                  <Plus className="w-4 h-4" /> Publish New Match
                 </button>
               </div>
             </form>
@@ -698,10 +698,10 @@ export default function AdminMasterPage() {
             <div className="flex items-center justify-between pb-3 border-b border-gray-200 dark:border-white/10">
               <div>
                 <h3 className="text-base font-black text-gray-900 dark:text-white">
-                  বর্তমান সক্রিয় টুর্নামেন্টসমূহ ({matches.length})
+                  Active Tournaments ({matches.length})
                 </h3>
                 <p className="text-xs text-gray-500">
-                  প্লেয়ারদের জন্য রুম আইডি ও পাসওয়ার্ড দিন অথবা প্রয়োজন না থাকলে ডিলিট করে দিন।
+                  Publish Room ID & Password for players, or remove completed matches.
                 </p>
               </div>
             </div>
@@ -710,10 +710,10 @@ export default function AdminMasterPage() {
               <div className="p-8 text-center rounded-xl border border-dashed border-gray-300 dark:border-white/10 text-gray-400 space-y-2">
                 <Trophy className="w-10 h-10 mx-auto text-gray-400" />
                 <p className="text-xs font-bold text-gray-600 dark:text-gray-300">
-                  বর্তমানে কোনো ম্যাচ তৈরি করা নেই (ম্যাচ লিস্ট সম্পূর্ণ খালি)
+                  No matches currently scheduled (Match list is empty)
                 </p>
                 <p className="text-[11px] text-gray-500">
-                  উপরের ফর্ম ব্যবহার করে যেকোনো সময় নতুন ম্যাচ যোগ করতে পারেন।
+                  Use the form above or the Bot Generator to add tournaments anytime.
                 </p>
               </div>
             ) : (
@@ -746,9 +746,9 @@ export default function AdminMasterPage() {
                           {m.title}
                         </h4>
                         <div className="flex items-center gap-3 text-xs text-gray-500 mt-1">
-                          <span className="text-red-600 font-bold">ফি: ৳{m.entryFee}</span>
-                          <span className="text-emerald-600 font-bold">প্রাইজ: ৳{m.prizePool}</span>
-                          <span>সময়: {m.time}</span>
+                          <span className="text-red-600 font-bold">Fee: ৳{m.entryFee}</span>
+                          <span className="text-emerald-600 font-bold">Prize: ৳{m.prizePool}</span>
+                          <span>Time: {m.time}</span>
                           {m.roomId && (
                             <span className="font-mono text-emerald-500 font-bold">
                               Room: {m.roomId} / {m.roomPass}
@@ -767,13 +767,13 @@ export default function AdminMasterPage() {
                         }}
                         className="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-white/10 hover:bg-gray-200 text-gray-800 dark:text-gray-200 text-xs font-bold flex items-center gap-1.5"
                       >
-                        <Key className="w-3.5 h-3.5 text-amber-500" /> রুম পাসওয়ার্ড
+                        <Key className="w-3.5 h-3.5 text-amber-500" /> Room Credentials
                       </button>
 
                       <button
                         onClick={() => handleDeleteMatch(m.id, m.title)}
                         className="p-2 rounded-lg bg-red-50 dark:bg-red-950/40 text-red-600 hover:bg-red-100 transition-colors"
-                        title="ম্যাচটি ডিলিট করুন"
+                        title="Delete this match"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -794,10 +794,10 @@ export default function AdminMasterPage() {
           <div>
             <h3 className="text-base font-black text-gray-900 dark:text-white flex items-center gap-2">
               <FolderEdit className="w-5 h-5 text-red-600" />
-              ক্যাটাগরির নাম ও ইমেজ পরিবর্তন (Category Editor)
+              Category & Image Editor
             </h3>
             <p className="text-xs text-gray-500">
-              হোমপেজের প্রতিটি ক্যাটাগরি কার্ডের নাম, ব্যানার এবং ছবি ইচ্ছামতো পরিবর্তন করতে পারবেন।
+              Customize title, section heading, banner artwork, and circular thumbnail icons for each category.
             </p>
           </div>
 
@@ -828,7 +828,7 @@ export default function AdminMasterPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                  ক্যাটাগরির নাম (Category Name)
+                  Category Name
                 </label>
                 <input
                   type="text"
@@ -841,7 +841,7 @@ export default function AdminMasterPage() {
 
               <div>
                 <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                  সেকশন টাইটেল (Section Header)
+                  Section Header
                 </label>
                 <input
                   type="text"
@@ -856,19 +856,19 @@ export default function AdminMasterPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Banner Image with Upload */}
               <ImageUploadInput
-                label="ব্যানার ইমেজ আপলোড করুন (Main Banner Image)"
+                label="Main Banner Image"
                 value={catBannerImage}
                 onChange={setCatBannerImage}
-                helperText="ক্যাটাগরি পেজের বড় ব্যানার ইমেজ ফাইল আপলোড করুন"
+                helperText="Upload category page high-resolution banner image"
                 previewHeight="h-32"
               />
 
               {/* Avatar Icon with Upload */}
               <ImageUploadInput
-                label="গোল আইকন / অ্যাভাটার ইমেজ (Thumbnail Icon)"
+                label="Thumbnail Icon (Circular)"
                 value={catAvatarImage}
                 onChange={setCatAvatarImage}
-                helperText="হোমপেজের সার্কুলার থাম্বনেইল আইকন"
+                helperText="Circular thumbnail icon shown on home screen"
                 isCircular={true}
               />
             </div>
@@ -876,11 +876,11 @@ export default function AdminMasterPage() {
             {/* Custom rules for this category */}
             <div>
               <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                এই ক্যাটাগরির জন্য নির্দিষ্ট নিয়মাবলী (Custom Category Rules)
+                Custom Category Rules
               </label>
               <textarea
                 rows={3}
-                placeholder="ডিফল্ট রুলস ছাড়া এই ক্যাটাগরির জন্য কোনো বিশেষ নিয়ম থাকলে লিখুন..."
+                placeholder="Specific rules or tournament guidelines for this category..."
                 value={catCustomRules}
                 onChange={(e) => setCatCustomRules(e.target.value)}
                 className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/30 text-xs font-medium focus:outline-none focus:border-red-500"
@@ -892,7 +892,7 @@ export default function AdminMasterPage() {
                 type="submit"
                 className="px-6 py-3 rounded-xl text-xs font-black btn-red shadow-md shadow-red-600/20"
               >
-                ক্যাটাগরি তথ্য সংরক্ষণ করুন
+                Save Category Changes
               </button>
             </div>
           </form>
@@ -907,10 +907,10 @@ export default function AdminMasterPage() {
           <div>
             <h3 className="text-base font-black text-gray-900 dark:text-white flex items-center gap-2">
               <FileText className="w-5 h-5 text-red-600" />
-              টুর্নামেন্ট রুলস ও নোটিশ পরিবর্তন (Rules & Notice Manager)
+              Tournament Rules & Notices Manager
             </h3>
             <p className="text-xs text-gray-500">
-              সাইটের শীর্ষ নোটিশ এবং ১৮+ টুর্নামেন্ট নিয়মাবলী সম্পূর্ণ বাংলায় এডিট করুন।
+              Update top live marquee announcement and universal tournament participation rules.
             </p>
           </div>
 
@@ -918,7 +918,7 @@ export default function AdminMasterPage() {
             {/* Notice Bar Text */}
             <div>
               <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                শীর্ষ স্ক্রলিং নোটিশ বার টেক্সট (Top Marquee Announcement)
+                Top Marquee Announcement Text
               </label>
               <textarea
                 rows={2}
@@ -931,7 +931,7 @@ export default function AdminMasterPage() {
             {/* Global 18+ Rules */}
             <div>
               <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                ১৮+ টুর্নামেন্ট ও রুমের সার্বজনীন নিয়মাবলী (Default Tournament Rules)
+                Universal Tournament Rules (18+)
               </label>
               <textarea
                 rows={7}
@@ -944,7 +944,7 @@ export default function AdminMasterPage() {
             {/* How to Join Guide */}
             <div>
               <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                'টুর্নামেন্টে কিভাবে যোগদান করবেন' নির্দেশিকা (How to Join Guide)
+                How to Join Guide
               </label>
               <textarea
                 rows={4}
@@ -957,7 +957,7 @@ export default function AdminMasterPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                  টেলিগ্রাম কমিউনিটি লিংক
+                  Telegram Community Link
                 </label>
                 <input
                   type="text"
@@ -969,7 +969,7 @@ export default function AdminMasterPage() {
 
               <div>
                 <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                  হোয়াটসঅ্যাপ সাপোর্ট নম্বর
+                  WhatsApp Support Number
                 </label>
                 <input
                   type="text"
@@ -985,7 +985,7 @@ export default function AdminMasterPage() {
                 type="submit"
                 className="px-6 py-3 rounded-xl text-xs font-black btn-red shadow-md shadow-red-600/20"
               >
-                রুলস ও নোটিশ সংরক্ষণ করুন
+                Save Rules & Notices
               </button>
             </div>
           </form>
@@ -1000,10 +1000,10 @@ export default function AdminMasterPage() {
           <div>
             <h3 className="text-base font-black text-gray-900 dark:text-white flex items-center gap-2">
               <Settings className="w-5 h-5 text-red-600" />
-              সাইট সেটিংস ও নাম পরিবর্তন (Site Settings & Branding)
+              Site Settings & Branding
             </h3>
             <p className="text-xs text-gray-500">
-              ওয়েবসাইটের নাম, ট্যাগলাইন এবং বিকাশ/নগদ পেমেন্ট নম্বর পরিবর্তন করুন।
+              Customize website title, tagline, payment accounts, APK download URL, and admin security PIN.
             </p>
           </div>
 
@@ -1011,7 +1011,7 @@ export default function AdminMasterPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                  ওয়েবসাইট / অ্যাপের নাম
+                  Website / App Title
                 </label>
                 <input
                   type="text"
@@ -1024,7 +1024,7 @@ export default function AdminMasterPage() {
 
               <div>
                 <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                  ট্যাগলাইন
+                  Tagline
                 </label>
                 <input
                   type="text"
@@ -1039,7 +1039,7 @@ export default function AdminMasterPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                  অফিসিয়াল বিকাশ নম্বর (টাকা গ্রহণের জন্য)
+                  Official bKash Number (For receiving deposits)
                 </label>
                 <input
                   type="text"
@@ -1051,7 +1051,7 @@ export default function AdminMasterPage() {
 
               <div>
                 <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                  অফিসিয়াল নগদ নম্বর
+                  Official Nagad Number
                 </label>
                 <input
                   type="text"
@@ -1065,7 +1065,7 @@ export default function AdminMasterPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                  অফিসিয়াল টেলিগ্রাম সাপোর্ট লিংক / চ্যানেল URL
+                  Official Telegram Support / Channel URL
                 </label>
                 <input
                   type="url"
@@ -1078,7 +1078,7 @@ export default function AdminMasterPage() {
 
               <div>
                 <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                  অফিসিয়াল হোয়াটসঅ্যাপ হেল্পলাইন নম্বর
+                  Official WhatsApp Helpline Number
                 </label>
                 <input
                   type="text"
@@ -1093,44 +1093,44 @@ export default function AdminMasterPage() {
             {/* Android APK Download URL */}
             <div className="pt-2">
               <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                অ্যান্ড্রয়েড অ্যাপ APK ডাউনলোড লিংক (Google Drive / Mediafire / Direct Link)
+                Android App APK Download URL (Google Drive / Direct Link)
               </label>
               <input
                 type="url"
-                placeholder="https://drive.google.com/... বা https://yourdomain.com/app.apk"
+                placeholder="https://drive.google.com/... or https://yourdomain.com/app.apk"
                 value={apkDownloadUrl}
                 onChange={(e) => setApkDownloadUrl(e.target.value)}
                 className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/30 text-xs font-mono focus:outline-none focus:border-red-500"
               />
               <p className="text-[11px] text-gray-500 mt-1">
-                আপনার তৈরি করা আসল APK ফাইলটি Google Drive বা Mediafire-এ আপলোড করে লিংকটি এখানে দিন। ওয়েবসাইট থেকে প্লেয়াররা সরাসরি ডাউনলোড করতে পারবে।
+                Upload your production APK to Google Drive, MediaFire, or server storage and provide the direct download link here for players.
               </p>
             </div>
 
             {/* Owner Security PIN */}
             <div className="pt-2">
               <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                🔐 ওনার সিক্রেট এক্সেস পিন (Secret Access PIN)
+                🔐 Owner Secret Access PIN
               </label>
               <input
                 type="text"
-                placeholder="4-8 সংখ্যার পিন (ডিফল্ট: 7860)"
+                placeholder="4-8 digit PIN (Default: 7860)"
                 value={customPin}
                 onChange={(e) => setCustomPin(e.target.value)}
                 className="w-full sm:w-64 px-3 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/30 text-xs font-mono font-bold tracking-widest focus:outline-none focus:border-red-500"
               />
               <p className="text-[11px] text-gray-500 mt-1">
-                এই পিনটি দিয়ে আপনি ছাড়া অন্য কেউ অ্যাডমিন প্যানেলে ঢুকতে পারবে না। প্রয়োজনমতো পরিবর্তন করে সেভ করুন।
+                This secret PIN protects the admin panel from unauthorized access. Change and save whenever needed.
               </p>
             </div>
 
             {/* Site Logo Upload with Preview */}
             <div className="pt-2">
               <ImageUploadInput
-                label="ওয়েবসাইট ও অ্যাপের লোগো আপলোড করুন (Site Logo Image)"
+                label="Site Logo Image"
                 value={siteLogo}
                 onChange={setSiteLogo}
-                helperText="স্বচ্ছ ব্যাকগ্রাউন্ডের লোগো ইমেজ (PNG, JPG, WEBP) আপলোড করুন"
+                helperText="Upload transparent background logo (PNG, JPG, WEBP)"
                 previewHeight="h-28"
               />
             </div>
@@ -1141,10 +1141,10 @@ export default function AdminMasterPage() {
                 <div>
                   <h4 className="text-sm font-black text-gray-900 dark:text-white flex items-center gap-2">
                     <Image className="w-4 h-4 text-amber-500" />
-                    হোম পেজ ব্যানার স্লাইডার কন্ট্রোল (Home Banner Carousel Manager)
+                    Home Banner Carousel Manager
                   </h4>
                   <p className="text-[11px] text-gray-500">
-                    মোবাইল অ্যাপ ও ওয়েবসাইটের হোম পেজে স্লাইড হওয়া ব্যানার ইমেজ ও টেক্সট পরিবর্তন বা নতুন যোগ করুন।
+                    Add or modify interactive promotional banner slides displayed on mobile app and web homepage.
                   </p>
                 </div>
 
@@ -1154,8 +1154,8 @@ export default function AdminMasterPage() {
                     const newSlide: BannerSlide = {
                       id: `slide-${Date.now()}`,
                       badge: 'NEW EVENT',
-                      title: 'নতুন মেগা টুর্নামেন্ট লাইভ!',
-                      subtitle: 'বিকাশ ও নগদে সরাসরি প্রাইজ উইথড্র করুন।',
+                      title: 'New Mega Tournament Live!',
+                      subtitle: 'Withdraw winnings directly via bKash & Nagad.',
                       image: '/logo.png',
                       actionText: 'Join Now',
                       actionUrl: telegramUrl || 'https://t.me/ffrivaltourbd',
@@ -1165,7 +1165,7 @@ export default function AdminMasterPage() {
                   className="px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-black flex items-center gap-1 shadow-sm"
                 >
                   <Plus className="w-3.5 h-3.5" />
-                  <span>স্লাইড যোগ করুন</span>
+                  <span>Add Slide</span>
                 </button>
               </div>
 
@@ -1177,7 +1177,7 @@ export default function AdminMasterPage() {
                   >
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-black text-amber-600 dark:text-amber-400">
-                        স্লাইডার ব্যানার #{idx + 1}
+                        Banner Slide #{idx + 1}
                       </span>
                       {bannerSlidesList.length > 1 && (
                         <button
@@ -1188,7 +1188,7 @@ export default function AdminMasterPage() {
                           className="text-red-500 hover:text-red-400 text-xs flex items-center gap-1 font-bold"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
-                          <span>মুছে ফেলুন</span>
+                          <span>Remove</span>
                         </button>
                       )}
                     </div>
@@ -1196,7 +1196,7 @@ export default function AdminMasterPage() {
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <div>
                         <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                          ব্যাজ টেক্সট (Badge)
+                          Badge Text
                         </label>
                         <input
                           type="text"
@@ -1213,7 +1213,7 @@ export default function AdminMasterPage() {
 
                       <div className="sm:col-span-2">
                         <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                          শিরোনাম (Title)
+                          Title
                         </label>
                         <input
                           type="text"
@@ -1231,7 +1231,7 @@ export default function AdminMasterPage() {
 
                     <div>
                       <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                        সাবটাইটেল / বিবরণ (Subtitle)
+                        Subtitle / Description
                       </label>
                       <input
                         type="text"
@@ -1247,14 +1247,14 @@ export default function AdminMasterPage() {
                     </div>
 
                     <ImageUploadInput
-                      label="ব্যানার ইমেজ আপলোড বা পরিবর্তন করুন"
+                      label="Banner Image"
                       value={slide.image || '/logo.png'}
                       onChange={(imgUrl) => {
                         setBannerSlidesList((prev) =>
                           prev.map((s, i) => (i === idx ? { ...s, image: imgUrl } : s))
                         );
                       }}
-                      helperText="প্রোমোশনাল ব্যানার ইমেজ (16:9 বা প্রশস্ত ফরম্যাট)"
+                      helperText="Promotional banner image (16:9 or wide format)"
                       previewHeight="h-28"
                     />
                   </div>
@@ -1266,21 +1266,21 @@ export default function AdminMasterPage() {
               <button
                 type="button"
                 onClick={() => {
-                  if (confirm('আপনি কি ফ্যাক্টরি ডিফল্টে সব রিসেট করতে চান?')) {
+                  if (confirm('Are you sure you want to reset all CMS settings to factory default?')) {
                     resetCMS();
-                    showToast('ফ্যাক্টরি ডিফল্টে সফলভাবে রিসেট করা হয়েছে!');
+                    showToast('CMS reset to factory defaults successfully!');
                   }
                 }}
                 className="px-4 py-2.5 rounded-xl bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 text-xs font-bold hover:bg-gray-200"
               >
-                ডিফল্টে রিসেট করুন
+                Reset to Defaults
               </button>
 
               <button
                 type="submit"
                 className="px-6 py-3 rounded-xl text-xs font-black btn-red shadow-md shadow-red-600/20"
               >
-                সেটিংস সেভ করুন
+                Save Site Settings
               </button>
             </div>
           </form>
@@ -1301,10 +1301,10 @@ export default function AdminMasterPage() {
                 </div>
                 <div>
                   <h3 className="text-lg font-black text-gray-900 dark:text-white flex items-center gap-2">
-                    অটোমেটিক ম্যাচ সিডিউলার ও পুশ নোটিফিকেশন বট
+                    Automated Match Scheduler & Push Notification Bot
                   </h3>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    আপনাকে নিজে নিজে ম্যাচ অ্যাড করতে হবে না। বট নির্দিষ্ট সময় পর পর ৬টি ক্যাটাগরির সব ম্যাচ স্বয়ংক্রিয়ভাবে তৈরি করবে এবং মোবাইল অ্যাপে পুশ অ্যালার্ট দিবে।
+                    No manual work required. The autonomous bot periodically schedules matches across all 6 categories and sends push notifications to players.
                   </p>
                 </div>
               </div>
@@ -1312,7 +1312,7 @@ export default function AdminMasterPage() {
               <div className="flex items-center gap-2 flex-shrink-0">
                 <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 text-xs font-bold">
                   <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                  বট সক্রিয় আছে (Active)
+                  Bot Active (Autonomous)
                 </span>
               </div>
             </div>
@@ -1323,15 +1323,15 @@ export default function AdminMasterPage() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-amber-400">
                 <Sparkles className="w-4 h-4" />
-                এক-ক্লিকে তাৎক্ষণিক ম্যাচ জেনারেটর (Instant Batch Generation)
+                Instant Batch Tournament Generator
               </div>
               <span className="text-[10px] text-gray-400 font-mono">
-                সর্বশেষ রান: {schedulerConfig.lastRunTimestamp || 'সম্প্রতি চালিত হয়েছে'}
+                Last Run: {schedulerConfig.lastRunTimestamp || 'Ran recently'}
               </span>
             </div>
 
             <p className="text-xs text-gray-300 leading-relaxed">
-              নিচের বাটনে ক্লিক করলেই বট তাৎক্ষণিকভাবে <strong>Classic (১২-টিম স্কোয়াড, সোলো, ডুও)</strong>, <strong>Clash Squad 4v4</strong>, <strong>Lone Wolf</strong>, <strong>Lost to Win</strong>, এবং <strong>CS Only Headshot</strong> ক্যাটাগরির ফ্রেশ ম্যাচ শিডিউল তৈরি করবে এবং মোবাইল প্লেয়ারদের কাছে নোটিফিকেশন পাঠাবে।
+              Click the button below to instantly schedule fresh matches for <strong>Classic (Squad 12 Teams, Solo, Duo)</strong>, <strong>Clash Squad 4v4</strong>, <strong>Lone Wolf</strong>, <strong>Lost to Win</strong>, and <strong>CS Only Headshot</strong> categories and notify all registered players.
             </p>
 
             <div className="flex flex-wrap items-center gap-3 pt-2">
@@ -1342,13 +1342,13 @@ export default function AdminMasterPage() {
                 className="px-6 py-3 rounded-xl text-xs font-black bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white shadow-lg shadow-red-600/30 flex items-center gap-2 transition-all active:scale-95"
               >
                 <Sparkles className="w-4 h-4 text-amber-300" />
-                {isGeneratingBatch ? 'ম্যাচ তৈরি হচ্ছে...' : '⚡ নতুন ম্যাচ ব্যাচ যোগ করুন (Append)'}
+                {isGeneratingBatch ? 'Generating Matches...' : '⚡ Append New Match Batch'}
               </button>
 
               <button
                 type="button"
                 onClick={() => {
-                  if (confirm('⚠️ পুরোনো সব ম্যাচ মুছে সম্পূর্ণ নতুন ফ্রেশ ব্যাচ দিতে চান?')) {
+                  if (confirm('⚠️ Are you sure you want to clear existing matches and generate a completely fresh batch?')) {
                     handleTriggerBotBatch(true);
                   }
                 }}
@@ -1356,7 +1356,7 @@ export default function AdminMasterPage() {
                 className="px-5 py-3 rounded-xl text-xs font-bold bg-white/10 hover:bg-white/15 text-gray-200 border border-white/10 flex items-center gap-2 transition-all"
               >
                 <RefreshCw className="w-4 h-4 text-red-400" />
-                <span>পুরোনো সব মুছে নতুন ফ্রেশ ব্যাচ দিন (Clear & Refresh)</span>
+                <span>Clear All & Generate Fresh Batch</span>
               </button>
             </div>
           </div>
@@ -1368,14 +1368,14 @@ export default function AdminMasterPage() {
               <div className="flex items-center gap-2 pb-2 border-b border-gray-200 dark:border-white/10">
                 <Clock className="w-4 h-4 text-red-600" />
                 <h4 className="text-sm font-black text-gray-900 dark:text-white">
-                  স্বয়ংক্রিয় শিডিউলিং ইন্টারভাল (Schedule Interval)
+                  Automated Scheduling Interval
                 </h4>
               </div>
 
               <form onSubmit={handleSaveSchedulerSettings} className="space-y-4">
                 <div>
                   <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                    কত সময় পর পর বট নতুন ম্যাচ তৈরি করবে?
+                    How often should the bot generate new tournaments?
                   </label>
                   <select
                     value={schedulerConfig.intervalHours}
@@ -1387,14 +1387,14 @@ export default function AdminMasterPage() {
                     }
                     className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/30 text-xs font-bold focus:outline-none focus:border-red-500"
                   >
-                    <option value={2}>প্রতি ২ ঘণ্টা পর পর (Every 2 Hours)</option>
-                    <option value={4}>প্রতি ৪ ঘণ্টা পর পর (Every 4 Hours - Recommended)</option>
-                    <option value={6}>প্রতি ৬ ঘণ্টা পর পর (Every 6 Hours)</option>
-                    <option value={12}>প্রতি ১২ ঘণ্টা পর পর (Every 12 Hours)</option>
-                    <option value={24}>প্রতিদিন ১ বার (Every 24 Hours)</option>
+                    <option value={2}>Every 2 Hours</option>
+                    <option value={4}>Every 4 Hours (Recommended)</option>
+                    <option value={6}>Every 6 Hours</option>
+                    <option value={12}>Every 12 Hours</option>
+                    <option value={24}>Every 24 Hours (Daily)</option>
                   </select>
                   <p className="text-[11px] text-gray-500 mt-1">
-                    শিডিউল টাইম শেষ হওয়ার সাথে সাথে ব্যাকগ্রাউন্ডে স্বয়ংক্রিয়ভাবে নতুন ম্যাচ রোল-আউট হবে।
+                    Fresh tournaments will automatically roll out in the background once the timer interval expires.
                   </p>
                 </div>
 
@@ -1412,7 +1412,7 @@ export default function AdminMasterPage() {
                     className="w-4 h-4 rounded text-red-600 focus:ring-red-500"
                   />
                   <label htmlFor="autoEnabled" className="text-xs font-bold text-gray-700 dark:text-gray-300 cursor-pointer">
-                    স্বয়ংক্রিয় ব্যাকগ্রাউন্ড বট সক্রিয় রাখুন (Auto-Run Enabled)
+                    Enable Autonomous Background Match Bot
                   </label>
                 </div>
 
@@ -1420,7 +1420,7 @@ export default function AdminMasterPage() {
                   type="submit"
                   className="w-full py-2.5 rounded-xl text-xs font-bold btn-red shadow-md shadow-red-600/20"
                 >
-                  শিডিউল সেটিংস সেভ করুন
+                  Save Schedule Settings
                 </button>
               </form>
             </div>
@@ -1430,35 +1430,35 @@ export default function AdminMasterPage() {
               <div className="flex items-center gap-2 pb-2 border-b border-gray-200 dark:border-white/10">
                 <Bell className="w-4 h-4 text-amber-500" />
                 <h4 className="text-sm font-black text-gray-900 dark:text-white">
-                  মোবাইল অ্যাপ পুশ নোটিফিকেশন ব্রডকাস্টার
+                  Mobile App Push Notification Broadcaster
                 </h4>
               </div>
 
               <form onSubmit={handleSendCustomBroadcast} className="space-y-3">
                 <div>
                   <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                    নোটিফিকেশন টাইটেল
+                    Notification Title
                   </label>
                   <input
                     type="text"
                     required
                     value={broadcastTitle}
                     onChange={(e) => setBroadcastTitle(e.target.value)}
-                    placeholder="e.g. 📢 নতুন মেগা টুর্নামেন্ট লাইভ!"
+                    placeholder="e.g. 📢 New Mega Tournament Live!"
                     className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/30 text-xs font-bold focus:outline-none focus:border-red-500"
                   />
                 </div>
 
                 <div>
                   <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                    নোটিফিকেশন বার্তা
+                    Notification Message
                   </label>
                   <textarea
                     rows={2}
                     required
                     value={broadcastMessage}
                     onChange={(e) => setBroadcastMessage(e.target.value)}
-                    placeholder="খেলোয়াড়দের জন্য বার্তা লিখুন..."
+                    placeholder="Enter broadcast message for mobile players..."
                     className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/30 text-xs focus:outline-none focus:border-red-500"
                   />
                 </div>
@@ -1468,7 +1468,7 @@ export default function AdminMasterPage() {
                   className="w-full py-2.5 rounded-xl text-xs font-black bg-amber-500 text-black hover:bg-amber-400 transition-all flex items-center justify-center gap-1.5 shadow-md shadow-amber-500/20"
                 >
                   <Send className="w-3.5 h-3.5" />
-                  <span>মোবাইল অ্যাপে নোটিফিকেশন অ্যালার্ট পাঠান</span>
+                  <span>Send Push Alert to Mobile Players</span>
                 </button>
               </form>
             </div>
@@ -1478,28 +1478,28 @@ export default function AdminMasterPage() {
           <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#12121a] p-6 space-y-4 shadow-sm">
             <h4 className="text-sm font-black text-gray-900 dark:text-white flex items-center gap-2">
               <Cpu className="w-4 h-4 text-red-600" />
-              বট কীভাবে কাজ করে এবং কীভাবে সেটআপ করবেন? (Technical Architecture)
+              How the Autonomous Match Engine Works (Technical Architecture)
             </h4>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-gray-600 dark:text-gray-300">
               <div className="p-4 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/5 space-y-2">
-                <span className="font-bold text-red-500 block">১. ADB স্পেকটেটর জয়েন</span>
+                <span className="font-bold text-red-500 block">1. ADB Spectator Join</span>
                 <p className="leading-relaxed">
-                  অ্যান্ড্রয়েড এমুলেটরে (BlueStacks / LDPlayer) বট রান করে। ম্যাচ শুরুর সময় বট অটোমেটিক Room ID ও Password দিয়ে স্পেকটেটর স্লটে প্রবেশ করে।
+                  The bot operates inside an Android emulator (BlueStacks / LDPlayer). When a tournament starts, it automatically injects the Room ID and Password to enter the spectator slot.
                 </p>
               </div>
 
               <div className="p-4 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/5 space-y-2">
-                <span className="font-bold text-emerald-500 block">২. ভিশন OCR কিল-ফিড রিডার</span>
+                <span className="font-bold text-emerald-500 block">2. Vision OCR Kill-Feed Reader</span>
                 <p className="leading-relaxed">
-                  খেলা চলাকালীন গেম স্ক্রিনের উপরের ডান পাশের কিল-ফিড থেকে PaddleOCR দিয়ে কিলারের নাম এবং ভিকটিমের নাম রিয়েলটাইমে রিড করে ডাটাবেজে স্টোর করে।
+                  During gameplay, PaddleOCR reads the top-right kill-feed in real time, detecting killer and victim IGNs and syncing kill counts directly to the database.
                 </p>
               </div>
 
               <div className="p-4 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/5 space-y-2">
-                <span className="font-bold text-blue-500 block">৩. অটোমেটিক Booyah ও প্রাইজমানি</span>
+                <span className="font-bold text-blue-500 block">3. Automatic Booyah & Payout</span>
                 <p className="leading-relaxed">
-                  ম্যাচ শেষে "BOOYAH!" স্ক্রিন ডিটেক্ট করে উইনার ও টপ কিলারের ওয়ালেটে তাৎক্ষণিকভাবে নগদ টাকা ট্রান্সফার করে এবং লিডারবোর্ড আপডেট করে।
+                  Detects the final "BOOYAH!" victory screen, transfers cash rewards directly to the winner and top killers wallets, and updates the tournament leaderboard.
                 </p>
               </div>
             </div>
@@ -1515,10 +1515,10 @@ export default function AdminMasterPage() {
           <div className="w-full max-w-md bg-white dark:bg-[#161622] rounded-2xl p-6 space-y-4 border border-gray-200 dark:border-white/10 shadow-2xl">
             <h3 className="text-base font-black text-gray-900 dark:text-white flex items-center gap-2">
               <Key className="w-5 h-5 text-red-600" />
-              রুম আইডি ও পাসওয়ার্ড প্রকাশ করুন
+              Publish Room ID & Password
             </h3>
             <p className="text-xs text-gray-500">
-              ম্যাচ শুরুর ১৫ মিনিট আগে এই ক্রেডেনশিয়াল প্লেয়ারদের কাছে স্বয়ংক্রিয়ভাবে দৃশ্যমান হবে।
+              These credentials will automatically become visible to joined players 15 minutes before match start.
             </p>
 
             <div className="space-y-3">
@@ -1555,14 +1555,14 @@ export default function AdminMasterPage() {
                 onClick={() => setEditingRoomMatchId(null)}
                 className="px-4 py-2 rounded-xl bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-300 text-xs font-bold hover:bg-gray-200"
               >
-                বাতিল
+                Cancel
               </button>
               <button
                 type="button"
                 onClick={() => handleSaveRoomPass(editingRoomMatchId)}
                 className="px-5 py-2 rounded-xl text-xs font-black btn-red shadow-md"
               >
-                পাবলিশ করুন
+                Publish Credentials
               </button>
             </div>
           </div>

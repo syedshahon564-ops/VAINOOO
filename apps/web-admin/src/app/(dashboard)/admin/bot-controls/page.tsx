@@ -66,9 +66,9 @@ export default function BotControlsPage() {
   const [paymentFilter, setPaymentFilter] = useState<'ALL' | 'PENDING_WITHDRAW' | 'PENDING_DEPOSIT' | 'COMPLETED'>('ALL');
 
   // Broadcast Notification Form
-  const [broadcastTitle, setBroadcastTitle] = useState('🚨 নতুন টুর্নামেন্ট শুরু হতে যাচ্ছে!');
+  const [broadcastTitle, setBroadcastTitle] = useState('🚨 New Tournament Starting Soon!');
   const [broadcastMessage, setBroadcastMessage] = useState(
-    'সব ৬টি ক্যাটাগরির নতুন ম্যাচ যুক্ত হয়েছে। এখনই আপনার পছন্দের স্লট বুক করুন!'
+    'New matches have been added across all categories. Book your squad slots now!'
   );
 
   // Payment Settings Form
@@ -79,7 +79,7 @@ export default function BotControlsPage() {
     paymentInstructionImage: settings?.paymentInstructionImage || '/logo.png',
     paymentInstructionText:
       settings?.paymentInstructionText ||
-      '১. আমাদের বিকাশ/নগদ/ডাচ-বাংলা রকেট নাম্বারে Send Money করুন।\n২. নিচে আপনার প্রেরক মোবাইল নম্বর ও TrxID লিখুন।\n৩. বট স্বয়ংক্রিয়ভাবে ট্রানজেকশন যাচাই করে সাথে সাথে ওয়ালেটে ব্যালেন্স যুক্ত করে দিবে।',
+      '1. Send Money to our official bKash/Nagad/Rocket account.\n2. Enter your sender phone number and TrxID below.\n3. The automated system verifies and adds balance instantly.',
     autoWebhookVerification: settings?.autoWebhookVerification !== false,
   });
 
@@ -99,7 +99,7 @@ export default function BotControlsPage() {
     totalSlots: 48,
     publishAt: '',
     matchPlayTime: '',
-    rules: 'সব নিয়ম মেনে খেলুন। কোনো ধরনের হ্যাকিং বা ইললিগ্যাল কার্যকলাপ নিষিদ্ধ।',
+    rules: 'Follow tournament rules. Emulators and illegal hacks are strictly prohibited.',
   });
 
   const showToast = (text: string, type: 'success' | 'error' = 'success') => {
@@ -124,7 +124,7 @@ export default function BotControlsPage() {
     const defaultPublishIso = `${plus1Hour.getFullYear()}-${pad(plus1Hour.getMonth() + 1)}-${pad(
       plus1Hour.getDate()
     )}T${pad(plus1Hour.getHours())}:${pad(plus1Hour.getMinutes())}`;
-    const defaultPlayTime = `আজ রাত ১০:০০ PM`;
+    const defaultPlayTime = `Tonight 10:00 PM`;
 
     setNewMatchForm((prev) => ({
       ...prev,
@@ -158,7 +158,7 @@ export default function BotControlsPage() {
         paymentInstructionImage: settings.paymentInstructionImage || '/logo.png',
         paymentInstructionText:
           settings.paymentInstructionText ||
-          '১. আমাদের বিকাশ/নগদ/ডাচ-বাংলা রকেট নাম্বারে Send Money করুন।\n২. নিচে আপনার প্রেরক মোবাইল নম্বর ও TrxID লিখুন।\n৩. বট স্বয়ংক্রিয়ভাবে ট্রানজেকশন যাচাই করে সাথে সাথে ওয়ালেটে ব্যালেন্স যুক্ত করে দিবে।',
+          '1. Send Money to our official bKash/Nagad/Rocket account.\n2. Enter your sender phone number and TrxID below.\n3. The automated system verifies and adds balance instantly.',
         autoWebhookVerification: settings.autoWebhookVerification !== false,
       });
     }
@@ -171,19 +171,19 @@ export default function BotControlsPage() {
     saveSchedulerConfig(updated);
     showToast(
       nextState
-        ? '✅ অটোমেটিক বট শিডিউলার চালু করা হয়েছে!'
-        : '⏸️ অটোমেটিক বট শিডিউলার সাময়িকভাবে পজ করা হয়েছে।'
+        ? '✅ Automated Bot Scheduler enabled!'
+        : '⏸️ Automated Bot Scheduler paused.'
     );
   };
 
   const handleSendNotification = (e: React.FormEvent) => {
     e.preventDefault();
     if (!broadcastTitle.trim() || !broadcastMessage.trim()) {
-      showToast('অনুগ্রহ করে নোটিফিকেশনের শিরোনাম ও বার্তা লিখুন', 'error');
+      showToast('Please provide a notification title and message', 'error');
       return;
     }
     dispatchDevicePushNotification(broadcastTitle, broadcastMessage);
-    showToast('মোবাইল ও ওয়েব অ্যাপে পুশ নোটিফিকেশন পাঠানো হয়েছে!', 'success');
+    showToast('Push alert broadcast dispatched to mobile & web clients!', 'success');
   };
 
   const handleSavePaymentSettings = (e: React.FormEvent) => {
@@ -196,13 +196,13 @@ export default function BotControlsPage() {
       paymentInstructionText: paymentForm.paymentInstructionText,
       autoWebhookVerification: paymentForm.autoWebhookVerification,
     });
-    showToast('পেমেন্ট ও ওয়ালেট সেটিংস সফলভাবে সেভ করা হয়েছে!', 'success');
+    showToast('Payment gateway and wallet settings saved!', 'success');
   };
 
   const handleCreateScheduledMatch = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMatchForm.title.trim() || !newMatchForm.publishAt) {
-      showToast('ম্যাচের শিরোনাম ও পাবলিশ তারিখ প্রদান করুন', 'error');
+      showToast('Please provide a match title and scheduled publish time', 'error');
       return;
     }
 
@@ -220,29 +220,29 @@ export default function BotControlsPage() {
       perKill: Number(newMatchForm.perKill),
       totalSlots: Number(newMatchForm.totalSlots),
       publishAt: newMatchForm.publishAt,
-      matchPlayTime: newMatchForm.matchPlayTime || 'শিডিউল অনুযায়ী',
+      matchPlayTime: newMatchForm.matchPlayTime || 'As scheduled',
       rules: newMatchForm.rules,
     });
 
     setShowScheduleModal(false);
     refreshAllData();
-    showToast('ম্যাচটি শিডিউল কিউতে সফলভাবে সেভ করা হয়েছে! নির্ধারিত সময়ে বট স্বয়ংক্রিয়ভাবে পাবলিশ করবে।', 'success');
+    showToast('Match saved in bot queue! It will publish automatically at the scheduled time.', 'success');
   };
 
   const handlePublishNow = (id: string, title: string) => {
     const success = publishScheduledBotMatch(id);
     if (success) {
       refreshAllData();
-      showToast(`"${title}" সফলভাবে লাইভ টুর্নামেন্ট তালিকায় পাবলিশ করা হয়েছে!`, 'success');
+      showToast(`"${title}" published live immediately!`, 'success');
     } else {
-      showToast('পাবলিশ করতে ব্যর্থ হয়েছে', 'error');
+      showToast('Failed to publish match', 'error');
     }
   };
 
   const handleDeleteScheduled = (id: string) => {
     deleteScheduledBotMatch(id);
     refreshAllData();
-    showToast('শিডিউলড ম্যাচ মুছে ফেলা হয়েছে', 'success');
+    showToast('Scheduled match removed from queue', 'success');
   };
 
   // Filter payment requests
@@ -275,10 +275,10 @@ export default function BotControlsPage() {
         <div>
           <h1 className="text-2xl font-black text-gray-900 dark:text-white flex items-center gap-2">
             <Bot className="w-6 h-6 text-red-600" />
-            অটোমেটেড বট ও শিডিউলার কন্ট্রোল (Auto Scheduler & Bot Controls)
+            Automated Bot & Scheduler Controls
           </h1>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            ম্যাচ তৈরি করে বটের কাছে সেভ রাখুন, অটো পাবলিশ শিডিউল করুন, ওয়ালেট গেটওয়ে কন্ট্রোল ও উইথড্রল রিকোয়েস্ট পরিচালনা করুন।
+            Queue scheduled matches, auto-deliver room credentials, manage payment gateways, and review player withdrawal requests.
           </p>
         </div>
 
@@ -288,7 +288,7 @@ export default function BotControlsPage() {
             className="px-4 py-2 rounded-xl text-xs font-black btn-red shadow-lg shadow-red-600/30 flex items-center gap-2 active:scale-95 transition-all"
           >
             <Plus className="w-4 h-4" />
-            নতুন ম্যাচ শিডিউল/সেভ করুন
+            Schedule New Match
           </button>
         </div>
       </div>
@@ -310,10 +310,10 @@ export default function BotControlsPage() {
               </div>
               <div>
                 <h3 className="text-base font-black text-gray-900 dark:text-white">
-                  স্বয়ংক্রিয় বট স্ট্যাটাস
+                  Automated Bot Scheduler
                 </h3>
                 <span className="text-xs font-bold text-gray-500">
-                  {config.autoEnabled ? 'অটো-শিডিউলার ও পাবলিশার সক্রিয় (Active)' : 'বট বর্তমানে বন্ধ (Paused)'}
+                  {config.autoEnabled ? 'Auto-Scheduler & Publisher Active' : 'Bot Engine Paused'}
                 </span>
               </div>
             </div>
@@ -328,11 +328,11 @@ export default function BotControlsPage() {
             >
               {config.autoEnabled ? (
                 <>
-                  <Pause className="w-3.5 h-3.5" /> বট বন্ধ করুন
+                  <Pause className="w-3.5 h-3.5" /> Pause Bot
                 </>
               ) : (
                 <>
-                  <Play className="w-3.5 h-3.5" /> বট চালু করুন
+                  <Play className="w-3.5 h-3.5" /> Start Bot
                 </>
               )}
             </button>
@@ -340,19 +340,19 @@ export default function BotControlsPage() {
 
           <div className="space-y-3 pt-3 border-t border-gray-100 dark:border-white/5 text-xs">
             <div className="flex justify-between py-2 border-b border-gray-100 dark:border-white/5 font-medium">
-              <span className="text-gray-500">বর্তমান লাইভ ম্যাচ:</span>
-              <span className="font-mono font-black text-red-600">{matches.length} টি</span>
+              <span className="text-gray-500">Active Live Matches:</span>
+              <span className="font-mono font-black text-red-600">{matches.length}</span>
             </div>
             <div className="flex justify-between py-2 border-b border-gray-100 dark:border-white/5 font-medium">
-              <span className="text-gray-500">বটের কাছে শিডিউলড/সেভ করা ম্যাচ:</span>
-              <span className="font-mono font-black text-amber-500">{scheduledMatches.length} টি</span>
+              <span className="text-gray-500">Queued in Bot Scheduler:</span>
+              <span className="font-mono font-black text-amber-500">{scheduledMatches.length}</span>
             </div>
             <div className="flex justify-between py-2 border-b border-gray-100 dark:border-white/5 font-medium">
-              <span className="text-gray-500">পেন্ডিং উইথড্র রিকোয়েস্ট:</span>
-              <span className="font-mono font-black text-purple-500">{pendingWithdrawCount} টি</span>
+              <span className="text-gray-500">Pending Withdraw Requests:</span>
+              <span className="font-mono font-black text-purple-500">{pendingWithdrawCount}</span>
             </div>
             <div className="flex justify-between py-2 border-b border-gray-100 dark:border-white/5 font-medium">
-              <span className="text-gray-500">সর্বশেষ বট রান হয়েছে:</span>
+              <span className="text-gray-500">Last Bot Cycle:</span>
               <span className="font-bold text-gray-800 dark:text-gray-200">
                 {safeFormatDate(config.lastRunTimestamp)}
               </span>
@@ -368,10 +368,10 @@ export default function BotControlsPage() {
             </div>
             <div>
               <h3 className="text-sm font-black text-gray-900 dark:text-white">
-                মোবাইল অ্যাপ ব্রডকাস্ট অ্যালার্ট
+                Mobile Broadcast Alerts
               </h3>
               <p className="text-[11px] text-gray-500">
-                সকল মোবাইল ও ওয়েব অ্যাপ প্লেয়ারদের কাছে পুশ নোটিফিকেশন অ্যালার্ট পাঠান।
+                Dispatch instant push notifications to all active mobile & web clients.
               </p>
             </div>
           </div>
@@ -379,7 +379,7 @@ export default function BotControlsPage() {
           <form onSubmit={handleSendNotification} className="space-y-3.5 text-xs">
             <div>
               <label className="font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                নোটিফিকেশন শিরোনাম (Title)
+                Notification Title
               </label>
               <input
                 type="text"
@@ -392,7 +392,7 @@ export default function BotControlsPage() {
 
             <div>
               <label className="font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                বার্তা (Message)
+                Notification Message
               </label>
               <textarea
                 rows={3}
@@ -407,7 +407,7 @@ export default function BotControlsPage() {
               type="submit"
               className="w-full py-2.5 rounded-xl btn-red text-xs font-black flex items-center justify-center gap-1.5 shadow-md shadow-red-600/30 transition-all"
             >
-              <Send className="w-3.5 h-3.5" /> পুশ নোটিফিকেশন সেন্ড করুন
+              <Send className="w-3.5 h-3.5" /> Broadcast Push Notification
             </button>
           </form>
         </div>
@@ -422,13 +422,13 @@ export default function BotControlsPage() {
             </div>
             <div>
               <h3 className="text-sm font-black text-gray-900 dark:text-white flex items-center gap-2">
-                সংরক্ষিত ও শিডিউলড ম্যাচ কিউ (Scheduled Match Queue)
+                Scheduled Match Queue
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 font-bold border border-blue-300">
-                  {scheduledMatches.length}টি ম্যাচ বটের কাছে সংরক্ষিত
+                  {scheduledMatches.length} Queued
                 </span>
               </h3>
               <p className="text-[11px] text-gray-500">
-                ম্যাচগুলো বানিয়ে সেভ করে রাখুন। নির্ধারিত পাবলিশ ডেট ও সময় আসার সাথে সাথে বট স্বয়ংক্রিয়ভাবে লাইভ করে দিবে।
+                Matches stored in bot memory. The bot will automatically publish them live once their schedule time arrives.
               </p>
             </div>
           </div>
@@ -439,7 +439,7 @@ export default function BotControlsPage() {
               onClick={() => setShowScheduleModal(true)}
               className="px-3.5 py-2 rounded-xl btn-red text-xs font-black flex items-center gap-1.5 shadow-md shadow-red-600/20 active:scale-95 transition-all"
             >
-              <Plus className="w-3.5 h-3.5" /> নতুন ম্যাচ সেভ করুন
+              <Plus className="w-3.5 h-3.5" /> Queue New Match
             </button>
           </div>
         </div>
@@ -448,16 +448,16 @@ export default function BotControlsPage() {
           <div className="py-12 text-center text-gray-500 space-y-3">
             <Calendar className="w-10 h-10 mx-auto text-gray-400 opacity-60" />
             <p className="text-xs font-bold text-gray-700 dark:text-gray-300">
-              বর্তমানে কোনো শিডিউলড ম্যাচ সংরক্ষিত নেই।
+              No matches currently queued in scheduler.
             </p>
             <p className="text-[11px] text-gray-400">
-              উপরের &quot;নতুন ম্যাচ সেভ করুন&quot; বাটনে ক্লিক করে তারিখ ও সময় দিয়ে ম্যাচ বটের মেমোরিতে সেভ করে রাখুন।
+              Click &quot;Queue New Match&quot; above to configure future tournaments for automatic release.
             </p>
             <button
               onClick={() => setShowScheduleModal(true)}
               className="px-4 py-2 rounded-xl text-xs font-bold bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/15 text-gray-800 dark:text-white transition-all inline-flex items-center gap-1.5"
             >
-              <Plus className="w-3.5 h-3.5" /> ম্যাচ সেভ করুন
+              <Plus className="w-3.5 h-3.5" /> Queue Match
             </button>
           </div>
         ) : (
@@ -465,12 +465,12 @@ export default function BotControlsPage() {
             <table className="w-full text-xs text-left">
               <thead>
                 <tr className="border-b border-gray-100 dark:border-white/5 text-[10px] text-gray-500 uppercase">
-                  <th className="py-2.5 px-3">ম্যাচের নাম</th>
-                  <th className="py-2.5 px-3">ক্যাটাগরি ও টাইপ</th>
-                  <th className="py-2.5 px-3">এন্ট্রি ও প্রাইজপুল</th>
-                  <th className="py-2.5 px-3">পাবলিশ তারিখ ও সময়</th>
-                  <th className="py-2.5 px-3">ম্যাচ খেলার সময়</th>
-                  <th className="py-2.5 px-3 text-right">অ্যাকশন</th>
+                  <th className="py-2.5 px-3">Title</th>
+                  <th className="py-2.5 px-3">Category & Type</th>
+                  <th className="py-2.5 px-3">Fee & Prize Pool</th>
+                  <th className="py-2.5 px-3">Auto Publish Time</th>
+                  <th className="py-2.5 px-3">Play Schedule</th>
+                  <th className="py-2.5 px-3 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-white/5">
@@ -490,14 +490,14 @@ export default function BotControlsPage() {
                       </div>
                     </td>
                     <td className="py-3 px-3 font-mono font-bold">
-                      <span className="text-gray-500">ফি: ৳{m.entryFee}</span> /{' '}
-                      <span className="text-emerald-500">পুল: ৳{m.prizePool}</span>
+                      <span className="text-gray-500">Fee: ৳{m.entryFee}</span> /{' '}
+                      <span className="text-emerald-500">Pool: ৳{m.prizePool}</span>
                     </td>
                     <td className="py-3 px-3">
                       <div className="flex items-center gap-1.5">
                         <Clock className="w-3.5 h-3.5 text-blue-500" />
                         <span className="font-mono font-bold text-blue-600 dark:text-blue-400">
-                          {m.publishAt ? new Date(m.publishAt).toLocaleString('bn-BD') : 'তাৎক্ষণিক'}
+                          {m.publishAt ? new Date(m.publishAt).toLocaleString('en-US') : 'Immediate'}
                         </span>
                       </div>
                     </td>
@@ -511,13 +511,13 @@ export default function BotControlsPage() {
                           onClick={() => handlePublishNow(m.id, m.title)}
                           className="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] flex items-center gap-1 transition-all shadow-sm"
                         >
-                          <Zap className="w-3 h-3" /> এখনই লাইভ পাবলিশ
+                          <Zap className="w-3 h-3" /> Publish Now
                         </button>
                         <button
                           type="button"
                           onClick={() => handleDeleteScheduled(m.id)}
                           className="p-1.5 rounded-lg bg-gray-100 dark:bg-white/10 hover:bg-rose-100 hover:text-rose-600 text-gray-400 transition-colors"
-                          title="মুছে ফেলুন"
+                          title="Delete"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -539,10 +539,10 @@ export default function BotControlsPage() {
           </div>
           <div>
             <h3 className="text-sm font-black text-gray-900 dark:text-white">
-              ওয়ালেট ও পেমেন্ট মেথড সেটিংস (বিকাশ, নগদ, ডাচ-বাংলা/রকেট)
+              Wallet & Payment Gateway Configuration
             </h3>
             <p className="text-[11px] text-gray-500">
-              প্লেয়ারদের ডিপোজিট ও উইথড্রয়ের জন্য বিকাশ, নগদ এবং ডাচ-বাংলা রকেট নাম্বার ও সেন্ড মানি নির্দেশনা সেট করুন।
+              Configure personal bKash, Nagad, and Rocket numbers and instructions for deposit and withdrawal.
             </p>
           </div>
         </div>
@@ -552,7 +552,7 @@ export default function BotControlsPage() {
             {/* bKash */}
             <div className="p-3.5 rounded-xl border border-pink-500/30 bg-pink-500/5 space-y-1.5">
               <label className="font-black text-pink-600 dark:text-pink-400 flex items-center gap-1.5">
-                <span>বিকাশ পার্সোনাল নম্বর (bKash)</span>
+                <span>bKash Personal Number</span>
               </label>
               <input
                 type="text"
@@ -562,13 +562,13 @@ export default function BotControlsPage() {
                 placeholder="017XXXXXXXX"
                 className="w-full px-3 py-2 rounded-xl border border-pink-300 dark:border-pink-800 bg-white dark:bg-black font-mono font-bold focus:outline-none focus:border-pink-500"
               />
-              <span className="text-[10px] text-gray-500">প্লেয়াররা এই নম্বরে বিকাশ Send Money করবে।</span>
+              <span className="text-[10px] text-gray-500">Players send manual Send Money to this bKash number.</span>
             </div>
 
             {/* Nagad */}
             <div className="p-3.5 rounded-xl border border-orange-500/30 bg-orange-500/5 space-y-1.5">
               <label className="font-black text-orange-600 dark:text-orange-400 flex items-center gap-1.5">
-                <span>নগদ পার্সোনাল নম্বর (Nagad)</span>
+                <span>Nagad Personal Number</span>
               </label>
               <input
                 type="text"
@@ -578,13 +578,13 @@ export default function BotControlsPage() {
                 placeholder="018XXXXXXXX"
                 className="w-full px-3 py-2 rounded-xl border border-orange-300 dark:border-orange-800 bg-white dark:bg-black font-mono font-bold focus:outline-none focus:border-orange-500"
               />
-              <span className="text-[10px] text-gray-500">প্লেয়াররা এই নম্বরে নগদ Send Money করবে।</span>
+              <span className="text-[10px] text-gray-500">Players send manual Send Money to this Nagad number.</span>
             </div>
 
-            {/* Dutch-Bangla Rocket */}
+            {/* Rocket */}
             <div className="p-3.5 rounded-xl border border-purple-500/30 bg-purple-500/5 space-y-1.5">
               <label className="font-black text-purple-600 dark:text-purple-400 flex items-center gap-1.5">
-                <span>ডাচ-বাংলা / রকেট নম্বর (Rocket)</span>
+                <span>Rocket Number</span>
               </label>
               <input
                 type="text"
@@ -594,7 +594,7 @@ export default function BotControlsPage() {
                 placeholder="019XXXXXXXX-X"
                 className="w-full px-3 py-2 rounded-xl border border-purple-300 dark:border-purple-800 bg-white dark:bg-black font-mono font-bold focus:outline-none focus:border-purple-500"
               />
-              <span className="text-[10px] text-gray-500">প্লেয়াররা এই নম্বরে ডাচ-বাংলা রকেট Send Money করবে।</span>
+              <span className="text-[10px] text-gray-500">Players send manual Send Money to this Rocket number.</span>
             </div>
           </div>
 
@@ -602,22 +602,22 @@ export default function BotControlsPage() {
             {/* Payment Guide Image */}
             <div className="space-y-1.5">
               <label className="font-bold text-gray-700 dark:text-gray-300 block">
-                সেন্ড মানি গাইড ব্যানার / QR কোড ইমেজ URL
+                Payment Guide Banner / QR Code URL
               </label>
               <input
                 type="text"
                 value={paymentForm.paymentInstructionImage}
                 onChange={(e) => setPaymentForm({ ...paymentForm, paymentInstructionImage: e.target.value })}
-                placeholder="https://... বা /logo.png"
+                placeholder="https://... or /logo.png"
                 className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black font-medium focus:outline-none focus:border-red-500"
               />
-              <span className="text-[10px] text-gray-500">ডিপোজিট মডালে এই ছবি/QR কোড প্লেয়ারদের দেখানো হবে।</span>
+              <span className="text-[10px] text-gray-500">Displayed in client deposit dialog.</span>
             </div>
 
             {/* Auto Webhook Verification Toggle */}
             <div className="space-y-1.5">
               <label className="font-bold text-gray-700 dark:text-gray-300 block">
-                স্বয়ংক্রিয় ওয়েব হুক ও TrxID ভেরিফিকেশন বট
+                Automated TrxID Verification Engine
               </label>
               <div className="flex items-center gap-3 pt-1">
                 <button
@@ -636,17 +636,17 @@ export default function BotControlsPage() {
                 >
                   {paymentForm.autoWebhookVerification ? (
                     <>
-                      <Check className="w-3.5 h-3.5" /> বট অটো ভেরিফিকেশন: চালু (ON)
+                      <Check className="w-3.5 h-3.5" /> Auto Verification: ON
                     </>
                   ) : (
                     <>
-                      <X className="w-3.5 h-3.5" /> ম্যানুয়াল এডমিন অনুমোদন: চালু (OFF)
+                      <X className="w-3.5 h-3.5" /> Manual Admin Approval: ON
                     </>
                   )}
                 </button>
               </div>
               <span className="text-[10px] text-gray-500 block">
-                চালু থাকলে TrxID সাবমিটের সাথে সাথে বট নিজে যাচাই করে ব্যালেন্স যোগ করে দিবে।
+                When enabled, valid TrxIDs are verified automatically and credited to player balance.
               </span>
             </div>
           </div>
@@ -654,7 +654,7 @@ export default function BotControlsPage() {
           {/* Payment Guide Text */}
           <div className="space-y-1.5">
             <label className="font-bold text-gray-700 dark:text-gray-300 block">
-              সেন্ড মানি নির্দেশনা বার্তা (Instruction Text)
+              Payment Instruction Text
             </label>
             <textarea
               rows={3}
@@ -669,7 +669,7 @@ export default function BotControlsPage() {
               type="submit"
               className="px-5 py-2.5 rounded-xl btn-red text-xs font-black flex items-center gap-1.5 shadow-md shadow-red-600/20 active:scale-95 transition-all"
             >
-              <Check className="w-3.5 h-3.5" /> পেমেন্ট সেটিংস সেভ করুন
+              <Check className="w-3.5 h-3.5" /> Save Payment Settings
             </button>
           </div>
         </form>
@@ -684,15 +684,15 @@ export default function BotControlsPage() {
             </div>
             <div>
               <h3 className="text-sm font-black text-gray-900 dark:text-white flex items-center gap-2">
-                ডিপোজিট ও উইথড্র রিকোয়েস্ট মনিটর
+                Deposit & Withdrawal Request Monitor
                 {pendingWithdrawCount > 0 && (
                   <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 font-black animate-pulse">
-                    {pendingWithdrawCount}টি উইথড্র অপেক্ষমাণ!
+                    {pendingWithdrawCount} Withdrawal Pending!
                   </span>
                 )}
               </h3>
               <p className="text-[11px] text-gray-500">
-                প্লেয়ারদের রিকোয়েস্ট দেখে টাকা পাঠিয়ে এক ক্লিকে কনফার্ম করুন। প্লেয়ারের মোবাইলে সাথে সাথে পুশ নোটিফিকেশন পৌঁছে যাবে।
+                Review player requests, confirm payouts, and automatically dispatch push alerts to winner devices.
               </p>
             </div>
           </div>
@@ -707,7 +707,7 @@ export default function BotControlsPage() {
                   : 'bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-300'
               }`}
             >
-              সকল ({paymentRequests.length})
+              All ({paymentRequests.length})
             </button>
             <button
               onClick={() => setPaymentFilter('PENDING_WITHDRAW')}
@@ -717,7 +717,7 @@ export default function BotControlsPage() {
                   : 'bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-300'
               }`}
             >
-              পেন্ডিং উইথড্র ({pendingWithdrawCount})
+              Pending Withdraw ({pendingWithdrawCount})
             </button>
             <button
               onClick={() => setPaymentFilter('PENDING_DEPOSIT')}
@@ -727,7 +727,7 @@ export default function BotControlsPage() {
                   : 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-300'
               }`}
             >
-              পেন্ডিং ডিপোজিট ({pendingDepositCount})
+              Pending Deposit ({pendingDepositCount})
             </button>
             <button
               onClick={() => setPaymentFilter('COMPLETED')}
@@ -737,7 +737,7 @@ export default function BotControlsPage() {
                   : 'bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-300'
               }`}
             >
-              কমপ্লিটেড
+              Completed
             </button>
           </div>
         </div>
@@ -746,7 +746,7 @@ export default function BotControlsPage() {
           <div className="py-10 text-center text-gray-500 space-y-2">
             <CheckCircle2 className="w-8 h-8 mx-auto text-emerald-500 opacity-80" />
             <p className="text-xs font-bold text-gray-700 dark:text-gray-300">
-              এই ফিল্টারে বর্তমানে কোনো লেনদেন রিকোয়েস্ট নেই।
+              No pending payment requests under this filter.
             </p>
           </div>
         ) : (
@@ -754,14 +754,14 @@ export default function BotControlsPage() {
             <table className="w-full text-xs text-left">
               <thead>
                 <tr className="border-b border-gray-100 dark:border-white/5 text-[10px] text-gray-500 uppercase">
-                  <th className="py-2.5 px-3">ধরন</th>
-                  <th className="py-2.5 px-3">প্লেয়ার</th>
-                  <th className="py-2.5 px-3">মেথড</th>
-                  <th className="py-2.5 px-3">পরিমাণ</th>
-                  <th className="py-2.5 px-3">অ্যাকাউন্ট / TrxID</th>
-                  <th className="py-2.5 px-3">তারিখ ও সময়</th>
-                  <th className="py-2.5 px-3">স্ট্যাটাস</th>
-                  <th className="py-2.5 px-3 text-right">অ্যাকশন</th>
+                  <th className="py-2.5 px-3">Type</th>
+                  <th className="py-2.5 px-3">Player</th>
+                  <th className="py-2.5 px-3">Method</th>
+                  <th className="py-2.5 px-3">Amount</th>
+                  <th className="py-2.5 px-3">Account / TrxID</th>
+                  <th className="py-2.5 px-3">Date & Time</th>
+                  <th className="py-2.5 px-3">Status</th>
+                  <th className="py-2.5 px-3 text-right">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-white/5">
@@ -770,11 +770,11 @@ export default function BotControlsPage() {
                     <td className="py-3 px-3">
                       {req.type === 'WITHDRAW' ? (
                         <span className="inline-flex items-center gap-1 font-bold text-[10px] px-2 py-0.5 rounded bg-rose-100 text-rose-800 dark:bg-rose-950/40 dark:text-rose-300">
-                          <ArrowUpRight className="w-3 h-3 text-rose-500" /> উইথড্রল
+                          <ArrowUpRight className="w-3 h-3 text-rose-500" /> Withdraw
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 font-bold text-[10px] px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
-                          <ArrowDownRight className="w-3 h-3 text-emerald-500" /> ডিপোজিট
+                          <ArrowDownRight className="w-3 h-3 text-emerald-500" /> Deposit
                         </span>
                       )}
                     </td>
@@ -794,7 +794,7 @@ export default function BotControlsPage() {
                             : 'bg-purple-100 text-purple-700'
                         }`}
                       >
-                        {req.method === 'BKASH' ? 'বিকাশ' : req.method === 'NAGAD' ? 'নগদ' : 'রকেট'}
+                        {req.method}
                       </span>
                     </td>
                     <td className="py-3 px-3 font-mono font-black text-sm text-gray-900 dark:text-white">
@@ -811,20 +811,20 @@ export default function BotControlsPage() {
                       )}
                     </td>
                     <td className="py-3 px-3 text-[10px] text-gray-400">
-                      {new Date(req.createdAt).toLocaleString('bn-BD')}
+                      {new Date(req.createdAt).toLocaleString('en-US')}
                     </td>
                     <td className="py-3 px-3">
                       {req.status === 'APPROVED' ? (
                         <span className="text-[10px] font-black px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300">
-                          {req.autoVerified ? '🤖 অটো ভেরিফাইড' : '✅ কমপ্লিট'}
+                          {req.autoVerified ? '🤖 Auto Verified' : '✅ Completed'}
                         </span>
                       ) : req.status === 'REJECTED' ? (
                         <span className="text-[10px] font-black px-2 py-0.5 rounded bg-rose-100 text-rose-800 border border-rose-300">
-                          ❌ বাতিল
+                          ❌ Rejected
                         </span>
                       ) : (
                         <span className="text-[10px] font-black px-2 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-300 animate-pulse">
-                          ⏳ অপেক্ষমাণ
+                          ⏳ Pending
                         </span>
                       )}
                     </td>
@@ -838,22 +838,22 @@ export default function BotControlsPage() {
                                 onClick={() => {
                                   approveWithdrawRequest(req.id);
                                   refreshAllData();
-                                  showToast(`উইথড্রল সফল কনফার্ম করা হয়েছে এবং প্লেয়ারকে নোটিফিকেশন পাঠানো হয়েছে!`, 'success');
+                                  showToast(`Withdrawal confirmed and notification sent to player!`, 'success');
                                 }}
                                 className="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] flex items-center gap-1 shadow transition-all"
                               >
-                                <Check className="w-3 h-3" /> টাকা পাঠানো হয়েছে
+                                <Check className="w-3 h-3" /> Mark Paid
                               </button>
                               <button
                                 type="button"
                                 onClick={() => {
-                                  rejectWithdrawRequest(req.id, 'এডমিন কর্তৃক বাতিল');
+                                  rejectWithdrawRequest(req.id, 'Declined by administrator');
                                   refreshAllData();
-                                  showToast('উইথড্রল বাতিল করা হয়েছে ও ব্যালেন্স রিফান্ড করা হয়েছে।', 'error');
+                                  showToast('Withdrawal rejected and balance refunded.', 'error');
                                 }}
                                 className="px-2 py-1.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700 font-bold text-[10px] transition-all"
                               >
-                                বাতিল
+                                Reject
                               </button>
                             </>
                           ) : (
@@ -863,28 +863,28 @@ export default function BotControlsPage() {
                                 onClick={() => {
                                   approveDepositRequest(req.id);
                                   refreshAllData();
-                                  showToast(`ডিপোজিট অ্যাপ্রুভ হয়েছে এবং ৳${req.amount} ব্যালেন্স যোগ করা হয়েছে!`, 'success');
+                                  showToast(`Deposit approved and ৳${req.amount} credited!`, 'success');
                                 }}
                                 className="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] flex items-center gap-1 shadow transition-all"
                               >
-                                <Check className="w-3 h-3" /> অ্যাপ্রুভ করুন
+                                <Check className="w-3 h-3" /> Approve
                               </button>
                               <button
                                 type="button"
                                 onClick={() => {
-                                  rejectDepositRequest(req.id, 'ভুল TrxID');
+                                  rejectDepositRequest(req.id, 'Invalid TrxID');
                                   refreshAllData();
-                                  showToast('ডিপোজিট বাতিল করা হয়েছে।', 'error');
+                                  showToast('Deposit rejected.', 'error');
                                 }}
                                 className="px-2 py-1.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700 font-bold text-[10px] transition-all"
                               >
-                                বাতিল
+                                Reject
                               </button>
                             </>
                           )}
                         </div>
                       ) : (
-                        <span className="text-[10px] text-gray-400">নিষ্পন্ন</span>
+                        <span className="text-[10px] text-gray-400">Processed</span>
                       )}
                     </td>
                   </tr>
@@ -904,13 +904,13 @@ export default function BotControlsPage() {
             </div>
             <div>
               <h3 className="text-sm font-black text-gray-900 dark:text-white flex items-center gap-2">
-                বট রুম ম্যানেজার ও অটো ক্রেডেনশিয়াল ডেলিভারি
+                Bot Room Manager & Credential Dispatch
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold border border-emerald-300">
-                  {monitoredMatches.length}টি লাইভ ম্যাচ মনিটর হচ্ছে
+                  {monitoredMatches.length} Matches Monitored
                 </span>
               </h3>
               <p className="text-[11px] text-gray-500">
-                ম্যাচ শুরুর ১৫ মিনিট আগে বট স্বয়ংক্রিয়ভাবে রুম আইডি ও পাসওয়ার্ড তৈরি করে প্লেয়ারদের কাছে ডেলিভারি করে।
+                The bot delivers Custom Room IDs and Passwords to registered players 15 minutes before match start.
               </p>
             </div>
           </div>
@@ -921,11 +921,11 @@ export default function BotControlsPage() {
               onClick={() => {
                 const count = runBotRoomManagerCycle();
                 refreshAllData();
-                showToast(`বট সাইকেল সফলভাবে সম্পন্ন হয়েছে (${count} টি রুমে ডেলিভারি হয়েছে)।`);
+                showToast(`Bot manager cycle executed (${count} rooms delivered).`);
               }}
               className="px-3 py-2 rounded-xl bg-gray-100 dark:bg-white/10 hover:bg-gray-200 text-gray-800 dark:text-white text-xs font-bold flex items-center gap-1.5 transition-all"
             >
-              <RotateCcw className="w-3.5 h-3.5" /> রিফ্রেশ মনিটর
+              <RotateCcw className="w-3.5 h-3.5" /> Refresh Monitor
             </button>
 
             {monitoredMatches.length > 0 && (
@@ -940,11 +940,11 @@ export default function BotControlsPage() {
                     }
                   });
                   refreshAllData();
-                  showToast(`বট সব ${delivered || monitoredMatches.length}টি ম্যাচের রুম আইডি ও পাসওয়ার্ড ডেলিভারি করেছে!`);
+                  showToast(`Bot dispatched credentials for ${delivered || monitoredMatches.length} matches!`);
                 }}
                 className="px-3.5 py-2 rounded-xl btn-red text-xs font-black flex items-center gap-1.5 shadow-md shadow-red-600/20 active:scale-95 transition-all"
               >
-                <Zap className="w-3.5 h-3.5" /> সব রুম এখনই ডেলিভার করুন
+                <Zap className="w-3.5 h-3.5" /> Deliver All Rooms Now
               </button>
             )}
           </div>
@@ -954,10 +954,10 @@ export default function BotControlsPage() {
           <div className="py-12 text-center text-gray-500 space-y-2">
             <Bot className="w-10 h-10 mx-auto text-gray-400 opacity-60" />
             <p className="text-xs font-bold text-gray-700 dark:text-gray-300">
-              বর্তমানে বটের মেমোরিতে কোনো লাইভ ম্যাচ নেই (০ ম্যাচ)।
+              No live matches currently monitored (0 matches).
             </p>
             <p className="text-[11px] text-gray-400">
-              ম্যাচ যুক্ত করলে বা শিডিউল থেকে পাবলিশ হলে তা এখানে স্বয়ংক্রিয়ভাবে প্রদর্শিত হবে।
+              When matches are scheduled or published live, they will appear here automatically.
             </p>
           </div>
         ) : (
@@ -965,12 +965,12 @@ export default function BotControlsPage() {
             <table className="w-full text-xs text-left">
               <thead>
                 <tr className="border-b border-gray-100 dark:border-white/5 text-[10px] text-gray-500 uppercase">
-                  <th className="py-2.5 px-3">ম্যাচের নাম</th>
-                  <th className="py-2.5 px-3">ক্যাটাগরি</th>
-                  <th className="py-2.5 px-3">শিডিউল টাইম</th>
-                  <th className="py-2.5 px-3">স্লট</th>
-                  <th className="py-2.5 px-3">রুম ডেলিভারি স্ট্যাটাস</th>
-                  <th className="py-2.5 px-3 text-right">অ্যাকশন</th>
+                  <th className="py-2.5 px-3">Match Title</th>
+                  <th className="py-2.5 px-3">Category</th>
+                  <th className="py-2.5 px-3">Schedule Time</th>
+                  <th className="py-2.5 px-3">Slots</th>
+                  <th className="py-2.5 px-3">Room Delivery Status</th>
+                  <th className="py-2.5 px-3 text-right">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-white/5">
@@ -994,12 +994,12 @@ export default function BotControlsPage() {
                       {m.roomId ? (
                         <div className="flex items-center gap-1.5">
                           <span className="text-[10px] font-black px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300">
-                            ✅ ডেলিভার্ড: {m.roomId} (Pass: {m.roomPass || '1234'})
+                            ✅ Delivered: {m.roomId} (Pass: {m.roomPass || '1234'})
                           </span>
                         </div>
                       ) : (
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-300">
-                          ⏳ অপেক্ষমাণ (ম্যাচ শুরুর ১৫ মিনিট আগে)
+                          ⏳ Queued (15m before start)
                         </span>
                       )}
                     </td>
@@ -1009,13 +1009,13 @@ export default function BotControlsPage() {
                         onClick={() => {
                           const res = autoDeliverRoomCredentials(m.id);
                           if (res) {
-                            showToast(`"${m.title}" এর জন্য রুম আইডি: ${res.roomId} তৈরি ও ডেলিভারি করা হয়েছে!`);
+                            showToast(`Room ID ${res.roomId} delivered for "${m.title}"!`);
                             refreshAllData();
                           }
                         }}
                         className="px-2.5 py-1 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold text-[10px] transition-colors"
                       >
-                        ⚡ {m.roomId ? 'পুনরায় ডেলিভার' : 'রুম আইডি দিন'}
+                        ⚡ {m.roomId ? 'Re-deliver' : 'Deliver Room ID'}
                       </button>
                     </td>
                   </tr>
@@ -1036,10 +1036,10 @@ export default function BotControlsPage() {
                 <Calendar className="w-5 h-5 text-amber-400" />
                 <div>
                   <h3 className="text-base font-black uppercase">
-                    নতুন ম্যাচ শিডিউল ও সেভ করুন (Save Scheduled Match)
+                    Schedule & Save Match for Bot
                   </h3>
                   <p className="text-[11px] text-gray-200">
-                    বটের মেমোরিতে ম্যাচটি সেভ থাকবে এবং নির্ধারিত সময়ে লাইভ পাবলিশ হবে।
+                    The match will be held in bot memory and automatically published live on schedule.
                   </p>
                 </div>
               </div>
@@ -1056,7 +1056,7 @@ export default function BotControlsPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Title */}
                 <div className="space-y-1">
-                  <label className="font-bold text-gray-700 dark:text-gray-300">ম্যাচের নাম (Title):</label>
+                  <label className="font-bold text-gray-700 dark:text-gray-300">Match Title:</label>
                   <input
                     type="text"
                     required
@@ -1068,7 +1068,7 @@ export default function BotControlsPage() {
 
                 {/* Category */}
                 <div className="space-y-1">
-                  <label className="font-bold text-gray-700 dark:text-gray-300">ক্যাটাগরি:</label>
+                  <label className="font-bold text-gray-700 dark:text-gray-300">Category:</label>
                   <select
                     value={newMatchForm.categorySlug}
                     onChange={(e) => {
@@ -1101,7 +1101,7 @@ export default function BotControlsPage() {
 
                 {/* Type */}
                 <div className="space-y-1">
-                  <label className="font-bold text-gray-700 dark:text-gray-300">ম্যাচ টাইপ:</label>
+                  <label className="font-bold text-gray-700 dark:text-gray-300">Match Mode (Type):</label>
                   <select
                     value={newMatchForm.type}
                     onChange={(e) =>
@@ -1112,15 +1112,15 @@ export default function BotControlsPage() {
                     }
                     className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black font-bold focus:outline-none focus:border-red-500"
                   >
-                    <option value="Squad">Squad (৪ জন)</option>
-                    <option value="Duo">Duo (২ জন)</option>
-                    <option value="Solo">Solo (১ জন)</option>
+                    <option value="Squad">Squad (4 Players)</option>
+                    <option value="Duo">Duo (2 Players)</option>
+                    <option value="Solo">Solo (1 Player)</option>
                   </select>
                 </div>
 
                 {/* Map */}
                 <div className="space-y-1">
-                  <label className="font-bold text-gray-700 dark:text-gray-300">ম্যাপ (Map):</label>
+                  <label className="font-bold text-gray-700 dark:text-gray-300">Map:</label>
                   <select
                     value={newMatchForm.map}
                     onChange={(e) => setNewMatchForm({ ...newMatchForm, map: e.target.value })}
@@ -1137,7 +1137,7 @@ export default function BotControlsPage() {
               {/* Financials Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3 rounded-xl bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-white/10">
                 <div>
-                  <label className="font-bold text-gray-600 dark:text-gray-400 block mb-1">এন্ট্রি ফি (৳):</label>
+                  <label className="font-bold text-gray-600 dark:text-gray-400 block mb-1">Entry Fee (৳):</label>
                   <input
                     type="number"
                     min={0}
@@ -1147,7 +1147,7 @@ export default function BotControlsPage() {
                   />
                 </div>
                 <div>
-                  <label className="font-bold text-gray-600 dark:text-gray-400 block mb-1">মোট প্রাইজপুল (৳):</label>
+                  <label className="font-bold text-gray-600 dark:text-gray-400 block mb-1">Prize Pool (৳):</label>
                   <input
                     type="number"
                     min={0}
@@ -1157,7 +1157,7 @@ export default function BotControlsPage() {
                   />
                 </div>
                 <div>
-                  <label className="font-bold text-gray-600 dark:text-gray-400 block mb-1">১ম প্রাইজ (৳):</label>
+                  <label className="font-bold text-gray-600 dark:text-gray-400 block mb-1">1st Prize (৳):</label>
                   <input
                     type="number"
                     min={0}
@@ -1167,7 +1167,7 @@ export default function BotControlsPage() {
                   />
                 </div>
                 <div>
-                  <label className="font-bold text-gray-600 dark:text-gray-400 block mb-1">প্রতি কিল (৳):</label>
+                  <label className="font-bold text-gray-600 dark:text-gray-400 block mb-1">Per Kill (৳):</label>
                   <input
                     type="number"
                     min={0}
@@ -1184,7 +1184,7 @@ export default function BotControlsPage() {
                 <div className="p-3 rounded-xl border border-blue-500/30 bg-blue-500/5 space-y-1">
                   <label className="font-black text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
                     <Clock className="w-4 h-4" />
-                    <span>পাবলিশ করার তারিখ ও সময় (Auto Publish Time):</span>
+                    <span>Auto Publish Time (Live Date & Time):</span>
                   </label>
                   <input
                     type="datetime-local"
@@ -1194,7 +1194,7 @@ export default function BotControlsPage() {
                     className="w-full px-3 py-2 rounded-xl border border-blue-300 dark:border-blue-800 bg-white dark:bg-black font-mono font-bold focus:outline-none focus:border-blue-500"
                   />
                   <span className="text-[10px] text-gray-500">
-                    এই সময় হওয়ার সাথে সাথে বট স্বয়ংক্রিয়ভাবে টুর্নামেন্ট তালিকায় পাবলিশ করবে।
+                    The bot will publish this tournament to the live registry at this exact timestamp.
                   </span>
                 </div>
 
@@ -1202,25 +1202,25 @@ export default function BotControlsPage() {
                 <div className="p-3 rounded-xl border border-amber-500/30 bg-amber-500/5 space-y-1">
                   <label className="font-black text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
                     <Calendar className="w-4 h-4" />
-                    <span>ম্যাচ খেলার শিডিউল টাইম (Play Time):</span>
+                    <span>Match Play Time (Lobby Start):</span>
                   </label>
                   <input
                     type="text"
                     required
                     value={newMatchForm.matchPlayTime}
                     onChange={(e) => setNewMatchForm({ ...newMatchForm, matchPlayTime: e.target.value })}
-                    placeholder="যেমন: আজ রাত ১০:৩০ PM"
+                    placeholder="e.g. Tonight 10:30 PM"
                     className="w-full px-3 py-2 rounded-xl border border-amber-300 dark:border-amber-800 bg-white dark:bg-black font-bold focus:outline-none focus:border-amber-500"
                   />
                   <span className="text-[10px] text-gray-500">
-                    প্লেয়ারদের কার্ডে এই সময় প্রদর্শিত হবে।
+                    Displayed prominently on player match cards.
                   </span>
                 </div>
               </div>
 
               {/* Total Slots */}
               <div className="space-y-1">
-                <label className="font-bold text-gray-700 dark:text-gray-300">মোট স্লট সংখ্যা (Total Slots):</label>
+                <label className="font-bold text-gray-700 dark:text-gray-300">Total Slots:</label>
                 <input
                   type="number"
                   min={2}
@@ -1233,7 +1233,7 @@ export default function BotControlsPage() {
 
               {/* Rules */}
               <div className="space-y-1">
-                <label className="font-bold text-gray-700 dark:text-gray-300">ম্যাচের নিয়মাবলী (Rules):</label>
+                <label className="font-bold text-gray-700 dark:text-gray-300">Rules & Format Guidelines:</label>
                 <textarea
                   rows={2}
                   value={newMatchForm.rules}
@@ -1249,13 +1249,13 @@ export default function BotControlsPage() {
                   onClick={() => setShowScheduleModal(false)}
                   className="px-4 py-2 rounded-xl text-xs font-bold bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-300 hover:bg-gray-200"
                 >
-                  বাতিল
+                  Cancel
                 </button>
                 <button
                   type="submit"
                   className="px-5 py-2 rounded-xl btn-red text-xs font-black flex items-center gap-1.5 shadow-md shadow-red-600/30"
                 >
-                  <Check className="w-3.5 h-3.5" /> বটের কাছে সেভ করুন
+                  <Check className="w-3.5 h-3.5" /> Save in Bot Queue
                 </button>
               </div>
             </form>

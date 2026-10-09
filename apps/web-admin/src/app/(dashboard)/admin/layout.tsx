@@ -84,7 +84,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       setIsAuthenticated(true);
       setErrorMsg(null);
     } else {
-      setErrorMsg('ভুল সিক্রেট পিন! শুধুমাত্র সাইট ওনার প্রবেশ করতে পারবে।');
+      setErrorMsg('Invalid secret PIN! Only site owners can access.');
       setPinInput('');
     }
   };
@@ -119,10 +119,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <ShieldCheck className="w-3.5 h-3.5" /> Owner Secret Portal
               </span>
               <h2 className="text-xl font-black text-gray-900 dark:text-white mt-2">
-                মাস্টার অ্যাডমিন ভেরিফিকেশন
+                Master Admin Verification
               </h2>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                এই অংশটি সাধারণ ব্যবহারকারীদের জন্য সম্পূর্ণরূপে অদৃশ্য। শুধুমাত্র ওনার পিন প্রবেশ করিয়ে আনলক করুন।
+                Restricted area. Please enter your secret owner PIN to unlock dashboard access.
               </p>
             </div>
           </div>
@@ -130,12 +130,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
-                <Key className="w-3.5 h-3.5 text-amber-500" /> ওনার সিক্রেট পিন (Owner PIN):
+                <Key className="w-3.5 h-3.5 text-amber-500" /> Owner Secret PIN:
               </label>
               <div className="relative">
                 <input
                   type={showPin ? 'text' : 'password'}
-                  placeholder="সিক্রেট পিন টাইপ করুন (ডিফল্ট: 7860)"
+                  placeholder="Enter secret PIN (Default: 7860)"
                   value={pinInput}
                   onChange={(e) => {
                     setPinInput(e.target.value);
@@ -166,7 +166,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               type="submit"
               className="w-full py-3.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-red-600/30 transition-all flex items-center justify-center gap-2"
             >
-              <Lock className="w-4 h-4" /> ড্যাশবোর্ডে প্রবেশ করুন
+              <Lock className="w-4 h-4" /> Enter Dashboard
             </button>
 
             {/* 1-Click Fast Unlock for Owner */}
@@ -179,22 +179,22 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               }}
               className="w-full py-2.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 font-black text-xs border border-amber-500/30 flex items-center justify-center gap-1.5 transition-all"
             >
-              <ShieldCheck className="w-4 h-4" /> ওনার ১-ক্লিক আনলক (Instant Unlock)
+              <ShieldCheck className="w-4 h-4" /> 1-Click Instant Unlock
             </button>
 
             {/* Owner Official Credentials */}
             <div className="pt-3 border-t border-gray-200 dark:border-white/10 space-y-2">
               <span className="text-[10px] font-black uppercase tracking-wider text-amber-500 block text-center">
-                👑 ওনার আইডি ও পাসওয়ার্ড তালিকা
+                👑 Owner Credentials List
               </span>
               <div className="grid grid-cols-2 gap-1.5 text-[10px]">
                 {[
-                  { name: 'ওনার ১', phone: '01700000001', pass: 'admin@owner1' },
-                  { name: 'ওনার ২', phone: '01700000002', pass: 'admin@owner2' },
-                  { name: 'ওনার ৩', phone: '01700000003', pass: 'admin@owner3' },
-                  { name: 'ওনার ৪', phone: '01700000004', pass: 'admin@owner4' },
-                  { name: 'ওনার ৫', phone: '01700000005', pass: 'admin@owner5' },
-                  { name: 'মাস্টার ওনার', phone: '01700000000', pass: 'admin123' },
+                  { name: 'Owner 1', phone: '01700000001', pass: 'admin@owner1' },
+                  { name: 'Owner 2', phone: '01700000002', pass: 'admin@owner2' },
+                  { name: 'Owner 3', phone: '01700000003', pass: 'admin@owner3' },
+                  { name: 'Owner 4', phone: '01700000004', pass: 'admin@owner4' },
+                  { name: 'Owner 5', phone: '01700000005', pass: 'admin@owner5' },
+                  { name: 'Master Owner', phone: '01700000000', pass: 'admin123' },
                 ].map((o) => (
                   <div
                     key={o.phone}
@@ -220,7 +220,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 href="/"
                 className="text-xs text-gray-500 hover:text-red-600 transition-colors inline-flex items-center gap-1"
               >
-                <ArrowLeft className="w-3.5 h-3.5" /> মূল ওয়েবসাইটে ফিরে যান
+                <ArrowLeft className="w-3.5 h-3.5" /> Return to Website
               </Link>
             </div>
           </form>
@@ -231,17 +231,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   // Navigation Links for Authenticated Owner
   const links = [
-    { label: '📊 মাস্টার ড্যাশবোর্ড', href: '/admin', icon: LayoutDashboard },
-    { label: '🎮 ম্যাচ ম্যানেজমেন্ট', href: '/admin/tournaments', icon: Trophy },
-    { label: '🏆 OCR ম্যাচ পে-আউট', href: '/admin/match-results', icon: Scan },
-    { label: '🎧 সাপোর্ট ডেস্ক', href: '/admin/support', icon: LifeBuoy, badge: openTicketsCount },
-    { label: '📁 ক্যাটাগরি ও ইমেজ', href: '/admin/categories', icon: FolderEdit },
-    { label: '👥 ইউজার ও ব্যালেন্স', href: '/admin/users', icon: Users },
-    { label: '💳 ফাইনান্স ও লেজার', href: '/admin/finance', icon: CreditCard },
-    { label: '📜 রুলস ও নোটিশ', href: '/admin/rules', icon: FileText },
-    { label: '🛡️ অ্যান্টি-চিট ডেস্ক', href: '/admin/anti-cheat', icon: ShieldAlert },
-    { label: '🤖 বট লাইভ মনিটর', href: '/admin/live-spectator', icon: Video },
-    { label: '⚙️ বট কন্ট্রোলস', href: '/admin/bot-controls', icon: Bot },
+    { label: '📊 Dashboard', href: '/admin', icon: LayoutDashboard },
+    { label: '🎮 Match Management', href: '/admin/tournaments', icon: Trophy },
+    { label: '🏆 Match OCR Payout', href: '/admin/match-results', icon: Scan },
+    { label: '🎧 Support Desk', href: '/admin/support', icon: LifeBuoy, badge: openTicketsCount },
+    { label: '📁 Categories & Images', href: '/admin/categories', icon: FolderEdit },
+    { label: '👥 Users & Balances', href: '/admin/users', icon: Users },
+    { label: '💳 Finance & Ledger', href: '/admin/finance', icon: CreditCard },
+    { label: '📜 Rules & Notices', href: '/admin/rules', icon: FileText },
+    { label: '🛡️ Anti-Cheat Desk', href: '/admin/anti-cheat', icon: ShieldAlert },
+    { label: '🤖 Bot Live Monitor', href: '/admin/live-spectator', icon: Video },
+    { label: '⚙️ Bot Controls', href: '/admin/bot-controls', icon: Bot },
   ];
 
   return (
@@ -255,14 +255,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-base font-black text-gray-900 dark:text-white">
-                মাস্টার কন্ট্রোল প্যানেল
+                Master Control Panel
               </h2>
               <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-black border border-emerald-500/20">
-                ওনার আনলকড
+                Owner Unlocked
               </span>
             </div>
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              শুধুমাত্র আপনি এই গোপন কন্ট্রোল প্যানেলটি দেখতে ও পরিচালনা করতে পারবেন।
+              Administrative control and platform tournament management.
             </p>
           </div>
         </div>
@@ -272,18 +272,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             href="/"
             className="px-3.5 py-2 rounded-xl text-xs font-bold text-gray-600 dark:text-gray-300 hover:text-red-600 hover:bg-gray-100 dark:hover:bg-white/5 transition-all flex items-center gap-1.5 border border-gray-200 dark:border-white/10"
           >
-            <ArrowLeft className="w-3.5 h-3.5" /> ওয়েবসাইটে যান
+            <ArrowLeft className="w-3.5 h-3.5" /> View Website
           </Link>
           <button
             onClick={handleLockAdmin}
             className="px-4 py-2 rounded-xl bg-red-600/10 hover:bg-red-600 text-red-600 hover:text-white text-xs font-black transition-all flex items-center gap-1.5 border border-red-600/20"
           >
-            <LogOut className="w-3.5 h-3.5" /> লক করুন
+            <LogOut className="w-3.5 h-3.5" /> Lock Session
           </button>
         </div>
       </div>
 
-      {/* Mobile Horizontal Quick Nav (Visible only on mobile/tablet) */}
+      {/* Mobile Horizontal Quick Nav */}
       <div className="lg:hidden mb-6 -mx-4 px-4 overflow-x-auto pb-2 scrollbar-none">
         <div className="flex items-center gap-2 min-w-max">
           {links.map((item) => {
@@ -313,11 +313,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Desktop Sidebar (Hidden on mobile) */}
+        {/* Desktop Sidebar */}
         <aside className="hidden lg:block lg:col-span-3 space-y-6">
           <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#12121a] p-5 space-y-4 shadow-sm sticky top-24">
             <div className="text-[11px] font-bold text-gray-400 uppercase tracking-wider px-2">
-              কন্ট্রোল সেকশনসমূহ
+              Admin Navigation
             </div>
 
             <nav className="space-y-1.5">
