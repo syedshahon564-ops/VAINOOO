@@ -56,6 +56,8 @@ import ImageUploadInput from '@/components/ImageUploadInput';
 import LiveMatchCountdown, { formatMatchSchedule } from '@/components/LiveMatchCountdown';
 import DepositWithdrawModal from '@/components/DepositWithdrawModal';
 import SupportTicketModal from '@/components/SupportTicketModal';
+import SupportChatScreen from '@/components/SupportChatScreen';
+import { SupportTicket } from '@/lib/support-store';
 import { useLanguage } from '@/components/LanguageProvider';
 import {
   getCurrentUser,
@@ -297,6 +299,8 @@ export default function MobileAppViewPage(props: any) {
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
   const [showPushBanner, setShowPushBanner] = useState(false);
   const [showSupportModal, setShowSupportModal] = useState(false);
+  const [activeChatTicket, setActiveChatTicket] = useState<SupportTicket | null>(null);
+  const [edgeTouchStart, setEdgeTouchStart] = useState<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && 'Notification' in window) {
@@ -319,13 +323,89 @@ export default function MobileAppViewPage(props: any) {
     }
   };
 
+  // In-app History and Slide-Back Manager
+  const pushHistory = (screenName: string) => {
+    if (typeof window !== 'undefined') {
+      window.history.pushState({ screen: screenName, time: Date.now() }, '');
+    }
+  };
+
+  const handleInAppBack = () => {
+    if (activeChatTicket) {
+      setActiveChatTicket(null);
+      return true;
+    }
+    if (showSupportModal) {
+      setShowSupportModal(false);
+      return true;
+    }
+    if (roomDetailsMatch) {
+      setRoomDetailsMatch(null);
+      return true;
+    }
+    if (bookingModalMatch) {
+      setBookingModalMatch(null);
+      return true;
+    }
+    if (showFinanceModal) {
+      setShowFinanceModal(false);
+      return true;
+    }
+    if (showAuthModal) {
+      setShowAuthModal(false);
+      return true;
+    }
+    if (selectedCategory) {
+      setSelectedCategory(null);
+      return true;
+    }
+    if (showNotifDropdown) {
+      setShowNotifDropdown(false);
+      return true;
+    }
+    if (activeTab !== 'home') {
+      setActiveTab('home');
+      return true;
+    }
+    return false;
+  };
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const onPopState = (e: PopStateEvent) => {
+      // Smoothly navigate back inside app instead of closing/exiting the whole app
+      handleInAppBack();
+    };
+
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, [
+    activeChatTicket,
+    showSupportModal,
+    roomDetailsMatch,
+    bookingModalMatch,
+    showFinanceModal,
+    showAuthModal,
+    selectedCategory,
+    showNotifDropdown,
+    activeTab,
+  ]);
+
   // Translation helper for the phone side
   const tPhone = (bn: string, en: string) => (phoneLang === 'en' ? en : bn);
 
-  const togglePhoneLang = () => {
-    const next = phoneLang === 'bn' ? 'en' : 'bn';
+  const setLanguageTo = (next: 'bn' | 'en') => {
     setPhoneLang(next);
     setGlobalLang(next);
+    try {
+      localStorage.setItem('ff_lang', next);
+    } catch {}
+  };
+
+  const togglePhoneLang = () => {
+    const next = phoneLang === 'bn' ? 'en' : 'bn';
+    setLanguageTo(next);
   };
 
   const handleAuthSubmit = async (e: React.FormEvent) => {
@@ -820,6 +900,22 @@ export default function MobileAppViewPage(props: any) {
 
               {/* Inside Screen Content */}
               <div
+                onTouchStart={(e) => {
+                  const t = e.touches[0];
+                  if (t.clientX < 45) {
+                    setEdgeTouchStart({ x: t.clientX, y: t.clientY });
+                  }
+                }}
+                onTouchEnd={(e) => {
+                  if (!edgeTouchStart) return;
+                  const t = e.changedTouches[0];
+                  const deltaX = t.clientX - edgeTouchStart.x;
+                  const deltaY = Math.abs(t.clientY - edgeTouchStart.y);
+                  if (deltaX > 65 && deltaX > deltaY) {
+                    handleInAppBack();
+                  }
+                  setEdgeTouchStart(null);
+                }}
                 className={`relative w-full ${
                   isMobileView ? 'min-h-screen rounded-none' : 'h-full rounded-[40px]'
                 } overflow-hidden flex flex-col font-sans bg-white text-gray-900`}
@@ -884,12 +980,30 @@ export default function MobileAppViewPage(props: any) {
 
                       <div className="flex items-center gap-2">
                         {/* In-app Language Switcher */}
-                        <button
-                          onClick={togglePhoneLang}
-                          className="px-2.5 py-1 rounded-full text-[10px] font-black border border-gray-300 bg-gray-100 text-gray-800 hover:bg-gray-200"
-                        >
-                          {phoneLang === 'bn' ? 'বাং' : 'EN'}
-                        </button>
+                        <div className="flex items-center rounded-full bg-slate-100 p-0.5 border border-slate-300 text-[9px] font-black shadow-inner">
+                          <button
+                            type="button"
+                            onClick={() => setLanguageTo('en')}
+                            className={`px-2 py-0.5 rounded-full transition-all ${
+                              phoneLang === 'en'
+                                ? 'bg-red-600 text-white shadow-xs font-black'
+                                : 'text-slate-600 hover:text-slate-900 font-bold'
+                            }`}
+                          >
+                            EN
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setLanguageTo('bn')}
+                            className={`px-2 py-0.5 rounded-full transition-all ${
+                              phoneLang === 'bn'
+                                ? 'bg-red-600 text-white shadow-xs font-black'
+                                : 'text-slate-600 hover:text-slate-900 font-bold'
+                            }`}
+                          >
+                            বাংলা
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ) : (
@@ -916,17 +1030,30 @@ export default function MobileAppViewPage(props: any) {
                             <span>👑 ওনার প্যানেল</span>
                           </Link>
                         )}
-                        <button
-                          onClick={togglePhoneLang}
-                          className={`px-2 py-1 rounded-full text-[9px] font-black border transition-all flex items-center gap-1 shadow-sm ${
-                            phoneTheme === 'dark'
-                              ? 'bg-white/10 hover:bg-white/20 text-white border-white/15'
-                              : 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-200'
-                          }`}
-                        >
-                          <Globe className="w-2.5 h-2.5 text-amber-400" />
-                          <span>{phoneLang === 'bn' ? 'বাং' : 'EN'}</span>
-                        </button>
+                        <div className="flex items-center rounded-full bg-slate-100 p-0.5 border border-slate-300 text-[9px] font-black shadow-inner">
+                          <button
+                            type="button"
+                            onClick={() => setLanguageTo('en')}
+                            className={`px-2 py-0.5 rounded-full transition-all ${
+                              phoneLang === 'en'
+                                ? 'bg-red-600 text-white shadow-xs font-black'
+                                : 'text-slate-600 hover:text-slate-900 font-bold'
+                            }`}
+                          >
+                            EN
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setLanguageTo('bn')}
+                            className={`px-2 py-0.5 rounded-full transition-all ${
+                              phoneLang === 'bn'
+                                ? 'bg-red-600 text-white shadow-xs font-black'
+                                : 'text-slate-600 hover:text-slate-900 font-bold'
+                            }`}
+                          >
+                            বাংলা
+                          </button>
+                        </div>
 
                         <button
                           onClick={() => setActiveTab('wallet')}
@@ -955,7 +1082,10 @@ export default function MobileAppViewPage(props: any) {
                         </button>
 
                         <button
-                          onClick={() => setShowSupportModal(true)}
+                          onClick={() => {
+                            setShowSupportModal(true);
+                            pushHistory('support-modal');
+                          }}
                           title="লাইভ সাপোর্ট হেল্প ডেস্ক"
                           className={`p-1.5 rounded-full relative transition-all ${
                             phoneTheme === 'dark'
@@ -2348,7 +2478,10 @@ export default function MobileAppViewPage(props: any) {
                           <div className="pt-2 space-y-2">
                             <button
                               type="button"
-                              onClick={() => setShowSupportModal(true)}
+                              onClick={() => {
+                                setShowSupportModal(true);
+                                pushHistory('support-modal');
+                              }}
                               className="w-full py-2.5 rounded-xl border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 text-xs font-black transition-all flex items-center justify-center gap-2"
                             >
                               <LifeBuoy className="w-3.5 h-3.5 text-blue-500" />
@@ -2774,7 +2907,24 @@ export default function MobileAppViewPage(props: any) {
       <SupportTicketModal
         isOpen={showSupportModal}
         onClose={() => setShowSupportModal(false)}
+        lang={phoneLang}
+        onOpenChat={(tkt) => {
+          setActiveChatTicket(tkt);
+          pushHistory('support-chat');
+        }}
       />
+
+      {/* Dedicated Fresh Full-Screen Support Chat Screen */}
+      {activeChatTicket && (
+        <SupportChatScreen
+          ticket={activeChatTicket}
+          onBack={() => {
+            setActiveChatTicket(null);
+          }}
+          lang={phoneLang}
+          onUpdateTicket={(updated) => setActiveChatTicket(updated)}
+        />
+      )}
     </div>
   );
 }

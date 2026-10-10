@@ -28,41 +28,43 @@ import {
 interface SupportTicketModalProps {
   isOpen: boolean;
   onClose: () => void;
+  lang?: 'bn' | 'en';
+  onOpenChat?: (ticket: SupportTicket) => void;
 }
 
-export default function SupportTicketModal({ isOpen, onClose }: SupportTicketModalProps) {
+export default function SupportTicketModal({
+  isOpen,
+  onClose,
+  lang = 'bn',
+  onOpenChat,
+}: SupportTicketModalProps) {
   const currentUser = getCurrentUser();
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
-  const [activeTab, setActiveTab] = useState<'LIST' | 'CREATE' | 'DETAIL'>('LIST');
-  const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
+  const [activeTab, setActiveTab] = useState<'LIST' | 'CREATE'>('LIST');
 
   // New Ticket Form State
   const [subject, setSubject] = useState('');
   const [category, setCategory] = useState<'PAYMENT' | 'MATCH' | 'ACCOUNT' | 'OTHER'>('PAYMENT');
   const [message, setMessage] = useState('');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [replyText, setReplyText] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [alertMsg, setAlertMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  const t = (bn: string, en: string) => (lang === 'en' ? en : bn);
 
   const refreshUserTickets = () => {
     if (!currentUser) return;
     const list = getUserTickets(currentUser.id, currentUser.phone);
     setTickets(list);
-    if (selectedTicket) {
-      const refreshed = list.find((t) => t.id === selectedTicket.id);
-      if (refreshed) setSelectedTicket(refreshed);
-    }
-    syncSupportTicketsFromServer(currentUser.id, currentUser.phone).then((serverList) => {
-      const filtered = serverList.filter(
-        (t) => t.userId === currentUser.id || (currentUser.phone && t.userPhone === currentUser.phone)
-      );
-      setTickets(filtered);
-      if (selectedTicket) {
-        const found = filtered.find((t) => t.id === selectedTicket.id);
-        if (found) setSelectedTicket(found);
-      }
-    }).catch(() => {});
+
+    syncSupportTicketsFromServer(currentUser.id, currentUser.phone)
+      .then((serverList) => {
+        const filtered = serverList.filter(
+          (t) => t.userId === currentUser.id || (currentUser.phone && t.userPhone === currentUser.phone)
+        );
+        setTickets(filtered);
+      })
+      .catch(() => {});
   };
 
   useEffect(() => {
@@ -96,7 +98,10 @@ export default function SupportTicketModal({ isOpen, onClose }: SupportTicketMod
   const handleCreateTicket = (e: React.FormEvent) => {
     e.preventDefault();
     if (!subject.trim() || !message.trim()) {
-      setAlertMsg({ type: 'error', text: 'Please fill in both the Subject and Description.' });
+      setAlertMsg({
+        type: 'error',
+        text: t('অনুগ্রহ করে বিষয় এবং বিস্তারিত বিবরণ দিন।', 'Please fill in both the Subject and Description.'),
+      });
       return;
     }
 
@@ -121,50 +126,42 @@ export default function SupportTicketModal({ isOpen, onClose }: SupportTicketMod
     setSubject('');
     setMessage('');
     setImagePreview(null);
-    setSelectedTicket(newTicket);
-    setActiveTab('DETAIL');
     refreshUserTickets();
-    setAlertMsg({ type: 'success', text: 'Ticket submitted! AI Support Bot will respond immediately.' });
+
+    // Immediately transition to the dedicated, full-screen Support Chat Screen!
+    if (onOpenChat) {
+      onClose();
+      onOpenChat(newTicket);
+    }
   };
 
-  const handleSendReply = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!replyText.trim() || !selectedTicket) return;
-
-    const userIgn = currentUser?.ign || currentUser?.phone || 'Player';
-    const updated = addTicketReply(selectedTicket.id, {
-      senderRole: 'USER',
-      senderName: userIgn,
-      message: replyText.trim(),
-    });
-
-    if (updated) {
-      setReplyText('');
-      setSelectedTicket(updated);
-      refreshUserTickets();
+  const handleSelectTicket = (tkt: SupportTicket) => {
+    if (onOpenChat) {
+      onClose();
+      onOpenChat(tkt);
     }
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
-      <div className="relative w-full max-w-lg rounded-3xl bg-white dark:bg-[#12121a] border border-gray-200 dark:border-white/10 shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+      <div className="relative w-full max-w-lg rounded-3xl bg-white border border-gray-200 shadow-2xl overflow-hidden flex flex-col max-h-[85vh] text-gray-900">
         {/* Modal Header */}
-        <div className="p-5 bg-gradient-to-r from-red-800 via-red-600 to-black text-white relative flex items-center justify-between">
+        <div className="p-4 bg-gradient-to-r from-red-700 via-red-600 to-black text-white relative flex items-center justify-between shadow-md">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-black/40 border border-white/20 flex items-center justify-center text-amber-400">
+            <div className="w-10 h-10 rounded-2xl bg-black/40 border border-white/20 flex items-center justify-center text-amber-400 shadow-inner">
               <LifeBuoy className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-base font-black uppercase tracking-wide">
-                  Help Desk & Support
+                <h3 className="text-sm font-black uppercase tracking-wide">
+                  {t('হেল্প ডেস্ক ও লাইভ সাপোর্ট', 'Help Desk & Live Support')}
                 </h3>
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-400/20 text-emerald-300 text-[10px] font-black border border-emerald-400/30">
-                  <Bot className="w-3 h-3" /> AI Support
+                  <Bot className="w-3 h-3" /> AI Active
                 </span>
               </div>
               <p className="text-[11px] text-gray-200">
-                Instant AI automated assistance for deposits, room IDs, and tournament issues.
+                {t('ডিপোজিট, রুম পাসওয়ার্ড ও টুর্নামেন্ট সমস্যা তৎক্ষণাৎ সমাধান করুন।', 'Instant automated assistance for deposits, room IDs, and inquiries.')}
               </p>
             </div>
           </div>
@@ -178,7 +175,7 @@ export default function SupportTicketModal({ isOpen, onClose }: SupportTicketMod
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex border-b border-gray-100 dark:border-white/5 bg-gray-50 dark:bg-black/30 text-xs font-bold px-4 pt-2">
+        <div className="flex border-b border-gray-200 bg-gray-50 text-xs font-bold px-4 pt-2">
           <button
             onClick={() => {
               setActiveTab('LIST');
@@ -186,11 +183,11 @@ export default function SupportTicketModal({ isOpen, onClose }: SupportTicketMod
             }}
             className={`pb-2.5 px-3 border-b-2 transition-all ${
               activeTab === 'LIST'
-                ? 'border-red-600 text-red-600 dark:text-red-400 font-black'
-                : 'border-transparent text-gray-500 hover:text-gray-900 dark:hover:text-white'
+                ? 'border-red-600 text-red-600 font-black'
+                : 'border-transparent text-gray-500 hover:text-gray-900'
             }`}
           >
-            My Tickets ({tickets.length})
+            {t(`আমার টিকিটসমূহ (${tickets.length})`, `My Tickets (${tickets.length})`)}
           </button>
           <button
             onClick={() => {
@@ -199,22 +196,22 @@ export default function SupportTicketModal({ isOpen, onClose }: SupportTicketMod
             }}
             className={`pb-2.5 px-3 border-b-2 transition-all flex items-center gap-1 ${
               activeTab === 'CREATE'
-                ? 'border-red-600 text-red-600 dark:text-red-400 font-black'
-                : 'border-transparent text-gray-500 hover:text-gray-900 dark:hover:text-white'
+                ? 'border-red-600 text-red-600 font-black'
+                : 'border-transparent text-gray-500 hover:text-gray-900'
             }`}
           >
-            <Plus className="w-3.5 h-3.5" /> Open New Ticket
+            <Plus className="w-3.5 h-3.5" /> {t('নতুন টিকিট খুলুন', 'Open New Ticket')}
           </button>
         </div>
 
         {/* Content Body */}
-        <div className="p-5 flex-1 overflow-y-auto space-y-4">
+        <div className="p-4 flex-1 overflow-y-auto space-y-4">
           {alertMsg && (
             <div
               className={`p-3 rounded-xl border text-xs font-bold flex items-center gap-2 ${
                 alertMsg.type === 'success'
-                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600'
-                  : 'bg-red-500/10 border-red-500/30 text-red-600'
+                  ? 'bg-emerald-50 border-emerald-300 text-emerald-700'
+                  : 'bg-red-50 border-red-300 text-red-700'
               }`}
             >
               {alertMsg.type === 'success' ? (
@@ -228,61 +225,63 @@ export default function SupportTicketModal({ isOpen, onClose }: SupportTicketMod
 
           {/* TAB 1: TICKET LIST */}
           {activeTab === 'LIST' && (
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               {tickets.length === 0 ? (
                 <div className="py-12 text-center text-gray-500 space-y-3">
                   <MessageSquare className="w-10 h-10 mx-auto text-gray-400 opacity-60" />
-                  <p className="text-xs font-bold text-gray-700 dark:text-gray-300">
-                    You have no active support tickets.
+                  <p className="text-xs font-bold text-gray-700">
+                    {t('কোনো সক্রিয় সাপোর্ট টিকিট নেই।', 'You have no active support tickets.')}
                   </p>
                   <button
                     onClick={() => setActiveTab('CREATE')}
-                    className="px-4 py-2 rounded-xl btn-red text-xs font-black inline-flex items-center gap-1.5"
+                    className="px-4 py-2 rounded-xl bg-red-600 text-white text-xs font-black inline-flex items-center gap-1.5 shadow-md shadow-red-600/30 active:scale-95 transition-all"
                   >
-                    <Plus className="w-3.5 h-3.5" /> Open New Ticket
+                    <Plus className="w-3.5 h-3.5" /> {t('নতুন টিকিট খুলুন', 'Open New Ticket')}
                   </button>
                 </div>
               ) : (
-                tickets.map((t) => (
+                tickets.map((tkt) => (
                   <div
-                    key={t.id}
-                    onClick={() => {
-                      setSelectedTicket(t);
-                      setActiveTab('DETAIL');
-                    }}
-                    className="p-3.5 rounded-2xl border border-gray-200 dark:border-white/10 hover:border-red-500/50 bg-gray-50/50 dark:bg-black/20 cursor-pointer transition-all flex items-center justify-between"
+                    key={tkt.id}
+                    onClick={() => handleSelectTicket(tkt)}
+                    className="p-3.5 rounded-2xl border border-gray-200 hover:border-red-500 bg-gray-50/70 hover:bg-red-50/20 cursor-pointer transition-all flex items-center justify-between shadow-xs"
                   >
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <span className="font-mono text-[10px] text-gray-400 font-bold">
-                          #{t.id}
+                        <span className="font-mono text-[10px] text-gray-500 font-bold">
+                          #{tkt.id}
                         </span>
                         <span
                           className={`text-[9px] font-black px-2 py-0.5 rounded-full ${
-                            t.status === 'OPEN'
-                              ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300'
-                              : t.status === 'IN_PROGRESS'
-                              ? 'bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300'
-                              : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
+                            tkt.status === 'OPEN'
+                              ? 'bg-rose-100 text-rose-700'
+                              : tkt.status === 'IN_PROGRESS'
+                              ? 'bg-blue-100 text-blue-700'
+                              : 'bg-emerald-100 text-emerald-700'
                           }`}
                         >
-                          {t.status === 'OPEN'
-                            ? 'Submitted'
-                            : t.status === 'IN_PROGRESS'
-                            ? 'In Progress'
-                            : 'Resolved'}
+                          {tkt.status === 'OPEN'
+                            ? t('খোলা আছে', 'Submitted')
+                            : tkt.status === 'IN_PROGRESS'
+                            ? t('চলমান', 'In Progress')
+                            : t('সমাধান হয়েছে', 'Resolved')}
                         </span>
+                        {tkt.paymentVerified && (
+                          <span className="inline-flex items-center gap-0.5 text-[9px] font-black px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800">
+                            ✓ {t('পেমেন্ট অ্যাপ্রুভড', 'Payment Verified')}
+                          </span>
+                        )}
                       </div>
-                      <h4 className="text-xs font-black text-gray-900 dark:text-white">
-                        {t.subject}
+                      <h4 className="text-xs font-black text-gray-900 line-clamp-1">
+                        {tkt.subject}
                       </h4>
-                      <p className="text-[10px] text-gray-400">
-                        {new Date(t.updatedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} •{' '}
-                        {t.messages.length} message(s)
+                      <p className="text-[10px] text-gray-500">
+                        {new Date(tkt.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} •{' '}
+                        {tkt.messages.length} {t('টি মেসেজ (চ্যাট করতে ট্যাপ করুন)', 'messages (tap to open chat)')}
                       </p>
                     </div>
 
-                    <ChevronRight className="w-4 h-4 text-gray-400" />
+                    <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
                   </div>
                 ))
               )}
@@ -292,32 +291,36 @@ export default function SupportTicketModal({ isOpen, onClose }: SupportTicketMod
           {/* TAB 2: CREATE NEW TICKET */}
           {activeTab === 'CREATE' && (
             <form onSubmit={handleCreateTicket} className="space-y-3.5 text-xs">
-              <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-xs flex items-center gap-2">
-                <Bot className="w-4 h-4 flex-shrink-0" />
+              <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2">
+                <Bot className="w-4 h-4 text-emerald-600 flex-shrink-0" />
                 <span>
-                  <strong>AI Support Enabled:</strong> Our bot immediately provides helpful instructions for deposits, room pass, and match questions!
+                  <strong>{t('AI সাপোর্ট অ্যাক্টিভ:', 'AI Support Enabled:')}</strong>{' '}
+                  {t(
+                    'টিকিট খোলার সাথে সাথেই আপনাকে আলাদা ফ্রেশ চ্যাট পেজে নিয়ে যাওয়া হবে এবং AI তৎক্ষণাৎ উত্তর দিবে।',
+                    'Upon ticket creation, you will be taken to a dedicated chat page where our AI bot assists you instantly.'
+                  )}
                 </span>
               </div>
 
               <div>
-                <label className="font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                  Select Category:
+                <label className="font-bold text-gray-700 block mb-1">
+                  {t('ক্যাটাগরি সিলেক্ট করুন:', 'Select Category:')}
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   {[
-                    { id: 'PAYMENT', label: '💳 Payment / Deposit' },
-                    { id: 'MATCH', label: '🎮 Match / Room ID' },
-                    { id: 'ACCOUNT', label: '👤 Account & Profile' },
-                    { id: 'OTHER', label: '❓ Other Issues' },
+                    { id: 'PAYMENT', label: t('💳 পেমেন্ট / ডিপোজিট', '💳 Payment / Deposit') },
+                    { id: 'MATCH', label: t('🎮 রুম আইডি ও পাস', '🎮 Match / Room ID') },
+                    { id: 'ACCOUNT', label: t('👤 অ্যাকাউন্ট ও প্রোফাইল', '👤 Account & Profile') },
+                    { id: 'OTHER', label: t('❓ অন্যান্য জিজ্ঞাসা', '❓ Other Issues') },
                   ].map((cat) => (
                     <button
                       key={cat.id}
                       type="button"
                       onClick={() => setCategory(cat.id as any)}
-                      className={`p-2 rounded-xl border text-left font-bold transition-all ${
+                      className={`p-2 rounded-xl border text-left font-bold transition-all text-xs ${
                         category === cat.id
-                          ? 'border-red-600 bg-red-50 text-red-600 dark:bg-red-950/20'
-                          : 'border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-400'
+                          ? 'border-red-600 bg-red-50 text-red-600 shadow-xs'
+                          : 'border-gray-200 text-gray-600 hover:border-gray-300'
                       }`}
                     >
                       {cat.label}
@@ -327,42 +330,42 @@ export default function SupportTicketModal({ isOpen, onClose }: SupportTicketMod
               </div>
 
               <div>
-                <label className="font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                  Subject:
+                <label className="font-bold text-gray-700 block mb-1">
+                  {t('বিষয় (Subject):', 'Subject:')}
                 </label>
                 <input
                   type="text"
                   required
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
-                  placeholder="e.g. bKash deposit not added yet (TrxID: ...)"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black font-bold focus:outline-none focus:border-red-500"
+                  placeholder={t('যেমন: বিকাশ ৫০০ টাকা ডিপোজিট করেছি আসেনি (TrxID: ...)', 'e.g. bKash deposit not added yet (TrxID: ...)')}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 bg-white font-medium focus:outline-none focus:border-red-500 text-gray-900"
                 />
               </div>
 
               <div>
-                <label className="font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                  Description:
+                <label className="font-bold text-gray-700 block mb-1">
+                  {t('বিস্তারিত বিবরণ:', 'Description:')}
                 </label>
                 <textarea
                   rows={3}
                   required
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Describe your issue with details (e.g. TrxID, match title, or phone)..."
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black font-medium focus:outline-none focus:border-red-500 leading-relaxed"
+                  placeholder={t('আপনার সমস্যাটি বিস্তারিত লিখুন (যেমন: TrxID, কোন ম্যাচ, বা নম্বর)...', 'Describe your issue in detail (e.g. TrxID, match title, or phone)...')}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 bg-white font-medium focus:outline-none focus:border-red-500 text-gray-900 leading-relaxed"
                 />
               </div>
 
               {/* Screenshot Upload */}
               <div>
-                <label className="font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                  Attach Screenshot (Optional):
+                <label className="font-bold text-gray-700 block mb-1">
+                  {t('স্ক্রিনশট অ্যাটাচ করুন (ঐচ্ছিক):', 'Attach Screenshot (Optional):')}
                 </label>
                 <div className="flex items-center gap-3">
-                  <label className="px-3 py-2 rounded-xl border border-dashed border-gray-300 dark:border-white/20 hover:border-red-500 bg-gray-50 dark:bg-white/5 cursor-pointer font-bold flex items-center gap-1.5 text-gray-600 dark:text-gray-300">
+                  <label className="px-3 py-2 rounded-xl border border-dashed border-gray-300 hover:border-red-500 bg-gray-50 cursor-pointer font-bold flex items-center gap-1.5 text-gray-600">
                     <Upload className="w-3.5 h-3.5 text-red-500" />
-                    <span>Upload Image</span>
+                    <span>{t('ইমেজ সিলেক্ট করুন', 'Upload Image')}</span>
                     <input
                       type="file"
                       accept="image/*"
@@ -371,18 +374,18 @@ export default function SupportTicketModal({ isOpen, onClose }: SupportTicketMod
                     />
                   </label>
                   {imagePreview && (
-                    <span className="text-[10px] text-emerald-500 font-bold">
-                      ✓ Screenshot attached
+                    <span className="text-[10px] text-emerald-600 font-bold">
+                      ✓ {t('স্ক্রিনশট যোগ করা হয়েছে', 'Screenshot attached')}
                     </span>
                   )}
                 </div>
                 {imagePreview && (
-                  <div className="mt-2 relative w-24 h-24 rounded-xl overflow-hidden border">
+                  <div className="mt-2 relative w-20 h-20 rounded-xl overflow-hidden border border-gray-300 shadow-sm">
                     <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
                     <button
                       type="button"
                       onClick={() => setImagePreview(null)}
-                      className="absolute top-1 right-1 p-1 bg-black/60 rounded-full text-white text-[10px]"
+                      className="absolute top-1 right-1 p-0.5 bg-black/60 rounded-full text-white text-[10px]"
                     >
                       ✕
                     </button>
@@ -393,124 +396,16 @@ export default function SupportTicketModal({ isOpen, onClose }: SupportTicketMod
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full py-3 rounded-xl btn-red font-black text-xs uppercase tracking-wider shadow-lg shadow-red-600/30 flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full py-3 rounded-xl bg-red-600 hover:bg-red-700 font-black text-xs uppercase tracking-wider text-white shadow-lg shadow-red-600/30 flex items-center justify-center gap-2 disabled:opacity-50 active:scale-95 transition-all"
               >
                 <Send className="w-4 h-4" />
-                <span>{submitting ? 'Submitting...' : 'Submit Support Ticket'}</span>
+                <span>
+                  {submitting
+                    ? t('সাবমিট হচ্ছে...', 'Submitting...')
+                    : t('টিকিট খুলুন এবং লাইভ চ্যাট শুরু করুন', 'Open Ticket & Start Live Chat')}
+                </span>
               </button>
             </form>
-          )}
-
-          {/* TAB 3: TICKET DETAIL & CHAT */}
-          {activeTab === 'DETAIL' && selectedTicket && (
-            <div className="space-y-4">
-              <div className="p-3.5 rounded-2xl bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-white/10 space-y-1">
-                <div className="flex items-center justify-between">
-                  <span className="font-mono text-[10px] font-bold text-red-600">
-                    #{selectedTicket.id}
-                  </span>
-                  <span
-                    className={`text-[9px] font-black px-2 py-0.5 rounded-full ${
-                      selectedTicket.status === 'OPEN'
-                        ? 'bg-rose-100 text-rose-700'
-                        : selectedTicket.status === 'IN_PROGRESS'
-                        ? 'bg-blue-100 text-blue-700'
-                        : 'bg-emerald-100 text-emerald-700'
-                    }`}
-                  >
-                    {selectedTicket.status === 'OPEN'
-                      ? 'Open'
-                      : selectedTicket.status === 'IN_PROGRESS'
-                      ? 'In Progress'
-                      : 'Resolved'}
-                  </span>
-                </div>
-                <h4 className="text-xs font-black text-gray-900 dark:text-white">
-                  {selectedTicket.subject}
-                </h4>
-
-                {selectedTicket.paymentVerified && (
-                  <div className="mt-2 p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-1.5">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-                      <div>
-                        <p className="font-bold text-emerald-700 dark:text-emerald-400 text-[11px]">
-                          Payment Auto-Verified by AI ✅
-                        </p>
-                        <p className="text-[10px] font-mono text-gray-500">
-                          TrxID: {selectedTicket.verifiedTrxId || 'APPROVED'}
-                        </p>
-                      </div>
-                    </div>
-                    <span className="px-2 py-0.5 rounded bg-emerald-600 text-white font-black text-[10px] font-mono">
-                      +৳{selectedTicket.verifiedAmount || 100} Credited
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              {/* Messages Thread */}
-              <div className="space-y-2.5 max-h-56 overflow-y-auto pr-1">
-                {selectedTicket.messages.map((m) => {
-                  const isUser = m.senderRole === 'USER';
-                  const isAi = m.senderRole === 'AI_BOT' || m.senderName.toLowerCase().includes('ai support');
-                  return (
-                    <div
-                      key={m.id}
-                      className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}
-                    >
-                      <div className="flex items-center gap-1.5 text-[9px] text-gray-400 mb-0.5 px-1">
-                        {isAi ? (
-                          <span className="inline-flex items-center gap-1 font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded text-[9px]">
-                            <Bot className="w-2.5 h-2.5" /> AI Support
-                          </span>
-                        ) : (
-                          <span className="font-bold">{m.senderName}</span>
-                        )}
-                        <span>•</span>
-                        <span className="font-mono">{new Date(m.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
-                      </div>
-                      <div
-                        className={`max-w-[85%] p-3 rounded-2xl text-xs space-y-1.5 ${
-                          isUser
-                            ? 'bg-red-600 text-white rounded-br-xs'
-                            : isAi
-                            ? 'bg-emerald-950/10 dark:bg-emerald-950/30 border border-emerald-500/30 text-gray-900 dark:text-gray-100 rounded-bl-xs'
-                            : 'bg-gray-100 dark:bg-white/10 text-gray-900 dark:text-gray-100 rounded-bl-xs'
-                        }`}
-                      >
-                        <p className="leading-relaxed whitespace-pre-wrap">{m.message}</p>
-                        {m.imageUrl && (
-                          <img
-                            src={m.imageUrl}
-                            alt="Attachment"
-                            className="max-h-32 rounded-xl object-contain border border-black/20"
-                          />
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Reply Form */}
-              <form onSubmit={handleSendReply} className="flex gap-2 pt-2 border-t border-gray-100 dark:border-white/5">
-                <input
-                  type="text"
-                  required
-                  value={replyText}
-                  onChange={(e) => setReplyText(e.target.value)}
-                  placeholder="Ask a question or type message to support..."
-                  className="flex-1 px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black text-xs font-medium focus:outline-none focus:border-red-500"
-                />
-                <button
-                  type="submit"
-                  className="px-3.5 py-2 rounded-xl btn-red text-xs font-black flex items-center gap-1 shadow-md shadow-red-600/30"
-                >
-                  <Send className="w-3.5 h-3.5" />
-                </button>
-              </form>
-            </div>
           )}
         </div>
       </div>

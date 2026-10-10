@@ -254,113 +254,115 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   ];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Top Owner Bar */}
-      <div className="mb-6 p-4 rounded-2xl bg-white dark:bg-[#12121a] border border-gray-200 dark:border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-red-600 flex items-center justify-center text-white shadow-md shadow-red-600/30">
-            <Flame className="w-5 h-5 fill-white" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-base font-black text-gray-900 dark:text-white">
-                Master Control Panel
-              </h2>
-              <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-black border border-emerald-500/20">
-                Owner Unlocked
-              </span>
+    <div className="min-h-screen bg-[#f8fafc] text-gray-900">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Top Owner Bar */}
+        <div className="mb-6 p-4 rounded-2xl bg-white border border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-red-600 flex items-center justify-center text-white shadow-md shadow-red-600/30">
+              <Flame className="w-5 h-5 fill-white" />
             </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              Administrative control and platform tournament management.
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <Link
-            href="/"
-            className="px-3.5 py-2 rounded-xl text-xs font-bold text-gray-600 dark:text-gray-300 hover:text-red-600 hover:bg-gray-100 dark:hover:bg-white/5 transition-all flex items-center gap-1.5 border border-gray-200 dark:border-white/10"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" /> View Website
-          </Link>
-          <button
-            onClick={handleLockAdmin}
-            className="px-4 py-2 rounded-xl bg-red-600/10 hover:bg-red-600 text-red-600 hover:text-white text-xs font-black transition-all flex items-center gap-1.5 border border-red-600/20"
-          >
-            <LogOut className="w-3.5 h-3.5" /> Lock Session
-          </button>
-        </div>
-      </div>
-
-      {/* Mobile Horizontal Quick Nav */}
-      <div className="lg:hidden mb-6 -mx-4 px-4 overflow-x-auto pb-2 scrollbar-none">
-        <div className="flex items-center gap-2 min-w-max">
-          {links.map((item) => {
-            const Icon = item.icon;
-            const isActive = pathname === item.href;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-black whitespace-nowrap transition-all border ${
-                  isActive
-                    ? 'bg-red-600 text-white border-red-600 shadow-md shadow-red-600/30'
-                    : 'bg-white dark:bg-[#12121a] text-gray-700 dark:text-gray-300 border-gray-200 dark:border-white/10 hover:border-red-500'
-                }`}
-              >
-                <Icon className="w-4 h-4 flex-shrink-0" />
-                <span>{item.label}</span>
-                {item.badge && item.badge > 0 ? (
-                  <span className="w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center animate-pulse">
-                    {item.badge}
-                  </span>
-                ) : null}
-              </Link>
-            );
-          })}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Desktop Sidebar */}
-        <aside className="hidden lg:block lg:col-span-3 space-y-6">
-          <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#12121a] p-5 space-y-4 shadow-sm sticky top-24">
-            <div className="text-[11px] font-bold text-gray-400 uppercase tracking-wider px-2">
-              Admin Navigation
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-base font-black text-gray-900">
+                  Master Control Panel
+                </h2>
+                <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-black border border-emerald-200">
+                  Owner Unlocked
+                </span>
+              </div>
+              <p className="text-xs text-gray-500">
+                Administrative control and platform tournament management.
+              </p>
             </div>
-
-            <nav className="space-y-1.5">
-              {links.map((item) => {
-                const Icon = item.icon;
-                const isActive = pathname === item.href;
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                      isActive
-                        ? 'bg-red-600 text-white shadow-md shadow-red-600/30'
-                        : 'text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <Icon className="w-4 h-4 flex-shrink-0" />
-                      <span>{item.label}</span>
-                    </div>
-                    {item.badge && item.badge > 0 ? (
-                      <span className="w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center animate-pulse">
-                        {item.badge}
-                      </span>
-                    ) : null}
-                  </Link>
-                );
-              })}
-            </nav>
           </div>
-        </aside>
 
-        {/* Main Admin Content Area */}
-        <main className="lg:col-span-9">{children}</main>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/"
+              className="px-3.5 py-2 rounded-xl text-xs font-bold text-gray-700 hover:text-red-600 hover:bg-gray-100 transition-all flex items-center gap-1.5 border border-gray-200 bg-white"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" /> View Website
+            </Link>
+            <button
+              onClick={handleLockAdmin}
+              className="px-4 py-2 rounded-xl bg-red-50 hover:bg-red-600 text-red-600 hover:text-white text-xs font-black transition-all flex items-center gap-1.5 border border-red-200"
+            >
+              <LogOut className="w-3.5 h-3.5" /> Lock Session
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Horizontal Quick Nav (Crisp White Theme) */}
+        <div className="lg:hidden mb-6 -mx-4 px-4 overflow-x-auto pb-2 scrollbar-none">
+          <div className="flex items-center gap-2 min-w-max">
+            {links.map((item) => {
+              const Icon = item.icon;
+              const isActive = pathname === item.href;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-black whitespace-nowrap transition-all border shadow-xs ${
+                    isActive
+                      ? 'bg-red-600 text-white border-red-600 shadow-md shadow-red-600/30'
+                      : 'bg-white text-gray-800 border-gray-200 hover:border-red-400 hover:bg-gray-50'
+                  }`}
+                >
+                  <Icon className="w-4 h-4 flex-shrink-0" />
+                  <span>{item.label}</span>
+                  {item.badge && item.badge > 0 ? (
+                    <span className="w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center animate-pulse">
+                      {item.badge}
+                    </span>
+                  ) : null}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* Desktop Sidebar */}
+          <aside className="hidden lg:block lg:col-span-3 space-y-6">
+            <div className="rounded-2xl border border-gray-200 bg-white p-5 space-y-4 shadow-sm sticky top-24">
+              <div className="text-[11px] font-bold text-gray-400 uppercase tracking-wider px-2">
+                Admin Navigation
+              </div>
+
+              <nav className="space-y-1.5">
+                {links.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = pathname === item.href;
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={`flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                        isActive
+                          ? 'bg-red-600 text-white shadow-md shadow-red-600/30'
+                          : 'text-gray-700 hover:text-red-600 hover:bg-gray-50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Icon className="w-4 h-4 flex-shrink-0" />
+                        <span>{item.label}</span>
+                      </div>
+                      {item.badge && item.badge > 0 ? (
+                        <span className="w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center animate-pulse">
+                          {item.badge}
+                        </span>
+                      ) : null}
+                    </Link>
+                  );
+                })}
+              </nav>
+            </div>
+          </aside>
+
+          {/* Main Admin Content Area */}
+          <main className="lg:col-span-9">{children}</main>
+        </div>
       </div>
     </div>
   );
