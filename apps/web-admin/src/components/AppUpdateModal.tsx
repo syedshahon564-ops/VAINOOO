@@ -47,13 +47,13 @@ export default function AppUpdateModal({ forceOpen = false }: AppUpdateModalProp
     setDownloadProgress(20);
 
     try {
-      // Direct download trigger
-      const a = document.createElement('a');
-      a.href = '/downloads/ffrivals.apk';
-      a.download = 'ffrivals.apk';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      // Trigger direct download with attachment header
+      window.location.href = '/api/download';
+      try {
+        if (typeof window !== 'undefined' && (window as any)?.Capacitor?.Plugins?.App) {
+          window.open('/api/download', '_system');
+        }
+      } catch {}
 
       const int = setInterval(() => {
         setDownloadProgress((prev) => {
@@ -70,7 +70,7 @@ export default function AppUpdateModal({ forceOpen = false }: AppUpdateModalProp
         setDownloadSuccess(true);
       }, 1800);
     } catch {
-      window.location.href = '/downloads/ffrivals.apk';
+      window.location.href = '/api/download';
       setDownloading(false);
       setDownloadSuccess(true);
     }
@@ -200,7 +200,9 @@ export default function AppUpdateModal({ forceOpen = false }: AppUpdateModalProp
               </button>
 
               <button
-                onClick={handleUpdateNow}
+                onClick={() => {
+                  window.location.href = '/api/download';
+                }}
                 className="w-full py-2 rounded-xl text-gray-400 hover:text-white text-[11px] font-semibold flex items-center justify-center gap-1 transition-colors"
               >
                 <RefreshCw className="w-3 h-3" />
@@ -210,12 +212,21 @@ export default function AppUpdateModal({ forceOpen = false }: AppUpdateModalProp
           )}
 
           <a
-            href="/downloads/ffrivals.apk"
+            href="/api/download"
             download="ffrivals.apk"
-            className="block text-[11px] text-gray-400 hover:text-amber-400 transition-colors underline pt-1"
+            className="block text-[11px] text-amber-400 hover:text-amber-300 font-bold underline pt-1"
           >
-            সরাসরি ডাউনলোড লিঙ্ক (Direct APK Link)
+            📥 সরাসরি APK ডাউনলোড লিঙ্ক (Direct APK Link - 20 MB)
           </a>
+
+          {/* Skip / Continue button so users are never stuck */}
+          <button
+            type="button"
+            onClick={handleInstalledContinue}
+            className="w-full py-2 text-[11px] text-gray-400 hover:text-gray-200 transition-colors cursor-pointer"
+          >
+            পরে আপডেট করব / সরাসরি অ্যাপে প্রবেশ করুন (Skip)
+          </button>
         </div>
       </div>
     </div>

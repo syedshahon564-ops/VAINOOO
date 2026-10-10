@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import {
   Smartphone,
@@ -384,8 +384,9 @@ export default function MobileAppViewPage(props: any) {
   };
 
   const handleInAppBack = (): boolean => {
-    // If mandatory update modal is active, do not allow closing without update
+    // If update modal is open, allow closing it so user is never trapped
     if (showUpdateModal) {
+      setShowUpdateModal(false);
       return true;
     }
     // 1. Modals & sub-screens (close top-most first)
@@ -471,18 +472,26 @@ export default function MobileAppViewPage(props: any) {
     return false;
   };
 
+  const handleInAppBackRef = useRef(handleInAppBack);
+  useEffect(() => {
+    handleInAppBackRef.current = handleInAppBack;
+  });
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    // Seed history state so that side-swiping / back button does not exit the app
-    window.history.pushState({ screen: 'home', depth: 1 }, '');
+    // Seed history state once on mount so side-swiping / back button does not exit the app
+    try {
+      window.history.pushState({ appTrap: true }, '');
+    } catch {}
 
     const onPopState = (e: PopStateEvent) => {
-      e.preventDefault();
-      const handled = handleInAppBack();
+      const handled = handleInAppBackRef.current();
       if (handled) {
         // We moved back 1 step inside the app! Keep history trap alive
-        window.history.pushState({ screen: 'in_app', time: Date.now() }, '');
+        try {
+          window.history.pushState({ appTrap: true }, '');
+        } catch {}
       } else {
         // At root Home screen with nothing to back
         const now = Date.now();
@@ -494,12 +503,34 @@ export default function MobileAppViewPage(props: any) {
         } else {
           (window as any).__lastBackPressTime = now;
           showPhoneToast(tPhone('অ্যাপ থেকে বের হতে আবার ব্যাক চাপুন', 'Press back again to exit'));
-          window.history.pushState({ screen: 'home_root', time: Date.now() }, '');
+          try {
+            window.history.pushState({ appTrap: true }, '');
+          } catch {}
         }
       }
     };
 
     window.addEventListener('popstate', onPopState);
+
+    // Global listener for Android MainActivity.java to invoke directly via evaluateJavascript
+    (window as any).__handleAndroidBack = () => {
+      const handled = handleInAppBackRef.current();
+      if (!handled) {
+        const now = Date.now();
+        const lastPress = (window as any).__lastBackPressTime || 0;
+        if (now - lastPress < 2000) {
+          if ((window as any)?.Capacitor?.Plugins?.App?.exitApp) {
+            (window as any).Capacitor.Plugins.App.exitApp();
+          }
+          return false;
+        } else {
+          (window as any).__lastBackPressTime = now;
+          showPhoneToast(tPhone('অ্যাপ থেকে বের হতে আবার ব্যাক চাপুন', 'Press back again to exit'));
+          return true;
+        }
+      }
+      return true;
+    };
 
     // Native Capacitor back button listener for Android APK
     let capListenerHandle: any = null;
@@ -507,17 +538,7 @@ export default function MobileAppViewPage(props: any) {
       const capApp = (window as any)?.Capacitor?.Plugins?.App;
       if (capApp && capApp.addListener) {
         capListenerHandle = capApp.addListener('backButton', () => {
-          const handled = handleInAppBack();
-          if (!handled) {
-            const now = Date.now();
-            const lastPress = (window as any).__lastBackPressTime || 0;
-            if (now - lastPress < 2000) {
-              capApp.exitApp();
-            } else {
-              (window as any).__lastBackPressTime = now;
-              showPhoneToast(tPhone('অ্যাপ থেকে বের হতে আবার ব্যাক চাপুন', 'Press back again to exit'));
-            }
-          }
+          (window as any).__handleAndroidBack?.();
         });
       }
     } catch {}
@@ -528,27 +549,7 @@ export default function MobileAppViewPage(props: any) {
         capListenerHandle.remove();
       }
     };
-  }, [
-    activeChatTicket,
-    showSupportModal,
-    showFinanceModal,
-    roomDetailsMatch,
-    bookingModalMatch,
-    totalPrizeMatch,
-    selectedPlayerForDetails,
-    matchDetailsScreen,
-    showEditInfoModal,
-    showChangePasswordModal,
-    showRulesModal,
-    showDevInfoModal,
-    showAuthModal,
-    showOverlayModal,
-    selectedCategory,
-    showNotifDropdown,
-    activeTab,
-    tabHistory,
-    showUpdateModal,
-  ]);
+  }, []);
 
   // Translation helper for the phone side
   const tPhone = (bn: string, en: string) => (phoneLang === 'en' ? en : bn);
@@ -3380,12 +3381,13 @@ export default function MobileAppViewPage(props: any) {
                     setUpdateDownloading(true);
                     setUpdateProgress(20);
                     try {
-                      const a = document.createElement('a');
-                      a.href = '/downloads/ffrivals.apk';
-                      a.download = 'ffrivals.apk';
-                      document.body.appendChild(a);
-                      a.click();
-                      document.body.removeChild(a);
+                      // Trigger direct download via API endpoint with attachment header
+                      window.location.href = '/api/download';
+                      try {
+                        if ((window as any)?.Capacitor?.Plugins?.App) {
+                          window.open('/api/download', '_system');
+                        }
+                      } catch {}
 
                       const int = setInterval(() => {
                         setUpdateProgress((prev) => {
@@ -3402,7 +3404,7 @@ export default function MobileAppViewPage(props: any) {
                         setUpdateSuccess(true);
                       }, 1800);
                     } catch {
-                      window.location.href = '/downloads/ffrivals.apk';
+                      window.location.href = '/api/download';
                       setUpdateDownloading(false);
                       setUpdateSuccess(true);
                     }
@@ -3434,12 +3436,7 @@ export default function MobileAppViewPage(props: any) {
                   <button
                     type="button"
                     onClick={() => {
-                      const a = document.createElement('a');
-                      a.href = '/downloads/ffrivals.apk';
-                      a.download = 'ffrivals.apk';
-                      document.body.appendChild(a);
-                      a.click();
-                      document.body.removeChild(a);
+                      window.location.href = '/api/download';
                     }}
                     className="w-full py-2 rounded-xl text-gray-400 hover:text-white text-[11px] font-semibold flex items-center justify-center gap-1 transition-colors"
                   >
@@ -3449,13 +3446,28 @@ export default function MobileAppViewPage(props: any) {
                 </div>
               )}
 
+              {/* Direct APK Link */}
               <a
-                href="/downloads/ffrivals.apk"
+                href="/api/download"
                 download="ffrivals.apk"
-                className="block text-[11px] text-gray-400 hover:text-amber-400 transition-colors underline pt-1"
+                className="block text-[11px] text-amber-400 hover:text-amber-300 font-bold underline pt-1"
               >
-                সরাসরি ডাউনলোড লিঙ্ক (Direct APK Link)
+                📥 সরাসরি APK ডাউনলোড করুন (Direct Link - 20 MB)
               </a>
+
+              {/* Skip / Continue button so player is never locked out */}
+              <button
+                type="button"
+                onClick={() => {
+                  try {
+                    localStorage.setItem('ff_app_installed_version_v350', 'v3.5.0');
+                  } catch {}
+                  setShowUpdateModal(false);
+                }}
+                className="w-full py-2 text-[11px] text-gray-400 hover:text-gray-200 transition-colors cursor-pointer"
+              >
+                পরে আপডেট করব / সরাসরি অ্যাপে প্রবেশ করুন (Skip)
+              </button>
             </div>
           </div>
         </div>
