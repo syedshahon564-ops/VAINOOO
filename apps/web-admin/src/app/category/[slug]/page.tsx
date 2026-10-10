@@ -30,6 +30,13 @@ import TotalPrizeDetailsModal from '@/components/TotalPrizeDetailsModal';
 import MatchDetailsPage from '@/components/MatchDetailsPage';
 import LiveMatchCountdown, { formatMatchSchedule, parseScheduleTimeToDate } from '@/components/LiveMatchCountdown';
 import { addUserBooking } from '@/lib/match-scheduler';
+import {
+  getCurrentUser,
+  hasUserJoinedMatch,
+  recordUserJoinedMatch,
+  deductBalance,
+  UserAccount,
+} from '@/lib/user-store';
 
 export default function CategoryDetailPage() {
   const params = useParams();
@@ -119,6 +126,26 @@ export default function CategoryDetailPage() {
     players?: Array<{ ign: string; uid: string; slotInTeam: number }>;
   }) => {
     if (bookingMatch) {
+      const cur = getCurrentUser();
+      if (cur) {
+        deductBalance(
+          cur.id,
+          bookingMatch.entryFee,
+          `ম্যাচ স্লট বুকিং: ${bookingMatch.title}`,
+          'match_join'
+        );
+        recordUserJoinedMatch(bookingMatch.id, cur, {
+          ign: slotInfo.ign,
+          uid: slotInfo.uid,
+          slot: slotInfo.slotNumber,
+        });
+      } else {
+        recordUserJoinedMatch(bookingMatch.id, null, {
+          ign: slotInfo.ign,
+          uid: slotInfo.uid,
+          slot: slotInfo.slotNumber,
+        });
+      }
       // Deduct entry fee
       setUserBalance((prev) => Math.max(0, prev - bookingMatch.entryFee));
 
@@ -563,13 +590,32 @@ export default function CategoryDetailPage() {
                           </div>
                         </div>
 
-                        {/* Join Button (Image 1 Style) */}
-                        <button
-                          onClick={() => setBookingMatch(m)}
-                          className="px-6 py-1.5 rounded-lg border border-blue-600 dark:border-blue-500 text-blue-600 dark:text-blue-400 font-bold text-xs hover:bg-blue-600 hover:text-white transition-all shadow-sm flex-shrink-0"
-                        >
-                          Join
-                        </button>
+                        {/* Join / Joined Button */}
+                        {hasUserJoinedMatch(m.id, getCurrentUser()) ||
+                        (bookedParticipants[m.id] && bookedParticipants[m.id].length > 0) ||
+                        (getCurrentUser() &&
+                          (m.participants || []).some(
+                            (p) =>
+                              (getCurrentUser()?.ign &&
+                                p.ign &&
+                                p.ign.toLowerCase() === getCurrentUser()?.ign.toLowerCase()) ||
+                              (getCurrentUser()?.uid && p.uid && p.uid === getCurrentUser()?.uid)
+                          )) ? (
+                          <button
+                            disabled
+                            className="px-5 py-1.5 rounded-lg bg-emerald-600 text-white font-bold text-xs shadow-sm flex-shrink-0 cursor-not-allowed flex items-center gap-1 opacity-95"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                            {lang === 'bn' ? 'জয়েন করা হয়েছে' : 'JOINED'}
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => setBookingMatch(m)}
+                            className="px-6 py-1.5 rounded-lg border border-blue-600 dark:border-blue-500 text-blue-600 dark:text-blue-400 font-bold text-xs hover:bg-blue-600 hover:text-white transition-all shadow-sm flex-shrink-0"
+                          >
+                            Join
+                          </button>
+                        )}
                       </div>
 
                       {/* 4. Dual Action Buttons: Room Rules and Total Prize Details */}

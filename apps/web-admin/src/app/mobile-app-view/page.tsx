@@ -24,6 +24,7 @@ import {
   Crosshair,
   TrendingUp,
   Eye,
+  EyeOff,
   Check,
   X,
   Volume2,
@@ -76,6 +77,8 @@ import {
   addBalance,
   deductBalance,
   getTransactions,
+  hasUserJoinedMatch,
+  recordUserJoinedMatch,
   UserAccount,
 } from '@/lib/user-store';
 import {
@@ -211,9 +214,11 @@ export default function MobileAppViewPage(props: any) {
 
   // Auth modal state
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showOverlayModal, setShowOverlayModal] = useState(false);
   const [authMode, setAuthMode] = useState<'LOGIN' | 'REGISTER'>('LOGIN');
   const [authPhone, setAuthPhone] = useState('');
   const [authPassword, setAuthPassword] = useState('');
+  const [showAuthPassword, setShowAuthPassword] = useState(false);
   const [authIgn, setAuthIgn] = useState('');
   const [authUid, setAuthUid] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
@@ -611,8 +616,20 @@ export default function MobileAppViewPage(props: any) {
         deductBalance(
           current.id,
           bookingModalMatch.entryFee,
-          `ম্যাচ স্লট বুকিং: ${bookingModalMatch.title}`
+          `ম্যাচ স্লট বুকিং: ${bookingModalMatch.title}`,
+          'match_join'
         );
+        recordUserJoinedMatch(bookingModalMatch.id, current, {
+          ign: slotInfo.ign,
+          uid: slotInfo.uid,
+          slot: slotInfo.slotNumber,
+        });
+      } else {
+        recordUserJoinedMatch(bookingModalMatch.id, null, {
+          ign: slotInfo.ign,
+          uid: slotInfo.uid,
+          slot: slotInfo.slotNumber,
+        });
       }
       setUserBalance((prev) => Math.max(0, prev - bookingModalMatch.entryFee));
 
@@ -1223,16 +1240,22 @@ export default function MobileAppViewPage(props: any) {
                         <Bell className="w-3.5 h-3.5 animate-bounce" />
                       </div>
                       <div>
-                        <p className="text-[10px] font-black text-amber-300">🔔 নোটিফিকেশন এলাও করুন</p>
-                        <p className="text-[8px] text-gray-300">রুম আইডি ও পাসওয়ার্ড ডেলিভারি পাওয়ার সাথে সাথে অ্যালার্ট পান</p>
+                        <p className="text-[10px] font-black text-amber-300">🔔 নোটিফিকেশন ও ওভারলে পারমিশন</p>
+                        <p className="text-[8px] text-gray-300">রুম আইডি ও পাসওয়ার্ড গেমের ওপরে পেতে অন করুন</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
                       <button
                         onClick={handleEnablePushNotification}
-                        className="px-2.5 py-1 rounded-lg bg-red-600 hover:bg-red-500 text-white text-[9px] font-black shadow transition-all active:scale-95"
+                        className="px-2 py-1 rounded-lg bg-red-600 hover:bg-red-500 text-white text-[9px] font-black shadow transition-all active:scale-95"
                       >
                         অন করুন
+                      </button>
+                      <button
+                        onClick={() => setShowOverlayModal(true)}
+                        className="px-2 py-1 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-[9px] font-black shadow transition-all active:scale-95"
+                      >
+                        ওভারলে গাইড
                       </button>
                       <button
                         onClick={() => setShowPushBanner(false)}
@@ -1511,19 +1534,36 @@ export default function MobileAppViewPage(props: any) {
                                       </div>
                                     </div>
 
-                                    {/* Join Button */}
-                                    <button
-                                      onClick={() => {
-                                        if (!currentUser) {
-                                          setShowAuthModal(true);
-                                          return;
-                                        }
-                                        setBookingModalMatch(m);
-                                      }}
-                                      className="px-6 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs shadow-md active:scale-95 transition-all flex-shrink-0"
-                                    >
-                                      Join
-                                    </button>
+                                    {/* Join / Joined Button */}
+                                    {hasUserJoinedMatch(m.id, currentUser) ||
+                                    bookedMatchesList.some((bm) => bm.matchId === m.id || bm.title === m.title) ||
+                                    (currentUser &&
+                                      (m.participants || []).some(
+                                        (p) =>
+                                          (currentUser.ign && p.ign && p.ign.toLowerCase() === currentUser.ign.toLowerCase()) ||
+                                          (currentUser.uid && p.uid && p.uid === currentUser.uid)
+                                      )) ? (
+                                      <button
+                                        disabled
+                                        className="px-5 py-2 rounded-xl bg-emerald-600 text-white font-black text-xs shadow-md opacity-95 cursor-not-allowed flex items-center gap-1.5 flex-shrink-0"
+                                      >
+                                        <Check className="w-3.5 h-3.5" />
+                                        {tPhone('জয়েন করা হয়েছে', 'JOINED')}
+                                      </button>
+                                    ) : (
+                                      <button
+                                        onClick={() => {
+                                          if (!currentUser) {
+                                            setShowAuthModal(true);
+                                            return;
+                                          }
+                                          setBookingModalMatch(m);
+                                        }}
+                                        className="px-6 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs shadow-md active:scale-95 transition-all flex-shrink-0"
+                                      >
+                                        Join
+                                      </button>
+                                    )}
                                   </div>
 
                                   {/* 4. Dual Action Buttons: Room Rules and Total Prize Details */}
@@ -2213,7 +2253,15 @@ export default function MobileAppViewPage(props: any) {
                                       tx.type === 'CREDIT' ? 'text-emerald-600' : 'text-red-600'
                                     }`}
                                   >
-                                    {tx.type === 'CREDIT' ? '+ টাকা যোগ (ডিপোজিট)' : '- টাকা উত্তোলন (উইথড্র)'}
+                                    {tx.type === 'CREDIT'
+                                      ? '+ টাকা যোগ (ডিপোজিট)'
+                                      : (tx as any).category === 'match_join' ||
+                                        tx.reason?.toLowerCase().includes('match') ||
+                                        tx.reason?.toLowerCase().includes('ম্যাচ') ||
+                                        tx.reason?.toLowerCase().includes('slot') ||
+                                        tx.reason?.toLowerCase().includes('entry')
+                                      ? '- ম্যাচ জয়েন ফি (Match Join)'
+                                      : '- টাকা উত্তোলন (উইথড্র)'}
                                   </span>
                                   <span className="text-[9px] text-gray-500">{tx.reason}</span>
                                 </div>
@@ -2870,13 +2918,20 @@ export default function MobileAppViewPage(props: any) {
                 <div className="relative">
                   <Lock className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
-                    type="password"
+                    type={showAuthPassword ? 'text' : 'password'}
                     required
                     placeholder="••••••••"
                     value={authPassword}
                     onChange={(e) => setAuthPassword(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 rounded-xl bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-white/10 text-xs text-gray-900 dark:text-white focus:outline-none focus:border-red-500"
+                    className="w-full pl-9 pr-9 py-2 rounded-xl bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-white/10 text-xs text-gray-900 dark:text-white focus:outline-none focus:border-red-500"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowAuthPassword((prev) => !prev)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+                  >
+                    {showAuthPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
               </div>
 
@@ -3180,6 +3235,76 @@ export default function MobileAppViewPage(props: any) {
             >
               👑 Open Master Admin Panel
             </Link>
+          </div>
+        </div>
+      )}
+      {/* 12. OVERLAY & NOTIFICATION SETTINGS GUIDE MODAL */}
+      {showOverlayModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-fadeIn">
+          <div className="w-full max-w-sm rounded-3xl bg-white border border-slate-200 p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-red-100 text-red-600 flex items-center justify-center">
+                  <Bell className="w-4 h-4" />
+                </div>
+                <h3 className="text-sm font-black text-slate-900">
+                  {tPhone('নোটিফিকেশন ও ওভারলে সেটিংস গাইড', 'Notification & Overlay Guide')}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowOverlayModal(false)}
+                className="w-7 h-7 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center text-xs"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs text-slate-700 leading-relaxed">
+              <div className="p-3 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 space-y-1">
+                <p className="font-bold">📱 গেম খেলা অবস্থায় রুম আইডি পেতে:</p>
+                <p className="text-[11px]">
+                  ফ্রি ফায়ার গেম চলা অবস্থাতেও রুম আইডি ও পাসওয়ার্ড ভেসে উঠতে &apos;Display over other apps&apos; (ওভারলে) পারমিশন অন রাখুন।
+                </p>
+              </div>
+
+              <div className="space-y-2 text-[11px]">
+                <div className="flex items-start gap-2">
+                  <span className="w-5 h-5 rounded-full bg-red-600 text-white flex items-center justify-center font-bold text-[10px] flex-shrink-0">
+                    ১
+                  </span>
+                  <span>ফোনের <b>Settings ➔ Apps</b> এ গিয়ে <b>Murubbi X</b> বা <b>FF Rival BD</b> সিলেক্ট করুন।</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="w-5 h-5 rounded-full bg-red-600 text-white flex items-center justify-center font-bold text-[10px] flex-shrink-0">
+                    ২
+                  </span>
+                  <span><b>Notifications</b> এলাউ (Allow) করে দিন।</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="w-5 h-5 rounded-full bg-red-600 text-white flex items-center justify-center font-bold text-[10px] flex-shrink-0">
+                    ৩
+                  </span>
+                  <span><b>Display over other apps</b> বা <b>Appear on top</b> অপশনটি অন (ON) করুন।</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  handleEnablePushNotification();
+                  try {
+                    window.location.href = 'intent:#Intent;action=android.settings.action.MANAGE_OVERLAY_PERMISSION;package=com.murubbix.tournament;end';
+                  } catch (e) {}
+                  setShowOverlayModal(false);
+                }}
+                className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-black text-xs shadow-md shadow-red-600/30 flex items-center justify-center gap-1.5"
+              >
+                <span>⚙️ সেটিংস খুলুন ও নোটিফিকেশন অন করুন</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

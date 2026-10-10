@@ -678,15 +678,15 @@ export function generateRandomRoomPass(): string {
  * Automatically generates & delivers Room ID and Password for a match,
  * updates CMS data, notifies mobile users, and updates player bookings.
  */
-export function autoDeliverRoomCredentials(matchId: string): { roomId: string; roomPass: string } | null {
+export function autoDeliverRoomCredentials(matchId: string, customRoomId?: string, customRoomPass?: string): { roomId: string; roomPass: string } | null {
   if (typeof window === 'undefined') return null;
   const cmsData = getCMSData();
   const matchIndex = cmsData.matches.findIndex((m) => m.id === matchId);
   if (matchIndex === -1) return null;
 
   const match = cmsData.matches[matchIndex];
-  const roomId = match.roomId || generateRandomRoomId();
-  const roomPass = match.roomPass || generateRandomRoomPass();
+  const roomId = customRoomId?.trim() || match.roomId || generateRandomRoomId();
+  const roomPass = customRoomPass?.trim() || match.roomPass || generateRandomRoomPass();
 
   // 1. Update Match in CMS store
   cmsData.matches[matchIndex] = {

@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { useCMS, MatchItem } from '@/lib/cms-store';
 import ImageUploadInput from '@/components/ImageUploadInput';
-import { autoDeliverRoomCredentials } from '@/lib/match-scheduler';
+import { autoDeliverRoomCredentials, dispatchDevicePushNotification } from '@/lib/match-scheduler';
 
 export default function AdminTournamentsPage() {
   const { categories, matches, addMatch, updateMatch, deleteMatch, clearAllMatches } = useCMS();
@@ -30,6 +30,12 @@ export default function AdminTournamentsPage() {
   const [roomId, setRoomId] = useState('');
   const [roomPass, setRoomPass] = useState('');
   const [toast, setToast] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Quick Bot Room Dispatcher Form
+  const [botCatSlug, setBotCatSlug] = useState('classic-match');
+  const [botSelectedMatchId, setBotSelectedMatchId] = useState('');
+  const [botRoomId, setBotRoomId] = useState('');
+  const [botRoomPass, setBotRoomPass] = useState('');
 
   // Result publishing modal state
   const [resultMatch, setResultMatch] = useState<MatchItem | null>(null);
@@ -144,10 +150,47 @@ export default function AdminTournamentsPage() {
       status: 'ROOM_OPEN',
     });
 
-    showNotification('Room ID & Password published successfully!');
+    autoDeliverRoomCredentials(editingRoomMatch.id, roomId, roomPass);
+    dispatchDevicePushNotification(
+      '🎮 কাস্টম রুম আইডি ও পাসওয়ার্ড ডেলিভারি!',
+      `ম্যাচ: "${editingRoomMatch.title}" | Room ID: ${roomId} | Pass: ${roomPass}। এখনই নির্দিষ্ট স্লটে বসুন!`
+    );
+
+    showNotification('Room ID & Password published & dispatched to all players!');
     setEditingRoomMatch(null);
     setRoomId('');
     setRoomPass('');
+  };
+
+  const handleBotRoomDispatch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const target = matches.find((m) => m.id === botSelectedMatchId);
+    if (!target) {
+      showNotification('অনুগ্রহ করে একটি ম্যাচ সিলেক্ট করুন', 'error');
+      return;
+    }
+    if (!botRoomId.trim() || !botRoomPass.trim()) {
+      showNotification('রুম আইডি এবং পাসওয়ার্ড উভয়ই লিখুন', 'error');
+      return;
+    }
+
+    updateMatch(target.id, {
+      roomId: botRoomId.trim(),
+      roomPass: botRoomPass.trim(),
+      status: 'ROOM_OPEN',
+    });
+
+    autoDeliverRoomCredentials(target.id, botRoomId.trim(), botRoomPass.trim());
+    dispatchDevicePushNotification(
+      '🎮 কাস্টম রুম আইডি ও পাসওয়ার্ড ডেলিভারি!',
+      `ম্যাচ: "${target.title}" | Room ID: ${botRoomId.trim()} | Password: ${botRoomPass.trim()}। এখনই নির্দিষ্ট স্লটে বসুন!`
+    );
+
+    showNotification(
+      `ম্যাচ "${target.title}"-এর রুম আইডি ও পাসওয়ার্ড বটের মাধ্যমে পাঠানো হয়েছে এবং প্লেয়ারদের পুশ নোটিফিকেশন ডেলিভারি দেওয়া হয়েছে!`
+    );
+    setBotRoomId('');
+    setBotRoomPass('');
   };
 
   const handleDelete = (matchId: string, matchTitle: string) => {
@@ -328,6 +371,119 @@ export default function AdminTournamentsPage() {
             <Plus className="w-4 h-4" /> Create New Match
           </button>
         </div>
+      </div>
+
+      {/* 🤖 Quick Bot Room ID & Password Dispatcher (User Request #5) */}
+      <div className="rounded-2xl border-2 border-red-500/30 bg-gradient-to-r from-red-950/20 via-black/40 to-red-950/20 p-5 space-y-4 shadow-md">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-gray-200 dark:border-white/10">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-red-600 text-white flex items-center justify-center shadow-lg shadow-red-600/30">
+              <Bot className="w-5 h-5 animate-pulse" />
+            </div>
+            <div>
+              <h3 className="text-sm font-black text-gray-900 dark:text-white flex items-center gap-2">
+                🤖 Quick Bot Room ID & Password Dispatcher
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/30">
+                  ৫ মিনিট আগে পুশ অ্যালার্ট
+                </span>
+              </h3>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                যেকোনো ক্যাটাগরি এবং নির্দিষ্ট ম্যাচ বেছে নিয়ে রুম আইডি ও পাসওয়ার্ড লিখে বাটনে ক্লিক করুন। প্লেয়ারদের ডিভাইসে নোটিফিকেশন পৌঁছে যাবে।
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <form onSubmit={handleBotRoomDispatch} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
+          {/* Category Picker */}
+          <div>
+            <label className="font-bold text-gray-700 dark:text-gray-300 block mb-1">
+              ১. ক্যাটাগরি সিলেক্ট করুন
+            </label>
+            <select
+              value={botCatSlug}
+              onChange={(e) => {
+                setBotCatSlug(e.target.value);
+                setBotSelectedMatchId('');
+              }}
+              className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black font-bold focus:outline-none focus:border-red-500"
+            >
+              {categoriesList.map((c) => (
+                <option key={c.slug} value={c.slug}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Match Picker */}
+          <div>
+            <label className="font-bold text-gray-700 dark:text-gray-300 block mb-1">
+              ২. ম্যাচ সিলেক্ট করুন
+            </label>
+            <select
+              value={botSelectedMatchId}
+              onChange={(e) => {
+                const mid = e.target.value;
+                setBotSelectedMatchId(mid);
+                const found = matches.find((m) => m.id === mid);
+                if (found) {
+                  setBotRoomId(found.roomId || '');
+                  setBotRoomPass(found.roomPass || '');
+                }
+              }}
+              className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black font-bold focus:outline-none focus:border-red-500"
+            >
+              <option value="">-- ম্যাচ বেছে নিন --</option>
+              {matches
+                .filter((m) => m.categorySlug === botCatSlug && m.status !== 'COMPLETED')
+                .map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.title} ({m.time})
+                  </option>
+                ))}
+            </select>
+          </div>
+
+          {/* Room ID */}
+          <div>
+            <label className="font-bold text-gray-700 dark:text-gray-300 block mb-1">
+              ৩. রুম আইডি (Room ID)
+            </label>
+            <input
+              type="text"
+              placeholder="e.g. 849201"
+              value={botRoomId}
+              onChange={(e) => setBotRoomId(e.target.value)}
+              className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black font-mono font-bold focus:outline-none focus:border-red-500"
+            />
+          </div>
+
+          {/* Room Password */}
+          <div>
+            <label className="font-bold text-gray-700 dark:text-gray-300 block mb-1">
+              ৪. পাসওয়ার্ড (Password)
+            </label>
+            <input
+              type="text"
+              placeholder="e.g. 12"
+              value={botRoomPass}
+              onChange={(e) => setBotRoomPass(e.target.value)}
+              className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black font-mono font-bold focus:outline-none focus:border-red-500"
+            />
+          </div>
+
+          {/* Dispatch Button */}
+          <div className="flex items-end">
+            <button
+              type="submit"
+              disabled={!botSelectedMatchId || !botRoomId || !botRoomPass}
+              className="w-full py-2 px-3 rounded-xl btn-red text-xs font-black flex items-center justify-center gap-1.5 shadow-md shadow-red-600/30 disabled:opacity-40 transition-all active:scale-95"
+            >
+              <Zap className="w-3.5 h-3.5" /> 🚀 বট দিয়ে পাঠান
+            </button>
+          </div>
+        </form>
       </div>
 
       {/* Filter Bar */}

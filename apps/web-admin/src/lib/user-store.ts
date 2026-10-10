@@ -537,7 +537,12 @@ export function processMatchPrizePayout(
 }
 
 // Balance Management: Deduct / Cut Balance (- টাকা কাটা)
-export function deductBalance(userId: string, amount: number, reason: string): { success: boolean; newBalance?: number; error?: string } {
+export function deductBalance(
+  userId: string,
+  amount: number,
+  reason: string,
+  category?: 'match_winning' | 'deposit' | 'withdraw' | 'match_join' | string
+): { success: boolean; newBalance?: number; error?: string } {
   if (amount <= 0) return { success: false, error: 'টাকার পরিমাণ ০ এর বেশি হতে হবে' };
 
   const users = getUsers();
@@ -552,6 +557,16 @@ export function deductBalance(userId: string, amount: number, reason: string): {
   user.walletBalance = newBalance;
   saveUsers(users);
 
+  const isMatchReason =
+    reason.toLowerCase().includes('ম্যাচ') ||
+    reason.toLowerCase().includes('স্লট') ||
+    reason.toLowerCase().includes('match') ||
+    reason.toLowerCase().includes('slot') ||
+    reason.toLowerCase().includes('booking') ||
+    reason.toLowerCase().includes('বুকিং');
+
+  const resolvedCategory = category || (isMatchReason ? 'match_join' : 'withdraw');
+
   // Record audit transaction
   const tx: BalanceTransaction = {
     id: 'tx-' + Date.now(),
@@ -562,6 +577,7 @@ export function deductBalance(userId: string, amount: number, reason: string): {
     amount,
     reason: reason || 'অ্যাডমিন কর্তৃক ব্যালেন্স কর্তন',
     balanceAfter: newBalance,
+    category: resolvedCategory,
     timestamp: new Date().toISOString(),
   };
   const txList = getTransactions();
@@ -569,6 +585,47 @@ export function deductBalance(userId: string, amount: number, reason: string): {
   saveTransactions(txList);
 
   return { success: true, newBalance };
+}
+
+const JOINED_MATCHES_KEY = 'ff_user_joined_matches_v1';
+
+export function hasUserJoinedMatch(matchId: string, user?: UserAccount | null): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    const raw = localStorage.getItem(JOINED_MATCHES_KEY);
+    if (raw) {
+      const map = JSON.parse(raw) as Record<string, any>;
+      if (map[matchId]) return true;
+      if (user && Object.values(map).some((entry: any) => entry.matchId === matchId && (entry.userId === user.id || (entry.uid && entry.uid === user.uid) || (entry.phone && entry.phone === user.phone)))) {
+        return true;
+      }
+    }
+  } catch (e) {}
+  return false;
+}
+
+export function recordUserJoinedMatch(
+  matchId: string,
+  user?: UserAccount | null,
+  extra?: { ign?: string; uid?: string; slot?: number }
+): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const raw = localStorage.getItem(JOINED_MATCHES_KEY);
+    const map = raw ? JSON.parse(raw) : {};
+    map[matchId] = {
+      matchId,
+      userId: user?.id || 'guest',
+      userPhone: user?.phone || '',
+      ign: extra?.ign || user?.ign || '',
+      uid: extra?.uid || user?.uid || '',
+      slot: extra?.slot || 1,
+      joinedAt: new Date().toISOString(),
+      deviceFingerprint: typeof navigator !== 'undefined' ? `${navigator.userAgent}` : 'web',
+    };
+    localStorage.setItem(JOINED_MATCHES_KEY, JSON.stringify(map));
+    window.dispatchEvent(new CustomEvent('ff_match_joined_state_updated', { detail: { matchId } }));
+  } catch (e) {}
 }
 
 // Toggle or Set User Status (Active / Banned / Suspended)
@@ -762,8 +819,8 @@ export function submitDepositRequest(data: {
   const current = getPaymentRequests();
   const now = new Date().toISOString();
 
-  // If autoVerify is enabled
-  const shouldAutoApprove = Boolean(data.autoVerify && data.trxId && data.trxId.trim().length >= 6);
+  // Strictly keep deposits in PENDING status until Admin verifies the transaction in Admin Finance panel
+  const isAutoApproved = false;
 
   const newReq: PaymentRequest = {
     id: 'pay-dep-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
@@ -775,8 +832,8 @@ export function submitDepositRequest(data: {
     amount: Number(data.amount),
     accountNumber: data.accountNumber,
     trxId: data.trxId.toUpperCase().trim(),
-    status: shouldAutoApprove ? 'APPROVED' : 'PENDING',
-    autoVerified: shouldAutoApprove,
+    status: isAutoApproved ? 'APPROVED' : 'PENDING',
+    autoVerified: isAutoApproved,
     createdAt: now,
     updatedAt: now,
   };
@@ -784,29 +841,15 @@ export function submitDepositRequest(data: {
   const updated = [newReq, ...current];
   savePaymentRequests(updated);
 
-  if (shouldAutoApprove) {
-    // Add balance to user immediately
-    addBalance(data.userId, Number(data.amount), `${data.method} Auto-Verified Deposit (TrxID: ${newReq.trxId})`);
-    dispatchDevicePushNotification(
-      '💰 ডিপোজিট সফল হয়েছে!',
-      `আপনার ${data.method} ডিপোজিট (TrxID: ${newReq.trxId}) সফল হয়েছে এবং ৳${data.amount} ওয়ালেটে যোগ করা হয়েছে।`
-    );
-    return {
-      success: true,
-      request: newReq,
-      message: `৳${data.amount} ডিপোজিট স্বয়ংক্রিয়ভাবে ভেরিফাই হয়ে ওয়ালেটে যোগ করা হয়েছে!`,
-    };
-  } else {
-    dispatchDevicePushNotification(
-      '⏳ ডিপোজিট রিকোয়েস্ট পেন্ডিং',
-      `৳${data.amount} ডিপোজিট রিকোয়েস্ট জমা হয়েছে। এডমিন যাচাই করে ব্যালেন্স যোগ করবেন।`
-    );
-    return {
-      success: true,
-      request: newReq,
-      message: `৳${data.amount} ডিপোজিট রিকোয়েস্ট জমা হয়েছে! এডমিন খুব শীঘ্রই যাচাই করে ব্যালেন্স যোগ করবেন।`,
-    };
-  }
+  dispatchDevicePushNotification(
+    '⏳ ডিপোজিট রিকোয়েস্ট পেন্ডিং',
+    `আপনার ৳${data.amount} ডিপোজিট রিকোয়েস্ট (TrxID: ${newReq.trxId}) জমা হয়েছে। এডমিন যাচাই করে ব্যালেন্স যোগ করবেন।`
+  );
+  return {
+    success: true,
+    request: newReq,
+    message: `৳${data.amount} ডিপোজিট রিকোয়েস্ট জমা হয়েছে! এডমিন ট্রানজেকশন আইডি যাচাই করার পর ওয়ালেটে ব্যালেন্স যোগ করবেন।`,
+  };
 }
 
 export function submitWithdrawRequest(data: {

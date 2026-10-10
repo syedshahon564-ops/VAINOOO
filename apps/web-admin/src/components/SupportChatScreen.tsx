@@ -23,6 +23,7 @@ import {
   TicketMessage,
   addTicketReply,
   getSupportTickets,
+  saveSupportTickets,
   syncSupportTicketsFromServer,
 } from '@/lib/support-store';
 
@@ -56,7 +57,9 @@ export default function SupportChatScreen({
   // Sync ticket messages live
   const reloadTicket = () => {
     const all = getSupportTickets();
-    const found = all.find((t) => t.id === ticket.id);
+    const found =
+      all.find((t) => t.id === ticket.id) ||
+      all.find((t) => t.id.includes(ticket.id.slice(-4)) || ticket.id.includes(t.id.slice(-4)));
     if (found) {
       setTicket(found);
       if (onUpdateTicket) onUpdateTicket(found);
@@ -66,7 +69,9 @@ export default function SupportChatScreen({
   useEffect(() => {
     reloadTicket();
     syncSupportTicketsFromServer(ticket.userId, ticket.userPhone).then((list) => {
-      const found = list.find((t) => t.id === ticket.id);
+      const found =
+        list.find((t) => t.id === ticket.id) ||
+        list.find((t) => t.id.includes(ticket.id.slice(-4)) || ticket.id.includes(t.id.slice(-4)));
       if (found) {
         setTicket(found);
         if (onUpdateTicket) onUpdateTicket(found);
@@ -155,12 +160,56 @@ export default function SupportChatScreen({
     if (!msg && !imagePreview) return;
 
     setIsSending(true);
-    const updated = addTicketReply(ticket.id, {
+    let updated = addTicketReply(ticket.id, {
       senderRole: 'USER',
       senderName: ticket.userIgn || 'Player',
       message: msg || (imagePreview ? t('স্ক্রিনশট অ্যাটাচমেন্ট পাঠানো হয়েছে', 'Screenshot attachment sent') : ''),
       imageUrl: imagePreview || undefined,
     });
+
+    if (!updated) {
+      // Fallback 1: Lookup ticket again by id or partial id
+      const all = getSupportTickets();
+      const fallbackTicket =
+        all.find((t) => t.id === ticket.id) ||
+        all.find((t) => t.id.includes(ticket.id.slice(-4)) || ticket.id.includes(t.id.slice(-4))) ||
+        all[0];
+      if (fallbackTicket) {
+        updated = addTicketReply(fallbackTicket.id, {
+          senderRole: 'USER',
+          senderName: ticket.userIgn || 'Player',
+          message: msg || (imagePreview ? t('স্ক্রিনশট অ্যাটাচমেন্ট পাঠানো হয়েছে', 'Screenshot attachment sent') : ''),
+          imageUrl: imagePreview || undefined,
+        });
+      }
+    }
+
+    if (!updated) {
+      // Fallback 2: Direct append in memory & local storage
+      const now = new Date().toISOString();
+      const newMsg = {
+        id: 'msg-' + Date.now(),
+        senderRole: 'USER' as const,
+        senderName: ticket.userIgn || 'Player',
+        message: msg || (imagePreview ? t('স্ক্রিনশট অ্যাটাচমেন্ট পাঠানো হয়েছে', 'Screenshot attachment sent') : ''),
+        imageUrl: imagePreview || undefined,
+        timestamp: now,
+      };
+      const directTicket = {
+        ...ticket,
+        updatedAt: now,
+        messages: [...ticket.messages, newMsg],
+      };
+      const all = getSupportTickets();
+      const idx = all.findIndex((t) => t.id === ticket.id);
+      if (idx !== -1) {
+        all[idx] = directTicket;
+      } else {
+        all.unshift(directTicket);
+      }
+      saveSupportTickets(all);
+      updated = directTicket;
+    }
 
     if (updated) {
       setTicket(updated);

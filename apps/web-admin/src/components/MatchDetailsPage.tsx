@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { MatchItem, useCMS } from '@/lib/cms-store';
 import { formatMatchSchedule } from '@/components/LiveMatchCountdown';
+import { getCurrentUser, hasUserJoinedMatch } from '@/lib/user-store';
 
 export type ParticipantItem =
   | string
@@ -422,12 +423,29 @@ export default function MatchDetailsPage({
 
       {/* Bottom Sticky Join Button */}
       <div className="pt-4 border-t border-gray-200">
-        <button
-          onClick={() => onJoinClick(match)}
-          className="w-full py-3.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-black text-sm shadow-lg shadow-red-600/30 transition-all flex items-center justify-center gap-2 active:scale-98"
-        >
-          <span>স্লট বুক করুন / Join Now (৳{match.entryFee})</span>
-        </button>
+        {hasUserJoinedMatch(match.id, getCurrentUser()) ||
+        activeParticipants.some(
+          (p) =>
+            typeof p !== 'string' &&
+            ((getCurrentUser()?.ign &&
+              p.ign.toLowerCase() === getCurrentUser()?.ign.toLowerCase()) ||
+              (getCurrentUser()?.uid && p.uid === getCurrentUser()?.uid))
+        ) ? (
+          <button
+            disabled
+            className="w-full py-3.5 rounded-xl bg-emerald-600 text-white font-black text-sm shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 cursor-not-allowed opacity-95"
+          >
+            <Check className="w-4 h-4" />
+            <span>স্লট বুক করা হয়েছে (JOINED)</span>
+          </button>
+        ) : (
+          <button
+            onClick={() => onJoinClick(match)}
+            className="w-full py-3.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-black text-sm shadow-lg shadow-red-600/30 transition-all flex items-center justify-center gap-2 active:scale-98"
+          >
+            <span>স্লট বুক করুন / Join Now (৳{match.entryFee})</span>
+          </button>
+        )}
       </div>
 
       {/* HOW TO JOIN VIDEO MODAL */}

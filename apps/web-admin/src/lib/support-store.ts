@@ -209,14 +209,14 @@ export function generateClientAiResponse(
     if (hasProof) {
       const trxId = trxMatch ? trxMatch[1].toUpperCase() : 'TRX_' + Date.now().toString().slice(-6);
       return {
-        paymentVerified: true,
+        paymentVerified: false,
         verifiedTrxId: trxId,
         verifiedAmount: detectedAmount,
-        response: `🤖 AI Support: Payment Verified Successfully! ✅\n\nHello ${ign}! Our AI verification system has reviewed your payment proof (TrxID: ${trxId}).\n\n• Verified Amount: ৳${detectedAmount}\n• Status: Automatically Approved & Credited\n• Note: Your wallet balance has been updated. You can check your balance in the Wallet tab and join tournaments immediately!`,
+        response: `🤖 AI Support: পেমেন্ট প্রমাণপত্র গৃহীত হয়েছে! 📋\n\nহ্যালো ${ign}! আমরা আপনার পেমেন্ট প্রমাণ (TrxID: ${trxId}, ৳${detectedAmount}) সাপোর্ট সিস্টেমে রেকর্ড করেছি।\n\n• বর্তমান স্ট্যাটাস: অপেক্ষারত (Pending Admin Approval)\n• নোট: নিরাপত্তা নিশ্চিত করতে অ্যাডমিন ট্রানজেকশন যাচাই করার পর আপনার ওয়ালেটে ব্যালেন্স যুক্ত করে দেবে। অনুগ্রহ করে কিছুক্ষণ অপেক্ষা করুন!`,
       };
     } else {
       return {
-        response: `🤖 AI Support: Deposit Verification Required ⚠️\n\nHello ${ign}! We noticed your deposit inquiry regarding "${ticket.subject || 'Deposit'}".\n\nTo verify and credit your balance immediately, please reply with:\n1. Your Transaction ID (TrxID)\n2. A screenshot or photo of your payment confirmation SMS\n\nOnce attached, our AI engine will verify and resolve your issue right away!`,
+        response: `🤖 AI Support: Deposit Verification Required ⚠️\n\nHello ${ign}! We noticed your deposit inquiry regarding "${ticket.subject || 'Deposit'}".\n\nTo verify and credit your balance, please reply with:\n1. Your Transaction ID (TrxID)\n2. A screenshot or photo of your payment confirmation SMS\n\nOnce attached, our team will verify and resolve your issue right away!`,
       };
     }
   }
@@ -334,7 +334,7 @@ export function createSupportTicket(data: {
   fetch('/api/support/tickets', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
+    body: JSON.stringify({ ...data, id: tempId }),
   })
     .then((res) => (res.ok ? res.json() : null))
     .then((resData) => {
@@ -367,7 +367,16 @@ export function addTicketReply(
   }
 ): SupportTicket | null {
   const all = getSupportTickets();
-  const ticketIndex = all.findIndex((t) => t.id === ticketId);
+  let ticketIndex = all.findIndex((t) => t.id === ticketId);
+
+  // Robust fallback: if ticketId changed due to server sync or prefix, find by latest ticket or partial ID
+  if (ticketIndex === -1 && all.length > 0) {
+    ticketIndex = all.findIndex((t) => t.id.includes(ticketId.slice(-4)) || ticketId.includes(t.id.slice(-4)));
+    if (ticketIndex === -1) {
+      ticketIndex = 0; // Fallback to user's most recent ticket
+    }
+  }
+
   if (ticketIndex === -1) return null;
 
   const ticket = all[ticketIndex];

@@ -33,7 +33,7 @@ export async function POST(req: Request) {
     const all = readTickets();
     const now = new Date().toISOString();
 
-    const ticketId = 't-' + Date.now().toString().slice(-6);
+    const ticketId = body.id || ('t-' + Date.now().toString().slice(-6));
     const userMsgId = 'msg-' + Date.now();
     const aiMsgId = 'msg-ai-' + (Date.now() + 10);
 

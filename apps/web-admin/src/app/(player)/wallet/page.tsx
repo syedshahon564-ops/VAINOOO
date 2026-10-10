@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Wallet, ArrowDownRight, ArrowUpRight, Check, AlertCircle, Copy } from 'lucide-react';
-import { getCurrentUser, addBalance, deductBalance, getTransactions } from '@/lib/user-store';
+import { getCurrentUser, addBalance, deductBalance, getTransactions, submitDepositRequest } from '@/lib/user-store';
 import { useCMS } from '@/lib/cms-store';
 
 export default function WalletPage() {
@@ -48,12 +48,12 @@ export default function WalletPage() {
       setHistory(
         txs.map((t) => ({
           id: t.id,
-          type: t.type === 'CREDIT' ? 'DEPOSIT' : 'WITHDRAW',
+          type: t.type === 'CREDIT' ? 'DEPOSIT' : (t.category === 'match_join' || t.reason?.toLowerCase().includes('match') || t.reason?.toLowerCase().includes('ম্যাচ') || t.reason?.toLowerCase().includes('slot') || t.reason?.toLowerCase().includes('entry') ? 'MATCH_JOIN' : 'WITHDRAW'),
           method: t.reason.toUpperCase().includes('NAGAD')
             ? 'NAGAD'
             : t.reason.toUpperCase().includes('ROCKET')
             ? 'ROCKET'
-            : 'BKASH',
+            : (t.category === 'match_join' || t.reason?.toLowerCase().includes('match') || t.reason?.toLowerCase().includes('ম্যাচ') ? 'MATCH' : 'BKASH'),
           amount: t.amount,
           trxId: t.reason,
           status: 'APPROVED',
@@ -100,10 +100,18 @@ export default function WalletPage() {
 
     const user = getCurrentUser();
     const userId = user?.id || 'u-1';
-    addBalance(userId, Number(amount), `${method} Deposit (TrxID: ${trxId})`);
+    const res = submitDepositRequest({
+      userId,
+      userPhone: user?.phone || phone,
+      userName: user?.ign || 'Player',
+      method,
+      amount: Number(amount),
+      accountNumber: phone,
+      trxId,
+    });
     setMessage({
       type: 'success',
-      text: `৳${amount} ডিপোজিট সফলভাবে গ্রহণ করা হয়েছে! আপনার ব্যালেন্সে যোগ হয়েছে।`,
+      text: res.message,
     });
     setTrxId('');
     setPhone('');
@@ -138,7 +146,7 @@ export default function WalletPage() {
     }
 
     const userId = user?.id || 'u-1';
-    const res = deductBalance(userId, Number(amount), `Withdrawal to ${phone} via ${method}`);
+    const res = deductBalance(userId, Number(amount), `উইথড্রল রিকোয়েস্ট (${method}): ${phone}`, 'withdraw');
     setLoading(false);
     if (res.success) {
       setMessage({
@@ -366,7 +374,13 @@ export default function WalletPage() {
                       >
                         {tx.type === 'DEPOSIT' ? '+৳' : '-৳'}{tx.amount}
                       </span>
-                      <span className="text-[10px] text-gray-400">({tx.method})</span>
+                      <span className="text-[10px] text-gray-400">
+                        {tx.type === 'DEPOSIT'
+                          ? `(ডিপোজিট - ${tx.method})`
+                          : tx.type === 'MATCH_JOIN'
+                          ? `(ম্যাচ জয়েন ফি)`
+                          : `(উইথড্র - ${tx.method})`}
+                      </span>
                     </div>
                     <div className="text-[10px] text-gray-500">{tx.trxId}</div>
                   </div>

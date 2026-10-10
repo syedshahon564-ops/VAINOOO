@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { MatchItem } from '@/lib/cms-store';
 import { checkFreeFireUID } from '@/lib/ff-uid-checker';
-import { getCurrentUser } from '@/lib/user-store';
+import { getCurrentUser, hasUserJoinedMatch, recordUserJoinedMatch } from '@/lib/user-store';
 
 export interface RegisteredPlayerEntry {
   ign: string;
@@ -53,6 +53,13 @@ export default function SlotBookingModal({
     match.type === 'Squad';
   const isDuo = matchTypeLower.includes('duo');
   const isSolo = !isSquad && !isDuo;
+
+  const isClashSquad =
+    (match.categorySlug || '').toLowerCase().includes('clash') ||
+    (match.categorySlug || '').toLowerCase().includes('cs') ||
+    ((match as any).category || '').toLowerCase().includes('clash') ||
+    (match.title || '').toLowerCase().includes('clash') ||
+    (match.title || '').toLowerCase().includes('cs ');
 
   // SQUAD ONLY starts at 'SELECT_SLOT'. Solo & Duo go directly to 'PLAYER_DETAILS'
   const [currentStep, setCurrentStep] = useState<'SELECT_SLOT' | 'PLAYER_DETAILS'>(
@@ -259,7 +266,13 @@ export default function SlotBookingModal({
       return;
     }
 
-    // 1. SQUAD MODE (Requires selected slot + 4 players)
+    const cur = getCurrentUser();
+    if (hasUserJoinedMatch(match.id, cur)) {
+      setErrorMessage('আপনি ইতিমধ্যে এই ম্যাচে জয়েন করেছেন! একটি ম্যাচে একবারের বেশি জয়েন করা যাবে না।');
+      return;
+    }
+
+    // 1. SQUAD MODE (Requires selected slot + players)
     if (isSquad) {
       if (!selectedSlotNumber) {
         setErrorMessage('Please select your squad slot.');
@@ -267,13 +280,31 @@ export default function SlotBookingModal({
         return;
       }
 
-      for (let i = 0; i < 4; i++) {
-        const p = squadPlayers[i];
-        if (!p.ign.trim()) {
-          setErrorMessage(`Please enter In-Game Name (IGN) for Player #${i + 1}. All 4 players are required!`);
+      if (isClashSquad) {
+        // Clash Squad strictly requires ALL 4 players!
+        for (let i = 0; i < 4; i++) {
+          const p = squadPlayers[i];
+          if (!p.ign.trim() || !p.uid.trim()) {
+            setErrorMessage(`ক্লাশ স্কোয়াড ৪v৪ ম্যাচে প্লেয়ার #${i + 1}-এর নাম ও ইউআইডি উভয়ই দেওয়া বাধ্যতামূলক! ৪ জন প্লেয়ার ছাড়া জয়েন করা যাবে না।`);
+            return;
+          }
+        }
+      } else {
+        // Other Squads (Classic Match squad): Player 1 (Leader) is mandatory, 2-4 are optional
+        if (!squadPlayers[0].ign.trim()) {
+          setErrorMessage('Please enter In-Game Name (IGN) for Player 1 (Leader).');
           return;
         }
       }
+
+      // Collect valid players
+      const validSquadPlayers = squadPlayers
+        .map((p, idx) => ({
+          ign: p.ign.trim(),
+          uid: p.uid.trim() || '---',
+          slotInTeam: idx + 1,
+        }))
+        .filter((p, idx) => (isClashSquad ? true : idx === 0 || p.ign.length > 0));
 
       // Mark the slot as booked
       setBookedSlotsMap((prev) => ({
@@ -285,30 +316,36 @@ export default function SlotBookingModal({
         },
       }));
 
+      recordUserJoinedMatch(match.id, cur, {
+        ign: squadPlayers[0].ign.trim(),
+        uid: squadPlayers[0].uid.trim(),
+        slot: selectedSlotNumber,
+      });
+
       onSuccess({
         slotNumber: selectedSlotNumber,
         teamNumber: selectedSlotNumber,
         ign: squadPlayers[0].ign.trim(),
         uid: squadPlayers[0].uid.trim(),
-        players: squadPlayers.map((p, idx) => ({
-          ign: p.ign.trim(),
-          uid: p.uid.trim() || '---',
-          slotInTeam: idx + 1,
-        })),
+        players: validSquadPlayers,
       });
       return;
     }
 
-    // 2. DUO MODE (No slot grid - direct registration for 2 players)
+    // 2. DUO MODE (Leader required, Player 2 optional)
     if (isDuo) {
       if (!duoPlayers[0].ign.trim()) {
         setErrorMessage('Please enter In-Game Name (IGN) for Player 1 (Leader).');
         return;
       }
-      if (!duoPlayers[1].ign.trim()) {
-        setErrorMessage('Please enter In-Game Name (IGN) for Player 2.');
-        return;
-      }
+
+      const validDuoPlayers = duoPlayers
+        .map((p, idx) => ({
+          ign: p.ign.trim(),
+          uid: p.uid.trim() || '---',
+          slotInTeam: idx + 1,
+        }))
+        .filter((p, idx) => idx === 0 || p.ign.length > 0);
 
       const assignedSlot = getNextAvailableSlot();
 
@@ -321,16 +358,18 @@ export default function SlotBookingModal({
         },
       }));
 
+      recordUserJoinedMatch(match.id, cur, {
+        ign: duoPlayers[0].ign.trim(),
+        uid: duoPlayers[0].uid.trim(),
+        slot: assignedSlot,
+      });
+
       onSuccess({
         slotNumber: assignedSlot,
         teamNumber: assignedSlot,
         ign: duoPlayers[0].ign.trim(),
         uid: duoPlayers[0].uid.trim(),
-        players: duoPlayers.map((p, idx) => ({
-          ign: p.ign.trim(),
-          uid: p.uid.trim() || '---',
-          slotInTeam: idx + 1,
-        })),
+        players: validDuoPlayers,
       });
       return;
     }
@@ -351,6 +390,12 @@ export default function SlotBookingModal({
         badge: 'SOLO',
       },
     }));
+
+    recordUserJoinedMatch(match.id, cur, {
+      ign: soloPlayer.ign.trim(),
+      uid: soloPlayer.uid.trim(),
+      slot: assignedSlot,
+    });
 
     onSuccess({
       slotNumber: assignedSlot,
@@ -537,10 +582,12 @@ export default function SlotBookingModal({
             {/* Instruction Alert */}
             <div className="text-xs text-gray-600 bg-blue-50/70 border border-blue-200 p-2.5 rounded-xl leading-relaxed">
               {isSquad
-                ? 'Please enter Free Fire In-Game Name (IGN) and UID for all 4 squad players.'
+                ? isClashSquad
+                  ? 'ক্লাশ স্কোয়াড ৪v৪ ম্যাচে অবশ্যই ৪ জন প্লেয়ারের নাম ও ইউআইডি দিতে হবে (Solo বা কম প্লেয়ার দিয়ে জয়েন করা যাবে না)।'
+                  : 'স্কোয়াড লিডার (Player 1) দেওয়া আবশ্যক। আপনি চাইলে ১ জন, ২ জন, ৩ জন বা ৪ জন নিয়ে জয়েন করতে পারেন (বাকি প্লেয়ার ঐচ্ছিক)।'
                 : isDuo
-                ? 'Please enter In-Game Name (IGN) for both duo players. Your slot will be registered automatically!'
-                : 'Enter your Free Fire In-Game Name (IGN) and UID. You will be registered automatically upon confirmation!'}
+                ? 'Player 1 (লিডার) আবশ্যক। Player 2 ঐচ্ছিক (চাইলে একা বা ২ জন মিলে জয়েন করতে পারবেন)।'
+                : 'আপনার ফ্রি ফায়ার ইন-গেম নেম (IGN) ও UID লিখুন। কনফার্ম করলেই স্বয়ংক্রিয়ভাবে স্লটে বুকিং সম্পন্ন হবে!'}
             </div>
 
             {/* Form Fields */}
@@ -558,7 +605,11 @@ export default function SlotBookingModal({
                           <span className="w-5 h-5 rounded-full bg-red-600 text-white flex items-center justify-center text-[10px] font-bold">
                             {idx + 1}
                           </span>
-                          {idx === 0 ? 'Player 1 (Leader)' : `Player ${idx + 1}`}
+                          {idx === 0
+                            ? 'Player 1 (Leader - আবশ্যক)'
+                            : isClashSquad
+                            ? `Player ${idx + 1} (আবশ্যক)`
+                            : `Player ${idx + 1} (ঐচ্ছিক / Optional)`}
                         </span>
                         {player.verified && (
                           <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-700 border border-emerald-300 flex items-center gap-0.5">
@@ -632,7 +683,7 @@ export default function SlotBookingModal({
                           <span className="w-5 h-5 rounded-full bg-red-600 text-white flex items-center justify-center text-[10px] font-bold">
                             {idx + 1}
                           </span>
-                          {idx === 0 ? 'Player 1 (Leader)' : `Player 2`}
+                          {idx === 0 ? 'Player 1 (Leader - আবশ্যক)' : 'Player 2 (ঐচ্ছিক / Optional)'}
                         </span>
                         {player.verified && (
                           <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-700 border border-emerald-300 flex items-center gap-0.5">
