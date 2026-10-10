@@ -453,10 +453,26 @@ export default function CategoryDetailPage() {
                         </div>
                         <div>
                           <span className="text-[10px] uppercase font-bold text-gray-400 block tracking-tight">
-                            PER KILL
+                            {m.categorySlug === 'lone-wolf' ||
+                            m.categorySlug === 'clash-squad' ||
+                            m.categorySlug === 'cs-only-headshot' ||
+                            m.type === '1 vs 1' ||
+                            m.type === '2 vs 2' ||
+                            m.type === '4 vs 4' ||
+                            !m.perKill
+                              ? 'SLOTS'
+                              : 'PER KILL'}
                           </span>
                           <span className="font-black text-gray-900 dark:text-white text-xs sm:text-sm">
-                            {m.perKill} TK
+                            {m.categorySlug === 'lone-wolf' ||
+                            m.categorySlug === 'clash-squad' ||
+                            m.categorySlug === 'cs-only-headshot' ||
+                            m.type === '1 vs 1' ||
+                            m.type === '2 vs 2' ||
+                            m.type === '4 vs 4' ||
+                            !m.perKill
+                              ? `${m.totalSlots} SLOTS`
+                              : `${m.perKill} TK`}
                           </span>
                         </div>
                         <div>

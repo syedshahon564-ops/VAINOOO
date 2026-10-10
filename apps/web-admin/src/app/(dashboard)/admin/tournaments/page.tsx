@@ -100,6 +100,18 @@ export default function AdminTournamentsPage() {
       return;
     }
 
+    const isSingle = categorySlug === 'lone-wolf' || categorySlug === 'clash-squad' || categorySlug === 'cs-only-headshot';
+    const finalPerKill = isSingle ? 0 : Number(perKill);
+    const finalFirstPrize = isSingle ? Number(prizePool) : Number(firstPrize);
+    const finalSecondPrize = isSingle ? 0 : Number(secondPrize);
+    const finalThirdPrize = isSingle ? 0 : Number(thirdPrize);
+    let finalSlots = Number(totalSlots);
+    if (categorySlug === 'lone-wolf') {
+      finalSlots = type === '2 vs 2' ? 4 : 2;
+    } else if (categorySlug === 'clash-squad' || categorySlug === 'cs-only-headshot') {
+      finalSlots = type === '1 vs 1' ? 2 : type === '2 vs 2' ? 4 : 8;
+    }
+
     addMatch({
       categorySlug,
       title,
@@ -107,11 +119,11 @@ export default function AdminTournamentsPage() {
       type,
       entryFee: Number(entryFee),
       prizePool: Number(prizePool),
-      firstPrize: Number(firstPrize),
-      secondPrize: Number(secondPrize),
-      thirdPrize: Number(thirdPrize),
-      perKill: Number(perKill),
-      totalSlots: Number(totalSlots),
+      firstPrize: finalFirstPrize,
+      secondPrize: finalSecondPrize,
+      thirdPrize: finalThirdPrize,
+      perKill: finalPerKill,
+      totalSlots: finalSlots,
       time,
       bannerImage,
       rules,
@@ -152,9 +164,30 @@ export default function AdminTournamentsPage() {
     }
   };
 
+  const isLoneWolf = categorySlug === 'lone-wolf';
+  const isClashSquad = categorySlug === 'clash-squad' || categorySlug === 'cs-only-headshot';
+
   const handleEntryFeeChange = (fee: number, currentType: string) => {
     setEntryFee(fee);
-    if (currentType === '1 vs 1') {
+    if (categorySlug === 'lone-wolf') {
+      const slots = currentType === '2 vs 2' ? 4 : 2;
+      const winnerPrize = Math.max(10, Math.round(fee * slots * 0.85));
+      setPrizePool(winnerPrize);
+      setFirstPrize(winnerPrize);
+      setSecondPrize(0);
+      setThirdPrize(0);
+      setPerKill(0);
+      setTotalSlots(slots);
+    } else if (categorySlug === 'clash-squad' || categorySlug === 'cs-only-headshot') {
+      const slots = currentType === '1 vs 1' ? 2 : currentType === '2 vs 2' ? 4 : 8;
+      const winnerPrize = Math.max(10, Math.round(fee * slots * 0.8));
+      setPrizePool(winnerPrize);
+      setFirstPrize(winnerPrize);
+      setSecondPrize(0);
+      setThirdPrize(0);
+      setPerKill(0);
+      setTotalSlots(slots);
+    } else if (currentType === '1 vs 1') {
       const winnerPrize = Math.max(10, Math.round(fee * 2 * 0.85));
       setPrizePool(winnerPrize);
       setFirstPrize(winnerPrize);
@@ -180,6 +213,69 @@ export default function AdminTournamentsPage() {
       setSecondPrize(second);
       setThirdPrize(third);
       setPerKill(Math.max(1, Math.round(fee / 10)));
+    }
+  };
+
+  const handleCategorySelect = (slug: string) => {
+    setCategorySlug(slug);
+    const cat = categories[slug];
+    if (cat?.bannerImage) {
+      setBannerImage(cat.bannerImage);
+    }
+    if (slug === 'lone-wolf') {
+      setType('1 vs 1');
+      setTotalSlots(2);
+      setMapType('Iron Cage');
+      setPerKill(0);
+      setSecondPrize(0);
+      setThirdPrize(0);
+      const pool = Math.max(10, Math.round(entryFee * 2 * 0.85));
+      setPrizePool(pool);
+      setFirstPrize(pool);
+    } else if (slug === 'clash-squad' || slug === 'cs-only-headshot') {
+      setType('4 vs 4');
+      setTotalSlots(8);
+      setMapType('Bermuda');
+      setPerKill(0);
+      setSecondPrize(0);
+      setThirdPrize(0);
+      const pool = Math.max(20, Math.round(entryFee * 8 * 0.75));
+      setPrizePool(pool);
+      setFirstPrize(pool);
+    } else {
+      setType('Squad');
+      setTotalSlots(48);
+      setMapType('Bermuda');
+      handleEntryFeeChange(entryFee, 'Squad');
+    }
+  };
+
+  const handleTypeSelect = (newType: string) => {
+    setType(newType);
+    if (categorySlug === 'lone-wolf') {
+      const slots = newType === '2 vs 2' ? 4 : 2;
+      setTotalSlots(slots);
+      const pool = Math.max(10, Math.round(entryFee * slots * 0.85));
+      setPrizePool(pool);
+      setFirstPrize(pool);
+      setSecondPrize(0);
+      setThirdPrize(0);
+      setPerKill(0);
+    } else if (categorySlug === 'clash-squad' || categorySlug === 'cs-only-headshot') {
+      const slots = newType === '1 vs 1' ? 2 : newType === '2 vs 2' ? 4 : 8;
+      setTotalSlots(slots);
+      const pool = Math.max(10, Math.round(entryFee * slots * 0.8));
+      setPrizePool(pool);
+      setFirstPrize(pool);
+      setSecondPrize(0);
+      setThirdPrize(0);
+      setPerKill(0);
+    } else {
+      if (newType === 'Squad' || newType === 'Solo' || newType === 'Duo') setTotalSlots(48);
+      else if (newType === '4 vs 4') setTotalSlots(8);
+      else if (newType === '1 vs 1') setTotalSlots(2);
+      else if (newType === '2 vs 2') setTotalSlots(4);
+      handleEntryFeeChange(entryFee, newType);
     }
   };
 
@@ -406,7 +502,7 @@ export default function AdminTournamentsPage() {
                 </label>
                 <select
                   value={categorySlug}
-                  onChange={(e) => setCategorySlug(e.target.value)}
+                  onChange={(e) => handleCategorySelect(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/40 text-xs font-bold focus:outline-none focus:border-red-500"
                 >
                   {categoriesList.map((cat) => (
@@ -424,7 +520,13 @@ export default function AdminTournamentsPage() {
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Bermuda Squad Grand Cup #1"
+                  placeholder={
+                    isLoneWolf
+                      ? 'e.g. Lone Wolf 1v1 Iron Cage Duel #1'
+                      : isClashSquad
+                      ? 'e.g. Clash Squad 4v4 Bermuda Battle #1'
+                      : 'e.g. Bermuda Squad Grand Cup #1'
+                  }
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/40 text-xs font-bold focus:outline-none focus:border-red-500"
@@ -438,21 +540,30 @@ export default function AdminTournamentsPage() {
                   </label>
                   <select
                     value={type}
-                    onChange={(e) => {
-                      const newType = e.target.value;
-                      setType(newType);
-                      if (newType === 'Squad' || newType === 'Solo' || newType === 'Duo') setTotalSlots(48);
-                      else if (newType === '4 vs 4') setTotalSlots(8);
-                      else if (newType === '1 vs 1') setTotalSlots(2);
-                      handleEntryFeeChange(entryFee, newType);
-                    }}
+                    onChange={(e) => handleTypeSelect(e.target.value)}
                     className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/40 text-xs font-bold focus:outline-none focus:border-red-500"
                   >
-                    <option value="Squad">Squad</option>
-                    <option value="Solo">Solo</option>
-                    <option value="Duo">Duo</option>
-                    <option value="4 vs 4">4 vs 4</option>
-                    <option value="1 vs 1">1 vs 1</option>
+                    {isLoneWolf ? (
+                      <>
+                        <option value="1 vs 1">1 vs 1 (Solo)</option>
+                        <option value="2 vs 2">2 vs 2 (Duo)</option>
+                      </>
+                    ) : isClashSquad ? (
+                      <>
+                        <option value="1 vs 1">1 vs 1</option>
+                        <option value="2 vs 2">2 vs 2</option>
+                        <option value="4 vs 4">4 vs 4 (Squad)</option>
+                      </>
+                    ) : (
+                      <>
+                        <option value="Squad">Squad</option>
+                        <option value="Solo">Solo</option>
+                        <option value="Duo">Duo</option>
+                        <option value="4 vs 4">4 vs 4</option>
+                        <option value="1 vs 1">1 vs 1</option>
+                        <option value="2 vs 2">2 vs 2</option>
+                      </>
+                    )}
                   </select>
                 </div>
 
@@ -465,16 +576,17 @@ export default function AdminTournamentsPage() {
                     onChange={(e) => setMapType(e.target.value)}
                     className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/40 text-xs font-bold focus:outline-none focus:border-red-500"
                   >
+                    <option value="Iron Cage">Iron Cage</option>
                     <option value="Bermuda">Bermuda</option>
                     <option value="Purgatory">Purgatory</option>
                     <option value="Kalahari">Kalahari</option>
                     <option value="Alpine">Alpine</option>
-                    <option value="Iron Cage">Iron Cage</option>
                   </select>
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              {/* Fee & Prize Grid */}
+              <div className={`grid ${isLoneWolf || isClashSquad ? 'grid-cols-2' : 'grid-cols-3'} gap-3`}>
                 <div>
                   <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
                     Entry Fee (৳)
@@ -489,27 +601,42 @@ export default function AdminTournamentsPage() {
 
                 <div>
                   <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                    Prize Pool (৳)
+                    {isLoneWolf
+                      ? 'Winning Prize (৳)'
+                      : isClashSquad
+                      ? 'Winning Team Prize (৳)'
+                      : 'Prize Pool (৳)'}
                   </label>
                   <input
                     type="number"
                     value={prizePool}
-                    onChange={(e) => setPrizePool(Number(e.target.value))}
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      setPrizePool(val);
+                      if (isLoneWolf || isClashSquad) {
+                        setFirstPrize(val);
+                        setSecondPrize(0);
+                        setThirdPrize(0);
+                        setPerKill(0);
+                      }
+                    }}
                     className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/40 text-xs font-bold focus:outline-none focus:border-red-500"
                   />
                 </div>
 
-                <div>
-                  <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                    Per Kill (৳)
-                  </label>
-                  <input
-                    type="number"
-                    value={perKill}
-                    onChange={(e) => setPerKill(Number(e.target.value))}
-                    className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/40 text-xs font-bold focus:outline-none focus:border-red-500"
-                  />
-                </div>
+                {!isLoneWolf && !isClashSquad && (
+                  <div>
+                    <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
+                      Per Kill (৳)
+                    </label>
+                    <input
+                      type="number"
+                      value={perKill}
+                      onChange={(e) => setPerKill(Number(e.target.value))}
+                      className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/40 text-xs font-bold focus:outline-none focus:border-red-500"
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -571,10 +698,27 @@ export default function AdminTournamentsPage() {
                     onChange={(e) => setTotalSlots(Number(e.target.value))}
                     className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/40 text-xs font-bold focus:outline-none focus:border-red-500"
                   >
-                    <option value="48">48 Slots</option>
-                    <option value="12">12 Slots</option>
-                    <option value="8">8 Slots</option>
-                    <option value="2">2 Slots</option>
+                    {isLoneWolf ? (
+                      <>
+                        <option value="2">2 Slots (1 vs 1 Solo)</option>
+                        <option value="4">4 Slots (2 vs 2 Duo)</option>
+                      </>
+                    ) : isClashSquad ? (
+                      <>
+                        <option value="2">2 Slots (1 vs 1)</option>
+                        <option value="4">4 Slots (2 vs 2)</option>
+                        <option value="8">8 Slots (4 vs 4 Squad)</option>
+                      </>
+                    ) : (
+                      <>
+                        <option value="48">48 Slots</option>
+                        <option value="24">24 Slots</option>
+                        <option value="12">12 Slots</option>
+                        <option value="8">8 Slots</option>
+                        <option value="4">4 Slots</option>
+                        <option value="2">2 Slots</option>
+                      </>
+                    )}
                   </select>
                 </div>
               </div>

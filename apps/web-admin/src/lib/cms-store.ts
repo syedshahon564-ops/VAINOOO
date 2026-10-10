@@ -432,9 +432,39 @@ export function normalizeCMSData(input: Partial<CMSData> | null | undefined): CM
     }
   }
 
+  const cleanMatches: MatchItem[] = Array.isArray(src.matches)
+    ? src.matches
+        .filter((m: any) => m && typeof m === 'object')
+        .map((m: any) => {
+          const isLoneWolf = m.categorySlug === 'lone-wolf';
+          const isClashSquad = m.categorySlug === 'clash-squad' || m.categorySlug === 'cs-only-headshot';
+          if (isLoneWolf) {
+            return {
+              ...m,
+              perKill: 0,
+              secondPrize: 0,
+              thirdPrize: 0,
+              firstPrize: m.firstPrize || m.prizePool,
+              totalSlots: m.type === '2 vs 2' ? 4 : 2,
+            };
+          }
+          if (isClashSquad) {
+            return {
+              ...m,
+              perKill: 0,
+              secondPrize: 0,
+              thirdPrize: 0,
+              firstPrize: m.firstPrize || m.prizePool,
+              totalSlots: m.type === '1 vs 1' ? 2 : m.type === '2 vs 2' ? 4 : 8,
+            };
+          }
+          return m;
+        })
+    : [];
+
   return {
     categories: healedCategories,
-    matches: Array.isArray(src.matches) ? src.matches.filter((m: any) => m && typeof m === 'object') : [],
+    matches: cleanMatches,
     settings: { ...INITIAL_SETTINGS, ...(src.settings && typeof src.settings === 'object' ? src.settings : {}) },
     topPlayers: Array.isArray(src.topPlayers)
       ? src.topPlayers.filter((p: any) => p && typeof p === 'object')
@@ -467,8 +497,36 @@ export function saveCMSData(input: CMSData): void {
 
 export function addMatch(match: Omit<MatchItem, 'id' | 'filledSlots'>): MatchItem {
   const data = getCMSData();
+  const isLoneWolf = match.categorySlug === 'lone-wolf';
+  const isClashSquad = match.categorySlug === 'clash-squad' || match.categorySlug === 'cs-only-headshot';
+
+  let totalSlots = match.totalSlots;
+  let perKill = match.perKill;
+  let firstPrize = match.firstPrize || match.prizePool;
+  let secondPrize = match.secondPrize || 0;
+  let thirdPrize = match.thirdPrize || 0;
+
+  if (isLoneWolf) {
+    perKill = 0;
+    secondPrize = 0;
+    thirdPrize = 0;
+    firstPrize = match.prizePool;
+    totalSlots = match.type === '2 vs 2' ? 4 : 2;
+  } else if (isClashSquad) {
+    perKill = 0;
+    secondPrize = 0;
+    thirdPrize = 0;
+    firstPrize = match.prizePool;
+    totalSlots = match.type === '1 vs 1' ? 2 : match.type === '2 vs 2' ? 4 : 8;
+  }
+
   const newMatch: MatchItem = {
     ...match,
+    totalSlots,
+    perKill,
+    firstPrize,
+    secondPrize,
+    thirdPrize,
     id: 'm-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
     filledSlots: 0,
     status: match.status || 'UPCOMING',

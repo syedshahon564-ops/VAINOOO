@@ -1449,10 +1449,26 @@ export default function MobileAppViewPage(props: any) {
                                     </div>
                                     <div>
                                       <span className="text-[9px] uppercase font-bold text-gray-500 block tracking-tight">
-                                        PER KILL
+                                        {m.categorySlug === 'lone-wolf' ||
+                                        m.categorySlug === 'clash-squad' ||
+                                        m.categorySlug === 'cs-only-headshot' ||
+                                        m.type === '1 vs 1' ||
+                                        m.type === '2 vs 2' ||
+                                        m.type === '4 vs 4' ||
+                                        !m.perKill
+                                          ? 'SLOTS'
+                                          : 'PER KILL'}
                                       </span>
                                       <span className="font-black text-gray-900 text-xs">
-                                        {m.perKill} TK
+                                        {m.categorySlug === 'lone-wolf' ||
+                                        m.categorySlug === 'clash-squad' ||
+                                        m.categorySlug === 'cs-only-headshot' ||
+                                        m.type === '1 vs 1' ||
+                                        m.type === '2 vs 2' ||
+                                        m.type === '4 vs 4' ||
+                                        !m.perKill
+                                          ? `${m.totalSlots} SLOTS`
+                                          : `${m.perKill} TK`}
                                       </span>
                                     </div>
                                     <div>

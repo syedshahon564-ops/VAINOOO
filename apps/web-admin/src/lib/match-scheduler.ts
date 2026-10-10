@@ -359,27 +359,35 @@ function buildSpecs(slug: string, count: number): BotMatchSpec[] {
     } else if (slug === 'clash-squad') {
       const entry = CLASH_ENTRIES[i % CLASH_ENTRIES.length];
       const map = MAPS_CS[i % MAPS_CS.length];
+      const modePattern = i % 3;
+      const type = modePattern === 0 ? '4 vs 4' : modePattern === 1 ? '2 vs 2' : '1 vs 1';
+      const slots = type === '4 vs 4' ? 8 : type === '2 vs 2' ? 4 : 2;
       specs.push({
-        title: `Clash Squad 4v4 • ${map}`,
-        type: '4 vs 4',
+        title: `Clash Squad ${type} • ${map}`,
+        type,
         map,
         entryFee: entry,
-        totalSlots: 8,
+        totalSlots: slots,
         perKill: 0,
-        ...buildPrizes(entry * 8, 'single'),
-        rules: `১. ক্ল্যাশ স্কোয়াড ৭ রাউন্ডের খেলা।\n২. গ্রেনেড সম্পূর্ণ নিষিদ্ধ। গ্রেনেড মারলে তৎক্ষণাৎ ডিসকোয়ালিফাই।\n৩. রুফ ক্যাম্পিং নিষিদ্ধ।`,
+        ...buildPrizes(entry * slots, 'single'),
+        rules: `১. ক্ল্যাশ স্কোয়াড ৭ রাউন্ডের খেলা।\n২. গ্রেনেড সম্পূর্ণ নিষিদ্ধ। গ্রেনেড মারলে তৎক্ষণাৎ ডিসকোয়ালিফাই।\n৩. বিজয়ী দল সম্পূর্ণ প্রাইজপুল পাবে।`,
       });
     } else if (slug === 'lone-wolf') {
       const entry = LONE_WOLF_ENTRIES[i % LONE_WOLF_ENTRIES.length];
+      const isDuo = i % 2 === 1;
+      const type = isDuo ? '2 vs 2' : '1 vs 1';
+      const slots = isDuo ? 4 : 2;
       specs.push({
-        title: `Lone Wolf 1v1 • Iron Cage`,
-        type: '1 vs 1',
+        title: isDuo ? `Lone Wolf Duo 2v2 • Iron Cage` : `Lone Wolf 1v1 • Iron Cage`,
+        type,
         map: 'Iron Cage',
         entryFee: entry,
-        totalSlots: 2,
+        totalSlots: slots,
         perKill: 0,
-        ...buildPrizes(entry * 2, 'single'),
-        rules: `১. ১ বনাম ১ সরাসরি ডুয়েল ফাইট।\n২. কোনো প্রকার গান বা ক্যারেক্টার রেস্ট্রিকশন নেই।`,
+        ...buildPrizes(entry * slots, 'single'),
+        rules: isDuo
+          ? `১. ২ বনাম ২ ডুও ফাইট।\n২. বিজয়ী দল সম্পূর্ণ প্রাইজপুল পাবে।\n৩. কোনো প্রকার গান বা ক্যারেক্টার রেস্ট্রিকশন নেই।`
+          : `১. ১ বনাম ১ সরাসরি ডুয়েল ফাইট।\n২. কোনো প্রকার গান বা ক্যারেক্টার রেস্ট্রিকশন নেই।`,
       });
     } else if (slug === 'lost-to-win') {
       const entry = LOST_TO_WIN_ENTRIES[i % LOST_TO_WIN_ENTRIES.length];

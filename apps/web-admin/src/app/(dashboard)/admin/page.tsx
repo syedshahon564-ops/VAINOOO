@@ -208,11 +208,87 @@ export default function AdminMasterPage() {
   };
 
   // 1. HANDLE CREATE MATCH
+  const isMatchLoneWolf = matchCategory === 'lone-wolf';
+  const isMatchClashSquad = matchCategory === 'clash-squad' || matchCategory === 'cs-only-headshot';
+
+  const handleSelectMatchCategory = (slug: string) => {
+    setMatchCategory(slug);
+    const cat = categories[slug];
+    if (cat?.bannerImage) {
+      setMatchBannerImage(cat.bannerImage);
+    }
+    if (slug === 'lone-wolf') {
+      setMatchType('1 vs 1');
+      setMatchTotalSlots(2);
+      setMatchMap('Iron Cage');
+      setMatchPerKill(0);
+      setMatchSecondPrize(0);
+      setMatchThirdPrize(0);
+      const pool = Math.max(10, Math.round(matchEntryFee * 2 * 0.85));
+      setMatchPrizePool(pool);
+      setMatchFirstPrize(pool);
+    } else if (slug === 'clash-squad' || slug === 'cs-only-headshot') {
+      setMatchType('4 vs 4');
+      setMatchTotalSlots(8);
+      setMatchMap('Bermuda');
+      setMatchPerKill(0);
+      setMatchSecondPrize(0);
+      setMatchThirdPrize(0);
+      const pool = Math.max(20, Math.round(matchEntryFee * 8 * 0.75));
+      setMatchPrizePool(pool);
+      setMatchFirstPrize(pool);
+    } else {
+      setMatchType('Squad');
+      setMatchTotalSlots(48);
+      setMatchMap('Bermuda');
+    }
+  };
+
+  const handleSelectMatchType = (newType: string) => {
+    setMatchType(newType);
+    if (matchCategory === 'lone-wolf') {
+      const slots = newType === '2 vs 2' ? 4 : 2;
+      setMatchTotalSlots(slots);
+      const pool = Math.max(10, Math.round(matchEntryFee * slots * 0.85));
+      setMatchPrizePool(pool);
+      setMatchFirstPrize(pool);
+      setMatchSecondPrize(0);
+      setMatchThirdPrize(0);
+      setMatchPerKill(0);
+    } else if (matchCategory === 'clash-squad' || matchCategory === 'cs-only-headshot') {
+      const slots = newType === '1 vs 1' ? 2 : newType === '2 vs 2' ? 4 : 8;
+      setMatchTotalSlots(slots);
+      const pool = Math.max(10, Math.round(matchEntryFee * slots * 0.8));
+      setMatchPrizePool(pool);
+      setMatchFirstPrize(pool);
+      setMatchSecondPrize(0);
+      setMatchThirdPrize(0);
+      setMatchPerKill(0);
+    } else {
+      if (newType === 'Squad' || newType === 'Solo' || newType === 'Duo') setMatchTotalSlots(48);
+      else if (newType === '4 vs 4') setMatchTotalSlots(8);
+      else if (newType === '1 vs 1') setMatchTotalSlots(2);
+      else if (newType === '2 vs 2') setMatchTotalSlots(4);
+    }
+  };
+
   const handleCreateMatch = (e: React.FormEvent) => {
     e.preventDefault();
     if (!matchTitle.trim()) {
       showToast('Please provide a match name or title', 'error');
       return;
+    }
+
+    const isSingle = matchCategory === 'lone-wolf' || matchCategory === 'clash-squad' || matchCategory === 'cs-only-headshot';
+    const finalPerKill = isSingle ? 0 : Number(matchPerKill);
+    const finalFirstPrize = isSingle ? Number(matchPrizePool) : Number(matchFirstPrize);
+    const finalSecondPrize = isSingle ? 0 : Number(matchSecondPrize);
+    const finalThirdPrize = isSingle ? 0 : Number(matchThirdPrize);
+    let finalSlots = Number(matchTotalSlots);
+    if (matchCategory === 'lone-wolf') {
+      finalSlots = matchType === '2 vs 2' ? 4 : 2;
+    } else if (matchCategory === 'clash-squad' || matchCategory === 'cs-only-headshot') {
+      finalSlots = matchType === '1 vs 1' ? 2 : matchType === '2 vs 2' ? 4 : 8;
     }
 
     addMatch({
@@ -223,11 +299,11 @@ export default function AdminMasterPage() {
       time: matchTime,
       entryFee: Number(matchEntryFee),
       prizePool: Number(matchPrizePool),
-      perKill: Number(matchPerKill),
-      firstPrize: Number(matchFirstPrize),
-      secondPrize: Number(matchSecondPrize),
-      thirdPrize: Number(matchThirdPrize),
-      totalSlots: Number(matchTotalSlots),
+      perKill: finalPerKill,
+      firstPrize: finalFirstPrize,
+      secondPrize: finalSecondPrize,
+      thirdPrize: finalThirdPrize,
+      totalSlots: finalSlots,
       bannerImage: matchBannerImage,
       rules: matchRules,
     });
@@ -500,7 +576,7 @@ export default function AdminMasterPage() {
                   </label>
                   <select
                     value={matchCategory}
-                    onChange={(e) => setMatchCategory(e.target.value)}
+                    onChange={(e) => handleSelectMatchCategory(e.target.value)}
                     className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/30 text-xs font-bold focus:outline-none focus:border-red-500"
                   >
                     {categoriesList.map((cat) => (
@@ -519,7 +595,13 @@ export default function AdminMasterPage() {
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Match #101 • Bermuda Squad Tournament"
+                    placeholder={
+                      isMatchLoneWolf
+                        ? 'e.g. Lone Wolf 1v1 Iron Cage Duel #1'
+                        : isMatchClashSquad
+                        ? 'e.g. Clash Squad 4v4 Bermuda Battle #1'
+                        : 'e.g. Match #101 • Bermuda Squad Tournament'
+                    }
                     value={matchTitle}
                     onChange={(e) => setMatchTitle(e.target.value)}
                     className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/30 text-xs font-bold focus:outline-none focus:border-red-500"
@@ -553,12 +635,12 @@ export default function AdminMasterPage() {
                     onChange={(e) => setMatchMap(e.target.value)}
                     className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/30 text-xs font-bold focus:outline-none focus:border-red-500"
                   >
+                    <option value="Iron Cage">Iron Cage</option>
                     <option value="Bermuda">Bermuda</option>
                     <option value="Purgatory">Purgatory</option>
                     <option value="Kalahari">Kalahari</option>
                     <option value="Alpine">Alpine</option>
                     <option value="NexTerra">NexTerra</option>
-                    <option value="Iron Cage">Iron Cage</option>
                   </select>
                 </div>
 
@@ -569,14 +651,30 @@ export default function AdminMasterPage() {
                   </label>
                   <select
                     value={matchType}
-                    onChange={(e) => setMatchType(e.target.value)}
+                    onChange={(e) => handleSelectMatchType(e.target.value)}
                     className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/30 text-xs font-bold focus:outline-none focus:border-red-500"
                   >
-                    <option value="Squad">Squad</option>
-                    <option value="Solo">Solo</option>
-                    <option value="Duo">Duo</option>
-                    <option value="4 vs 4">4 vs 4</option>
-                    <option value="1 vs 1">1 vs 1</option>
+                    {isMatchLoneWolf ? (
+                      <>
+                        <option value="1 vs 1">1 vs 1 (Solo)</option>
+                        <option value="2 vs 2">2 vs 2 (Duo)</option>
+                      </>
+                    ) : isMatchClashSquad ? (
+                      <>
+                        <option value="1 vs 1">1 vs 1</option>
+                        <option value="2 vs 2">2 vs 2</option>
+                        <option value="4 vs 4">4 vs 4 (Squad)</option>
+                      </>
+                    ) : (
+                      <>
+                        <option value="Squad">Squad</option>
+                        <option value="Solo">Solo</option>
+                        <option value="Duo">Duo</option>
+                        <option value="4 vs 4">4 vs 4</option>
+                        <option value="1 vs 1">1 vs 1</option>
+                        <option value="2 vs 2">2 vs 2</option>
+                      </>
+                    )}
                   </select>
                 </div>
 
@@ -590,10 +688,27 @@ export default function AdminMasterPage() {
                     onChange={(e) => setMatchTotalSlots(Number(e.target.value))}
                     className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/30 text-xs font-bold focus:outline-none focus:border-red-500"
                   >
-                    <option value="48">48 Slots (Standard BR)</option>
-                    <option value="12">12 Slots (Mini BR)</option>
-                    <option value="8">8 Slots (Clash Squad)</option>
-                    <option value="2">2 Slots (1 vs 1)</option>
+                    {isMatchLoneWolf ? (
+                      <>
+                        <option value="2">2 Slots (1 vs 1 Solo)</option>
+                        <option value="4">4 Slots (2 vs 2 Duo)</option>
+                      </>
+                    ) : isMatchClashSquad ? (
+                      <>
+                        <option value="2">2 Slots (1 vs 1)</option>
+                        <option value="4">4 Slots (2 vs 2)</option>
+                        <option value="8">8 Slots (4 vs 4 Squad)</option>
+                      </>
+                    ) : (
+                      <>
+                        <option value="48">48 Slots (Standard BR)</option>
+                        <option value="24">24 Slots (Duo BR)</option>
+                        <option value="12">12 Slots (Mini BR)</option>
+                        <option value="8">8 Slots (Clash Squad)</option>
+                        <option value="4">4 Slots (2 vs 2)</option>
+                        <option value="2">2 Slots (1 vs 1)</option>
+                      </>
+                    )}
                   </select>
                 </div>
 
@@ -605,72 +720,112 @@ export default function AdminMasterPage() {
                   <input
                     type="number"
                     value={matchEntryFee}
-                    onChange={(e) => setMatchEntryFee(Number(e.target.value))}
+                    onChange={(e) => {
+                      const fee = Number(e.target.value);
+                      setMatchEntryFee(fee);
+                      if (isMatchLoneWolf) {
+                        const slots = matchType === '2 vs 2' ? 4 : 2;
+                        const pool = Math.max(10, Math.round(fee * slots * 0.85));
+                        setMatchPrizePool(pool);
+                        setMatchFirstPrize(pool);
+                      } else if (isMatchClashSquad) {
+                        const slots = matchType === '1 vs 1' ? 2 : matchType === '2 vs 2' ? 4 : 8;
+                        const pool = Math.max(10, Math.round(fee * slots * 0.8));
+                        setMatchPrizePool(pool);
+                        setMatchFirstPrize(pool);
+                      }
+                    }}
                     className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/30 text-xs font-bold focus:outline-none focus:border-red-500"
                   />
                 </div>
               </div>
 
               {/* Prize Pool Breakdown */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 rounded-xl bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-white/5">
-                <div>
-                  <label className="text-xs font-bold text-emerald-600 block mb-1">
-                    Total Prize Pool (৳)
+              {isMatchLoneWolf || isMatchClashSquad ? (
+                <div className="p-4 rounded-xl bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-white/5 space-y-2">
+                  <label className="text-xs font-bold text-emerald-600 block">
+                    {isMatchLoneWolf ? 'Winning Prize Pool (৳)' : 'Winning Team Prize Pool (৳)'}
                   </label>
                   <input
                     type="number"
                     value={matchPrizePool}
-                    onChange={(e) => setMatchPrizePool(Number(e.target.value))}
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      setMatchPrizePool(val);
+                      setMatchFirstPrize(val);
+                      setMatchSecondPrize(0);
+                      setMatchThirdPrize(0);
+                      setMatchPerKill(0);
+                    }}
                     className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-black/40 text-xs font-bold focus:outline-none"
                   />
+                  <p className="text-[11px] text-gray-500">
+                    {isMatchLoneWolf
+                      ? '💡 Lone Wolf mode awards the full winning prize to the winner (1v1 or 2v2). No Per Kill or 2nd/3rd position cuts.'
+                      : '💡 Clash Squad mode awards the entire prize pool to the winning team. No Per Kill fees.'}
+                  </p>
                 </div>
-
-                <div>
-                  <label className="text-xs font-bold text-blue-600 block mb-1">
-                    Per Kill Reward (৳)
-                  </label>
-                  <input
-                    type="number"
-                    value={matchPerKill}
-                    onChange={(e) => setMatchPerKill(Number(e.target.value))}
-                    className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-black/40 text-xs font-bold focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-bold text-amber-600 block mb-1">
-                    1st Prize (৳)
-                  </label>
-                  <input
-                    type="number"
-                    value={matchFirstPrize}
-                    onChange={(e) => setMatchFirstPrize(Number(e.target.value))}
-                    className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-black/40 text-xs font-bold focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-bold text-gray-500 block mb-1">
-                    2nd & 3rd Prize (৳)
-                  </label>
-                  <div className="flex gap-2">
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 rounded-xl bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-white/5">
+                  <div>
+                    <label className="text-xs font-bold text-emerald-600 block mb-1">
+                      Total Prize Pool (৳)
+                    </label>
                     <input
                       type="number"
-                      placeholder="2nd"
-                      value={matchSecondPrize}
-                      onChange={(e) => setMatchSecondPrize(Number(e.target.value))}
-                      className="w-1/2 px-2 py-2 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-black/40 text-xs font-bold focus:outline-none"
-                    />
-                    <input
-                      type="number"
-                      placeholder="3rd"
-                      value={matchThirdPrize}
-                      onChange={(e) => setMatchThirdPrize(Number(e.target.value))}
-                      className="w-1/2 px-2 py-2 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-black/40 text-xs font-bold focus:outline-none"
+                      value={matchPrizePool}
+                      onChange={(e) => setMatchPrizePool(Number(e.target.value))}
+                      className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-black/40 text-xs font-bold focus:outline-none"
                     />
                   </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-blue-600 block mb-1">
+                      Per Kill Reward (৳)
+                    </label>
+                    <input
+                      type="number"
+                      value={matchPerKill}
+                      onChange={(e) => setMatchPerKill(Number(e.target.value))}
+                      className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-black/40 text-xs font-bold focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-amber-600 block mb-1">
+                      1st Prize (৳)
+                    </label>
+                    <input
+                      type="number"
+                      value={matchFirstPrize}
+                      onChange={(e) => setMatchFirstPrize(Number(e.target.value))}
+                      className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-black/40 text-xs font-bold focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-gray-500 block mb-1">
+                      2nd & 3rd Prize (৳)
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="number"
+                        placeholder="2nd"
+                        value={matchSecondPrize}
+                        onChange={(e) => setMatchSecondPrize(Number(e.target.value))}
+                        className="w-1/2 px-2 py-2 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-black/40 text-xs font-bold focus:outline-none"
+                      />
+                      <input
+                        type="number"
+                        placeholder="3rd"
+                        value={matchThirdPrize}
+                        onChange={(e) => setMatchThirdPrize(Number(e.target.value))}
+                        className="w-1/2 px-2 py-2 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-black/40 text-xs font-bold focus:outline-none"
+                      />
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Match Banner Image with File Upload & Preview */}
               <ImageUploadInput

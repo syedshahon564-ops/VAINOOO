@@ -149,12 +149,27 @@ export default function MatchDetailsPage({
               {match.firstPrize || match.prizePool || 170} TK
             </span>
           </div>
-          <div className="px-4 py-2 rounded-xl border border-gray-200 bg-gray-50 text-xs font-bold text-gray-700">
-            Per Kill:{' '}
-            <span className="font-black text-gray-900">
-              {match.perKill || 0} TK
-            </span>
-          </div>
+          {match.categorySlug === 'lone-wolf' ||
+          match.categorySlug === 'clash-squad' ||
+          match.categorySlug === 'cs-only-headshot' ||
+          match.type === '1 vs 1' ||
+          match.type === '2 vs 2' ||
+          match.type === '4 vs 4' ||
+          !match.perKill ? (
+            <div className="px-4 py-2 rounded-xl border border-gray-200 bg-gray-50 text-xs font-bold text-gray-700">
+              Format:{' '}
+              <span className="font-black text-gray-900">
+                {match.type} ({match.totalSlots} Slots)
+              </span>
+            </div>
+          ) : (
+            <div className="px-4 py-2 rounded-xl border border-gray-200 bg-gray-50 text-xs font-bold text-gray-700">
+              Per Kill:{' '}
+              <span className="font-black text-gray-900">
+                {match.perKill || 0} TK
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
