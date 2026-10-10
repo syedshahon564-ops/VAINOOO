@@ -3280,7 +3280,7 @@ export default function MobileAppViewPage(props: any) {
         </div>
       )}
 
-      {/* 10. MANDATORY 4 MB LATEST APP UPDATE MODAL */}
+      {/* 10. MANDATORY 20 MB LATEST APP UPDATE MODAL */}
       {showUpdateModal && (
         <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-4 bg-black/90 backdrop-blur-xl animate-fadeIn">
           <div className="relative w-full max-w-sm rounded-3xl bg-gradient-to-b from-[#180a0a] via-[#11111a] to-[#0a0a10] border-2 border-red-500/50 p-5 sm:p-6 text-white shadow-2xl shadow-red-600/30 text-center space-y-4">
@@ -3291,7 +3291,7 @@ export default function MobileAppViewPage(props: any) {
                 <Sparkles className="w-8 h-8 text-amber-400 animate-pulse" />
               </div>
               <span className="absolute -top-2 -right-2 px-2 py-0.5 rounded-full bg-red-600 text-[10px] font-black tracking-wider text-white border-2 border-[#11111a] shadow-md animate-bounce">
-                NEW 4 MB
+                NEW 20 MB
               </span>
             </div>
 
@@ -3305,14 +3305,14 @@ export default function MobileAppViewPage(props: any) {
                 অ্যাপ আপডেট করুন! 🚀
               </h3>
               <p className="text-xs text-gray-300 leading-relaxed pt-1">
-                <span className="text-amber-400 font-bold">FF RIVALS TOUR BD</span> অ্যাপে প্রবেশ করতে হলে অবশ্যই সর্বশেষ <span className="text-red-400 font-bold">৪ MB (v3.5.0)</span> আপডেট সম্পন্ন করতে হবে। আপডেট না করলে অ্যাপে প্রবেশ করা যাবে না।
+                <span className="text-amber-400 font-bold">FF RIVALS TOUR BD</span> অ্যাপে প্রবেশ করতে হলে অবশ্যই সর্বশেষ <span className="text-red-400 font-bold">২০ MB (v3.5.0)</span> আপডেট সম্পন্ন করতে হবে। আপডেট না করলে অ্যাপে প্রবেশ করা যাবে না।
               </p>
             </div>
 
             {/* Specs Badges */}
             <div className="flex items-center justify-center gap-2 text-[11px] font-bold">
               <span className="px-3 py-1 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                📦 সাইজ: ৪ এমবি (4 MB)
+                📦 সাইজ: ২০ এমবি (20 MB)
               </span>
               <span className="px-3 py-1 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
                 ⚡ ভার্সন: v3.5.0 Latest
@@ -3412,7 +3412,7 @@ export default function MobileAppViewPage(props: any) {
                 >
                   <Download className={`w-5 h-5 ${updateDownloading ? 'animate-bounce' : ''}`} />
                   <span>
-                    {updateDownloading ? 'ডাউনলোড হচ্ছে (৪ MB)...' : '📥 এখনই আপডেট করুন (৪ MB)'}
+                    {updateDownloading ? 'ডাউনলোড হচ্ছে (২০ MB)...' : '📥 এখনই আপডেট করুন (২০ MB)'}
                   </span>
                 </button>
               ) : (
@@ -3444,7 +3444,7 @@ export default function MobileAppViewPage(props: any) {
                     className="w-full py-2 rounded-xl text-gray-400 hover:text-white text-[11px] font-semibold flex items-center justify-center gap-1 transition-colors"
                   >
                     <RefreshCw className="w-3 h-3" />
-                    <span>পুনরায় ডাউনলোড করতে ক্লিক করুন (4 MB)</span>
+                    <span>পুনরায় ডাউনলোড করতে ক্লিক করুন (20 MB)</span>
                   </button>
                 </div>
               )}

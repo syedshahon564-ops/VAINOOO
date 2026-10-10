@@ -6,6 +6,8 @@ import { ThemeProvider } from '@/components/ThemeProvider';
 import { LanguageProvider } from '@/components/LanguageProvider';
 import AutoSchedulerRunner from '@/components/AutoSchedulerRunner';
 import AppUpdateModal from '@/components/AppUpdateModal';
+import ImportantNoticeModal from '@/components/ImportantNoticeModal';
+import NotificationPermissionModal from '@/components/NotificationPermissionModal';
 
 export const viewport: Viewport = {
   themeColor: '#dc2626',
@@ -35,6 +37,8 @@ export default function RootLayout({
         <ThemeProvider>
           <LanguageProvider>
             <AutoSchedulerRunner />
+            <ImportantNoticeModal />
+            <NotificationPermissionModal />
             <Navbar />
             <div className="min-h-[calc(100vh-160px)]">{children}</div>
             <AppUpdateModal />

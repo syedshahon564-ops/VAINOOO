@@ -90,7 +90,7 @@ export default function DownloadAppPage() {
                 <ShieldCheck className="w-3.5 h-3.5" /> ১০০% ভাইরাস মুক্ত
               </span>
               <span className="px-2.5 py-1 rounded-lg bg-white/10 text-white border border-white/15">
-                সাইজ: ৪.৪ MB
+                সাইজ: ২০ MB
               </span>
               <span className="px-2.5 py-1 rounded-lg bg-white/10 text-white border border-white/15">
                 Android 5.0+
@@ -164,7 +164,7 @@ export default function DownloadAppPage() {
               <span>
                 {downloadStarted
                   ? t('APK ডাউনলোড শুরু হয়েছে...', 'APK Downloading...')
-                  : t('APK ফাইল ডাউনলোড করুন (৪.৪ MB)', 'Download APK File (4.4 MB)')}
+                  : t('APK ফাইল ডাউনলোড করুন (২০ MB)', 'Download APK File (20 MB)')}
               </span>
             </button>
           </div>

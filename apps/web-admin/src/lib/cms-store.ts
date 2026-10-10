@@ -88,6 +88,9 @@ export interface SiteSettings {
   howToJoinGuide: string;
   apkDownloadUrl?: string;
   banners?: BannerSlide[];
+  importantNoticeTitle?: string;
+  importantNoticeBody?: string;
+  importantNoticeEnabled?: boolean;
 }
 
 export interface CMSData {
@@ -242,6 +245,13 @@ export const INITIAL_TOP_PLAYERS: TopPlayerItem[] = [
   },
 ];
 
+export const DEFAULT_IMPORTANT_NOTICE = `✍️ We Support only fair players 😎
+প্রথমে নিয়ম পড়বেন all rules button a click করে, সমস্ত mode এর নিয়ম আলাদা 🤝 যারা নিয়ম মেনে খেলতে পারবেন তাদের জন্য GR FF TOUR সেরা 🥳 নিয়ম না মানতে পারলে ম্যাচে জয়েন করবেন না leave and go এই অ্যাপস তাদের জন্য না!
+⛔ একের অধিক (বেশি) ফ্রী ফায়ার আইডি দিয়ে যে এক্স গেম খেলবে তাকে এক্স থেকে ব্যান করা হবে!
+⛔ এক্সের ম্যাচের মধ্যে Garena Free Fire যে প্লেয়ার কে (garena free fire was eliminated by the system due to abnormal behaviour) এই লিখা দিয়ে Eliminate করবে তাকে সঙ্গে সঙ্গে আমাদের এক্স থেকে পার্মানেন্ট ব্যান করা হবে!
+✅ Withdraw 100 টাকার নিচে হলে 5 টাকা খরচ কাটা হবে এবং 100 টাকার বেশি হলে (যেমন 101 টাকা থেকে আপনার যত টাকা ইচ্ছে) 10 টাকা খরচ কাটা হবে! প্রত্যেক উইথড্র উইথড্র রিকোয়েস্ট পাঠানোর 48 ঘণ্টার মধ্যে যাচাই-বাছাই করে সম্পন্ন করা হয়✅ সারাদিন যতবার ইচ্ছে ততবার উইথড্র করবেন😇✅
+যে কোন সমস্যায় আমাদের হোয়াটসঅ্যাপ চ্যানেলে দেওয়া ফেসবুক পেইজে মেসেজ করবেন, সমস্যা নিয়ে যদি আপনি আমাদের সাথে যোগাযোগ না করেন সে ক্ষেত্রে আপনার নিজেরই ক্ষতি আর আমরা সেটা জানতেও পারব না, তাই নির্দ্বিধায় আমাদেরকে মেসেজ করবেন!`;
+
 export const INITIAL_SETTINGS: SiteSettings = {
   siteName: 'FF RIVAL TOUR BD',
   tagline: 'Bangladesh Official Free Fire Esports Arena',
@@ -257,6 +267,9 @@ export const INITIAL_SETTINGS: SiteSettings = {
   paymentInstructionText: '১. আমাদের বিকাশ/নগদ/ডাচ-বাংলা রকেট নাম্বারে Send Money করুন।\n২. নিচে আপনার প্রেরক মোবাইল নম্বর ও TrxID লিখুন।\n৩. বট স্বয়ংক্রিয়ভাবে ট্রানজেকশন যাচাই করে সাথে সাথে ওয়ালেটে ব্যালেন্স যুক্ত করে দিবে।',
   autoWebhookVerification: true,
   apkDownloadUrl: '',
+  importantNoticeTitle: 'Important Notice',
+  importantNoticeBody: DEFAULT_IMPORTANT_NOTICE,
+  importantNoticeEnabled: true,
   banners: [
     {
       id: 'slide-1',
@@ -465,7 +478,13 @@ export function normalizeCMSData(input: Partial<CMSData> | null | undefined): CM
   return {
     categories: healedCategories,
     matches: cleanMatches,
-    settings: { ...INITIAL_SETTINGS, ...(src.settings && typeof src.settings === 'object' ? src.settings : {}) },
+    settings: {
+      ...INITIAL_SETTINGS,
+      ...(src.settings && typeof src.settings === 'object' ? src.settings : {}),
+      importantNoticeTitle: src.settings?.importantNoticeTitle || INITIAL_SETTINGS.importantNoticeTitle,
+      importantNoticeBody: src.settings?.importantNoticeBody ?? INITIAL_SETTINGS.importantNoticeBody,
+      importantNoticeEnabled: src.settings?.importantNoticeEnabled ?? INITIAL_SETTINGS.importantNoticeEnabled,
+    },
     topPlayers: Array.isArray(src.topPlayers)
       ? src.topPlayers.filter((p: any) => p && typeof p === 'object')
       : INITIAL_TOP_PLAYERS,

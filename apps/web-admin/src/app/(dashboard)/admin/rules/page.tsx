@@ -16,6 +16,9 @@ export default function AdminRulesPage() {
   const [whatsappNumber, setWhatsappNumber] = useState(settings.whatsappNumber);
   const [bkashNumber, setBkashNumber] = useState(settings.bkashNumber || '01886121980');
   const [nagadNumber, setNagadNumber] = useState(settings.nagadNumber || '01886121980');
+  const [importantNoticeTitle, setImportantNoticeTitle] = useState(settings.importantNoticeTitle || 'Important Notice');
+  const [importantNoticeBody, setImportantNoticeBody] = useState(settings.importantNoticeBody || '');
+  const [importantNoticeEnabled, setImportantNoticeEnabled] = useState(settings.importantNoticeEnabled ?? true);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // Synchronize form whenever settings loads or updates from CMS
@@ -29,6 +32,9 @@ export default function AdminRulesPage() {
       setWhatsappNumber(settings.whatsappNumber || '');
       setBkashNumber(settings.bkashNumber || '01886121980');
       setNagadNumber(settings.nagadNumber || '01886121980');
+      setImportantNoticeTitle(settings.importantNoticeTitle || 'Important Notice');
+      setImportantNoticeBody(settings.importantNoticeBody || '');
+      setImportantNoticeEnabled(settings.importantNoticeEnabled ?? true);
     }
   }, [settings]);
 
@@ -50,6 +56,9 @@ export default function AdminRulesPage() {
       whatsappNumber,
       bkashNumber,
       nagadNumber,
+      importantNoticeTitle,
+      importantNoticeBody,
+      importantNoticeEnabled,
     });
     setToast({ text: 'Tournament rules, notices, and payment numbers saved successfully!', type: 'success' });
     setTimeout(() => setToast(null), 3000);
@@ -84,6 +93,59 @@ export default function AdminRulesPage() {
 
       <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#12121a] p-6 shadow-sm">
         <form onSubmit={handleSave} className="space-y-6">
+          {/* Important Notice Modal Settings */}
+          <div className="p-4 sm:p-5 rounded-2xl border-2 border-orange-500/40 bg-orange-500/5 space-y-4">
+            <div className="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-orange-500/20">
+              <div className="flex items-center gap-2 text-xs font-black text-orange-500">
+                <span className="text-base">⚠️</span>
+                <span>Important Notice Pop-up Modal (অ্যাপ / ওয়েবসাইটের প্রধান পপ-আপ নোটিশ)</span>
+              </div>
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <span className="text-xs font-bold text-gray-700 dark:text-gray-300">
+                  {importantNoticeEnabled ? 'সক্রিয় (Active)' : 'বন্ধ (Disabled)'}
+                </span>
+                <input
+                  type="checkbox"
+                  checked={importantNoticeEnabled}
+                  onChange={(e) => setImportantNoticeEnabled(e.target.checked)}
+                  className="w-4 h-4 text-orange-600 rounded focus:ring-orange-500"
+                />
+              </label>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3">
+              <div>
+                <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300 block mb-1">
+                  পপ-আপ টাইটেল (Popup Title)
+                </label>
+                <input
+                  type="text"
+                  value={importantNoticeTitle}
+                  onChange={(e) => setImportantNoticeTitle(e.target.value)}
+                  placeholder="Important Notice"
+                  className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-black/30 text-xs font-bold focus:outline-none focus:border-orange-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300 block mb-1">
+                  নোটিশের মূল বিষয়বস্তু (Notice Body / Rules Text with Emojis)
+                </label>
+                <textarea
+                  rows={8}
+                  value={importantNoticeBody}
+                  onChange={(e) => setImportantNoticeBody(e.target.value)}
+                  placeholder="Enter notice text..."
+                  className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-black/30 text-xs font-medium leading-relaxed focus:outline-none focus:border-orange-500 whitespace-pre-wrap"
+                />
+              </div>
+            </div>
+
+            <p className="text-[11px] text-orange-600 dark:text-orange-400 font-medium">
+              💡 এই নোটিশটি প্লেয়াররা অ্যাপে বা ওয়েবসাইটে প্রবেশ করা মাত্র স্ক্রিনে ভেসে উঠবে। প্লেয়ার &apos;GOT IT&apos; চাপলে নোটিশটি বন্ধ হবে।
+            </p>
+          </div>
+
           {/* Top Notice Marquee */}
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-xs font-bold text-gray-900 dark:text-white">
