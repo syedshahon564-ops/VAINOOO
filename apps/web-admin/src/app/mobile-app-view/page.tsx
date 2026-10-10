@@ -11,6 +11,7 @@ import {
   ArrowLeft,
   ChevronRight,
   Shield,
+  ShieldAlert,
   Key,
   Copy,
   CheckCircle,
@@ -235,7 +236,21 @@ export default function MobileAppViewPage(props: any) {
   const [passMessage, setPassMessage] = useState<{ text: string; isError: boolean } | null>(null);
   const [showRulesModal, setShowRulesModal] = useState(false);
   const [showDevInfoModal, setShowDevInfoModal] = useState(false);
-  const [showUpdateModal, setShowUpdateModal] = useState(false);
+  // Mandatory 4 MB Update Modal state
+  const [showUpdateModal, setShowUpdateModal] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      const searchParams = new URLSearchParams(window.location.search);
+      if (searchParams.get('v') === '3.5.0') return false;
+      const installed = localStorage.getItem('ff_app_installed_version_v350');
+      return installed !== 'v3.5.0';
+    } catch {
+      return true;
+    }
+  });
+  const [updateDownloading, setUpdateDownloading] = useState(false);
+  const [updateSuccess, setUpdateSuccess] = useState(false);
+  const [updateProgress, setUpdateProgress] = useState(0);
 
   // Auto-prompt login/register on first entry for new visitors
   useEffect(() => {
@@ -349,6 +364,18 @@ export default function MobileAppViewPage(props: any) {
     }
   };
 
+  // Tab Navigation History
+  const [tabHistory, setTabHistory] = useState<('home' | 'my-matches' | 'top-players' | 'wallet' | 'profile')[]>(['home']);
+
+  const switchTab = (tab: 'home' | 'my-matches' | 'top-players' | 'wallet' | 'profile') => {
+    if (tab === activeTab) return;
+    setTabHistory((prev) => [...prev, tab]);
+    setActiveTab(tab);
+    if (typeof window !== 'undefined') {
+      window.history.pushState({ screen: `tab-${tab}`, time: Date.now() }, '');
+    }
+  };
+
   // In-app History and Slide-Back Manager
   const pushHistory = (screenName: string) => {
     if (typeof window !== 'undefined') {
@@ -356,7 +383,12 @@ export default function MobileAppViewPage(props: any) {
     }
   };
 
-  const handleInAppBack = () => {
+  const handleInAppBack = (): boolean => {
+    // If mandatory update modal is active, do not allow closing without update
+    if (showUpdateModal) {
+      return true;
+    }
+    // 1. Modals & sub-screens (close top-most first)
     if (activeChatTicket) {
       setActiveChatTicket(null);
       return true;
@@ -365,32 +397,75 @@ export default function MobileAppViewPage(props: any) {
       setShowSupportModal(false);
       return true;
     }
-    if (roomDetailsMatch) {
-      setRoomDetailsMatch(null);
+    if (showFinanceModal) {
+      setShowFinanceModal(false);
       return true;
     }
     if (bookingModalMatch) {
       setBookingModalMatch(null);
       return true;
     }
-    if (showFinanceModal) {
-      setShowFinanceModal(false);
+    if (roomDetailsMatch) {
+      setRoomDetailsMatch(null);
+      return true;
+    }
+    if (totalPrizeMatch) {
+      setTotalPrizeMatch(null);
+      return true;
+    }
+    if (selectedPlayerForDetails) {
+      setSelectedPlayerForDetails(null);
+      return true;
+    }
+    if (matchDetailsScreen) {
+      setMatchDetailsScreen(null);
+      return true;
+    }
+    if (showEditInfoModal) {
+      setShowEditInfoModal(false);
+      return true;
+    }
+    if (showChangePasswordModal) {
+      setShowChangePasswordModal(false);
+      return true;
+    }
+    if (showRulesModal) {
+      setShowRulesModal(false);
+      return true;
+    }
+    if (showDevInfoModal) {
+      setShowDevInfoModal(false);
       return true;
     }
     if (showAuthModal) {
       setShowAuthModal(false);
       return true;
     }
-    if (selectedCategory) {
-      setSelectedCategory(null);
+    if (showOverlayModal) {
+      setShowOverlayModal(false);
       return true;
     }
     if (showNotifDropdown) {
       setShowNotifDropdown(false);
       return true;
     }
+    // 2. Category selection
+    if (selectedCategory) {
+      setSelectedCategory(null);
+      return true;
+    }
+    // 3. Tab history navigation
+    if (tabHistory.length > 1) {
+      const updated = [...tabHistory];
+      updated.pop();
+      const prevTab = updated[updated.length - 1] || 'home';
+      setTabHistory(updated);
+      setActiveTab(prevTab);
+      return true;
+    }
     if (activeTab !== 'home') {
       setActiveTab('home');
+      setTabHistory(['home']);
       return true;
     }
     return false;
@@ -399,23 +474,80 @@ export default function MobileAppViewPage(props: any) {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
+    // Seed history state so that side-swiping / back button does not exit the app
+    window.history.pushState({ screen: 'home', depth: 1 }, '');
+
     const onPopState = (e: PopStateEvent) => {
-      // Smoothly navigate back inside app instead of closing/exiting the whole app
-      handleInAppBack();
+      e.preventDefault();
+      const handled = handleInAppBack();
+      if (handled) {
+        // We moved back 1 step inside the app! Keep history trap alive
+        window.history.pushState({ screen: 'in_app', time: Date.now() }, '');
+      } else {
+        // At root Home screen with nothing to back
+        const now = Date.now();
+        const lastPress = (window as any).__lastBackPressTime || 0;
+        if (now - lastPress < 2000) {
+          if ((window as any)?.Capacitor?.Plugins?.App?.exitApp) {
+            (window as any).Capacitor.Plugins.App.exitApp();
+          }
+        } else {
+          (window as any).__lastBackPressTime = now;
+          showPhoneToast(tPhone('অ্যাপ থেকে বের হতে আবার ব্যাক চাপুন', 'Press back again to exit'));
+          window.history.pushState({ screen: 'home_root', time: Date.now() }, '');
+        }
+      }
     };
 
     window.addEventListener('popstate', onPopState);
-    return () => window.removeEventListener('popstate', onPopState);
+
+    // Native Capacitor back button listener for Android APK
+    let capListenerHandle: any = null;
+    try {
+      const capApp = (window as any)?.Capacitor?.Plugins?.App;
+      if (capApp && capApp.addListener) {
+        capListenerHandle = capApp.addListener('backButton', () => {
+          const handled = handleInAppBack();
+          if (!handled) {
+            const now = Date.now();
+            const lastPress = (window as any).__lastBackPressTime || 0;
+            if (now - lastPress < 2000) {
+              capApp.exitApp();
+            } else {
+              (window as any).__lastBackPressTime = now;
+              showPhoneToast(tPhone('অ্যাপ থেকে বের হতে আবার ব্যাক চাপুন', 'Press back again to exit'));
+            }
+          }
+        });
+      }
+    } catch {}
+
+    return () => {
+      window.removeEventListener('popstate', onPopState);
+      if (capListenerHandle && capListenerHandle.remove) {
+        capListenerHandle.remove();
+      }
+    };
   }, [
     activeChatTicket,
     showSupportModal,
+    showFinanceModal,
     roomDetailsMatch,
     bookingModalMatch,
-    showFinanceModal,
+    totalPrizeMatch,
+    selectedPlayerForDetails,
+    matchDetailsScreen,
+    showEditInfoModal,
+    showChangePasswordModal,
+    showRulesModal,
+    showDevInfoModal,
     showAuthModal,
+    showOverlayModal,
     selectedCategory,
     showNotifDropdown,
     activeTab,
+    tabHistory,
+    showUpdateModal,
   ]);
 
   // Translation helper for the phone side
@@ -702,7 +834,7 @@ export default function MobileAppViewPage(props: any) {
       setJoinedSuccess(true);
       setTimeout(() => {
         setJoinedSuccess(false);
-        setActiveTab('my-matches');
+        switchTab('my-matches');
       }, 1500);
     }
     setBookingModalMatch(null);
@@ -940,7 +1072,7 @@ export default function MobileAppViewPage(props: any) {
               <div
                 onTouchStart={(e) => {
                   const t = e.touches[0];
-                  if (t.clientX < 45) {
+                  if (t.clientX < 80) {
                     setEdgeTouchStart({ x: t.clientX, y: t.clientY });
                   }
                 }}
@@ -949,7 +1081,7 @@ export default function MobileAppViewPage(props: any) {
                   const t = e.changedTouches[0];
                   const deltaX = t.clientX - edgeTouchStart.x;
                   const deltaY = Math.abs(t.clientY - edgeTouchStart.y);
-                  if (deltaX > 65 && deltaX > deltaY) {
+                  if (deltaX > 40 && deltaX > deltaY) {
                     handleInAppBack();
                   }
                   setEdgeTouchStart(null);
@@ -1079,7 +1211,7 @@ export default function MobileAppViewPage(props: any) {
                         {/* Balance Pill [ 🪙 0.00 BDT ] */}
                         <button
                           type="button"
-                          onClick={() => setActiveTab('wallet')}
+                          onClick={() => switchTab('wallet')}
                           className="px-2.5 py-1 rounded-full bg-[#4f46e5] hover:bg-[#4338ca] text-white text-[11px] font-black flex items-center gap-1 shadow-sm active:scale-95 transition-all"
                         >
                           <Wallet className="w-3.5 h-3.5 text-white" />
@@ -1146,7 +1278,7 @@ export default function MobileAppViewPage(props: any) {
                         </div>
 
                         <button
-                          onClick={() => setActiveTab('wallet')}
+                          onClick={() => switchTab('wallet')}
                           className="flex items-center gap-1 px-2 py-1 rounded-full bg-red-600/10 text-red-600 border border-red-500/20 text-[10px] font-black"
                         >
                           <Wallet className="w-3 h-3" /> ৳{userBalance.toFixed(0)}
@@ -2430,7 +2562,7 @@ export default function MobileAppViewPage(props: any) {
 
                             {/* 2. Top Players */}
                             <div
-                              onClick={() => setActiveTab('top-players')}
+                              onClick={() => switchTab('top-players')}
                               className="bg-white rounded-2xl border border-slate-200/80 p-3 flex items-center justify-between shadow-xs hover:border-slate-300 transition-all cursor-pointer active:scale-[0.99]"
                             >
                               <div className="flex items-center gap-3">
@@ -2559,7 +2691,7 @@ export default function MobileAppViewPage(props: any) {
                   {/* 1. MATCH */}
                   <button
                     onClick={() => {
-                      setActiveTab('home');
+                      switchTab('home');
                       setSelectedCategory(null);
                     }}
                     className={`flex flex-col items-center gap-0.5 text-[9px] font-bold ${
@@ -2572,7 +2704,7 @@ export default function MobileAppViewPage(props: any) {
 
                   {/* 2. MY MATCHES */}
                   <button
-                    onClick={() => setActiveTab('my-matches')}
+                    onClick={() => switchTab('my-matches')}
                     className={`flex flex-col items-center gap-0.5 text-[9px] font-bold ${
                       activeTab === 'my-matches' ? 'text-red-500 font-black' : 'text-gray-400'
                     }`}
@@ -2583,7 +2715,7 @@ export default function MobileAppViewPage(props: any) {
 
                   {/* 3. TOP PLAYERS */}
                   <button
-                    onClick={() => setActiveTab('top-players')}
+                    onClick={() => switchTab('top-players')}
                     className={`flex flex-col items-center gap-0.5 text-[9px] font-bold ${
                       activeTab === 'top-players' ? 'text-amber-500 font-black' : 'text-gray-400'
                     }`}
@@ -2594,7 +2726,7 @@ export default function MobileAppViewPage(props: any) {
 
                   {/* 4. WALLET */}
                   <button
-                    onClick={() => setActiveTab('wallet')}
+                    onClick={() => switchTab('wallet')}
                     className={`flex flex-col items-center gap-0.5 text-[9px] font-bold ${
                       activeTab === 'wallet' ? 'text-red-500 font-black' : 'text-gray-400'
                     }`}
@@ -2605,7 +2737,7 @@ export default function MobileAppViewPage(props: any) {
 
                   {/* 5. PROFILE */}
                   <button
-                    onClick={() => setActiveTab('profile')}
+                    onClick={() => switchTab('profile')}
                     className={`flex flex-col items-center gap-0.5 text-[9px] font-bold ${
                       activeTab === 'profile' ? 'text-red-500 font-black' : 'text-gray-400'
                     }`}
@@ -3148,38 +3280,182 @@ export default function MobileAppViewPage(props: any) {
         </div>
       )}
 
-      {/* 10. UPDATE MODAL */}
+      {/* 10. MANDATORY 4 MB LATEST APP UPDATE MODAL */}
       {showUpdateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fadeIn">
-          <div className="w-full max-w-sm rounded-3xl bg-white border border-slate-200 p-6 shadow-2xl text-center space-y-4">
-            <div className="w-14 h-14 rounded-2xl bg-teal-50 text-teal-600 mx-auto flex items-center justify-center shadow-inner">
-              <RefreshCw className="w-7 h-7" />
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-4 bg-black/90 backdrop-blur-xl animate-fadeIn">
+          <div className="relative w-full max-w-sm rounded-3xl bg-gradient-to-b from-[#180a0a] via-[#11111a] to-[#0a0a10] border-2 border-red-500/50 p-5 sm:p-6 text-white shadow-2xl shadow-red-600/30 text-center space-y-4">
+            
+            {/* Animated Badge Icon */}
+            <div className="relative w-16 h-16 mx-auto rounded-2xl bg-gradient-to-tr from-red-600 via-amber-500 to-rose-600 p-0.5 shadow-2xl shadow-red-600/40">
+              <div className="w-full h-full rounded-2xl bg-[#0f0a12] flex items-center justify-center">
+                <Sparkles className="w-8 h-8 text-amber-400 animate-pulse" />
+              </div>
+              <span className="absolute -top-2 -right-2 px-2 py-0.5 rounded-full bg-red-600 text-[10px] font-black tracking-wider text-white border-2 border-[#11111a] shadow-md animate-bounce">
+                NEW 4 MB
+              </span>
             </div>
 
-            <div>
-              <h3 className="text-base font-black text-slate-900">Murubbi X Tournament</h3>
-              <p className="text-xs text-slate-500 mt-1">Version 2.4.0 (Latest Official Build)</p>
+            {/* Title & Warning */}
+            <div className="space-y-1">
+              <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-red-500/20 border border-red-500/40 text-red-400 text-[10px] font-black uppercase tracking-wider mb-1">
+                <ShieldAlert className="w-3 h-3 text-red-400" />
+                নতুন আপডেট আবশ্যক (Mandatory Update)
+              </div>
+              <h3 className="text-xl font-black tracking-wide text-white">
+                অ্যাপ আপডেট করুন! 🚀
+              </h3>
+              <p className="text-xs text-gray-300 leading-relaxed pt-1">
+                <span className="text-amber-400 font-bold">FF RIVALS TOUR BD</span> অ্যাপে প্রবেশ করতে হলে অবশ্যই সর্বশেষ <span className="text-red-400 font-bold">৪ MB (v3.5.0)</span> আপডেট সম্পন্ন করতে হবে। আপডেট না করলে অ্যাপে প্রবেশ করা যাবে না।
+              </p>
             </div>
 
-            <p className="text-xs text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100">
-              আপনার অ্যাপটি সম্পূর্ণ আপ-টু-ডেট রয়েছে। নতুন কোনো আপডেট আসলে নোটিফিকেশনের মাধ্যমে জানানো হবে।
-            </p>
+            {/* Specs Badges */}
+            <div className="flex items-center justify-center gap-2 text-[11px] font-bold">
+              <span className="px-3 py-1 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                📦 সাইজ: ৪ এমবি (4 MB)
+              </span>
+              <span className="px-3 py-1 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                ⚡ ভার্সন: v3.5.0 Latest
+              </span>
+            </div>
 
-            <div className="flex items-center gap-2">
+            {/* What's New Feature List */}
+            <div className="rounded-2xl bg-white/[0.04] border border-white/10 p-3 text-left space-y-2 text-[11px]">
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-wider pb-0.5 border-b border-white/10">
+                লেটেস্ট সংস্করণের নতুন সুবিধাসমূহ:
+              </p>
+              <div className="flex items-start gap-2 text-emerald-400 font-medium">
+                <CheckCircle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+                <span>আসল ফ্রি ফায়ার UID অটো-ভেরিফাই ও রিয়েল ইন-গেম নেম</span>
+              </div>
+              <div className="flex items-start gap-2 text-emerald-400 font-medium">
+                <CheckCircle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+                <span>ম্যাচ শুরুর ৫ মিনিট আগে অটোমেটিক রুম আইডি ও পাসওয়ার্ড</span>
+              </div>
+              <div className="flex items-start gap-2 text-amber-300 font-medium">
+                <CheckCircle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+                <span>ইনস্ট্যান্ট bKash / Nagad ডিপোজিট ও উইথড্র সিস্টেম</span>
+              </div>
+              <div className="flex items-start gap-2 text-rose-300 font-medium">
+                <CheckCircle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+                <span>মোবাইল সাইড-ব্যাক ফিক্সড ও সুপারফাস্ট ল্যাগ-ফ্রি পারফরম্যান্স</span>
+              </div>
+            </div>
+
+            {/* Progress Bar (Visible while downloading) */}
+            {updateDownloading && (
+              <div className="space-y-1.5 pt-1">
+                <div className="flex justify-between text-[10px] font-bold text-gray-300">
+                  <span>ডাউনলোড হচ্ছে...</span>
+                  <span>{updateProgress}%</span>
+                </div>
+                <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
+                  <div
+                    className="bg-gradient-to-r from-red-600 to-amber-500 h-full rounded-full transition-all duration-300"
+                    style={{ width: `${updateProgress}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Downloaded Success Notice */}
+            {updateSuccess && (
+              <div className="p-2.5 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-bold space-y-1">
+                <div className="flex items-center justify-center gap-1.5">
+                  <CheckCircle className="w-4 h-4 text-emerald-400" />
+                  <span>APK ফাইলটি ডাউনলোড শুরু হয়েছে!</span>
+                </div>
+                <p className="text-[10px] text-gray-300 font-normal">
+                  আপনার ফোনের Downloads ফোল্ডার বা নোটিফিকেশন বার থেকে <span className="text-white font-bold">ffrivals.apk</span> ফাইলটি ওপেন করে &apos;Install&apos; বা &apos;Update&apos; করুন।
+                </p>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="space-y-2 pt-1">
+              {!updateSuccess ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUpdateDownloading(true);
+                    setUpdateProgress(20);
+                    try {
+                      const a = document.createElement('a');
+                      a.href = '/downloads/ffrivals.apk';
+                      a.download = 'ffrivals.apk';
+                      document.body.appendChild(a);
+                      a.click();
+                      document.body.removeChild(a);
+
+                      const int = setInterval(() => {
+                        setUpdateProgress((prev) => {
+                          if (prev >= 95) {
+                            clearInterval(int);
+                            return 100;
+                          }
+                          return prev + 25;
+                        });
+                      }, 400);
+
+                      setTimeout(() => {
+                        setUpdateDownloading(false);
+                        setUpdateSuccess(true);
+                      }, 1800);
+                    } catch {
+                      window.location.href = '/downloads/ffrivals.apk';
+                      setUpdateDownloading(false);
+                      setUpdateSuccess(true);
+                    }
+                  }}
+                  disabled={updateDownloading}
+                  className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-red-600 via-rose-600 to-amber-600 hover:brightness-110 active:scale-95 text-white font-black text-sm flex items-center justify-center gap-2 shadow-xl shadow-red-600/40 transition-all border border-amber-400/30 cursor-pointer"
+                >
+                  <Download className={`w-5 h-5 ${updateDownloading ? 'animate-bounce' : ''}`} />
+                  <span>
+                    {updateDownloading ? 'ডাউনলোড হচ্ছে (৪ MB)...' : '📥 এখনই আপডেট করুন (৪ MB)'}
+                  </span>
+                </button>
+              ) : (
+                <div className="space-y-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      try {
+                        localStorage.setItem('ff_app_installed_version_v350', 'v3.5.0');
+                      } catch {}
+                      setShowUpdateModal(false);
+                    }}
+                    className="w-full py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 transition-all cursor-pointer"
+                  >
+                    <CheckCircle className="w-4 h-4" />
+                    <span>ইনস্টল সম্পন্ন করেছি, অ্যাপে প্রবেশ করুন</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const a = document.createElement('a');
+                      a.href = '/downloads/ffrivals.apk';
+                      a.download = 'ffrivals.apk';
+                      document.body.appendChild(a);
+                      a.click();
+                      document.body.removeChild(a);
+                    }}
+                    className="w-full py-2 rounded-xl text-gray-400 hover:text-white text-[11px] font-semibold flex items-center justify-center gap-1 transition-colors"
+                  >
+                    <RefreshCw className="w-3 h-3" />
+                    <span>পুনরায় ডাউনলোড করতে ক্লিক করুন (4 MB)</span>
+                  </button>
+                </div>
+              )}
+
               <a
-                href="/ffrivals.apk"
+                href="/downloads/ffrivals.apk"
                 download="ffrivals.apk"
-                className="flex-1 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-md shadow-teal-600/30"
+                className="block text-[11px] text-gray-400 hover:text-amber-400 transition-colors underline pt-1"
               >
-                <Download className="w-4 h-4" /> Download APK
+                সরাসরি ডাউনলোড লিঙ্ক (Direct APK Link)
               </a>
-              <button
-                type="button"
-                onClick={() => setShowUpdateModal(false)}
-                className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs"
-              >
-                Close
-              </button>
             </div>
           </div>
         </div>
