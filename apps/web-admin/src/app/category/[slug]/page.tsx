@@ -183,8 +183,8 @@ export default function CategoryDetailPage() {
           ign: entry.ign,
           uid: entry.uid || '',
           time: bookingMatch.time,
-          roomId: bookingMatch.roomId,
-          roomPass: bookingMatch.roomPass,
+          roomId: bookingMatch.status === 'ROOM_OPEN' ? bookingMatch.roomId : undefined,
+          roomPass: bookingMatch.status === 'ROOM_OPEN' ? bookingMatch.roomPass : undefined,
         });
       });
 

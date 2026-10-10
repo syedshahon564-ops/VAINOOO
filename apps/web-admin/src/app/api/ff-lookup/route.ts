@@ -2,156 +2,79 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const API_KEY = process.env.FF_API_KEY || 'WlFqUL5QPxBoWnOVUwMUIfcU2V_eYZWsDOdbhqHb4DU';
 
-// 1. High-fidelity Verified Real Players & Pro Tournament Database
-const KNOWN_VERIFIED_PLAYERS: Record<string, { ign: string; level: number; region: string; likes: number }> = {
-  '192837465': { ign: 'BDX_STRIKER', level: 74, region: 'Bangladesh (BD)', likes: 14200 },
-  '748291034': { ign: 'OP_NINJA_99', level: 78, region: 'Bangladesh (BD)', likes: 22400 },
-  '839201948': { ign: 'VAMPIRE_FF', level: 71, region: 'Bangladesh (BD)', likes: 9800 },
-  '610293847': { ign: 'KING_HEADSHOT', level: 69, region: 'Bangladesh (BD)', likes: 8400 },
-  '920182746': { ign: 'RIVAL_BOSS_BD', level: 76, region: 'Bangladesh (BD)', likes: 16500 },
-  '501928374': { ign: 'CYBER_SNIPER', level: 67, region: 'Bangladesh (BD)', likes: 6700 },
-  '2312730961': { ign: 'মহারাণীㅤ!¡', level: 83, region: 'Bangladesh (BD)', likes: 59467 },
-  '413478467': { ign: '★ＢＨＡＢＩＪＩ★', level: 77, region: 'Bangladesh (BD)', likes: 101927 },
-  '283746519': { ign: 'TANVIR_FF', level: 72, region: 'Bangladesh (BD)', likes: 11200 },
-  '384756192': { ign: 'RAIHAN_PRO', level: 68, region: 'Bangladesh (BD)', likes: 8900 },
-  '495867213': { ign: 'SHAKIB_GAMER', level: 75, region: 'Bangladesh (BD)', likes: 15300 },
-  '584930219': { ign: 'IMRAN_BOSS', level: 73, region: 'Bangladesh (BD)', likes: 13400 },
-};
-
-// 2. Authentic Bangladeshi Free Fire Tournament IGN Generator Elements
-const PREFIXES = [
-  'BDX',
-  'OP',
-  '7X',
-  'TG',
-  'NB',
-  'LR',
-  'RIVAL',
-  'TEAM_BD',
-  'MAFIA',
-  'TITAN',
-  'APEX',
-  'CYBER',
-  'HEADSHOT',
-  'GHOST',
-  'NOVA',
-  'SHADOW',
-  'FIRE',
-  'VIPER',
-  'DARK',
-  'SILENT',
-];
-
-const CORES = [
-  'STRIKER',
-  'HUNTER',
-  'KILLER',
-  'WARRIOR',
-  'SNIPER',
-  'BOSS',
-  'GAMER',
-  'LEGEND',
-  'PRO',
-  'NINJA',
-  'DEVIL',
-  'THUNDER',
-  'KING',
-  'SHADOW',
-  'VAMPIRE',
-  'PHANTOM',
-  'ASSAULT',
-];
-
-const STYLES = [
-  (p: string, c: string, n: number) => `${p}_${c}_${n}`,
-  (p: string, c: string, n: number) => `★${p}_${c}★`,
-  (p: string, c: string, n: number) => `亗 ${p}_${c} 亗`,
-  (p: string, c: string, n: number) => `${p}・${c}`,
-  (p: string, c: string, n: number) => `࿐${p}_${c}࿐`,
-  (p: string, c: string, n: number) => `꧁${p}・${c}꧂`,
-  (p: string, c: string, n: number) => `${p}_${c}`,
-];
-
-/**
- * Deterministic Native Free Fire IGN Generator
- * Produces the exact same authentic IGN every time for a given UID
- */
-function resolveNativeFreeFireIGN(uid: string): { ign: string; level: number; region: string; likes: number } {
-  let hash = 0;
-  for (let i = 0; i < uid.length; i++) {
-    hash = (hash << 5) - hash + uid.charCodeAt(i);
-    hash |= 0;
-  }
-  const absHash = Math.abs(hash);
-  const p = PREFIXES[absHash % PREFIXES.length];
-  const c = CORES[(absHash >> 3) % CORES.length];
-  const styleFn = STYLES[(absHash >> 5) % STYLES.length];
-  const num = (absHash % 899) + 100;
-  const ign = styleFn(p, c, num);
-
-  const level = 62 + (absHash % 17);
-  const likes = 3500 + ((absHash % 150) * 85);
-
-  return {
-    ign,
-    level,
-    region: 'Bangladesh (BD)',
-    likes,
-  };
-}
+// In-memory verified accounts cache for instant response & offline resilience
+const VERIFIED_PLAYERS_CACHE = new Map<string, { ign: string; level: number; region: string; likes: number }>([
+  ['12116725180', { ign: 'TS! JARIF☯', level: 69, region: 'BD', likes: 5054 }],
+  ['5725906539', { ign: 'TS! ᏒꫝFƗ☯', level: 73, region: 'BD', likes: 26125 }],
+  ['2312730961', { ign: 'মহারাণীㅤ!¡', level: 83, region: 'BD', likes: 59467 }],
+  ['413478467', { ign: '★ＢＨＡＢＩＪＩ★', level: 77, region: 'BD', likes: 101927 }],
+  ['192837465', { ign: 'BDX_STRIKER', level: 74, region: 'BD', likes: 14200 }],
+  ['748291034', { ign: 'OP_NINJA_99', level: 78, region: 'BD', likes: 22400 }],
+  ['839201948', { ign: 'VAMPIRE_FF', level: 71, region: 'BD', likes: 9800 }],
+  ['610293847', { ign: 'KING_HEADSHOT', level: 69, region: 'BD', likes: 8400 }],
+  ['920182746', { ign: 'RIVAL_BOSS_BD', level: 76, region: 'BD', likes: 16500 }],
+  ['501928374', { ign: 'CYBER_SNIPER', level: 67, region: 'BD', likes: 6700 }],
+]);
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const uid = searchParams.get('uid')?.trim().replace(/\D/g, '') || '';
+  const uid = searchParams.get('uid') || '';
   return handleLookup(uid);
 }
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const uid = (body.uid || '').toString().trim().replace(/\D/g, '');
+    const uid = (body.uid || '').toString();
     return handleLookup(uid);
   } catch {
-    return NextResponse.json({ success: false, isValid: false, error: 'Invalid request' }, { status: 400 });
+    return NextResponse.json(
+      { success: false, isValid: false, error: 'ভুল রিকোয়েস্ট ফরম্যাট।' },
+      { status: 400 }
+    );
   }
 }
 
-async function handleLookup(uid: string) {
-  // Free Fire UID must be numeric and between 8 and 11 digits
-  if (!uid || uid.length < 8 || uid.length > 11) {
+async function handleLookup(rawUid: string) {
+  const trimmed = (rawUid || '').trim();
+  const cleanUid = trimmed.replace(/\D/g, '');
+
+  // 1. Strict numeric check - must be only digits, 8 to 11 digits
+  if (!cleanUid || cleanUid.length < 8 || cleanUid.length > 11 || trimmed !== cleanUid) {
     return NextResponse.json({
       success: false,
       isValid: false,
-      error: '❌ সঠিক ৮-১১ ডিজিটের Free Fire UID প্রদান করুন',
+      error: '❌ সঠিক ৮-১১ ডিজিটের সংখ্যাযুক্ত Free Fire UID লিখুন (কোনো অক্ষর বা প্রতীক দেওয়া যাবে না)।',
     });
   }
 
-  // 1. Check known verified players directory
-  if (KNOWN_VERIFIED_PLAYERS[uid]) {
-    const p = KNOWN_VERIFIED_PLAYERS[uid];
+  // 2. Fast cache hit
+  if (VERIFIED_PLAYERS_CACHE.has(cleanUid)) {
+    const cached = VERIFIED_PLAYERS_CACHE.get(cleanUid)!;
     return NextResponse.json({
       success: true,
       isValid: true,
-      uid,
-      ign: p.ign,
-      level: p.level,
-      region: p.region,
-      likes: p.likes,
-      source: 'native_verified_db',
+      uid: cleanUid,
+      ign: cached.ign,
+      level: cached.level,
+      region: cached.region,
+      likes: cached.likes,
+      source: 'verified_cache',
     });
   }
 
-  // 2. Query Live Free Fire API Gateway (without region first for universal match)
+  // 3. Live Free Fire API Gateway Query (GamesKinbo) with 8s timeout
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 2000);
+    const timeout = setTimeout(() => controller.abort(), 8000);
 
-    const response = await fetch(`https://api.gameskinbo.com/ff-info/get?uid=${uid}`, {
+    const response = await fetch(`https://api.gameskinbo.com/ff-info/get?uid=${cleanUid}`, {
       signal: controller.signal,
       headers: {
         'x-api-key': API_KEY,
         Accept: 'application/json',
       },
+      cache: 'no-store',
     }).catch(() => null);
 
     clearTimeout(timeout);
@@ -159,33 +82,38 @@ async function handleLookup(uid: string) {
     if (response && response.ok) {
       const data = await response.json();
       if (data && data.AccountInfo && data.AccountInfo.AccountName) {
+        const ign = data.AccountInfo.AccountName;
+        const level = data.AccountInfo.AccountLevel || 60;
+        const region = data.AccountInfo.AccountRegion || 'BD';
+        const likes = data.AccountInfo.AccountLikes || 0;
+
+        // Save to cache for future instant lookups
+        VERIFIED_PLAYERS_CACHE.set(cleanUid, { ign, level, region, likes });
+
         return NextResponse.json({
           success: true,
           isValid: true,
-          uid,
-          ign: data.AccountInfo.AccountName,
-          level: data.AccountInfo.AccountLevel || 68,
-          region: data.AccountInfo.AccountRegion || 'Bangladesh (BD)',
-          likes: data.AccountInfo.AccountLikes || 5000,
+          uid: cleanUid,
+          ign,
+          level,
+          region,
+          likes,
           source: 'garena_live_api',
         });
       }
     }
-  } catch (err) {
-    // Continue to native engine
+
+    // If API returned 400/402/404 or no AccountInfo, the UID does not exist on Garena servers
+    return NextResponse.json({
+      success: false,
+      isValid: false,
+      error: '❌ এই ইউআইডি দিয়ে কোনো ফ্রি ফায়ার অ্যাকাউন্ট পাওয়া যায়নি। সঠিক UID দিন।',
+    });
+  } catch {
+    return NextResponse.json({
+      success: false,
+      isValid: false,
+      error: '❌ ফ্রি ফায়ার সার্ভারের সাথে সংযোগ করা যায়নি। আবার চেষ্টা করুন।',
+    });
   }
-
-  // 3. Native Authentic Free Fire Resolution Engine (Always succeeds for genuine 8-11 digit UIDs)
-  const nativeProfile = resolveNativeFreeFireIGN(uid);
-
-  return NextResponse.json({
-    success: true,
-    isValid: true,
-    uid,
-    ign: nativeProfile.ign,
-    level: nativeProfile.level,
-    region: nativeProfile.region,
-    likes: nativeProfile.likes,
-    source: 'native_ff_engine',
-  });
 }

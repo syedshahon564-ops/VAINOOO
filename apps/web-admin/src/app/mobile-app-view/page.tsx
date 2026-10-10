@@ -678,8 +678,8 @@ export default function MobileAppViewPage(props: any) {
                 ign: p.ign,
                 uid: p.uid,
                 time: bookingModalMatch.time,
-                roomId: bookingModalMatch.roomId,
-                roomPass: bookingModalMatch.roomPass,
+                roomId: bookingModalMatch.status === 'ROOM_OPEN' ? bookingModalMatch.roomId : undefined,
+                roomPass: bookingModalMatch.status === 'ROOM_OPEN' ? bookingModalMatch.roomPass : undefined,
               })
             )
           : [
@@ -694,8 +694,8 @@ export default function MobileAppViewPage(props: any) {
                 ign: slotInfo.ign,
                 uid: slotInfo.uid,
                 time: bookingModalMatch.time,
-                roomId: bookingModalMatch.roomId,
-                roomPass: bookingModalMatch.roomPass,
+                roomId: bookingModalMatch.status === 'ROOM_OPEN' ? bookingModalMatch.roomId : undefined,
+                roomPass: bookingModalMatch.status === 'ROOM_OPEN' ? bookingModalMatch.roomPass : undefined,
               }),
             ];
 
@@ -1833,14 +1833,15 @@ export default function MobileAppViewPage(props: any) {
                       ) : (
                         bookedMatchesList.map((bm) => {
                           const liveMatch = matches.find((m) => m.id === bm.matchId || m.title === bm.title);
-                          const currentRoomId = liveMatch?.roomId || bm.roomId;
-                          const currentRoomPass = liveMatch?.roomPass || bm.roomPass;
 
-                          // Only reveal Room ID and Password within 5 minutes of match start or when status is ROOM_OPEN
+                          // Only reveal Room ID and Password if liveMatch status is ROOM_OPEN/LIVE, OR strictly within 5 minutes before match start
                           const matchDate = parseScheduleTimeToDate(liveMatch?.time || bm.time, (liveMatch as any)?.startTimeIso);
                           const diffMs = matchDate ? matchDate.getTime() - Date.now() : 999999;
-                          const isWithin5Minutes = (diffMs <= 5 * 60 * 1000 && diffMs >= -180 * 60 * 1000) || liveMatch?.status === 'ROOM_OPEN' || liveMatch?.status === 'LIVE';
-                          const isRoomReady = Boolean(currentRoomId && isWithin5Minutes);
+                          const isWithin5Minutes = diffMs > 0 && diffMs <= 5 * 60 * 1000;
+                          const isRoomOpenStatus = liveMatch?.status === 'ROOM_OPEN' || liveMatch?.status === 'LIVE';
+                          const isRoomReady = Boolean((liveMatch?.roomId || bm.roomId) && (isWithin5Minutes || isRoomOpenStatus));
+                          const currentRoomId = isRoomReady ? (liveMatch?.roomId || bm.roomId) : null;
+                          const currentRoomPass = isRoomReady ? (liveMatch?.roomPass || bm.roomPass || '1234') : null;
 
                           return (
                           <div

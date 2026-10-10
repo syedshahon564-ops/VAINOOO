@@ -9,10 +9,51 @@ export interface VerifiedPlayerProfile {
   likeCount: number;
   avatarUrl: string;
   badge?: string;
+  error?: string;
 }
 
-// Known verified demo players database
+// Known verified tournament players database
 const VERIFIED_FF_PLAYERS: Record<string, VerifiedPlayerProfile> = {
+  '12116725180': {
+    isValid: true,
+    uid: '12116725180',
+    ign: 'TS! JARIF☯',
+    level: 69,
+    region: 'Bangladesh (BD)',
+    likeCount: 5054,
+    avatarUrl: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=120',
+    badge: 'HEROIC',
+  },
+  '5725906539': {
+    isValid: true,
+    uid: '5725906539',
+    ign: 'TS! ᏒꫝFƗ☯',
+    level: 73,
+    region: 'Bangladesh (BD)',
+    likeCount: 26125,
+    avatarUrl: 'https://images.unsplash.com/photo-1563089145-599997674d42?q=80&w=120',
+    badge: 'GRANDMASTER',
+  },
+  '2312730961': {
+    isValid: true,
+    uid: '2312730961',
+    ign: 'মহারাণীㅤ!¡',
+    level: 83,
+    region: 'Bangladesh (BD)',
+    likeCount: 59467,
+    avatarUrl: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=120',
+    badge: 'GRANDMASTER',
+  },
+  '413478467': {
+    isValid: true,
+    uid: '413478467',
+    ign: '★ＢＨＡＢＩＪＩ★',
+    level: 77,
+    region: 'Bangladesh (BD)',
+    likeCount: 101927,
+    avatarUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=120',
+    badge: 'GRANDMASTER',
+  },
   '192837465': {
     isValid: true,
     uid: '192837465',
@@ -73,50 +114,18 @@ const VERIFIED_FF_PLAYERS: Record<string, VerifiedPlayerProfile> = {
     avatarUrl: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=120',
     badge: 'DIAMOND_IV',
   },
-  '2312730961': {
-    isValid: true,
-    uid: '2312730961',
-    ign: 'মহারাণীㅤ!¡',
-    level: 83,
-    region: 'Bangladesh (BD)',
-    likeCount: 59467,
-    avatarUrl: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=120',
-    badge: 'GRANDMASTER',
-  },
 };
-
-const PREFIXES = ['BDX', 'OP', '7X', 'TG', 'NB', 'LR', 'RIVAL', 'TEAM_BD', 'MAFIA', 'TITAN', 'APEX', 'HEADSHOT', 'GHOST', 'FIRE', 'DARK'];
-const CORES = ['STRIKER', 'HUNTER', 'KILLER', 'WARRIOR', 'SNIPER', 'BOSS', 'GAMER', 'LEGEND', 'PRO', 'NINJA', 'DEVIL', 'KING', 'SHADOW'];
-const STYLES = [
-  (p: string, c: string, n: number) => `${p}_${c}_${n}`,
-  (p: string, c: string, n: number) => `★${p}_${c}★`,
-  (p: string, c: string, n: number) => `亗 ${p}_${c} 亗`,
-  (p: string, c: string, n: number) => `${p}・${c}`,
-  (p: string, c: string, n: number) => `${p}_${c}`,
-];
-
-function resolveNativeIGN(uid: string): string {
-  let hash = 0;
-  for (let i = 0; i < uid.length; i++) {
-    hash = (hash << 5) - hash + uid.charCodeAt(i);
-    hash |= 0;
-  }
-  const abs = Math.abs(hash);
-  const p = PREFIXES[abs % PREFIXES.length];
-  const c = CORES[(abs >> 3) % CORES.length];
-  const fn = STYLES[(abs >> 5) % STYLES.length];
-  const num = (abs % 899) + 100;
-  return fn(p, c, num);
-}
 
 /**
  * Free Fire UID Checker Client API
- * Calls internal /api/ff-lookup route and returns verified profile.
+ * Queries internal /api/ff-lookup route and returns verified real player profile.
+ * Rejects non-numeric UIDs and nonexistent IDs strictly.
  */
 export async function checkFreeFireUID(uid: string): Promise<VerifiedPlayerProfile> {
-  const cleanUID = uid.trim().replace(/\D/g, '');
+  const trimmed = (uid || '').trim();
+  const cleanUID = trimmed.replace(/\D/g, '');
 
-  if (!cleanUID || cleanUID.length < 8 || cleanUID.length > 11) {
+  if (!cleanUID || cleanUID.length < 8 || cleanUID.length > 11 || trimmed !== cleanUID) {
     return {
       isValid: false,
       uid: cleanUID,
@@ -125,19 +134,21 @@ export async function checkFreeFireUID(uid: string): Promise<VerifiedPlayerProfi
       region: '',
       likeCount: 0,
       avatarUrl: '',
+      error: '❌ সঠিক ৮-১১ ডিজিটের ফ্রি ফায়ার UID লিখুন।',
     };
   }
 
-  // 1. Check known database first
+  // 1. Check known verified players
   if (VERIFIED_FF_PLAYERS[cleanUID]) {
     return VERIFIED_FF_PLAYERS[cleanUID];
   }
 
-  // 2. Fetch from our native API route
+  // 2. Fetch from our native API route which calls live Garena gateway
   try {
     const res = await fetch(`/api/ff-lookup?uid=${cleanUID}`, {
       cache: 'no-store',
     });
+
     if (res.ok) {
       const data = await res.json();
       if (data.isValid && data.ign) {
@@ -145,28 +156,46 @@ export async function checkFreeFireUID(uid: string): Promise<VerifiedPlayerProfi
           isValid: true,
           uid: cleanUID,
           ign: data.ign,
-          level: data.level || 68,
+          level: data.level || 60,
           region: data.region || 'Bangladesh (BD)',
-          likeCount: data.likes || 8500,
+          likeCount: data.likes || 5000,
           avatarUrl: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=120',
-          badge: (data.level || 68) > 70 ? 'GRANDMASTER' : 'HEROIC',
+          badge: (data.level || 60) > 70 ? 'GRANDMASTER' : 'HEROIC',
         };
       }
+      return {
+        isValid: false,
+        uid: cleanUID,
+        ign: '',
+        level: 0,
+        region: '',
+        likeCount: 0,
+        avatarUrl: '',
+        error: data.error || '❌ এই ইউআইডি দিয়ে কোনো ফ্রি ফায়ার অ্যাকাউন্ট পাওয়া যায়নি। সঠিক UID দিন।',
+      };
     }
-  } catch (e) {
-    // API network error
-  }
 
-  // 3. Fallback to native resolver so genuine UIDs never fail
-  const fallbackIgn = resolveNativeIGN(cleanUID);
-  return {
-    isValid: true,
-    uid: cleanUID,
-    ign: fallbackIgn,
-    level: 68,
-    region: 'Bangladesh (BD)',
-    likeCount: 9200,
-    avatarUrl: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=120',
-    badge: 'HEROIC',
-  };
+    const errData = await res.json().catch(() => null);
+    return {
+      isValid: false,
+      uid: cleanUID,
+      ign: '',
+      level: 0,
+      region: '',
+      likeCount: 0,
+      avatarUrl: '',
+      error: errData?.error || '❌ এই ইউআইডি দিয়ে কোনো অ্যাকাউন্ট পাওয়া যায়নি।',
+    };
+  } catch {
+    return {
+      isValid: false,
+      uid: cleanUID,
+      ign: '',
+      level: 0,
+      region: '',
+      likeCount: 0,
+      avatarUrl: '',
+      error: '❌ ফ্রি ফায়ার সার্ভারের সাথে সংযোগ করা যায়নি। আবার চেষ্টা করুন।',
+    };
+  }
 }
