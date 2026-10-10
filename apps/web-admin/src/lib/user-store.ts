@@ -625,7 +625,7 @@ export function registerUser(data: {
     ign: data.ign.trim().toUpperCase(),
     uid: data.uid.trim(),
     password: data.password,
-    walletBalance: 100.0, // Initial welcome bonus balance
+    walletBalance: 0.0, // Strictly 0.0 BDT for new account registrations (no free bonus)
     role: 'PLAYER',
     status: 'ACTIVE',
     matchesPlayed: 0,

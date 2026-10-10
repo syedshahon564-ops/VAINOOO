@@ -44,6 +44,14 @@ import {
   Download,
   RefreshCw,
   LifeBuoy,
+  BookOpen,
+  Crown,
+  AlertCircle,
+  Headphones,
+  Code,
+  Edit,
+  Mail,
+  Home,
 } from 'lucide-react';
 import { useCMS, MatchItem, TopPlayerItem } from '@/lib/cms-store';
 import { checkFreeFireUID } from '@/lib/ff-uid-checker';
@@ -64,6 +72,7 @@ import {
   loginUser,
   registerUser,
   logoutUser,
+  updateUser,
   addBalance,
   deductBalance,
   getTransactions,
@@ -210,6 +219,18 @@ export default function MobileAppViewPage(props: any) {
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [authSuccess, setAuthSuccess] = useState<string | null>(null);
+
+  // Profile modal states (matching uploaded user screenshot)
+  const [showEditInfoModal, setShowEditInfoModal] = useState(false);
+  const [editIgnInput, setEditIgnInput] = useState('');
+  const [editUidInput, setEditUidInput] = useState('');
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+  const [newPassInput, setNewPassInput] = useState('');
+  const [confirmPassInput, setConfirmPassInput] = useState('');
+  const [passMessage, setPassMessage] = useState<{ text: string; isError: boolean } | null>(null);
+  const [showRulesModal, setShowRulesModal] = useState(false);
+  const [showDevInfoModal, setShowDevInfoModal] = useState(false);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
 
   // Auto-prompt login/register on first entry for new visitors
   useEffect(() => {
@@ -1003,6 +1024,58 @@ export default function MobileAppViewPage(props: any) {
                           >
                             বাংলা
                           </button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : activeTab === 'profile' ? (
+                    /* EXACT PROFILE TOP HEADER (AS IN USER SCREENSHOT) */
+                    <div className="w-full flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-full overflow-hidden bg-slate-900 border border-slate-700 flex items-center justify-center p-0.5 shadow-xs">
+                          <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
+                        </div>
+                        <div>
+                          <span className="text-sm font-black text-[#1e293b]">
+                            Murubbi X Tournament
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        {/* Notification Bell with red badge */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowNotifDropdown(!showNotifDropdown);
+                            if (!showNotifDropdown) {
+                              markNotificationsAsRead();
+                            }
+                          }}
+                          className="relative w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700 transition-all shadow-xs"
+                        >
+                          <Bell className={`w-4 h-4 ${unreadCount > 0 ? 'text-amber-500' : 'text-slate-700'}`} />
+                          {unreadCount > 0 && (
+                            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                          )}
+                        </button>
+
+                        {/* Balance Pill [ 🪙 0.00 BDT ] */}
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab('wallet')}
+                          className="px-2.5 py-1 rounded-full bg-[#4f46e5] hover:bg-[#4338ca] text-white text-[11px] font-black flex items-center gap-1 shadow-sm active:scale-95 transition-all"
+                        >
+                          <Wallet className="w-3.5 h-3.5 text-white" />
+                          <span>{userBalance.toFixed(2)} BDT</span>
+                        </button>
+
+                        {/* Circular User Avatar Preview */}
+                        <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-red-500 bg-slate-900 shadow-xs flex-shrink-0">
+                          <img
+                            src={currentUser?.avatar || 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=240'}
+                            alt="User"
+                            className="w-full h-full object-cover"
+                          />
                         </div>
                       </div>
                     </div>
@@ -2191,322 +2264,226 @@ export default function MobileAppViewPage(props: any) {
                         </div>
                       ) : (
                         <>
-                          {/* 1. OWNER / ADMIN DIRECT ACCESS BANNER (IF ADMIN) */}
-                          {currentUser.role === 'ADMIN' && (
-                            <div className="p-3.5 rounded-2xl bg-gradient-to-r from-red-950 via-amber-950 to-black border-2 border-amber-500/40 text-white shadow-xl space-y-2.5">
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                  <div className="w-8 h-8 rounded-xl bg-amber-500 flex items-center justify-center text-black font-black text-sm shadow-md shadow-amber-500/30">
-                                    👑
-                                  </div>
-                                  <div>
-                                    <div className="text-xs font-black text-amber-400 flex items-center gap-1">
-                                      {currentUser.ign}
-                                      <span className="text-[9px] bg-red-600 px-1.5 py-0.2 rounded text-white font-bold">OWNER</span>
-                                    </div>
-                                    <p className="text-[10px] text-gray-300 font-mono">{currentUser.phone}</p>
-                                  </div>
+                          {/* 1. PROFILE CARD (EXACT USER SCREENSHOT) */}
+                          <div className="bg-white rounded-3xl border border-slate-200/80 shadow-sm overflow-hidden">
+                            {/* Blue-Violet Top Banner */}
+                            <div className="h-16 bg-gradient-to-r from-[#6366f1] via-[#6d5dfc] to-[#8b5cf6] relative" />
+
+                            <div className="px-4 pb-4 pt-0">
+                              {/* Avatar and User Identity */}
+                              <div className="flex items-end gap-3.5 -mt-9 mb-3">
+                                <div className="relative w-20 h-20 rounded-full border-4 border-white shadow-md overflow-hidden bg-slate-900 flex-shrink-0">
+                                  <img
+                                    src={currentUser?.avatar || 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=240'}
+                                    alt="Avatar"
+                                    className="w-full h-full object-cover"
+                                  />
                                 </div>
-                                <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[9px] font-bold">
-                                  Full Master Access
-                                </span>
+                                <div className="space-y-0.5 pb-1 min-w-0">
+                                  <h3 className="text-base font-black text-slate-900 truncate">
+                                    {currentUser?.ign || 'Abu Numan'}
+                                  </h3>
+                                  <p className="text-[11px] text-slate-400 font-mono">
+                                    @{currentUser?.uid ? `g_${currentUser.uid}` : 'g_102910574942'}
+                                  </p>
+                                  <p className="text-[11px] text-slate-400 flex items-center gap-1 truncate">
+                                    <Mail className="w-3 h-3 text-slate-400 flex-shrink-0" />
+                                    <span className="truncate">{currentUser?.phone ? `${currentUser.phone}@gmail.com` : 'numan06bd1@gmail.com'}</span>
+                                  </p>
+                                </div>
                               </div>
 
-                              <Link
-                                href="/admin"
-                                className="w-full py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-black text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-amber-500/30 active:scale-95 transition-all"
-                              >
-                                <Shield className="w-4 h-4 text-black" />
-                                <span>👑 {tPhone('অ্যাডমিন প্যানেল প্রবেশ করুন', 'Enter Admin Dashboard')}</span>
-                              </Link>
-                            </div>
-                          )}
-
-                          {/* 2. USER PROFILE HEADER CARD */}
-                          <div
-                            className={`p-4 rounded-2xl border text-center space-y-2.5 ${
-                              phoneTheme === 'dark' ? 'bg-[#181824] border-white/10' : 'bg-white border-slate-200'
-                            }`}
-                          >
-                            <div className="relative w-16 h-16 rounded-full bg-gradient-to-tr from-red-600 to-rose-500 mx-auto flex items-center justify-center text-white text-xl font-black shadow-lg shadow-red-500/30">
-                              {(currentUser?.ign || 'PL').slice(0, 2).toUpperCase()}
-                              <span className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 border-2 border-[#181824] flex items-center justify-center text-[10px]">
-                                ✓
-                              </span>
-                            </div>
-
-                            <div>
-                              <div className="flex items-center justify-center gap-1.5">
-                                <h3 className="text-sm font-black text-gray-900 dark:text-white">
-                                  {currentUser?.ign || 'Player'}
-                                </h3>
-                                {currentUser?.role === 'ADMIN' ? (
-                                  <span className="px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 text-black text-[9px] font-black border border-amber-300 shadow-sm flex items-center gap-1">
-                                    👑 OWNER
-                                  </span>
-                                ) : (
-                                  <span className="px-1.5 py-0.5 rounded bg-red-600 text-white text-[9px] font-black">
-                                    PRO
-                                  </span>
-                                )}
-                              </div>
-                              <span className="text-[10px] text-gray-400 font-mono">
-                                UID: {currentUser?.uid || '---'} | {currentUser?.phone || '---'}
-                              </span>
-                            </div>
-
-                            <div className="flex items-center justify-center gap-2">
-                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 text-[10px] font-bold">
-                                <Shield className="w-3 h-3" /> Anti-Cheat Verified
-                              </span>
-                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20 text-[10px] font-bold">
-                                ৳ {userBalance.toFixed(2)}
-                              </span>
-                            </div>
-
-                            {/* 3. WITHDRAW & DEPOSIT PRIMARY ACTION BUTTONS */}
-                            <div className="grid grid-cols-2 gap-2 pt-2">
-                              <button
-                                onClick={() => {
-                                  setFinanceModalTab('WITHDRAW');
-                                  setShowFinanceModal(true);
-                                }}
-                                className="py-2.5 px-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/20 active:scale-95 transition-all"
-                              >
-                                <ArrowUpRight className="w-4 h-4" />
-                                <span>{tPhone('উইথড্র (টাকা তোলা)', 'Withdraw Money')}</span>
-                              </button>
-
-                              <button
-                                onClick={() => {
-                                  setFinanceModalTab('DEPOSIT');
-                                  setShowFinanceModal(true);
-                                }}
-                                className="py-2.5 px-2 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-md shadow-red-600/20 active:scale-95 transition-all"
-                              >
-                                <ArrowDownRight className="w-4 h-4" />
-                                <span>{tPhone('ডিপোজিট (টাকা যোগ)', 'Add Money')}</span>
-                              </button>
-                            </div>
-                          </div>
-
-                          {/* 4. CAREER STATISTICS (6-GRID) */}
-                          <div className="space-y-1.5">
-                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider">
-                              📊 {tPhone('ক্যারিয়ার পরিসংখ্যান ও পারফরম্যান্স', 'Career Performance & Stats')}
-                            </span>
-                            <div className="grid grid-cols-3 gap-2 text-center">
-                              {/* TOTAL EARNINGS */}
-                              <div
-                                className={`p-2.5 rounded-xl border ${
-                                  phoneTheme === 'dark' ? 'bg-[#181824] border-white/10' : 'bg-white border-slate-200'
-                                }`}
-                              >
-                                <span className="text-[9px] text-gray-400 block">{tPhone('মোট ইনকাম', 'Earnings')}</span>
-                                <span className="text-xs font-black text-amber-500">
-                                  ৳{Number(currentUser.totalEarnings ?? (currentUser.matchesPlayed * 250)).toLocaleString()}
-                                </span>
-                              </div>
-
-                              {/* BOOYAH COUNT */}
-                              <div
-                                className={`p-2.5 rounded-xl border ${
-                                  phoneTheme === 'dark' ? 'bg-[#181824] border-white/10' : 'bg-white border-slate-200'
-                                }`}
-                              >
-                                <span className="text-[9px] text-gray-400 block">{tPhone('বুইয়াহ কাউন্ট', 'Booyahs')}</span>
-                                <span className="text-xs font-black text-emerald-500">
-                                  {currentUser.totalWins ?? 12} 🏆
-                                </span>
-                              </div>
-
-                              {/* TOTAL KILLS */}
-                              <div
-                                className={`p-2.5 rounded-xl border ${
-                                  phoneTheme === 'dark' ? 'bg-[#181824] border-white/10' : 'bg-white border-slate-200'
-                                }`}
-                              >
-                                <span className="text-[9px] text-gray-400 block">{tPhone('মোট কিল', 'Kills')}</span>
-                                <span className="text-xs font-black text-blue-500">
-                                  {currentUser.totalKills ?? 142} 🎯
-                                </span>
-                              </div>
-
-                              {/* MATCHES PLAYED */}
-                              <div
-                                className={`p-2.5 rounded-xl border ${
-                                  phoneTheme === 'dark' ? 'bg-[#181824] border-white/10' : 'bg-white border-slate-200'
-                                }`}
-                              >
-                                <span className="text-[9px] text-gray-400 block">{tPhone('খেলা ম্যাচ', 'Matches')}</span>
-                                <span className="text-xs font-black text-red-500">
-                                  {currentUser?.matchesPlayed ?? 38}
-                                </span>
-                              </div>
-
-                              {/* WIN RATE */}
-                              <div
-                                className={`p-2.5 rounded-xl border ${
-                                  phoneTheme === 'dark' ? 'bg-[#181824] border-white/10' : 'bg-white border-slate-200'
-                                }`}
-                              >
-                                <span className="text-[9px] text-gray-400 block">{tPhone('উইন রেট', 'Win Rate')}</span>
-                                <span className="text-xs font-black text-purple-500">
-                                  {(
-                                    (((currentUser?.totalWins || 12) / Math.max(1, currentUser?.matchesPlayed || 38)) * 100)
-                                  ).toFixed(1)}
-                                  %
-                                </span>
-                              </div>
-
-                              {/* K/D RATIO */}
-                              <div
-                                className={`p-2.5 rounded-xl border ${
-                                  phoneTheme === 'dark' ? 'bg-[#181824] border-white/10' : 'bg-white border-slate-200'
-                                }`}
-                              >
-                                <span className="text-[9px] text-gray-400 block">{tPhone('কে/ডি রেশিও', 'K/D Ratio')}</span>
-                                <span className="text-xs font-black text-teal-500">
-                                  {(
-                                    ((currentUser?.totalKills || 142) /
-                                      Math.max(1, (currentUser?.matchesPlayed || 38) - (currentUser?.totalWins || 12)))
-                                  ).toFixed(2)}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* 5. MATCH STORY / MATCH RECORDS */}
-                          <div className="space-y-1.5">
-                            <div className="flex items-center justify-between">
-                              <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider flex items-center gap-1">
-                                <Gamepad2 className="w-3.5 h-3.5 text-red-500" />
-                                {tPhone('ম্যাচ স্টোরি ও হিস্ট্রি', 'Match Story & Records')}
-                              </span>
-                              <span className="text-[9px] text-gray-400 font-mono">
-                                {(currentUser.matchHistory && currentUser.matchHistory.length) || 4} টি ম্যাচ
-                              </span>
-                            </div>
-
-                            <div className="space-y-1.5">
-                              {(
-                                currentUser.matchHistory || [
-                                  {
-                                    id: 'rec-1',
-                                    matchTitle: 'BR SURVIVAL #108 (CLASSIC)',
-                                    category: 'Classic BR',
-                                    date: '2026-10-06 19:00',
-                                    slotNumber: 4,
-                                    kills: 8,
-                                    rank: 1,
-                                    isBooyah: true,
-                                    prizeEarned: 1200,
-                                  },
-                                  {
-                                    id: 'rec-2',
-                                    matchTitle: 'CLASH SQUAD 4V4 #92',
-                                    category: 'Clash Squad',
-                                    date: '2026-10-05 20:30',
-                                    slotNumber: 1,
-                                    kills: 14,
-                                    rank: 1,
-                                    isBooyah: true,
-                                    prizeEarned: 800,
-                                  },
-                                  {
-                                    id: 'rec-3',
-                                    matchTitle: 'CS HEADSHOT SPECIAL #44',
-                                    category: 'Headshot Only',
-                                    date: '2026-10-04 18:00',
-                                    slotNumber: 2,
-                                    kills: 11,
-                                    rank: 2,
-                                    isBooyah: false,
-                                    prizeEarned: 450,
-                                  },
-                                  {
-                                    id: 'rec-4',
-                                    matchTitle: 'LONE WOLF 1V1 #31',
-                                    category: 'Lone Wolf',
-                                    date: '2026-10-03 21:15',
-                                    slotNumber: 1,
-                                    kills: 5,
-                                    rank: 1,
-                                    isBooyah: true,
-                                    prizeEarned: 300,
-                                  },
-                                ]
-                              ).map((rec: any, idx: number) => (
-                                <div
-                                  key={rec.id || idx}
-                                  className={`p-2.5 rounded-xl border flex items-center justify-between text-xs ${
-                                    phoneTheme === 'dark' ? 'bg-[#181824] border-white/10' : 'bg-white border-slate-200'
-                                  }`}
+                              {/* Action Buttons: [ ✏ Edit Info ] [ 🔑 Change Password ] */}
+                              <div className="flex items-center gap-2 pt-1">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditIgnInput(currentUser?.ign || '');
+                                    setEditUidInput(currentUser?.uid || '');
+                                    setShowEditInfoModal(true);
+                                  }}
+                                  className="flex-1 py-2 px-3 rounded-full bg-[#f1f5f9] hover:bg-[#e2e8f0] text-slate-700 text-xs font-bold border border-slate-200 flex items-center justify-center gap-1.5 transition-all active:scale-95 shadow-2xs"
                                 >
-                                  <div className="space-y-0.5">
-                                    <div className="flex items-center gap-1.5">
-                                      <span className="font-black text-gray-900 dark:text-white text-[11px]">
-                                        {rec.matchTitle}
-                                      </span>
-                                      {rec.isBooyah ? (
-                                        <span className="px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-400 font-black text-[9px] border border-emerald-500/30">
-                                          🏆 বুইয়াহ
-                                        </span>
-                                      ) : (
-                                        <span className="px-1.5 py-0.2 rounded bg-gray-500/20 text-gray-300 font-bold text-[9px]">
-                                          র‍্যাংক #{rec.rank}
-                                        </span>
-                                      )}
-                                    </div>
-                                    <div className="text-[9px] text-gray-400 font-mono">
-                                      {rec.date} | স্লট: {rec.slotNumber} | কিল: {rec.kills}
-                                    </div>
-                                  </div>
-
-                                  <div className="text-right">
-                                    <span className="text-[11px] font-black text-emerald-500 block">
-                                      +৳{rec.prizeEarned}
-                                    </span>
-                                    <span className="text-[8px] text-gray-400">পুরস্কার প্রাপ্ত</span>
-                                  </div>
-                                </div>
-                              ))}
+                                  <Edit className="w-3.5 h-3.5 text-slate-500" />
+                                  <span>{tPhone('তথ্য পরিবর্তন', 'Edit Info')}</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setNewPassInput('');
+                                    setConfirmPassInput('');
+                                    setPassMessage(null);
+                                    setShowChangePasswordModal(true);
+                                  }}
+                                  className="flex-1 py-2 px-3 rounded-full bg-[#f1f5f9] hover:bg-[#e2e8f0] text-slate-700 text-xs font-bold border border-slate-200 flex items-center justify-center gap-1.5 transition-all active:scale-95 shadow-2xs"
+                                >
+                                  <Key className="w-3.5 h-3.5 text-slate-500" />
+                                  <span>{tPhone('পাসওয়ার্ড পরিবর্তন', 'Change Password')}</span>
+                                </button>
+                              </div>
                             </div>
                           </div>
 
-                          {/* 6. SWITCH TO WEB & LOGOUT */}
-                          <div className="pt-2 space-y-2">
-                            <button
-                              type="button"
+                          {/* 2. 3-COLUMN STATS GRID (EXACT SCREENSHOT: 0 MATCHES, 0 WINS, 0 BDT) */}
+                          <div className="grid grid-cols-3 gap-2.5">
+                            {/* MATCHES */}
+                            <div className="bg-white rounded-2xl border border-slate-200/80 p-3.5 text-center shadow-xs">
+                              <span className="text-2xl font-black text-[#5850ec] block">
+                                {currentUser?.matchesPlayed || 0}
+                              </span>
+                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mt-0.5">
+                                {tPhone('ম্যাচ', 'MATCHES')}
+                              </span>
+                            </div>
+
+                            {/* WINS */}
+                            <div className="bg-white rounded-2xl border border-slate-200/80 p-3.5 text-center shadow-xs">
+                              <span className="text-2xl font-black text-[#5850ec] block">
+                                {currentUser?.totalWins || 0}
+                              </span>
+                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mt-0.5">
+                                {tPhone('জয়', 'WINS')}
+                              </span>
+                            </div>
+
+                            {/* BDT */}
+                            <div className="bg-white rounded-2xl border border-slate-200/80 p-3.5 text-center shadow-xs">
+                              <span className="text-2xl font-black text-[#5850ec] block">
+                                {Math.floor(userBalance || 0)}
+                              </span>
+                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mt-0.5">
+                                BDT
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* 3. MENU ITEMS LIST (EXACT SCREENSHOT WITH COLORFUL SQUARE ICONS) */}
+                          <div className="space-y-2">
+                            {/* 1. Rules */}
+                            <div
+                              onClick={() => setShowRulesModal(true)}
+                              className="bg-white rounded-2xl border border-slate-200/80 p-3 flex items-center justify-between shadow-xs hover:border-slate-300 transition-all cursor-pointer active:scale-[0.99]"
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-[#ede9fe] text-[#7c3aed] flex items-center justify-center">
+                                  <BookOpen className="w-5 h-5 text-[#7c3aed]" />
+                                </div>
+                                <span className="font-bold text-slate-800 text-sm">{tPhone('টুর্নামেন্ট নিয়ম', 'Rules')}</span>
+                              </div>
+                              <ChevronRight className="w-4 h-4 text-slate-400" />
+                            </div>
+
+                            {/* 2. Top Players */}
+                            <div
+                              onClick={() => setActiveTab('top-players')}
+                              className="bg-white rounded-2xl border border-slate-200/80 p-3 flex items-center justify-between shadow-xs hover:border-slate-300 transition-all cursor-pointer active:scale-[0.99]"
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-[#fef3c7] text-[#f59e0b] flex items-center justify-center">
+                                  <Crown className="w-5 h-5 text-[#f59e0b]" />
+                                </div>
+                                <span className="font-bold text-slate-800 text-sm">{tPhone('শীর্ষ খেলোয়াড়', 'Top Players')}</span>
+                              </div>
+                              <ChevronRight className="w-4 h-4 text-slate-400" />
+                            </div>
+
+                            {/* 3. Report Bug */}
+                            <div
                               onClick={() => {
                                 setShowSupportModal(true);
                                 pushHistory('support-modal');
                               }}
-                              className="w-full py-2.5 rounded-xl border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 text-xs font-black transition-all flex items-center justify-center gap-2"
+                              className="bg-white rounded-2xl border border-slate-200/80 p-3 flex items-center justify-between shadow-xs hover:border-slate-300 transition-all cursor-pointer active:scale-[0.99]"
                             >
-                              <LifeBuoy className="w-3.5 h-3.5 text-blue-500" />
-                              <span>{tPhone('সাপোর্ট ও হেল্প ডেস্ক (Live Tickets)', 'Support & Help Desk (Live Tickets)')}</span>
-                            </button>
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-[#fee2e2] text-[#ef4444] flex items-center justify-center">
+                                  <AlertCircle className="w-5 h-5 text-[#ef4444]" />
+                                </div>
+                                <span className="font-bold text-slate-800 text-sm">{tPhone('সমস্যা রিপোর্ট', 'Report Bug')}</span>
+                              </div>
+                              <ChevronRight className="w-4 h-4 text-slate-400" />
+                            </div>
 
-                            <a
-                              href="/ffrivals.apk"
-                              download="ffrivals.apk"
-                              className="w-full py-2.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold transition-all flex items-center justify-center gap-2"
+                            {/* 4. Update */}
+                            <div
+                              onClick={() => setShowUpdateModal(true)}
+                              className="bg-white rounded-2xl border border-slate-200/80 p-3 flex items-center justify-between shadow-xs hover:border-slate-300 transition-all cursor-pointer active:scale-[0.99]"
                             >
-                              <Download className="w-3.5 h-3.5 text-emerald-500" />
-                              <span>{tPhone('অফিসিয়াল Android APK ডাউনলোড', 'Download Official Android APK')}</span>
-                            </a>
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-[#ccfbf1] text-[#0d9488] flex items-center justify-center">
+                                  <RefreshCw className="w-5 h-5 text-[#0d9488]" />
+                                </div>
+                                <span className="font-bold text-slate-800 text-sm">{tPhone('অ্যাপ আপডেট', 'Update')}</span>
+                              </div>
+                              <ChevronRight className="w-4 h-4 text-slate-400" />
+                            </div>
 
-                            <button
+                            {/* 5. Support */}
+                            <div
+                              onClick={() => {
+                                setShowSupportModal(true);
+                                pushHistory('support-modal');
+                              }}
+                              className="bg-white rounded-2xl border border-slate-200/80 p-3 flex items-center justify-between shadow-xs hover:border-slate-300 transition-all cursor-pointer active:scale-[0.99]"
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-[#d1fae5] text-[#10b981] flex items-center justify-center">
+                                  <Headphones className="w-5 h-5 text-[#10b981]" />
+                                </div>
+                                <span className="font-bold text-slate-800 text-sm">{tPhone('সাপোর্ট ডেস্ক', 'Support')}</span>
+                              </div>
+                              <ChevronRight className="w-4 h-4 text-slate-400" />
+                            </div>
+
+                            {/* 6. Developer Info */}
+                            <div
+                              onClick={() => setShowDevInfoModal(true)}
+                              className="bg-white rounded-2xl border border-slate-200/80 p-3 flex items-center justify-between shadow-xs hover:border-slate-300 transition-all cursor-pointer active:scale-[0.99]"
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-[#e0f2fe] text-[#0284c7] flex items-center justify-center">
+                                  <Code className="w-5 h-5 text-[#0284c7]" />
+                                </div>
+                                <span className="font-bold text-slate-800 text-sm">{tPhone('ডেভেলপার ইনফো', 'Developer Info')}</span>
+                              </div>
+                              <ChevronRight className="w-4 h-4 text-slate-400" />
+                            </div>
+
+                            {/* Master Owner Admin Access Banner */}
+                            {currentUser?.role === 'ADMIN' && (
+                              <Link
+                                href="/admin"
+                                className="bg-gradient-to-r from-amber-50 to-amber-100/60 rounded-2xl border border-amber-300 p-3 flex items-center justify-between shadow-xs hover:border-amber-400 transition-all cursor-pointer active:scale-[0.99]"
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div className="w-10 h-10 rounded-xl bg-amber-500 text-black flex items-center justify-center font-black">
+                                    👑
+                                  </div>
+                                  <div>
+                                    <span className="font-black text-amber-900 text-sm block">Master Admin Panel</span>
+                                    <span className="text-[10px] text-amber-700">Full platform controls & tournaments</span>
+                                  </div>
+                                </div>
+                                <ChevronRight className="w-4 h-4 text-amber-500" />
+                              </Link>
+                            )}
+
+                            {/* 7. Logout */}
+                            <div
                               onClick={() => {
                                 logoutUser();
                                 setCurrentUser(null);
                               }}
-                              className="w-full py-2 rounded-xl border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-xs font-bold transition-all flex items-center justify-center gap-1.5"
+                              className="bg-white rounded-2xl border border-slate-200/80 p-3 flex items-center justify-between shadow-xs hover:border-rose-200 transition-all cursor-pointer active:scale-[0.99]"
                             >
-                              <LogOut className="w-3.5 h-3.5" />
-                              <span>{tPhone('অ্যাকাউন্ট থেকে লগআউট করুন', 'Logout from Account')}</span>
-                            </button>
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-[#ffe4e6] text-[#e11d48] flex items-center justify-center">
+                                  <LogOut className="w-5 h-5 text-[#e11d48]" />
+                                </div>
+                                <span className="font-bold text-rose-600 text-sm">{tPhone('লগআউট', 'Logout')}</span>
+                              </div>
+                              <ChevronRight className="w-4 h-4 text-rose-300" />
+                            </div>
                           </div>
                         </>
                       )}
@@ -2899,6 +2876,294 @@ export default function MobileAppViewPage(props: any) {
                   : 'রেজিস্ট্রেশন সম্পূর্ণ করুন'}
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* 7. EDIT INFO MODAL */}
+      {showEditInfoModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fadeIn">
+          <div className="w-full max-w-sm rounded-3xl bg-white border border-slate-200 p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
+                  <Edit className="w-4 h-4" />
+                </div>
+                <h3 className="text-sm font-black text-slate-900">{tPhone('প্রোফাইল তথ্য পরিবর্তন', 'Edit Profile Info')}</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowEditInfoModal(false)}
+                className="w-7 h-7 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center text-xs"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (currentUser && editIgnInput.trim()) {
+                  const updated = updateUser(currentUser.id, {
+                    ign: editIgnInput.trim().toUpperCase(),
+                    uid: editUidInput.trim() || currentUser.uid,
+                  });
+                  if (updated) {
+                    setCurrentUser(updated);
+                  }
+                }
+                setShowEditInfoModal(false);
+              }}
+              className="space-y-3"
+            >
+              <div>
+                <label className="text-[11px] font-bold text-slate-600 block mb-1">
+                  {tPhone('ইন-গেম নেম (In-Game Name / IGN)', 'In-Game Name (IGN)')}
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editIgnInput}
+                  onChange={(e) => setEditIgnInput(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:outline-none focus:border-indigo-600 font-bold"
+                  placeholder="e.g. ABU NUMAN"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold text-slate-600 block mb-1">
+                  {tPhone('ফ্রি ফায়ার ইউআইডি (Free Fire UID)', 'Free Fire UID')}
+                </label>
+                <input
+                  type="text"
+                  value={editUidInput}
+                  onChange={(e) => setEditUidInput(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:outline-none focus:border-indigo-600 font-mono"
+                  placeholder="e.g. 102910574942"
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs shadow-md shadow-indigo-600/30 transition-all active:scale-95"
+              >
+                {tPhone('সংরক্ষণ করুন', 'Save Changes')}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 8. CHANGE PASSWORD MODAL */}
+      {showChangePasswordModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fadeIn">
+          <div className="w-full max-w-sm rounded-3xl bg-white border border-slate-200 p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center">
+                  <Key className="w-4 h-4" />
+                </div>
+                <h3 className="text-sm font-black text-slate-900">{tPhone('পাসওয়ার্ড পরিবর্তন', 'Change Password')}</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowChangePasswordModal(false)}
+                className="w-7 h-7 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center text-xs"
+              >
+                ✕
+              </button>
+            </div>
+
+            {passMessage && (
+              <div className={`p-2.5 rounded-xl text-xs font-bold ${passMessage.isError ? 'bg-red-50 text-red-600 border border-red-200' : 'bg-emerald-50 text-emerald-600 border border-emerald-200'}`}>
+                {passMessage.text}
+              </div>
+            )}
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!newPassInput || newPassInput.length < 4) {
+                  setPassMessage({ text: 'Password must be at least 4 characters!', isError: true });
+                  return;
+                }
+                if (newPassInput !== confirmPassInput) {
+                  setPassMessage({ text: 'Passwords do not match!', isError: true });
+                  return;
+                }
+                if (currentUser) {
+                  updateUser(currentUser.id, { password: newPassInput });
+                  setPassMessage({ text: 'Password changed successfully! ✓', isError: false });
+                  setTimeout(() => setShowChangePasswordModal(false), 1200);
+                }
+              }}
+              className="space-y-3"
+            >
+              <div>
+                <label className="text-[11px] font-bold text-slate-600 block mb-1">
+                  {tPhone('নতুন পাসওয়ার্ড (New Password)', 'New Password')}
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={newPassInput}
+                  onChange={(e) => setNewPassInput(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:outline-none focus:border-indigo-600"
+                  placeholder="••••••••"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold text-slate-600 block mb-1">
+                  {tPhone('পাসওয়ার্ড নিশ্চিত করুন (Confirm Password)', 'Confirm Password')}
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={confirmPassInput}
+                  onChange={(e) => setConfirmPassInput(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:outline-none focus:border-indigo-600"
+                  placeholder="••••••••"
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs shadow-md shadow-indigo-600/30 transition-all active:scale-95"
+              >
+                {tPhone('পাসওয়ার্ড আপডেট করুন', 'Update Password')}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 9. RULES MODAL */}
+      {showRulesModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fadeIn">
+          <div className="w-full max-w-md rounded-3xl bg-white border border-slate-200 p-6 shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center">
+                  <BookOpen className="w-4 h-4" />
+                </div>
+                <h3 className="text-sm font-black text-slate-900">{tPhone('টুর্নামেন্ট সার্বিক নিয়মাবলী', 'Tournament Official Rules')}</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowRulesModal(false)}
+                className="w-7 h-7 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center text-xs"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs text-slate-700 leading-relaxed">
+              <div className="p-3 rounded-xl bg-purple-50/70 border border-purple-100">
+                <h4 className="font-bold text-purple-900 mb-1">🎮 রুম কোড ও পাসওয়ার্ড</h4>
+                <p>ম্যাচ শুরুর ১০-১৫ মিনিট আগে অ্যাপের &quot;আমার ম্যাচ&quot; (My Matches) অপশনে রুম আইডি এবং পাসওয়ার্ড দেয়া হবে। নিজের নির্দিষ্ট স্লটেই বসতে হবে।</p>
+              </div>
+
+              <div className="p-3 rounded-xl bg-rose-50/70 border border-rose-100">
+                <h4 className="font-bold text-rose-900 mb-1">🛡️ অ্যান্টি-চিট ও ফেয়ার প্লে</h4>
+                <p>যেকোনো ধরনের হ্যাক, স্ক্রিপ্ট, কনফিগ ফাইল বা এম্যুলেটর ব্যবহার সম্পূর্ণ নিষিদ্ধ। ধরা পড়লে অ্যাকাউন্ট আজীবনের জন্য ব্যান হবে।</p>
+              </div>
+
+              <div className="p-3 rounded-xl bg-emerald-50/70 border border-emerald-100">
+                <h4 className="font-bold text-emerald-900 mb-1">🏆 পুরস্কার ও টাকা উইথড্র</h4>
+                <p>ম্যাচ শেষ হওয়ার পর OCR স্বয়ংক্রিয়ভাবে স্ক্রিনশট ভেরিফাই করে উইনিং প্রাইজ আপনার ওয়ালেটে জমা করবে। বিকাশ ও নগদে ১-২ ঘণ্টার ভেতর উইথড্র সম্পন্ন হয়।</p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowRulesModal(false)}
+              className="w-full py-2.5 rounded-xl bg-slate-900 text-white font-black text-xs"
+            >
+              {tPhone('বুঝেছি (Close)', 'I Understand')}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 10. UPDATE MODAL */}
+      {showUpdateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fadeIn">
+          <div className="w-full max-w-sm rounded-3xl bg-white border border-slate-200 p-6 shadow-2xl text-center space-y-4">
+            <div className="w-14 h-14 rounded-2xl bg-teal-50 text-teal-600 mx-auto flex items-center justify-center shadow-inner">
+              <RefreshCw className="w-7 h-7" />
+            </div>
+
+            <div>
+              <h3 className="text-base font-black text-slate-900">Murubbi X Tournament</h3>
+              <p className="text-xs text-slate-500 mt-1">Version 2.4.0 (Latest Official Build)</p>
+            </div>
+
+            <p className="text-xs text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100">
+              আপনার অ্যাপটি সম্পূর্ণ আপ-টু-ডেট রয়েছে। নতুন কোনো আপডেট আসলে নোটিফিকেশনের মাধ্যমে জানানো হবে।
+            </p>
+
+            <div className="flex items-center gap-2">
+              <a
+                href="/ffrivals.apk"
+                download="ffrivals.apk"
+                className="flex-1 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-md shadow-teal-600/30"
+              >
+                <Download className="w-4 h-4" /> Download APK
+              </a>
+              <button
+                type="button"
+                onClick={() => setShowUpdateModal(false)}
+                className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 11. DEVELOPER INFO MODAL */}
+      {showDevInfoModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fadeIn">
+          <div className="w-full max-w-sm rounded-3xl bg-white border border-slate-200 p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-sky-50 text-sky-600 flex items-center justify-center">
+                  <Code className="w-4 h-4" />
+                </div>
+                <h3 className="text-sm font-black text-slate-900">Developer & Platform Info</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowDevInfoModal(false)}
+                className="w-7 h-7 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center text-xs"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-2 text-xs text-slate-700">
+              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
+                <span className="font-bold text-slate-500">Platform:</span>
+                <span className="font-mono font-bold text-slate-900">Murubbi X Tournament BD</span>
+              </div>
+              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
+                <span className="font-bold text-slate-500">Engine Build:</span>
+                <span className="font-mono font-bold text-slate-900">v2.4.0 (Autonomous Cloud)</span>
+              </div>
+              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
+                <span className="font-bold text-slate-500">AI Assistant:</span>
+                <span className="font-mono font-bold text-emerald-600">Active (24/7 Engine)</span>
+              </div>
+            </div>
+
+            <Link
+              href="/admin"
+              className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-black font-black text-xs flex items-center justify-center gap-1.5 shadow-md shadow-amber-500/30"
+            >
+              👑 Open Master Admin Panel
+            </Link>
           </div>
         </div>
       )}

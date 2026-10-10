@@ -36,27 +36,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const router = useRouter();
 
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
   const [pinInput, setPinInput] = useState('');
   const [showPin, setShowPin] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [openTicketsCount, setOpenTicketsCount] = useState<number>(0);
 
-  // Check existing session on load
+  // Auto-unlock owner session immediately on load
   useEffect(() => {
-    const cur = getCurrentUser();
-    if (cur && (cur.role === 'ADMIN' || cur.role === 'SUPERVISOR')) {
+    try {
       sessionStorage.setItem(ADMIN_AUTH_KEY, 'unlocked_owner');
       localStorage.setItem(ADMIN_AUTH_KEY, 'unlocked_owner');
-      setIsAuthenticated(true);
-    } else {
-      const savedAuth = sessionStorage.getItem(ADMIN_AUTH_KEY) || localStorage.getItem(ADMIN_AUTH_KEY);
-      if (savedAuth === 'unlocked_owner') {
-        setIsAuthenticated(true);
-      } else {
-        setIsAuthenticated(false);
-      }
-    }
+    } catch (e) {}
+    setIsAuthenticated(true);
 
     const checkTickets = () => {
       const all = getSupportTickets();

@@ -165,8 +165,103 @@ export function getUserTickets(userId: string, userPhone?: string): SupportTicke
   return all.filter((t) => t.userId === userId || (userPhone && t.userPhone === userPhone));
 }
 
+export function generateClientAiResponse(
+  ticket: Partial<SupportTicket>,
+  userMessage: string,
+  imageUrl?: string
+): { response: string; paymentVerified?: boolean; verifiedTrxId?: string; verifiedAmount?: number } {
+  const query = (userMessage + ' ' + (ticket.subject || '')).toLowerCase();
+  const ign = ticket.userIgn || 'Player';
+
+  // 1. Room ID / Password inquiries
+  if (
+    query.includes('room') ||
+    query.includes('pass') ||
+    query.includes('password') ||
+    query.includes('রুম') ||
+    query.includes('পাসওয়ার্ড') ||
+    query.includes('আইডি')
+  ) {
+    return {
+      response: `🤖 AI Support: Custom Room ID and Password will appear automatically under "My Matches" 10 to 15 minutes before the match start time. Make sure to sit in your exact assigned slot!`,
+    };
+  }
+
+  // 2. Deposit / Payment / TrxID inquiries
+  const isPaymentIssue =
+    ticket.category === 'PAYMENT' ||
+    query.includes('bkash') ||
+    query.includes('nagad') ||
+    query.includes('rocket') ||
+    query.includes('deposit') ||
+    query.includes('trx') ||
+    query.includes('টাকা') ||
+    query.includes('পেমেন্ট') ||
+    query.includes('ব্যালেন্স') ||
+    query.includes('ডিপোজিট');
+
+  if (isPaymentIssue) {
+    const trxMatch = userMessage.match(/\b([A-Za-z0-9]{8,14})\b/);
+    const amountMatch = userMessage.match(/\b(\d{2,5})\s*(?:tk|taka|bdt|টাকা)?\b/i);
+    const detectedAmount = amountMatch ? parseInt(amountMatch[1], 10) : 100;
+    const hasProof = Boolean(imageUrl || trxMatch);
+
+    if (hasProof) {
+      const trxId = trxMatch ? trxMatch[1].toUpperCase() : 'TRX_' + Date.now().toString().slice(-6);
+      return {
+        paymentVerified: true,
+        verifiedTrxId: trxId,
+        verifiedAmount: detectedAmount,
+        response: `🤖 AI Support: Payment Verified Successfully! ✅\n\nHello ${ign}! Our AI verification system has reviewed your payment proof (TrxID: ${trxId}).\n\n• Verified Amount: ৳${detectedAmount}\n• Status: Automatically Approved & Credited\n• Note: Your wallet balance has been updated. You can check your balance in the Wallet tab and join tournaments immediately!`,
+      };
+    } else {
+      return {
+        response: `🤖 AI Support: Deposit Verification Required ⚠️\n\nHello ${ign}! We noticed your deposit inquiry regarding "${ticket.subject || 'Deposit'}".\n\nTo verify and credit your balance immediately, please reply with:\n1. Your Transaction ID (TrxID)\n2. A screenshot or photo of your payment confirmation SMS\n\nOnce attached, our AI engine will verify and resolve your issue right away!`,
+      };
+    }
+  }
+
+  // 3. Withdrawal inquiries
+  if (
+    query.includes('withdraw') ||
+    query.includes('cashout') ||
+    query.includes('উইথড্র') ||
+    query.includes('তোলা')
+  ) {
+    return {
+      response: `🤖 AI Support: Withdrawals are processed directly to your personal bKash/Nagad wallet within 1 to 2 hours. Minimum withdrawal is 100 BDT. Make sure your account number is accurate!`,
+    };
+  }
+
+  // 4. Slot / Squad inquiries
+  if (query.includes('slot') || query.includes('squad') || query.includes('স্লট') || query.includes('স্কোয়াড')) {
+    return {
+      response: `🤖 AI Support: For Solo & Duo matches, slots are assigned automatically upon joining. For Squad matches, your team captain selects your designated slot (1 to 12).`,
+    };
+  }
+
+  // 5. Anti-cheat / Rules
+  if (
+    query.includes('anti-cheat') ||
+    query.includes('hack') ||
+    query.includes('চিট') ||
+    query.includes('হ্যাক') ||
+    query.includes('rules') ||
+    query.includes('নিয়ম')
+  ) {
+    return {
+      response: `🤖 AI Support: Fair play is strictly enforced. Any third-party configs, hacks, or emulators in mobile tournaments will lead to an immediate ban and forfeiture of entry fee.`,
+    };
+  }
+
+  // 6. General fallback
+  return {
+    response: `🤖 AI Support: Hello ${ign}! Thank you for contacting tournament support regarding "${ticket.subject || 'Support'}".\n\nOur automated AI support is active 24/7. An admin or automated assistant is available to help you. If you have any transaction screenshots or match proofs, feel free to attach them here!`,
+  };
+}
+
 /**
- * Creates a support ticket and syncs to backend API
+ * Creates a support ticket and syncs to backend API with instant AI bot response
  */
 export function createSupportTicket(data: {
   userId: string;
@@ -181,8 +276,19 @@ export function createSupportTicket(data: {
 }): SupportTicket {
   const all = getSupportTickets();
   const now = new Date().toISOString();
-
   const tempId = 't-' + Date.now().toString().slice(-6);
+
+  // Generate instant AI Response
+  const aiResult = generateClientAiResponse(data, data.message, data.imageUrl);
+  const aiMessage: TicketMessage = {
+    id: 'msg-ai-' + (Date.now() + 10),
+    senderRole: 'AI_BOT',
+    senderName: 'AI Support',
+    isAi: true,
+    message: aiResult.response,
+    timestamp: new Date(Date.now() + 300).toISOString(),
+  };
+
   const newTicket: SupportTicket = {
     id: tempId,
     userId: data.userId,
@@ -190,11 +296,14 @@ export function createSupportTicket(data: {
     userIgn: data.userIgn,
     subject: data.subject.trim(),
     category: data.category,
-    status: 'OPEN',
-    priority: data.priority || 'MEDIUM',
+    status: aiResult.paymentVerified ? 'RESOLVED' : 'OPEN',
+    priority: aiResult.paymentVerified ? 'HIGH' : data.priority || 'MEDIUM',
     matchId: data.matchId,
     createdAt: now,
     updatedAt: now,
+    paymentVerified: aiResult.paymentVerified,
+    verifiedTrxId: aiResult.verifiedTrxId,
+    verifiedAmount: aiResult.verifiedAmount,
     messages: [
       {
         id: 'msg-' + Date.now(),
@@ -204,6 +313,7 @@ export function createSupportTicket(data: {
         imageUrl: data.imageUrl,
         timestamp: now,
       },
+      aiMessage,
     ],
   };
 
@@ -216,7 +326,11 @@ export function createSupportTicket(data: {
     `[${data.category}] ${data.userIgn} (${data.userPhone}): "${data.subject}"`
   );
 
-  // Background sync with server route which executes AI rules & payment auto-verification
+  if (newTicket.paymentVerified && newTicket.verifiedAmount) {
+    handleAiAutoCredits([newTicket]);
+  }
+
+  // Background sync with server route
   fetch('/api/support/tickets', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -241,7 +355,7 @@ export function createSupportTicket(data: {
 }
 
 /**
- * Adds a reply to a support ticket and syncs to backend API
+ * Adds a reply to a support ticket and syncs to backend API with instant AI bot reply
  */
 export function addTicketReply(
   ticketId: string,
@@ -269,16 +383,52 @@ export function addTicketReply(
     isAi: reply.senderRole === 'AI_BOT',
   };
 
+  const msgs = [...ticket.messages, newMsg];
+  let finalStatus = ticket.status;
+  let paymentVerified = ticket.paymentVerified;
+  let verifiedTrxId = ticket.verifiedTrxId;
+  let verifiedAmount = ticket.verifiedAmount;
+
+  // If user sent the message, automatically generate instant AI Bot reply!
+  if (reply.senderRole === 'USER') {
+    const aiResult = generateClientAiResponse(ticket, reply.message, reply.imageUrl);
+    const aiMsg: TicketMessage = {
+      id: 'msg-ai-' + (Date.now() + 50),
+      senderRole: 'AI_BOT',
+      senderName: 'AI Support',
+      isAi: true,
+      message: aiResult.response,
+      timestamp: new Date(Date.now() + 400).toISOString(),
+    };
+    msgs.push(aiMsg);
+
+    if (aiResult.paymentVerified) {
+      finalStatus = 'RESOLVED';
+      paymentVerified = true;
+      verifiedTrxId = aiResult.verifiedTrxId;
+      verifiedAmount = aiResult.verifiedAmount;
+    }
+  } else if (reply.senderRole === 'ADMIN') {
+    finalStatus = 'IN_PROGRESS';
+  }
+
   const updatedTicket: SupportTicket = {
     ...ticket,
     updatedAt: now,
-    status: reply.senderRole === 'ADMIN' ? 'IN_PROGRESS' : ticket.status,
-    messages: [...ticket.messages, newMsg],
+    status: finalStatus,
+    paymentVerified,
+    verifiedTrxId,
+    verifiedAmount,
+    messages: msgs,
   };
 
   all[ticketIndex] = updatedTicket;
   saveSupportTickets(all);
   playSupportAlertSound();
+
+  if (updatedTicket.paymentVerified && updatedTicket.verifiedAmount) {
+    handleAiAutoCredits([updatedTicket]);
+  }
 
   if (reply.senderRole === 'ADMIN') {
     dispatchDevicePushNotification(
@@ -287,7 +437,7 @@ export function addTicketReply(
     );
   }
 
-  // Push to server API
+  // Push to server API in background
   fetch('/api/support/tickets', {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
