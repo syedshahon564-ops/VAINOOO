@@ -62,7 +62,7 @@ import PlayerDetailsModal, { PlayerDetailsData } from '@/components/PlayerDetail
 import TotalPrizeDetailsModal from '@/components/TotalPrizeDetailsModal';
 import MatchDetailsPage from '@/components/MatchDetailsPage';
 import ImageUploadInput from '@/components/ImageUploadInput';
-import LiveMatchCountdown, { formatMatchSchedule } from '@/components/LiveMatchCountdown';
+import LiveMatchCountdown, { formatMatchSchedule, parseScheduleTimeToDate } from '@/components/LiveMatchCountdown';
 import DepositWithdrawModal from '@/components/DepositWithdrawModal';
 import SupportTicketModal from '@/components/SupportTicketModal';
 import SupportChatScreen from '@/components/SupportChatScreen';
@@ -1835,10 +1835,12 @@ export default function MobileAppViewPage(props: any) {
                           const liveMatch = matches.find((m) => m.id === bm.matchId || m.title === bm.title);
                           const currentRoomId = liveMatch?.roomId || bm.roomId;
                           const currentRoomPass = liveMatch?.roomPass || bm.roomPass;
-                          const isRoomReady = Boolean(
-                            currentRoomId &&
-                            (liveMatch?.status === 'ROOM_OPEN' || liveMatch?.status === 'LIVE' || currentRoomPass)
-                          );
+
+                          // Only reveal Room ID and Password within 5 minutes of match start or when status is ROOM_OPEN
+                          const matchDate = parseScheduleTimeToDate(liveMatch?.time || bm.time, (liveMatch as any)?.startTimeIso);
+                          const diffMs = matchDate ? matchDate.getTime() - Date.now() : 999999;
+                          const isWithin5Minutes = (diffMs <= 5 * 60 * 1000 && diffMs >= -180 * 60 * 1000) || liveMatch?.status === 'ROOM_OPEN' || liveMatch?.status === 'LIVE';
+                          const isRoomReady = Boolean(currentRoomId && isWithin5Minutes);
 
                           return (
                           <div
@@ -1888,13 +1890,13 @@ export default function MobileAppViewPage(props: any) {
                               </div>
                             </div>
 
-                            {/* Private Room Credentials Card (Bot Delivered) */}
+                            {/* Private Room Credentials Card (Revealed 5 Minutes Before Start) */}
                             {isRoomReady ? (
                               <div className="p-3.5 rounded-xl bg-emerald-50/80 border border-emerald-200 space-y-2.5 shadow-xs">
                                 <div className="flex items-center justify-between text-[11px] pb-1 border-b border-emerald-200/60">
                                   <span className="font-black text-emerald-800 flex items-center gap-1">
                                     <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                                    🤖 {tPhone('বট অটো-ডেলিভারি সম্পন্ন', 'Bot Auto Delivered')}
+                                    🤖 {tPhone('বট রুম আইডি ডেলিভারি সম্পন্ন', 'Bot Room Delivered')}
                                   </span>
                                   <span className="text-[9px] font-extrabold bg-emerald-600 text-white px-2 py-0.5 rounded-full">
                                     ROOM OPEN
@@ -1950,36 +1952,24 @@ export default function MobileAppViewPage(props: any) {
                                 </p>
                               </div>
                             ) : (
-                              <div className="p-3.5 rounded-xl bg-amber-50/90 border border-amber-200 space-y-2 shadow-xs">
+                              <div className="p-3.5 rounded-xl bg-amber-50/90 border border-amber-300 space-y-2 shadow-xs">
                                 <div className="flex items-center justify-between text-[11px]">
-                                  <span className="font-black text-amber-800 flex items-center gap-1">
+                                  <span className="font-black text-amber-900 flex items-center gap-1">
                                     <Clock className="w-3.5 h-3.5 text-amber-600" />
                                     ⏳ {tPhone('রুম আইডি প্রকাশের সময় বাকি', 'Room Release Pending')}
                                   </span>
-                                  <span className="text-[9px] font-bold bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full">
-                                    AUTO BOT
+                                  <span className="text-[9px] font-black bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full border border-amber-300">
+                                    ৫ মিনিট আগে
                                   </span>
                                 </div>
-                                <p className="text-[10px] text-gray-600 leading-relaxed">
-                                  🤖 {tPhone(
-                                    'বট ম্যাচ শুরুর ১০-১৫ মিনিট পূর্বে স্বয়ংক্রিয়ভাবে রুম আইডি ও পাসওয়ার্ড ডেলিভারি করবে।',
-                                    'The Bot will automatically deliver the Room ID & Password 10-15 minutes before the match starts.'
-                                  )}
-                                </p>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const matchToDeliver = liveMatch?.id || bm.matchId || bm.id;
-                                    const delivered = autoDeliverRoomCredentials(matchToDeliver);
-                                    if (delivered) {
-                                      showPhoneToast('🤖 বট সফলভাবে রুম আইডি ও পাসওয়ার্ড ডেলিভারি করেছে!');
-                                    }
-                                  }}
-                                  className="w-full py-2 px-3 rounded-lg bg-red-600 hover:bg-red-700 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all"
-                                >
-                                  <Zap className="w-3.5 h-3.5" />
-                                  {tPhone('⚡ বট থেকে এখনই রুম আইডি আনুন', '⚡ Get Room ID from Bot Now')}
-                                </button>
+                                <div className="p-2.5 rounded-lg bg-white/95 border border-amber-200 text-center space-y-1">
+                                  <p className="text-xs font-black text-red-600">
+                                    {tPhone('রুম খোলার পাঁচ মিনিট আগে এখানে রুম আইডি ও পাসওয়ার্ড দেওয়া হবে।', 'Room ID and Password will be provided here 5 minutes before the match.')}
+                                  </p>
+                                  <p className="text-[10px] text-gray-500">
+                                    {tPhone('ম্যাচ শুরু হওয়ার ৫ মিনিট পূর্বে স্বয়ংক্রিয়ভাবে এখানে আইডি ও পাসওয়ার্ড চলে আসবে।', 'Credentials will appear automatically 5 minutes before match start.')}
+                                  </p>
+                                </div>
                               </div>
                             )}
 

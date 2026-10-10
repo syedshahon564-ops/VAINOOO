@@ -11,6 +11,7 @@ import {
   AlertCircle,
   CheckCircle2,
   ShieldCheck,
+  Clock,
 } from 'lucide-react';
 import { useCMS } from '@/lib/cms-store';
 import { useLanguage } from '@/components/LanguageProvider';
@@ -42,7 +43,7 @@ export default function DepositWithdrawModal({
   const [trxId, setTrxId] = useState('');
   const [copied, setCopied] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [message, setMessage] = useState<{ type: 'success' | 'error' | 'pending'; text: string } | null>(null);
 
   const currentUser = getCurrentUser();
   const currentBalance = currentUser ? (currentUser.walletBalance || 0) : 1450.0;
@@ -92,8 +93,12 @@ export default function DepositWithdrawModal({
       return;
     }
 
-    if (!trxId || trxId.trim().length < 6) {
-      setMessage({ type: 'error', text: 'সঠিক ট্রানজেকশন আইডি (TrxID) লিখুন।' });
+    const cleanTrx = trxId.trim().toUpperCase();
+    if (cleanTrx.length < 8 || !/^[A-Z0-9]{8,14}$/.test(cleanTrx)) {
+      setMessage({
+        type: 'error',
+        text: '❌ অবৈধ ট্রানজেকশন আইডি! সঠিক ৮-১২ ডিজিটের bKash/Nagad/Rocket TrxID লিখুন (যেমন: BKA8941729 বা 71F92D0A)।',
+      });
       setSubmitting(false);
       return;
     }
@@ -101,7 +106,6 @@ export default function DepositWithdrawModal({
     const userId = currentUser?.id || 'u-1';
     const userPhone = currentUser?.phone || phone;
     const userName = currentUser?.ign || 'Player';
-    const autoVerify = settings?.autoWebhookVerification !== false;
 
     const res = submitDepositRequest({
       userId,
@@ -110,24 +114,24 @@ export default function DepositWithdrawModal({
       method,
       amount: Number(amount),
       accountNumber: phone,
-      trxId,
-      autoVerify,
+      trxId: cleanTrx,
+      autoVerify: false,
     });
     setSubmitting(false);
 
     if (res.success) {
       setMessage({
-        type: 'success',
-        text: res.message,
+        type: 'pending',
+        text: `⏳ আপনার ৳${amount} ডিপোজিট রিকোয়েস্ট জমা হয়েছে (পেন্ডিং)! এডমিন অফিসিয়াল স্টেটমেন্ট মিলিয়ে TrxID (${cleanTrx}) যাচাই করার পর ব্যালেন্স যোগ করবেন।`,
       });
       setTrxId('');
       setPhone('');
       setTimeout(() => {
         setMessage(null);
         onClose();
-      }, 1500);
+      }, 3500);
     } else {
-      setMessage({ type: 'error', text: 'ডিপোজিট সম্পন্ন করা যায়নি।' });
+      setMessage({ type: 'error', text: 'ডিপোজিট রিকোয়েস্ট পাঠানো যায়নি।' });
     }
   };
 
@@ -260,11 +264,15 @@ export default function DepositWithdrawModal({
               className={`p-3 rounded-xl border text-xs font-bold flex items-center gap-2 ${
                 message.type === 'success'
                   ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
+                  : message.type === 'pending'
+                  ? 'bg-amber-500/15 border-amber-500/40 text-amber-800 dark:text-amber-300'
                   : 'bg-red-500/10 border-red-500/30 text-red-600 dark:text-red-400'
               }`}
             >
               {message.type === 'success' ? (
                 <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+              ) : message.type === 'pending' ? (
+                <Clock className="w-4 h-4 flex-shrink-0 text-amber-600 dark:text-amber-400" />
               ) : (
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
               )}

@@ -92,8 +92,9 @@ export default function WalletPage() {
       return;
     }
 
-    if (!trxId || trxId.trim().length < 6) {
-      setMessage({ type: 'error', text: 'সঠিক ট্রানজেকশন আইডি (TrxID) লিখুন।' });
+    const cleanTrx = trxId.trim().toUpperCase();
+    if (cleanTrx.length < 8 || !/^[A-Z0-9]{8,14}$/.test(cleanTrx)) {
+      setMessage({ type: 'error', text: '❌ অবৈধ ট্রানজেকশন আইডি! সঠিক ৮-১২ ডিজিটের bKash/Nagad/Rocket TrxID লিখুন।' });
       setLoading(false);
       return;
     }
@@ -107,11 +108,12 @@ export default function WalletPage() {
       method,
       amount: Number(amount),
       accountNumber: phone,
-      trxId,
+      trxId: cleanTrx,
+      autoVerify: false,
     });
     setMessage({
       type: 'success',
-      text: res.message,
+      text: `⏳ আপনার ৳${amount} ডিপোজিট রিকোয়েস্ট জমা হয়েছে (পেন্ডিং)! এডমিন bKash/Nagad স্টেটমেন্ট মিলিয়ে TrxID (${cleanTrx}) যাচাই করে ব্যালেন্স যোগ করবেন।`,
     });
     setTrxId('');
     setPhone('');

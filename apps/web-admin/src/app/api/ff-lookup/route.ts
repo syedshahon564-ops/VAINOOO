@@ -1,31 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const API_KEY = process.env.FF_API_KEY || 'ff_200_zf3fx7pm';
+const API_KEY = process.env.FF_API_KEY || 'WlFqUL5QPxBoWnOVUwMUIfcU2V_eYZWsDOdbhqHb4DU';
 
-// Known verified demo players database
+// Known demo accounts for offline tests if needed
 const VERIFIED_FF_PLAYERS: Record<string, { ign: string; level: number; region: string }> = {
-  '192837465': { ign: 'BDX_STRIKER', level: 74, region: 'Bangladesh (BD)' },
-  '748291034': { ign: 'OP_NINJA_99', level: 78, region: 'Bangladesh (BD)' },
-  '839201948': { ign: 'VAMPIRE_FF', level: 71, region: 'Bangladesh (BD)' },
-  '610293847': { ign: 'KING_HEADSHOT', level: 69, region: 'Bangladesh (BD)' },
-  '920182746': { ign: 'RIVAL_BOSS_BD', level: 76, region: 'Bangladesh (BD)' },
-  '501928374': { ign: 'CYBER_SNIPER', level: 67, region: 'Bangladesh (BD)' },
+  '192837465': { ign: 'BDX_STRIKER', level: 74, region: 'BD' },
+  '748291034': { ign: 'OP_NINJA_99', level: 78, region: 'BD' },
+  '839201948': { ign: 'VAMPIRE_FF', level: 71, region: 'BD' },
+  '610293847': { ign: 'KING_HEADSHOT', level: 69, region: 'BD' },
+  '920182746': { ign: 'RIVAL_BOSS_BD', level: 76, region: 'BD' },
+  '501928374': { ign: 'CYBER_SNIPER', level: 67, region: 'BD' },
+  '2312730961': { ign: 'মহারাণীㅤ!¡', level: 83, region: 'BD' },
 };
-
-const TAG_PREFIXES = ['OP', 'BD', 'RIVAL', 'SHADOW', 'TITAN', 'NOVA', 'GHOST', 'FIRE', 'DARK', 'APEX', 'MAFIA', 'PRO'];
-const TAG_SUFFIXES = ['STRIKER', 'SNIPER', 'KILLER', 'WARRIOR', 'PRO', 'HUNTER', 'LEGEND', 'GAMER', 'BOSS', 'HEADSHOT'];
-
-function generateRealisticIGN(uid: string): string {
-  let hash = 0;
-  for (let i = 0; i < uid.length; i++) {
-    hash = (hash << 5) - hash + uid.charCodeAt(i);
-    hash |= 0;
-  }
-  const prefix = TAG_PREFIXES[Math.abs(hash) % TAG_PREFIXES.length];
-  const suffix = TAG_SUFFIXES[Math.abs(hash >> 3) % TAG_SUFFIXES.length];
-  const num = (Math.abs(hash) % 899) + 100;
-  return `${prefix}_${suffix}_${num}`;
-}
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -48,11 +34,11 @@ async function handleLookup(uid: string) {
     return NextResponse.json({
       success: false,
       isValid: false,
-      message: 'সঠিক ৮-১১ ডিজিটের Free Fire UID প্রদান করুন',
+      error: 'সঠিক ৮-১১ ডিজিটের Free Fire UID প্রদান করুন',
     });
   }
 
-  // 1. Check known database
+  // 1. Check known database for quick response
   if (VERIFIED_FF_PLAYERS[uid]) {
     const p = VERIFIED_FF_PLAYERS[uid];
     return NextResponse.json({
@@ -66,10 +52,52 @@ async function handleLookup(uid: string) {
     });
   }
 
-  // 2. Try remote API with API_KEY
+  // 2. Fetch live from GamesKinbo Free Fire API using the user's active API key
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 2000);
+    const timeout = setTimeout(() => controller.abort(), 4000);
+
+    const response = await fetch(`https://api.gameskinbo.com/ff-info/get?uid=${uid}&region=BD`, {
+      signal: controller.signal,
+      headers: {
+        'x-api-key': API_KEY,
+        Accept: 'application/json',
+      },
+    }).catch(() => null);
+
+    clearTimeout(timeout);
+
+    if (response && response.ok) {
+      const data = await response.json();
+      if (data && data.AccountInfo && data.AccountInfo.AccountName) {
+        return NextResponse.json({
+          success: true,
+          isValid: true,
+          uid,
+          ign: data.AccountInfo.AccountName,
+          level: data.AccountInfo.AccountLevel || 60,
+          region: data.AccountInfo.AccountRegion || 'BD',
+          likes: data.AccountInfo.AccountLikes || 0,
+          source: 'gameskinbo_api',
+        });
+      }
+      if (data && data.error) {
+        return NextResponse.json({
+          success: false,
+          isValid: false,
+          uid,
+          error: data.error || 'এই ইউআইডি দিয়ে কোনো অ্যাকাউন্ট পাওয়া যায়নি।',
+        });
+      }
+    }
+  } catch (err) {
+    // API network error
+  }
+
+  // 3. Fallback: Check dangerzone if gameskinbo fails
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 2500);
 
     const response = await fetch(`https://api.dangerzone.in/ff?uid=${uid}&key=${API_KEY}`, {
       signal: controller.signal,
@@ -92,25 +120,19 @@ async function handleLookup(uid: string) {
           ign,
           level: data.level || 65,
           region: data.region || 'BD',
-          source: 'api',
+          source: 'dangerzone_api',
         });
       }
     }
   } catch (err) {
-    // API failed or timed out, gracefully continue to fallback
+    // Fallback failed
   }
 
-  // 3. Fallback to resilient procedural generator so user flow is never blocked
-  const ign = generateRealisticIGN(uid);
-  const pseudoLevel = 55 + (parseInt(uid.slice(-2), 10) % 25);
-
+  // If UID is not valid or not found, fail directly without generating fake names
   return NextResponse.json({
-    success: true,
-    isValid: true,
+    success: false,
+    isValid: false,
     uid,
-    ign,
-    level: pseudoLevel,
-    region: 'Bangladesh (BD)',
-    source: 'generated',
+    error: 'ইউআইডি ভেরিফাই ব্যর্থ হয়েছে! সঠিক Free Fire UID প্রদান করুন।',
   });
 }

@@ -137,23 +137,17 @@ export async function checkFreeFireUID(uid: string): Promise<VerifiedPlayerProfi
       }
     }
   } catch (e) {
-    // Graceful fallback below
+    // API call error
   }
 
-  // Realistic dynamic generator for any valid Free Fire UID
-  await new Promise((r) => setTimeout(r, 150));
-  const generatedIgn = generateRealisticIGN(cleanUID);
-  const pseudoLevel = 55 + (parseInt(cleanUID.slice(-2), 10) % 25);
-  const pseudoLikes = 2500 + (parseInt(cleanUID.slice(-3), 10) * 12);
-
+  // If not in database and not verified by API, return invalid
   return {
-    isValid: true,
+    isValid: false,
     uid: cleanUID,
-    ign: generatedIgn,
-    level: pseudoLevel,
-    region: 'Bangladesh (BD)',
-    likeCount: pseudoLikes,
-    avatarUrl: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=120',
-    badge: pseudoLevel > 70 ? 'GRANDMASTER' : 'HEROIC',
+    ign: '',
+    level: 0,
+    region: '',
+    likeCount: 0,
+    avatarUrl: '',
   };
 }

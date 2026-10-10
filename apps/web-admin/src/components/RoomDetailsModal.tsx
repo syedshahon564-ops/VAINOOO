@@ -15,7 +15,7 @@ import {
   Flame,
 } from 'lucide-react';
 import { MatchItem } from '@/lib/cms-store';
-import { autoDeliverRoomCredentials } from '@/lib/match-scheduler';
+import { parseScheduleTimeToDate } from '@/components/LiveMatchCountdown';
 
 interface RoomDetailsModalProps {
   match: MatchItem;
@@ -90,52 +90,59 @@ export default function RoomDetailsModal({ match, onClose, onJoinClick }: RoomDe
           <div className="text-[11px] text-gray-600 dark:text-gray-300 flex items-center gap-1.5 pt-1 border-t border-red-200/60 dark:border-red-900/30">
             <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0" />
             <span>
-              কাস্টম রুম আইডি ও পাসওয়ার্ড ম্যাচ শুরুর ঠিক <strong>১৫ মিনিট আগে</strong> স্বয়ংক্রিয়ভাবে প্রকাশ পাবে।
+              কাস্টম রুম আইডি ও পাসওয়ার্ড ম্যাচ শুরুর ঠিক <strong>৫ মিনিট আগে</strong> স্বয়ংক্রিয়ভাবে প্রকাশ পাবে।
             </span>
           </div>
 
-          {match.roomId ? (
-            <div className="grid grid-cols-2 gap-3 pt-1">
-              <div className="p-2.5 rounded-xl bg-white dark:bg-black/50 border border-emerald-500/30 flex items-center justify-between">
-                <div>
-                  <span className="text-[9px] text-gray-400 block">Room ID</span>
-                  <span className="font-mono font-black text-emerald-600 text-sm">{match.roomId}</span>
-                </div>
-                <button
-                  onClick={() => handleCopy(match.roomId!, 'id')}
-                  className="p-1 text-gray-400 hover:text-emerald-500"
-                >
-                  {copied === 'id' ? <CheckCircle className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
-                </button>
-              </div>
+          {(() => {
+            const matchDate = parseScheduleTimeToDate(match.time, (match as any)?.startTimeIso);
+            const diffMs = matchDate ? matchDate.getTime() - Date.now() : 999999;
+            const isWithin5Min = (diffMs <= 5 * 60 * 1000 && diffMs >= -180 * 60 * 1000) || match.status === 'ROOM_OPEN' || match.status === 'LIVE';
+            const showCredentials = Boolean(match.roomId && isWithin5Min);
 
-              <div className="p-2.5 rounded-xl bg-white dark:bg-black/50 border border-emerald-500/30 flex items-center justify-between">
-                <div>
-                  <span className="text-[9px] text-gray-400 block">Password</span>
-                  <span className="font-mono font-black text-emerald-600 text-sm">{match.roomPass || '1234'}</span>
+            if (showCredentials) {
+              return (
+                <div className="grid grid-cols-2 gap-3 pt-1">
+                  <div className="p-2.5 rounded-xl bg-white dark:bg-black/50 border border-emerald-500/30 flex items-center justify-between">
+                    <div>
+                      <span className="text-[9px] text-gray-400 block">Room ID</span>
+                      <span className="font-mono font-black text-emerald-600 text-sm">{match.roomId}</span>
+                    </div>
+                    <button
+                      onClick={() => handleCopy(match.roomId!, 'id')}
+                      className="p-1 text-gray-400 hover:text-emerald-500"
+                    >
+                      {copied === 'id' ? <CheckCircle className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+                    </button>
+                  </div>
+
+                  <div className="p-2.5 rounded-xl bg-white dark:bg-black/50 border border-emerald-500/30 flex items-center justify-between">
+                    <div>
+                      <span className="text-[9px] text-gray-400 block">Password</span>
+                      <span className="font-mono font-black text-emerald-600 text-sm">{match.roomPass || '1234'}</span>
+                    </div>
+                    <button
+                      onClick={() => handleCopy(match.roomPass || '1234', 'pass')}
+                      className="p-1 text-gray-400 hover:text-emerald-500"
+                    >
+                      {copied === 'pass' ? <CheckCircle className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+                    </button>
+                  </div>
                 </div>
-                <button
-                  onClick={() => handleCopy(match.roomPass || '1234', 'pass')}
-                  className="p-1 text-gray-400 hover:text-emerald-500"
-                >
-                  {copied === 'pass' ? <CheckCircle className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
-                </button>
+              );
+            }
+
+            return (
+              <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-300 text-center space-y-1">
+                <span className="text-xs font-black text-red-600 block">
+                  🔒 রুম খোলার ৫ মিনিট আগে এখানে রুম আইডি ও পাসওয়ার্ড দেওয়া হবে।
+                </span>
+                <span className="text-[10px] text-gray-500 block">
+                  ম্যাচ শুরু হওয়ার ৫ মিনিট পূর্বে স্বয়ংক্রিয়ভাবে আইডি ও পাসওয়ার্ড চলে আসবে।
+                </span>
               </div>
-            </div>
-          ) : (
-            <div className="p-2.5 rounded-xl bg-black/10 dark:bg-black/40 text-xs font-mono text-gray-500 flex flex-col sm:flex-row items-center justify-between gap-2">
-              <span>🔒 Room ID: [ম্যাচ শুরুর ১৫ মিনিট আগে বট আনলক করবে]</span>
-              <button
-                type="button"
-                onClick={() => {
-                  autoDeliverRoomCredentials(match.id);
-                }}
-                className="px-2.5 py-1 rounded-lg bg-red-600 hover:bg-red-700 text-white text-[10px] font-bold shadow-xs transition-colors"
-              >
-                🤖 এখনই আনলক করুন
-              </button>
-            </div>
-          )}
+            );
+          })()}
         </div>
 
         {/* Specific Rules for this match */}
