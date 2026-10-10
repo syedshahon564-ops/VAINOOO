@@ -8,6 +8,7 @@ import AutoSchedulerRunner from '@/components/AutoSchedulerRunner';
 import AppUpdateModal from '@/components/AppUpdateModal';
 import ImportantNoticeModal from '@/components/ImportantNoticeModal';
 import NotificationPermissionModal from '@/components/NotificationPermissionModal';
+import AndroidBackHandler from '@/components/AndroidBackHandler';
 
 export const viewport: Viewport = {
   themeColor: '#dc2626',
@@ -36,6 +37,7 @@ export default function RootLayout({
       <body className="antialiased selection:bg-red-500 selection:text-white">
         <ThemeProvider>
           <LanguageProvider>
+            <AndroidBackHandler />
             <AutoSchedulerRunner />
             <ImportantNoticeModal />
             <NotificationPermissionModal />

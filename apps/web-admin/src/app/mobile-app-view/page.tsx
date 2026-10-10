@@ -379,7 +379,9 @@ export default function MobileAppViewPage(props: any) {
   // In-app History and Slide-Back Manager
   const pushHistory = (screenName: string) => {
     if (typeof window !== 'undefined') {
-      window.history.pushState({ screen: screenName, time: Date.now() }, '');
+      try {
+        window.history.pushState({ screen: screenName, inAppTrap: true, time: Date.now() }, '', window.location.href);
+      } catch {}
     }
   };
 
@@ -480,17 +482,19 @@ export default function MobileAppViewPage(props: any) {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    // Seed history state once on mount so side-swiping / back button does not exit the app
+    // Seed multiple history entries so Capacitor webView.canGoBack() is always true
     try {
-      window.history.pushState({ appTrap: true }, '');
+      window.history.pushState({ trapBase: 1 }, '', window.location.href);
+      window.history.pushState({ trapActive: 2 }, '', window.location.href);
     } catch {}
 
     const onPopState = (e: PopStateEvent) => {
       const handled = handleInAppBackRef.current();
       if (handled) {
-        // We moved back 1 step inside the app! Keep history trap alive
+        // We moved back 1 step inside the app! Re-arm deep trap so future back swipes never exit
         try {
-          window.history.pushState({ appTrap: true }, '');
+          window.history.pushState({ trapBase: 1 }, '', window.location.href);
+          window.history.pushState({ trapActive: 2 }, '', window.location.href);
         } catch {}
       } else {
         // At root Home screen with nothing to back
@@ -504,7 +508,8 @@ export default function MobileAppViewPage(props: any) {
           (window as any).__lastBackPressTime = now;
           showPhoneToast(tPhone('অ্যাপ থেকে বের হতে আবার ব্যাক চাপুন', 'Press back again to exit'));
           try {
-            window.history.pushState({ appTrap: true }, '');
+            window.history.pushState({ trapBase: 1 }, '', window.location.href);
+            window.history.pushState({ trapActive: 2 }, '', window.location.href);
           } catch {}
         }
       }
