@@ -1,0 +1,59 @@
+// Prisma Schema for Payment & Auto-Deposit Verification Microservice
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model IncomingPayment {
+  id          String      @id @default(uuid())
+  trxId       String      @unique @map("trx_id")
+  provider    String      // "BKASH" or "NAGAD"
+  sender      String      // Sender mobile number e.g. "017xxxxxxxx"
+  amount      Float       // Parsed transaction amount
+  status      String      @default("UNCLAIMED") // "UNCLAIMED" or "CLAIMED"
+  rawPayload  String      @map("raw_payload")  // Full JSON string of webhook payload
+  claimedBy   String?     @map("claimed_by")   // user_id of claimant
+  claimedAt   DateTime?   @map("claimed_at")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  depositLog  DepositLog?
+
+  @@index([trxId])
+  @@index([status])
+  @@map("incoming_payments")
+}
+
+model User {
+  id          String        @id @default(uuid())
+  username    String        @unique
+  phone       String?
+  balance     Float         @default(0.0)
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  depositLogs DepositLog[]
+
+  @@map("users")
+}
+
+model DepositLog {
+  id          String          @id @default(uuid())
+  userId      String          @map("user_id")
+  trxId       String          @unique @map("trx_id")
+  amount      Float
+  status      String          @default("SUCCESS") // "SUCCESS", "FAILED"
+  processedAt DateTime        @default(now()) @map("processed_at")
+
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payment     IncomingPayment @relation(fields: [trxId], references: [trxId], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([trxId])
+  @@map("deposit_logs")
+}
