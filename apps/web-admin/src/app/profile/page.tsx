@@ -13,9 +13,11 @@ import {
   ArrowUpRight,
   Clock,
   Award,
+  Camera,
+  Mail,
 } from 'lucide-react';
 
-import { getCurrentUser } from '@/lib/user-store';
+import { getCurrentUser, updateUser } from '@/lib/user-store';
 import DepositWithdrawModal from '@/components/DepositWithdrawModal';
 
 export default function ProfilePage() {
@@ -87,21 +89,74 @@ export default function ProfilePage() {
     },
   ];
 
+  const handleAvatarFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      alert('Please select a valid image file');
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      alert('Image size should be under 8 MB');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = reader.result as string;
+      if (user?.id) {
+        const updated = updateUser(user.id, { avatar: base64 });
+        if (updated) {
+          setUser((prev: any) => ({ ...prev, avatar: base64 }));
+        }
+      } else {
+        setUser((prev: any) => ({ ...prev, avatar: base64 }));
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
       {/* Player Header Card */}
       <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-dark-card p-6 sm:p-8 shadow-sm flex flex-col sm:flex-row items-center sm:items-start justify-between gap-6">
         <div className="flex flex-col sm:flex-row items-center gap-5 text-center sm:text-left">
-          <div className="w-24 h-24 rounded-2xl bg-gradient-to-tr from-red-600 to-rose-500 flex items-center justify-center text-white shadow-lg shadow-red-500/20 text-3xl font-black">
-            {user.ign ? user.ign[0] : 'P'}
+          {/* Avatar with Camera badge */}
+          <div className="relative group flex-shrink-0">
+            <div className="w-24 h-24 rounded-2xl border-2 border-red-500/30 overflow-hidden bg-gradient-to-tr from-red-600 to-rose-500 flex items-center justify-center text-white shadow-lg shadow-red-500/20 text-3xl font-black">
+              {user.avatar ? (
+                <img src={user.avatar} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                user.ign ? user.ign[0] : 'P'
+              )}
+            </div>
+            <label
+              htmlFor="profile-avatar-upload"
+              className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-red-600 hover:bg-red-500 text-white flex items-center justify-center shadow-md cursor-pointer border-2 border-white dark:border-gray-900 transition-transform active:scale-90"
+              title="Change Profile Picture (Gallery / Files)"
+            >
+              <Camera className="w-4 h-4" />
+            </label>
+            <input
+              id="profile-avatar-upload"
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleAvatarFileUpload}
+            />
           </div>
+
           <div className="space-y-1.5">
             <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-              <h1 className="text-2xl font-black text-gray-900 dark:text-white">{user.ign}</h1>
+              <h1 className="text-2xl font-black text-gray-900 dark:text-white">{user.username || user.ign}</h1>
               <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 flex items-center gap-1">
                 <ShieldCheck className="w-3 h-3" /> Verified Player
               </span>
             </div>
+            {user.email && (
+              <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center justify-center sm:justify-start gap-1">
+                <Mail className="w-3.5 h-3.5" /> {user.email}
+              </p>
+            )}
             <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center justify-center sm:justify-start gap-1 font-mono">
               <Hash className="w-3.5 h-3.5" /> UID: {user.uid}
             </p>

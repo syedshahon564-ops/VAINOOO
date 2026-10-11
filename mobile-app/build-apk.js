@@ -17,6 +17,25 @@ const env = {
   PATH: `${path.join(jdkPath, 'bin')}${path.delimiter}${process.env.PATH || ''}`,
 };
 
+console.log('Syncing Capacitor config and www into Android assets...');
+const capConfigSrc = path.join(__dirname, 'capacitor.config.json');
+const capConfigDest = path.join(androidDir, 'app', 'src', 'main', 'assets', 'capacitor.config.json');
+if (fs.existsSync(capConfigSrc)) {
+  fs.mkdirSync(path.dirname(capConfigDest), { recursive: true });
+  fs.copyFileSync(capConfigSrc, capConfigDest);
+  console.log('Synced capacitor.config.json to Android assets.');
+}
+
+const wwwDir = path.join(__dirname, 'www');
+const assetsPublicDir = path.join(androidDir, 'app', 'src', 'main', 'assets', 'public');
+if (fs.existsSync(wwwDir)) {
+  fs.mkdirSync(assetsPublicDir, { recursive: true });
+  for (const file of fs.readdirSync(wwwDir)) {
+    fs.copyFileSync(path.join(wwwDir, file), path.join(assetsPublicDir, file));
+  }
+  console.log('Synced www directory to Android assets/public.');
+}
+
 console.log('Running ./gradlew assembleRelease...');
 const gradlew = process.platform === 'win32' ? 'gradlew.bat' : './gradlew';
 execSync(`${gradlew} assembleRelease`, {

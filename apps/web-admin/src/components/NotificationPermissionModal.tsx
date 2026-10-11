@@ -47,16 +47,29 @@ export default function NotificationPermissionModal() {
   const handleExitApp = () => {
     try {
       sessionStorage.setItem('ff_notif_session_dismissed', 'true');
+      if (typeof window !== 'undefined' && (window as any).AndroidBridge?.exitApp) {
+        (window as any).AndroidBridge.exitApp();
+        return;
+      }
     } catch {}
     setIsOpen(false);
   };
 
   const handleProceedToStep2 = () => {
+    try {
+      if (typeof window !== 'undefined' && (window as any).AndroidBridge?.requestNotificationPermission) {
+        (window as any).AndroidBridge.requestNotificationPermission();
+      }
+    } catch {}
     setStep(2);
   };
 
   const handleAllowNotifications = async () => {
     try {
+      if (typeof window !== 'undefined' && (window as any).AndroidBridge?.requestNotificationPermission) {
+        (window as any).AndroidBridge.requestNotificationPermission();
+      }
+
       if (typeof Notification !== 'undefined' && typeof Notification.requestPermission === 'function') {
         await Notification.requestPermission();
       }

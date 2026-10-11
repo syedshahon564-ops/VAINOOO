@@ -28,6 +28,58 @@ public class MainActivity extends BridgeActivity {
                 handleSystemBack();
             }
         });
+        // Request runtime notification permission on Android 13+ (API 33+)
+        if (android.os.Build.VERSION.SDK_INT >= 33) {
+            if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, 101);
+            }
+        }
+    }
+
+    public class WebAppInterface {
+        @android.webkit.JavascriptInterface
+        public void requestNotificationPermission() {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    if (android.os.Build.VERSION.SDK_INT >= 33) {
+                        if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                            requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, 101);
+                        }
+                    } else {
+                        openNotificationSettings();
+                    }
+                }
+            });
+        }
+
+        @android.webkit.JavascriptInterface
+        public void openNotificationSettings() {
+            try {
+                Intent intent = new Intent();
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                    intent.setAction(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS);
+                    intent.putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, getPackageName());
+                } else {
+                    intent.setAction("android.settings.APP_NOTIFICATION_SETTINGS");
+                    intent.putExtra("app_package", getPackageName());
+                    intent.putExtra("app_uid", getApplicationInfo().uid);
+                }
+                startActivity(intent);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        @android.webkit.JavascriptInterface
+        public void exitApp() {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    finishAffinity();
+                }
+            });
+        }
     }
 
     @Override
@@ -41,6 +93,7 @@ public class MainActivity extends BridgeActivity {
             settings.setJavaScriptEnabled(true);
             settings.setCacheMode(WebSettings.LOAD_DEFAULT);
             webView.clearCache(true);
+            webView.addJavascriptInterface(new WebAppInterface(), "AndroidBridge");
 
             // Handle file downloads (e.g. APK update download) in external browser / Download Manager
             webView.setDownloadListener(new DownloadListener() {

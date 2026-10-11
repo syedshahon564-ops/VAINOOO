@@ -4,6 +4,7 @@
     <!-- Permissions -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <!-- DOM storage (localStorage/sessionStorage) is enabled in MainActivity.java:
          "android:domStorageEnabled" is not a valid manifest attribute and would break the build. -->
