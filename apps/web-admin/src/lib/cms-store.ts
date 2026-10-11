@@ -626,52 +626,58 @@ export function useCMS() {
     setData(getCMSData());
     setLoaded(true);
 
-    // Initial background sync with server to pick up matches/categories created on other devices/admin
-    try {
-      fetch('/api/cms', { cache: 'no-store' })
-        .then((res) => (res.ok ? res.json() : null))
-        .then((serverData) => {
-          if (!active) return;
-          if (serverData && typeof serverData === 'object' && !serverData.error) {
-            const current = getCMSData();
-            const serverMatches = Array.isArray(serverData.matches) ? serverData.matches : [];
-            const currentMatches = Array.isArray(current?.matches) ? current.matches : [];
-            let effectiveMatches = currentMatches;
-            if (serverMatches.length > 0) {
-              effectiveMatches = serverMatches;
-            } else if (currentMatches.length > 0) {
-              // Push client matches to server so other devices receive them
-              fetch('/api/cms', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...current, ...serverData, matches: currentMatches }),
-              }).catch(() => {});
-            }
+    const syncWithServer = () => {
+      try {
+        fetch(`/api/cms?t=${Date.now()}`, { cache: 'no-store' })
+          .then((res) => (res.ok ? res.json() : null))
+          .then((serverData) => {
+            if (!active) return;
+            if (serverData && typeof serverData === 'object' && !serverData.error) {
+              const current = getCMSData();
+              const serverMatches = Array.isArray(serverData.matches) ? serverData.matches : null;
+              const serverCategories =
+                serverData.categories && typeof serverData.categories === 'object' && !Array.isArray(serverData.categories)
+                  ? serverData.categories
+                  : {};
+              const serverSettings =
+                serverData.settings && typeof serverData.settings === 'object' ? serverData.settings : {};
 
-            const serverCategories =
-              serverData.categories && typeof serverData.categories === 'object' && !Array.isArray(serverData.categories)
-                ? serverData.categories
-                : {};
-            const serverSettings =
-              serverData.settings && typeof serverData.settings === 'object' ? serverData.settings : {};
-            const merged: CMSData = normalizeCMSData({
-              categories: { ...(current?.categories || {}), ...serverCategories },
-              matches: effectiveMatches,
-              settings: { ...(current?.settings || {}), ...serverSettings } as SiteSettings,
-              topPlayers:
-                Array.isArray(serverData.topPlayers) && serverData.topPlayers.length > 0
-                  ? serverData.topPlayers
-                  : current?.topPlayers,
-            });
-            memoryCMSCache = merged;
-            setData(merged);
-            try {
-              localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
-            } catch (e) {}
-          }
-        })
-        .catch(() => {});
-    } catch (e) {}
+              const merged: CMSData = normalizeCMSData({
+                categories: { ...(current?.categories || {}), ...serverCategories },
+                matches: serverMatches !== null ? serverMatches : current?.matches || [],
+                settings: { ...(current?.settings || {}), ...serverSettings } as SiteSettings,
+                topPlayers:
+                  Array.isArray(serverData.topPlayers) && serverData.topPlayers.length > 0
+                    ? serverData.topPlayers
+                    : current?.topPlayers,
+              });
+
+              memoryCMSCache = merged;
+              setData(merged);
+              try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+              } catch (e) {}
+            }
+          })
+          .catch(() => {});
+      } catch (e) {}
+    };
+
+    // 1. Immediate sync
+    syncWithServer();
+
+    // 2. Periodic background poll every 10s for real-time live match updates
+    const syncInterval = setInterval(syncWithServer, 10000);
+
+    // 3. Sync immediately when user refocuses or opens app from background
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        syncWithServer();
+      }
+    };
+    window.addEventListener('visibilitychange', onVisibilityChange);
+    window.addEventListener('focus', syncWithServer);
+    window.addEventListener('online', syncWithServer);
 
     const handleUpdate = (e: any) => {
       if (!active) return;
@@ -689,6 +695,10 @@ export function useCMS() {
     window.addEventListener('storage', handleUpdate);
     return () => {
       active = false;
+      clearInterval(syncInterval);
+      window.removeEventListener('visibilitychange', onVisibilityChange);
+      window.removeEventListener('focus', syncWithServer);
+      window.removeEventListener('online', syncWithServer);
       window.removeEventListener('ff_cms_updated', handleUpdate);
       window.removeEventListener('storage', handleUpdate);
     };

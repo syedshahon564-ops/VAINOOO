@@ -39,6 +39,8 @@ public class MainActivity extends BridgeActivity {
             settings.setDomStorageEnabled(true);
             settings.setDatabaseEnabled(true);
             settings.setJavaScriptEnabled(true);
+            settings.setCacheMode(WebSettings.LOAD_DEFAULT);
+            webView.clearCache(true);
 
             // Handle file downloads (e.g. APK update download) in external browser / Download Manager
             webView.setDownloadListener(new DownloadListener() {

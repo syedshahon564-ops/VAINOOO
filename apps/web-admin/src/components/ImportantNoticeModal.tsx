@@ -2,33 +2,52 @@
 
 import React, { useState, useEffect } from 'react';
 import { useCMS } from '@/lib/cms-store';
+import { getCurrentUser } from '@/lib/user-store';
 
 export default function ImportantNoticeModal() {
   const { settings } = useCMS();
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
-    try {
-      if (typeof window === 'undefined') return;
+    const checkNotice = () => {
+      try {
+        if (typeof window === 'undefined') return;
 
-      // Check if disabled by admin
-      if (settings?.importantNoticeEnabled === false) {
-        setIsOpen(false);
-        return;
-      }
+        // Requirement: Only show notice to logged-in users. If not logged in, do not show.
+        const user = getCurrentUser();
+        if (!user) {
+          setIsOpen(false);
+          return;
+        }
 
-      // Check if dismissed in this current session
-      const dismissed = sessionStorage.getItem('ff_important_notice_dismissed');
-      if (!dismissed) {
-        // Small delay for smooth entry animation
-        const timer = setTimeout(() => {
+        // Check if disabled by admin
+        if (settings?.importantNoticeEnabled === false) {
+          setIsOpen(false);
+          return;
+        }
+
+        // Check if dismissed in this current session
+        const dismissed = sessionStorage.getItem('ff_important_notice_dismissed');
+        if (!dismissed) {
           setIsOpen(true);
-        }, 350);
-        return () => clearTimeout(timer);
+        }
+      } catch {
+        // Safe fallback
       }
-    } catch {
-      setIsOpen(true);
-    }
+    };
+
+    // Check with small delay for smooth entry animation
+    const timer = setTimeout(checkNotice, 400);
+
+    // Also re-check when user logs in or auth state updates
+    window.addEventListener('ff_users_updated', checkNotice);
+    window.addEventListener('storage', checkNotice);
+
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('ff_users_updated', checkNotice);
+      window.removeEventListener('storage', checkNotice);
+    };
   }, [settings?.importantNoticeEnabled]);
 
   const handleDismiss = () => {

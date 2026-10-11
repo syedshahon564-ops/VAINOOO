@@ -1807,58 +1807,70 @@ export default function MobileAppViewPage(props: any) {
                                   </div>
 
                                   {/* 3. Progress Bar + Join Button Row */}
-                                  <div className="flex items-center gap-3 pt-0.5">
-                                    <div className="flex-1 space-y-1">
-                                      <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-                                        <div
-                                          className="bg-emerald-500 h-full rounded-full transition-all"
-                                          style={{
-                                            width: `${Math.min(
-                                              100,
-                                              (filled / m.totalSlots) * 100
-                                            )}%`,
-                                          }}
-                                        />
-                                      </div>
-                                      <div className="flex items-center justify-between text-[9px] text-gray-500 font-bold">
-                                        <span>Only {spotsLeft} spots are left</span>
-                                        <span className="text-gray-800 font-extrabold">
-                                          {filled}/{m.totalSlots}
-                                        </span>
-                                      </div>
-                                    </div>
+                                  {(() => {
+                                    const userJoined = hasUserJoinedMatch(m.id, currentUser) ||
+                                      bookedMatchesList.some((bm) => bm.matchId === m.id || bm.title === m.title) ||
+                                      (currentUser &&
+                                        (m.participants || []).some(
+                                          (p) =>
+                                            (currentUser.ign && p.ign && p.ign.toLowerCase() === currentUser.ign.toLowerCase()) ||
+                                            (currentUser.uid && p.uid && p.uid === currentUser.uid)
+                                        ));
+                                    const matchDate = parseScheduleTimeToDate(m.time);
+                                    const isMatchLive = m.status === 'LIVE' || m.status === 'COMPLETED' || (matchDate ? matchDate.getTime() <= Date.now() : false);
 
-                                    {/* Join / Joined Button */}
-                                    {hasUserJoinedMatch(m.id, currentUser) ||
-                                    bookedMatchesList.some((bm) => bm.matchId === m.id || bm.title === m.title) ||
-                                    (currentUser &&
-                                      (m.participants || []).some(
-                                        (p) =>
-                                          (currentUser.ign && p.ign && p.ign.toLowerCase() === currentUser.ign.toLowerCase()) ||
-                                          (currentUser.uid && p.uid && p.uid === currentUser.uid)
-                                      )) ? (
-                                      <button
-                                        disabled
-                                        className="px-5 py-2 rounded-xl bg-emerald-600 text-white font-black text-xs shadow-md opacity-95 cursor-not-allowed flex items-center gap-1.5 flex-shrink-0"
-                                      >
-                                        <Check className="w-3.5 h-3.5" />
-                                        {tPhone('জয়েন করা হয়েছে', 'JOINED')}
-                                      </button>
-                                    ) : (
-                                      <button
-                                        onClick={() => {
-                                          if (!currentUser) {
-                                            setShowAuthModal(true);
-                                            return;
-                                          }
-                                          setBookingModalMatch(m);
-                                        }}
-                                        className="px-6 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs shadow-md active:scale-95 transition-all flex-shrink-0"
-                                      >
-                                        Join
-                                      </button>
-                                    )}
-                                  </div>
+                                    return (
+                                      <div className="flex items-center gap-3 pt-0.5">
+                                        <div className="flex-1 space-y-1">
+                                          <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                                            <div
+                                              className="bg-emerald-500 h-full rounded-full transition-all"
+                                              style={{
+                                                width: `${Math.min(
+                                                  100,
+                                                  (filled / m.totalSlots) * 100
+                                                )}%`,
+                                              }}
+                                            />
+                                          </div>
+                                          <div className="flex items-center justify-between text-[9px] text-gray-500 font-bold">
+                                            <span>{isMatchLive ? tPhone('ম্যাচ লাইভ / সমাপ্ত', 'Match Live / Closed') : `Only ${spotsLeft} spots are left`}</span>
+                                            <span className="text-gray-800 font-extrabold">
+                                              {filled}/{m.totalSlots}
+                                            </span>
+                                          </div>
+                                        </div>
+
+                                        {/* Join / Joined Button */}
+                                        {userJoined ? (
+                                          <button
+                                            disabled
+                                            className="px-5 py-2 rounded-xl bg-emerald-600 text-white font-black text-xs shadow-md opacity-95 cursor-not-allowed flex items-center gap-1.5 flex-shrink-0"
+                                          >
+                                            <Check className="w-3.5 h-3.5" />
+                                            {tPhone('জয়েন করা হয়েছে', 'JOINED')}
+                                          </button>
+                                        ) : isMatchLive ? (
+                                          <span className="px-4 py-2 rounded-xl bg-red-600/10 border border-red-500/20 text-red-600 font-black text-xs flex-shrink-0">
+                                            {tPhone('রেজিস্ট্রেশন বন্ধ', 'CLOSED')}
+                                          </span>
+                                        ) : (
+                                          <button
+                                            onClick={() => {
+                                              if (!currentUser) {
+                                                setShowAuthModal(true);
+                                                return;
+                                              }
+                                              setBookingModalMatch(m);
+                                            }}
+                                            className="px-6 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs shadow-md active:scale-95 transition-all flex-shrink-0 cursor-pointer"
+                                          >
+                                            Join
+                                          </button>
+                                        )}
+                                      </div>
+                                    );
+                                  })()}
 
                                   {/* 4. Dual Action Buttons: Room Rules and Total Prize Details */}
                                   <div className="grid grid-cols-2 gap-2 pt-0.5">
@@ -2220,32 +2232,10 @@ export default function MobileAppViewPage(props: any) {
                                   </div>
                                 </div>
 
-                                <div className="flex items-center justify-between text-xs">
-                                  <span className="text-gray-800 flex items-center gap-1.5 font-extrabold text-xs">
-                                    <Key className="w-4 h-4 text-emerald-600" /> {tPhone('পাসওয়ার্ড:', 'Password:')}
-                                  </span>
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-mono font-black text-gray-950 bg-white px-3 py-1 rounded-lg border border-emerald-300 text-xs shadow-xs">
-                                      {currentRoomPass || '1234'}
-                                    </span>
-                                    <button
-                                      onClick={() => handleCopy(currentRoomPass || '1234', `pass-${bm.id}`)}
-                                      className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black flex items-center gap-1 shadow-xs transition-colors"
-                                    >
-                                      {copiedKey === `pass-${bm.id}` ? (
-                                        <CheckCircle className="w-3 h-3 text-emerald-200" />
-                                      ) : (
-                                        <Copy className="w-3 h-3" />
-                                      )}
-                                      <span>{copiedKey === `pass-${bm.id}` ? 'কপি হয়েছে' : 'কপি'}</span>
-                                    </button>
-                                  </div>
-                                </div>
-
-                                <p className="text-[9px] text-emerald-800 bg-white/70 p-1.5 rounded-lg border border-emerald-200 leading-tight">
-                                  🎮 {tPhone(`ফ্রি ফায়ারে কাস্টম রুমে গিয়ে আইডি ও পাসওয়ার্ড দিন এবং স্লট #${bm.slot} এ গিয়ে বসুন।`, `Open Free Fire Custom Room, enter credentials, and sit in Slot #${bm.slot}.`)}
-                                </p>
-                              </div>
+                                 <p className="text-[9px] text-emerald-800 bg-white/70 p-1.5 rounded-lg border border-emerald-200 leading-tight">
+                                   🎮 {tPhone(`ফ্রি ফায়ারে কাস্টম রুমে গিয়ে রুম আইডিতে প্রবেশ করুন এবং আপনার নির্দিষ্ট স্লট #${bm.slot} এ গিয়ে বসুন।`, `Open Free Fire Custom Room, enter Room ID, and sit in Slot #${bm.slot}.`)}
+                                 </p>
+                               </div>
                             ) : (
                               <div className="p-3.5 rounded-xl bg-amber-50/90 border border-amber-300 space-y-2 shadow-xs">
                                 <div className="flex items-center justify-between text-[11px]">

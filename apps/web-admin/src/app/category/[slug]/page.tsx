@@ -514,103 +514,104 @@ export default function CategoryDetailPage() {
                         </div>
                       </div>
 
-                      {/* Room ID & Pass reveal if published */}
-                      {m.roomId && (
-                        <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 space-y-2">
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-gray-600 dark:text-gray-300 font-bold flex items-center gap-1.5">
-                              <Key className="w-3.5 h-3.5 text-red-600" /> Room ID:
-                            </span>
-                            <div className="flex items-center gap-1.5">
-                              <span className="font-mono font-bold text-red-600 bg-white dark:bg-black/40 px-2 py-0.5 rounded border border-red-200 dark:border-red-900/40">
-                                {m.roomId}
-                              </span>
-                              <button
-                                onClick={() => handleCopy(m.roomId!, `room-${m.id}`)}
-                                className="text-gray-400 hover:text-red-600"
-                              >
-                                {copiedKey === `room-${m.id}` ? (
-                                  <Check className="w-3.5 h-3.5 text-emerald-500" />
-                                ) : (
-                                  <Copy className="w-3.5 h-3.5" />
-                                )}
-                              </button>
-                            </div>
-                          </div>
-                          {m.roomPass && (
-                            <div className="flex items-center justify-between text-xs">
-                              <span className="text-gray-600 dark:text-gray-300 font-bold flex items-center gap-1.5">
-                                <Key className="w-3.5 h-3.5 text-red-600" /> Password:
-                              </span>
-                              <div className="flex items-center gap-1.5">
-                                <span className="font-mono font-bold text-red-600 bg-white dark:bg-black/40 px-2 py-0.5 rounded border border-red-200 dark:border-red-900/40">
-                                  {m.roomPass}
-                                </span>
-                                <button
-                                  onClick={() => handleCopy(m.roomPass!, `pass-${m.id}`)}
-                                  className="text-gray-400 hover:text-red-600"
-                                >
-                                  {copiedKey === `pass-${m.id}` ? (
-                                    <Check className="w-3.5 h-3.5 text-emerald-500" />
+                      {/* Room ID reveal only if joined or admin - Password removed completely */}
+                      {(() => {
+                        const userJoined = hasUserJoinedMatch(m.id, getCurrentUser()) ||
+                          (bookedParticipants[m.id] && bookedParticipants[m.id].length > 0) ||
+                          (getCurrentUser() &&
+                            (m.participants || []).some(
+                              (p) =>
+                                (getCurrentUser()?.ign &&
+                                  p.ign &&
+                                  p.ign.toLowerCase() === getCurrentUser()?.ign.toLowerCase()) ||
+                                (getCurrentUser()?.uid && p.uid && p.uid === getCurrentUser()?.uid)
+                            )) ||
+                          getCurrentUser()?.role === 'ADMIN';
+
+                        const matchScheduleDate = parseScheduleTimeToDate(m.time);
+                        const isMatchLive = m.status === 'LIVE' || m.status === 'COMPLETED' || (matchScheduleDate ? matchScheduleDate.getTime() <= Date.now() : false);
+
+                        return (
+                          <>
+                            {m.roomId && (
+                              <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 space-y-2">
+                                <div className="flex items-center justify-between text-xs">
+                                  <span className="text-gray-600 dark:text-gray-300 font-bold flex items-center gap-1.5">
+                                    <Key className="w-3.5 h-3.5 text-red-600" /> Room ID:
+                                  </span>
+                                  {userJoined ? (
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="font-mono font-bold text-red-600 bg-white dark:bg-black/40 px-2 py-0.5 rounded border border-red-200 dark:border-red-900/40">
+                                        {m.roomId}
+                                      </span>
+                                      <button
+                                        onClick={() => handleCopy(m.roomId!, `room-${m.id}`)}
+                                        className="text-gray-400 hover:text-red-600 cursor-pointer"
+                                        title="Copy Room ID"
+                                      >
+                                        {copiedKey === `room-${m.id}` ? (
+                                          <Check className="w-3.5 h-3.5 text-emerald-500" />
+                                        ) : (
+                                          <Copy className="w-3.5 h-3.5" />
+                                        )}
+                                      </button>
+                                    </div>
                                   ) : (
-                                    <Copy className="w-3.5 h-3.5" />
+                                    <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400">
+                                      🔒 জয়েন করার পর রুম আইডি দৃশ্যমান হবে
+                                    </span>
                                   )}
-                                </button>
+                                </div>
                               </div>
+                            )}
+
+                            {/* 3. Progress Bar + Join Button Row */}
+                            <div className="flex items-center gap-3 pt-0.5">
+                              <div className="flex-1 space-y-1">
+                                <div className="w-full bg-gray-200 dark:bg-white/10 rounded-full h-2 overflow-hidden">
+                                  <div
+                                    className="bg-emerald-500 h-full rounded-full transition-all"
+                                    style={{
+                                      width: `${Math.min(
+                                        100,
+                                        (filled / m.totalSlots) * 100
+                                      )}%`,
+                                    }}
+                                  />
+                                </div>
+                                <div className="flex items-center justify-between text-[11px] text-gray-500 font-semibold">
+                                  <span>{isMatchLive ? (lang === 'bn' ? 'ম্যাচ লাইভ / ক্লোজড' : 'Match Live / Closed') : `Only ${spotsLeft} spots are left`}</span>
+                                  <span className="text-gray-600 dark:text-gray-300 font-bold">
+                                    {filled}/{m.totalSlots}
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Join / Joined Button */}
+                              {userJoined ? (
+                                <button
+                                  disabled
+                                  className="px-5 py-1.5 rounded-lg bg-emerald-600 text-white font-bold text-xs shadow-sm flex-shrink-0 cursor-not-allowed flex items-center gap-1 opacity-95"
+                                >
+                                  <Check className="w-3.5 h-3.5" />
+                                  {lang === 'bn' ? 'জয়েন করা হয়েছে' : 'JOINED'}
+                                </button>
+                              ) : isMatchLive ? (
+                                <span className="px-3.5 py-1.5 rounded-lg bg-red-600/10 border border-red-500/20 text-red-600 dark:text-red-400 font-black text-xs flex-shrink-0">
+                                  {lang === 'bn' ? 'রেজিস্ট্রেশন বন্ধ' : 'CLOSED'}
+                                </span>
+                              ) : (
+                                <button
+                                  onClick={() => setBookingMatch(m)}
+                                  className="px-6 py-1.5 rounded-lg border border-blue-600 dark:border-blue-500 text-blue-600 dark:text-blue-400 font-bold text-xs hover:bg-blue-600 hover:text-white transition-all shadow-sm flex-shrink-0 cursor-pointer"
+                                >
+                                  Join
+                                </button>
+                              )}
                             </div>
-                          )}
-                        </div>
-                      )}
-
-                      {/* 3. Progress Bar + Join Button Row (Exact Image 1) */}
-                      <div className="flex items-center gap-3 pt-0.5">
-                        <div className="flex-1 space-y-1">
-                          <div className="w-full bg-gray-200 dark:bg-white/10 rounded-full h-2 overflow-hidden">
-                            <div
-                              className="bg-emerald-500 h-full rounded-full transition-all"
-                              style={{
-                                width: `${Math.min(
-                                  100,
-                                  (filled / m.totalSlots) * 100
-                                )}%`,
-                              }}
-                            />
-                          </div>
-                          <div className="flex items-center justify-between text-[11px] text-gray-500 font-semibold">
-                            <span>Only {spotsLeft} spots are left</span>
-                            <span className="text-gray-600 dark:text-gray-300 font-bold">
-                              {filled}/{m.totalSlots}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Join / Joined Button */}
-                        {hasUserJoinedMatch(m.id, getCurrentUser()) ||
-                        (bookedParticipants[m.id] && bookedParticipants[m.id].length > 0) ||
-                        (getCurrentUser() &&
-                          (m.participants || []).some(
-                            (p) =>
-                              (getCurrentUser()?.ign &&
-                                p.ign &&
-                                p.ign.toLowerCase() === getCurrentUser()?.ign.toLowerCase()) ||
-                              (getCurrentUser()?.uid && p.uid && p.uid === getCurrentUser()?.uid)
-                          )) ? (
-                          <button
-                            disabled
-                            className="px-5 py-1.5 rounded-lg bg-emerald-600 text-white font-bold text-xs shadow-sm flex-shrink-0 cursor-not-allowed flex items-center gap-1 opacity-95"
-                          >
-                            <Check className="w-3.5 h-3.5" />
-                            {lang === 'bn' ? 'জয়েন করা হয়েছে' : 'JOINED'}
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => setBookingMatch(m)}
-                            className="px-6 py-1.5 rounded-lg border border-blue-600 dark:border-blue-500 text-blue-600 dark:text-blue-400 font-bold text-xs hover:bg-blue-600 hover:text-white transition-all shadow-sm flex-shrink-0"
-                          >
-                            Join
-                          </button>
-                        )}
-                      </div>
+                          </>
+                        );
+                      })()}
 
                       {/* 4. Dual Action Buttons: Room Rules and Total Prize Details */}
                       <div className="grid grid-cols-2 gap-2 pt-0.5">

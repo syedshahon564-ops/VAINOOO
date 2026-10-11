@@ -33,15 +33,28 @@ function ensureDataFile(targetPath: string) {
   }
 }
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET() {
   try {
     const dataFile = getDataFilePath();
     if (fs.existsSync(dataFile)) {
       const content = fs.readFileSync(dataFile, 'utf-8');
       const data = JSON.parse(content);
-      return NextResponse.json(data);
+      return NextResponse.json(data, {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
+      });
     }
-    return NextResponse.json({ ok: true, data: null });
+    return NextResponse.json({ ok: true, data: null }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+      },
+    });
   } catch (error: any) {
     return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
   }

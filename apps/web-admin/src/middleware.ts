@@ -6,7 +6,7 @@ export function middleware(request: NextRequest) {
 
   // Only handle root page detection
   if (pathname === '/') {
-    const viewParam = searchParams.get('view') || searchParams.get('mode');
+    const viewParam = searchParams.get('view') || searchParams.get('mode') || (searchParams.get('app') === 'true' ? 'app' : null);
     const cookieView = request.cookies.get('ff_view_mode')?.value;
 
     // Explicit request to view desktop website
@@ -22,7 +22,6 @@ export function middleware(request: NextRequest) {
     if (viewParam === 'app' || cookieView === 'app') {
       const url = request.nextUrl.clone();
       url.pathname = '/mobile-app-view';
-      url.search = '';
       const response = NextResponse.redirect(url);
       if (viewParam === 'app') {
         response.cookies.set('ff_view_mode', 'app', { path: '/', maxAge: 60 * 60 * 24 });
