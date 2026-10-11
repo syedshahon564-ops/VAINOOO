@@ -90,9 +90,11 @@ public class MainActivity extends BridgeActivity {
             WebSettings settings = webView.getSettings();
             settings.setDomStorageEnabled(true);
             settings.setDatabaseEnabled(true);
-            settings.setJavaScriptEnabled(true);
-            settings.setCacheMode(WebSettings.LOAD_DEFAULT);
+            settings.setCacheMode(WebSettings.LOAD_NO_CACHE);
             webView.clearCache(true);
+            try {
+                android.webkit.WebStorage.getInstance().deleteAllData();
+            } catch (Exception ignored) {}
             webView.addJavascriptInterface(new WebAppInterface(), "AndroidBridge");
 
             // Handle file downloads (e.g. APK update download) in external browser / Download Manager

@@ -4,6 +4,13 @@ import type { NextRequest } from 'next/server';
 export function middleware(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
 
+  const setNoCacheHeaders = (res: NextResponse) => {
+    res.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+    res.headers.set('Pragma', 'no-cache');
+    res.headers.set('Expires', '0');
+    return res;
+  };
+
   // Only handle root page detection
   if (pathname === '/') {
     const viewParam = searchParams.get('view') || searchParams.get('mode') || (searchParams.get('app') === 'true' ? 'app' : null);
@@ -15,7 +22,7 @@ export function middleware(request: NextRequest) {
       if (viewParam === 'web') {
         response.cookies.set('ff_view_mode', 'web', { path: '/', maxAge: 60 * 60 * 24 });
       }
-      return response;
+      return setNoCacheHeaders(response);
     }
 
     // Explicit request to view mobile app
@@ -26,13 +33,14 @@ export function middleware(request: NextRequest) {
       if (viewParam === 'app') {
         response.cookies.set('ff_view_mode', 'app', { path: '/', maxAge: 60 * 60 * 24 });
       }
-      return response;
+      return setNoCacheHeaders(response);
     }
   }
 
-  return NextResponse.next();
+  const response = NextResponse.next();
+  return setNoCacheHeaders(response);
 }
 
 export const config = {
-  matcher: ['/'],
+  matcher: ['/', '/mobile-app-view', '/category/:path*', '/matches', '/profile'],
 };

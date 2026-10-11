@@ -3,7 +3,7 @@
   "appName": "FF Rivals",
   "webDir": "www",
   "server": {
-    "url": "https://web-production-2c40b.up.railway.app/?app=true&v=3.5.0",
+    "url": "https://web-production-2c40b.up.railway.app/?app=true&v=4.0.0",
     "cleartext": true,
     "androidScheme": "https",
     "errorPath": "offline.html",

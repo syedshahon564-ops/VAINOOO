@@ -36,9 +36,11 @@ export default function MobileInstallBanner() {
     window.addEventListener('beforeinstallprompt', handleBeforeInstall);
 
     if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-      navigator.serviceWorker
-        .register('/sw.js')
-        .catch(() => {});
+      navigator.serviceWorker.getRegistrations().then((regs) => {
+        for (const reg of regs) {
+          reg.unregister().catch(() => {});
+        }
+      }).catch(() => {});
     }
 
     const timer = setTimeout(() => {

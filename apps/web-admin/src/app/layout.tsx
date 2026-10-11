@@ -33,6 +33,50 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <meta httpEquiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+        <meta httpEquiv="Pragma" content="no-cache" />
+        <meta httpEquiv="Expires" content="0" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var CURRENT_VERSION = '4.0.0';
+                  var storedVer = localStorage.getItem('ff_app_build_version');
+                  
+                  // Clean up all old Service Workers
+                  if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.getRegistrations().then(function(regs) {
+                      for (var i = 0; i < regs.length; i++) {
+                        regs[i].unregister();
+                      }
+                    });
+                  }
+                  
+                  // Clean up stale CacheStorage
+                  if ('caches' in window) {
+                    caches.keys().then(function(keys) {
+                      for (var j = 0; j < keys.length; j++) {
+                        caches.delete(keys[j]);
+                      }
+                    });
+                  }
+
+                  // Force instant reload if running on older build version
+                  if (storedVer !== CURRENT_VERSION) {
+                    localStorage.setItem('ff_app_build_version', CURRENT_VERSION);
+                    if (!sessionStorage.getItem('ff_auto_updated_v4')) {
+                      sessionStorage.setItem('ff_auto_updated_v4', 'true');
+                      window.location.reload();
+                    }
+                  }
+                } catch(e) {}
+              })();
+            `,
+          }}
+        />
+      </head>
       <body className="antialiased selection:bg-red-500 selection:text-white">
         <ThemeProvider>
           <LanguageProvider>
