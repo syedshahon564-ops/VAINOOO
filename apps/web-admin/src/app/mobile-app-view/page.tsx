@@ -54,6 +54,7 @@ import {
   Edit,
   Mail,
   Home,
+  Clipboard,
 } from 'lucide-react';
 import { useCMS, MatchItem, TopPlayerItem } from '@/lib/cms-store';
 import { checkFreeFireUID } from '@/lib/ff-uid-checker';
@@ -707,11 +708,27 @@ export default function MobileAppViewPage(props: any) {
           throw new Error('Passwords do not match');
         }
 
-        // 1 Account per device limit enforcement
+        // Maximum 3 accounts per device limit enforcement
         if (typeof window !== 'undefined') {
-          const registeredOnThisDevice = localStorage.getItem('ff_device_registered_account');
-          if (registeredOnThisDevice) {
-            throw new Error('Only 1 account is permitted per device. An account is already registered on this phone.');
+          try {
+            const regRaw = localStorage.getItem('ff_device_registered_accounts');
+            let registeredList: string[] = [];
+            if (regRaw) {
+              try {
+                const parsed = JSON.parse(regRaw);
+                if (Array.isArray(parsed)) registeredList = parsed;
+              } catch {
+                registeredList = [regRaw];
+              }
+            } else {
+              const legacy = localStorage.getItem('ff_device_registered_account');
+              if (legacy) registeredList = [legacy];
+            }
+            if (registeredList.length >= 3) {
+              throw new Error('ডিভাইস লিমিট পূর্ণ হয়েছে! একটি ফোনে সর্বোচ্চ ৩টি অ্যাকাউন্ট খোলা যাবে (Maximum 3 accounts allowed per device).');
+            }
+          } catch (e: any) {
+            if (e.message?.includes('ডিভাইস লিমিট') || e.message?.includes('3 accounts')) throw e;
           }
         }
 
@@ -3426,13 +3443,47 @@ export default function MobileAppViewPage(props: any) {
                 <label className="text-[11px] font-bold text-slate-600 block mb-1">
                   Free Fire UID
                 </label>
-                <input
-                  type="text"
-                  value={editUidInput}
-                  onChange={(e) => setEditUidInput(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:outline-none focus:border-indigo-600 font-mono"
-                  placeholder="e.g. 102910574942"
-                />
+                <div className="relative">
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="off"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    value={editUidInput}
+                    onPaste={(e) => {
+                      const text = e.clipboardData?.getData('text') || '';
+                      const digits = text.replace(/\D/g, '');
+                      if (digits) {
+                        e.preventDefault();
+                        setEditUidInput(digits);
+                      }
+                    }}
+                    onChange={(e) => setEditUidInput(e.target.value.replace(/\D/g, ''))}
+                    className="w-full pl-3 pr-8 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:outline-none focus:border-indigo-600 font-mono font-bold"
+                    placeholder="e.g. 102910574942"
+                  />
+                  <button
+                    type="button"
+                    title="ক্লিপবোর্ড থেকে UID পেস্ট করুন"
+                    onClick={async () => {
+                      try {
+                        let text = '';
+                        if (typeof navigator !== 'undefined' && navigator.clipboard?.readText) {
+                          try { text = await navigator.clipboard.readText(); } catch {}
+                        }
+                        if (!text && typeof window !== 'undefined') {
+                          text = window.prompt('কপি করা Free Fire UID এখানে পেস্ট করুন:') || '';
+                        }
+                        const digits = (text || '').replace(/\D/g, '');
+                        if (digits) setEditUidInput(digits);
+                      } catch {}
+                    }}
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-indigo-600 active:scale-95 transition-all"
+                  >
+                    <Clipboard className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
 
               <button

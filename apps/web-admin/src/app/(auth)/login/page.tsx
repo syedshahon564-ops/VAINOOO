@@ -48,11 +48,27 @@ function AuthContent() {
         if (password.length < 6) throw new Error('Password must be at least 6 characters');
         if (password !== confirmPassword) throw new Error('Passwords do not match');
 
-        // 1 Account per device limitation
+        // Maximum 3 accounts per device limitation
         if (typeof window !== 'undefined') {
-          const registered = localStorage.getItem('ff_device_registered_account');
-          if (registered) {
-            throw new Error('Only 1 account is permitted per device. An account is already registered on this device.');
+          try {
+            const regRaw = localStorage.getItem('ff_device_registered_accounts');
+            let registeredList: string[] = [];
+            if (regRaw) {
+              try {
+                const parsed = JSON.parse(regRaw);
+                if (Array.isArray(parsed)) registeredList = parsed;
+              } catch {
+                registeredList = [regRaw];
+              }
+            } else {
+              const legacy = localStorage.getItem('ff_device_registered_account');
+              if (legacy) registeredList = [legacy];
+            }
+            if (registeredList.length >= 3) {
+              throw new Error('ডিভাইস লিমিট পূর্ণ হয়েছে! একটি ডিভাইসে সর্বোচ্চ ৩টি অ্যাকাউন্ট খোলা যাবে (Maximum 3 accounts allowed per device).');
+            }
+          } catch (e: any) {
+            if (e.message?.includes('ডিভাইস লিমিট') || e.message?.includes('3 accounts')) throw e;
           }
         }
 

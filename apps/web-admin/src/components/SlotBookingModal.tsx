@@ -10,6 +10,7 @@ import {
   ArrowLeft,
   Loader2,
   User,
+  Clipboard,
 } from 'lucide-react';
 import { MatchItem } from '@/lib/cms-store';
 import { checkFreeFireUID } from '@/lib/ff-uid-checker';
@@ -252,6 +253,31 @@ export default function SlotBookingModal({
       setErrorMessage('❌ ইউআইডি ভেরিফাই ফেইল্ড! সার্ভারের সাথে সংযোগ করা যায়নি।');
     }
   }
+
+  // Universal Paste Helper for UID
+  const handlePasteUid = async (
+    onApply: (uid: string) => void,
+    onAutoVerify?: () => void
+  ) => {
+    try {
+      let text = '';
+      if (typeof navigator !== 'undefined' && navigator.clipboard?.readText) {
+        try {
+          text = await navigator.clipboard.readText();
+        } catch {}
+      }
+      if (!text && typeof window !== 'undefined') {
+        text = window.prompt('কপি করা Free Fire UID এখানে পেস্ট করুন:') || '';
+      }
+      const digits = (text || '').replace(/\D/g, '');
+      if (digits) {
+        onApply(digits);
+        if (digits.length >= 8 && onAutoVerify) {
+          setTimeout(onAutoVerify, 150);
+        }
+      }
+    } catch {}
+  };
 
   const handleSelectSquadSlot = (slotNum: number) => {
     if (bookedSlotsMap[slotNum]) return;
@@ -649,27 +675,67 @@ export default function SlotBookingModal({
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {/* UID Input + Verify */}
+                        {/* UID Input + Paste + Verify */}
                         <div className="flex items-center gap-1.5">
-                          <input
-                            type="text"
-                            placeholder="Free Fire UID"
-                            value={player.uid}
-                            onChange={(e) => {
-                              const val = e.target.value.replace(/\D/g, '');
-                              setSquadPlayers((prev) =>
-                                prev.map((p, i) =>
-                                  i === idx ? { ...p, uid: val, verified: false } : p
+                          <div className="relative flex-1">
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              autoComplete="off"
+                              autoCorrect="off"
+                              spellCheck={false}
+                              placeholder="Free Fire UID"
+                              value={player.uid}
+                              onPaste={(e) => {
+                                const text = e.clipboardData?.getData('text') || '';
+                                const digits = text.replace(/\D/g, '');
+                                if (digits) {
+                                  e.preventDefault();
+                                  setSquadPlayers((prev) =>
+                                    prev.map((p, i) =>
+                                      i === idx ? { ...p, uid: digits, verified: false } : p
+                                    )
+                                  );
+                                  if (digits.length >= 8) {
+                                    setTimeout(() => handleVerifySquadPlayer(idx), 200);
+                                  }
+                                }
+                              }}
+                              onChange={(e) => {
+                                const val = e.target.value.replace(/\D/g, '');
+                                setSquadPlayers((prev) =>
+                                  prev.map((p, i) =>
+                                    i === idx ? { ...p, uid: val, verified: false } : p
+                                  )
+                                );
+                              }}
+                              onBlur={() => {
+                                if (player.uid && player.uid.trim().length >= 8 && !player.verified) {
+                                  handleVerifySquadPlayer(idx);
+                                }
+                              }}
+                              className="w-full pl-3 pr-8 py-2 rounded-xl border border-gray-200 bg-white text-xs font-mono font-bold text-gray-900 focus:outline-none focus:border-red-500 shadow-xs"
+                            />
+                            <button
+                              type="button"
+                              title="ক্লিপবোর্ড থেকে UID পেস্ট করুন"
+                              onClick={() =>
+                                handlePasteUid(
+                                  (uid) => {
+                                    setSquadPlayers((prev) =>
+                                      prev.map((p, i) =>
+                                        i === idx ? { ...p, uid, verified: false } : p
+                                      )
+                                    );
+                                  },
+                                  () => handleVerifySquadPlayer(idx)
                                 )
-                              );
-                            }}
-                            onBlur={() => {
-                              if (player.uid && player.uid.trim().length >= 8 && !player.verified) {
-                                handleVerifySquadPlayer(idx);
                               }
-                            }}
-                            className="flex-1 px-3 py-2 rounded-xl border border-gray-200 bg-white text-xs font-mono font-bold text-gray-900 focus:outline-none focus:border-red-500 shadow-xs"
-                          />
+                              className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-red-600 active:scale-95 transition-all"
+                            >
+                              <Clipboard className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                           <button
                             type="button"
                             onClick={() => handleVerifySquadPlayer(idx)}
@@ -736,25 +802,65 @@ export default function SlotBookingModal({
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         {/* Free Fire UID */}
                         <div className="flex items-center gap-1.5">
-                          <input
-                            type="text"
-                            placeholder="Free Fire UID"
-                            value={player.uid}
-                            onChange={(e) => {
-                              const val = e.target.value.replace(/\D/g, '');
-                              setDuoPlayers((prev) =>
-                                prev.map((p, i) =>
-                                  i === idx ? { ...p, uid: val, verified: false } : p
+                          <div className="relative flex-1">
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              autoComplete="off"
+                              autoCorrect="off"
+                              spellCheck={false}
+                              placeholder="Free Fire UID"
+                              value={player.uid}
+                              onPaste={(e) => {
+                                const text = e.clipboardData?.getData('text') || '';
+                                const digits = text.replace(/\D/g, '');
+                                if (digits) {
+                                  e.preventDefault();
+                                  setDuoPlayers((prev) =>
+                                    prev.map((p, i) =>
+                                      i === idx ? { ...p, uid: digits, verified: false } : p
+                                    )
+                                  );
+                                  if (digits.length >= 8) {
+                                    setTimeout(() => handleVerifyDuoPlayer(idx), 200);
+                                  }
+                                }
+                              }}
+                              onChange={(e) => {
+                                const val = e.target.value.replace(/\D/g, '');
+                                setDuoPlayers((prev) =>
+                                  prev.map((p, i) =>
+                                    i === idx ? { ...p, uid: val, verified: false } : p
+                                  )
+                                );
+                              }}
+                              onBlur={() => {
+                                if (player.uid && player.uid.trim().length >= 8 && !player.verified) {
+                                  handleVerifyDuoPlayer(idx);
+                                }
+                              }}
+                              className="w-full pl-3 pr-8 py-2 rounded-xl border border-gray-200 bg-white text-xs font-mono font-bold text-gray-900 focus:outline-none focus:border-red-500 shadow-xs"
+                            />
+                            <button
+                              type="button"
+                              title="ক্লিপবোর্ড থেকে UID পেস্ট করুন"
+                              onClick={() =>
+                                handlePasteUid(
+                                  (uid) => {
+                                    setDuoPlayers((prev) =>
+                                      prev.map((p, i) =>
+                                        i === idx ? { ...p, uid, verified: false } : p
+                                      )
+                                    );
+                                  },
+                                  () => handleVerifyDuoPlayer(idx)
                                 )
-                              );
-                            }}
-                            onBlur={() => {
-                              if (player.uid && player.uid.trim().length >= 8 && !player.verified) {
-                                handleVerifyDuoPlayer(idx);
                               }
-                            }}
-                            className="flex-1 px-3 py-2 rounded-xl border border-gray-200 bg-white text-xs font-mono font-bold text-gray-900 focus:outline-none focus:border-red-500 shadow-xs"
-                          />
+                              className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-red-600 active:scale-95 transition-all"
+                            >
+                              <Clipboard className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                           <button
                             type="button"
                             onClick={() => handleVerifyDuoPlayer(idx)}
@@ -816,25 +922,61 @@ export default function SlotBookingModal({
                       Free Fire UID:
                     </label>
                     <div className="flex items-center gap-1.5">
-                      <input
-                        type="text"
-                        placeholder="যেমন: 12116725180"
-                        value={soloPlayer.uid}
-                        onChange={(e) => {
-                          const val = e.target.value.replace(/\D/g, '');
-                          setSoloPlayer((prev) => ({
-                            ...prev,
-                            uid: val,
-                            verified: false,
-                          }));
-                        }}
-                        onBlur={() => {
-                          if (soloPlayer.uid && soloPlayer.uid.trim().length >= 8 && !soloPlayer.verified) {
-                            handleVerifySoloPlayer();
+                      <div className="relative flex-1">
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          autoComplete="off"
+                          autoCorrect="off"
+                          spellCheck={false}
+                          placeholder="যেমন: 12116725180"
+                          value={soloPlayer.uid}
+                          onPaste={(e) => {
+                            const text = e.clipboardData?.getData('text') || '';
+                            const digits = text.replace(/\D/g, '');
+                            if (digits) {
+                              e.preventDefault();
+                              setSoloPlayer((prev) => ({
+                                ...prev,
+                                uid: digits,
+                                verified: false,
+                              }));
+                              if (digits.length >= 8) {
+                                setTimeout(handleVerifySoloPlayer, 200);
+                              }
+                            }
+                          }}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/\D/g, '');
+                            setSoloPlayer((prev) => ({
+                              ...prev,
+                              uid: val,
+                              verified: false,
+                            }));
+                          }}
+                          onBlur={() => {
+                            if (soloPlayer.uid && soloPlayer.uid.trim().length >= 8 && !soloPlayer.verified) {
+                              handleVerifySoloPlayer();
+                            }
+                          }}
+                          className="w-full pl-3.5 pr-9 py-2.5 rounded-xl border border-gray-200 bg-white text-xs font-mono font-bold text-gray-900 focus:outline-none focus:border-red-500 shadow-xs"
+                        />
+                        <button
+                          type="button"
+                          title="ক্লিপবোর্ড থেকে UID পেস্ট করুন"
+                          onClick={() =>
+                            handlePasteUid(
+                              (uid) => {
+                                setSoloPlayer((prev) => ({ ...prev, uid, verified: false }));
+                              },
+                              handleVerifySoloPlayer
+                            )
                           }
-                        }}
-                        className="flex-1 px-3.5 py-2.5 rounded-xl border border-gray-200 bg-white text-xs font-mono font-bold text-gray-900 focus:outline-none focus:border-red-500 shadow-xs"
-                      />
+                          className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-red-600 active:scale-95 transition-all"
+                        >
+                          <Clipboard className="w-4 h-4" />
+                        </button>
+                      </div>
                       <button
                         type="button"
                         onClick={handleVerifySoloPlayer}

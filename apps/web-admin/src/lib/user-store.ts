@@ -799,15 +799,30 @@ export async function registerUser(data: {
     await fetchUsersFromServer();
   } catch (e) {}
 
-  // Device Check: Enforce maximum 1 account registered per device
+  // Device Check: Enforce maximum 3 accounts registered per device
   if (typeof window !== 'undefined') {
-    const registeredDevice = localStorage.getItem('ff_device_registered_account');
-    if (registeredDevice) {
-      return {
-        success: false,
-        error: 'Only 1 account is permitted per device. An account is already registered on this device.',
-      };
-    }
+    try {
+      const regRaw = localStorage.getItem('ff_device_registered_accounts');
+      let registeredList: string[] = [];
+      if (regRaw) {
+        try {
+          const parsed = JSON.parse(regRaw);
+          if (Array.isArray(parsed)) registeredList = parsed;
+        } catch {
+          registeredList = [regRaw];
+        }
+      } else {
+        const legacy = localStorage.getItem('ff_device_registered_account');
+        if (legacy) registeredList = [legacy];
+      }
+
+      if (registeredList.length >= 3) {
+        return {
+          success: false,
+          error: 'ডিভাইস লিমিট পূর্ণ হয়েছে! একটি ডিভাইসে সর্বোচ্চ ৩টি অ্যাকাউন্ট খোলা যাবে (Maximum 3 accounts allowed per device).',
+        };
+      }
+    } catch {}
   }
 
   const users = getUsers();
@@ -865,7 +880,26 @@ export async function registerUser(data: {
   });
 
   if (typeof window !== 'undefined') {
-    localStorage.setItem('ff_device_registered_account', finalUsername);
+    try {
+      const regRaw = localStorage.getItem('ff_device_registered_accounts');
+      let registeredList: string[] = [];
+      if (regRaw) {
+        try {
+          const parsed = JSON.parse(regRaw);
+          if (Array.isArray(parsed)) registeredList = parsed;
+        } catch {
+          registeredList = [regRaw];
+        }
+      } else {
+        const legacy = localStorage.getItem('ff_device_registered_account');
+        if (legacy) registeredList = [legacy];
+      }
+      if (!registeredList.includes(finalUsername)) {
+        registeredList.push(finalUsername);
+      }
+      localStorage.setItem('ff_device_registered_accounts', JSON.stringify(registeredList));
+      localStorage.setItem('ff_device_registered_account', finalUsername);
+    } catch {}
     localStorage.setItem('ff_user', JSON.stringify(newUser));
     localStorage.setItem('ff_token', 'local_jwt_' + newUser.id + '_' + Date.now());
     window.dispatchEvent(new CustomEvent('ff_users_updated', { detail: getUsers() }));
