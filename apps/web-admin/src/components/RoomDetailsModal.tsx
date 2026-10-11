@@ -13,9 +13,11 @@ import {
   Copy,
   AlertTriangle,
   Flame,
+  Lock,
 } from 'lucide-react';
 import { MatchItem } from '@/lib/cms-store';
 import { parseScheduleTimeToDate } from '@/components/LiveMatchCountdown';
+import { getCurrentUser, hasUserJoinedMatch } from '@/lib/user-store';
 
 interface RoomDetailsModalProps {
   match: MatchItem;
@@ -95,50 +97,53 @@ export default function RoomDetailsModal({ match, onClose, onJoinClick }: RoomDe
           </div>
 
           {(() => {
+            const currentUser = typeof window !== 'undefined' ? getCurrentUser() : null;
+            const userJoined = Boolean(currentUser && hasUserJoinedMatch(match.id, currentUser));
             const matchDate = parseScheduleTimeToDate(match.time, (match as any)?.startTimeIso);
             const diffMs = matchDate ? matchDate.getTime() - Date.now() : 999999;
             const isWithin5Min = (diffMs <= 5 * 60 * 1000 && diffMs >= -180 * 60 * 1000) || match.status === 'ROOM_OPEN' || match.status === 'LIVE';
-            const showCredentials = Boolean(match.roomId && isWithin5Min);
+            const showCredentials = Boolean(userJoined && match.roomId && isWithin5Min);
 
             if (showCredentials) {
               return (
-                <div className="grid grid-cols-2 gap-3 pt-1">
-                  <div className="p-2.5 rounded-xl bg-white dark:bg-black/50 border border-emerald-500/30 flex items-center justify-between">
+                <div className="pt-1">
+                  <div className="p-3 rounded-xl bg-white dark:bg-black/50 border border-emerald-500/40 flex items-center justify-between">
                     <div>
-                      <span className="text-[9px] text-gray-400 block">Room ID</span>
-                      <span className="font-mono font-black text-emerald-600 text-sm">{match.roomId}</span>
+                      <span className="text-[10px] text-gray-500 font-bold block uppercase">Custom Room ID (জয়েনকৃত প্লেয়ার)</span>
+                      <span className="font-mono font-black text-emerald-600 text-base">{match.roomId}</span>
                     </div>
                     <button
                       onClick={() => handleCopy(match.roomId!, 'id')}
-                      className="p-1 text-gray-400 hover:text-emerald-500"
+                      className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black flex items-center gap-1 shadow-xs transition-colors"
                     >
-                      {copied === 'id' ? <CheckCircle className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
-                    </button>
-                  </div>
-
-                  <div className="p-2.5 rounded-xl bg-white dark:bg-black/50 border border-emerald-500/30 flex items-center justify-between">
-                    <div>
-                      <span className="text-[9px] text-gray-400 block">Password</span>
-                      <span className="font-mono font-black text-emerald-600 text-sm">{match.roomPass || '1234'}</span>
-                    </div>
-                    <button
-                      onClick={() => handleCopy(match.roomPass || '1234', 'pass')}
-                      className="p-1 text-gray-400 hover:text-emerald-500"
-                    >
-                      {copied === 'pass' ? <CheckCircle className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+                      {copied === 'id' ? <CheckCircle className="w-4 h-4 text-white" /> : <Copy className="w-4 h-4" />}
+                      <span>{copied === 'id' ? 'কপি হয়েছে' : 'কপি করুন'}</span>
                     </button>
                   </div>
                 </div>
               );
             }
 
+            if (userJoined) {
+              return (
+                <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-300 text-center space-y-1">
+                  <span className="text-xs font-black text-emerald-700 dark:text-emerald-400 block flex items-center justify-center gap-1.5">
+                    <CheckCircle className="w-3.5 h-3.5" /> আপনি এই ম্যাচে সফলভাবে জয়েন করেছেন!
+                  </span>
+                  <span className="text-[10px] text-gray-600 dark:text-gray-400 block">
+                    ম্যাচ শুরু হওয়ার ৫ মিনিট পূর্বে এখানে ও 'My Matches' ট্যাবে স্বয়ংক্রিয়ভাবে রুম আইডি পাবেন।
+                  </span>
+                </div>
+              );
+            }
+
             return (
               <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-300 text-center space-y-1">
-                <span className="text-xs font-black text-red-600 block">
-                  🔒 রুম খোলার ৫ মিনিট আগে এখানে রুম আইডি ও পাসওয়ার্ড দেওয়া হবে।
+                <span className="text-xs font-black text-red-600 block flex items-center justify-center gap-1.5">
+                  <Lock className="w-3.5 h-3.5" /> রুম আইডি কেবল জয়েনকৃত প্লেয়ারদের জন্য সংরক্ষিত
                 </span>
                 <span className="text-[10px] text-gray-500 block">
-                  ম্যাচ শুরু হওয়ার ৫ মিনিট পূর্বে স্বয়ংক্রিয়ভাবে আইডি ও পাসওয়ার্ড চলে আসবে।
+                  ম্যাচে বুকিং সম্পন্ন করার পর ম্যাচ শুরুর ৫ মিনিট আগে রুম আইডি স্বয়ংক্রিয়ভাবে উন্মুক্ত হবে।
                 </span>
               </div>
             );
@@ -180,19 +185,50 @@ export default function RoomDetailsModal({ match, onClose, onJoinClick }: RoomDe
         <div className="flex items-center justify-end gap-3 pt-2">
           <button
             onClick={onClose}
-            className="px-5 py-2.5 rounded-xl bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 text-xs font-bold hover:bg-gray-200"
+            className="px-5 py-2.5 rounded-xl bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 text-xs font-bold hover:bg-gray-200 transition-colors"
           >
             বন্ধ করুন
           </button>
-          <button
-            onClick={() => {
-              onClose();
-              onJoinClick();
-            }}
-            className="px-6 py-2.5 rounded-xl btn-red text-xs font-black shadow-lg shadow-red-600/30"
-          >
-            স্লট বুক করুন (৳{match.entryFee})
-          </button>
+          {(() => {
+            const currentUser = typeof window !== 'undefined' ? getCurrentUser() : null;
+            const userJoined = Boolean(currentUser && hasUserJoinedMatch(match.id, currentUser));
+            const isMatchClosed =
+              match.status === 'LIVE' ||
+              match.status === 'COMPLETED' ||
+              (match.status as string) === 'MATCHING' ||
+              (match.filledSlots || 0) >= (match.totalSlots || 48);
+
+            if (userJoined) {
+              return (
+                <button
+                  disabled
+                  className="px-5 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-black opacity-95 cursor-not-allowed flex items-center gap-1.5 shadow-md"
+                >
+                  <CheckCircle className="w-4 h-4" /> জয়েন করা হয়েছে
+                </button>
+              );
+            }
+
+            if (isMatchClosed) {
+              return (
+                <span className="px-5 py-2.5 rounded-xl bg-red-500/10 text-red-600 dark:text-red-400 text-xs font-black border border-red-500/20">
+                  ম্যাচ চলমান / রেজিস্ট্রেশন বন্ধ
+                </span>
+              );
+            }
+
+            return (
+              <button
+                onClick={() => {
+                  onClose();
+                  onJoinClick();
+                }}
+                className="px-6 py-2.5 rounded-xl btn-red text-xs font-black shadow-lg shadow-red-600/30"
+              >
+                স্লট বুক করুন (৳{match.entryFee})
+              </button>
+            );
+          })()}
         </div>
       </div>
     </div>

@@ -206,12 +206,18 @@ export default function MatchesPage() {
                 Room Credentials →
               </Link>
 
-              <button
-                onClick={() => openSlotModal(tournament.id)}
-                className="px-4 py-2 rounded-xl btn-gold text-xs font-bold"
-              >
-                Select Slot
-              </button>
+              {tournament.filledSlots >= tournament.totalSlots || tournament.status === 'LIVE' || tournament.status === 'COMPLETED' || (tournament.status as string) === 'MATCHING' ? (
+                <span className="px-3 py-1.5 rounded-xl bg-red-500/10 text-red-400 text-xs font-bold border border-red-500/20">
+                  Closed
+                </span>
+              ) : (
+                <button
+                  onClick={() => openSlotModal(tournament.id)}
+                  className="px-4 py-2 rounded-xl btn-gold text-xs font-bold"
+                >
+                  Select Slot
+                </button>
+              )}
             </div>
           </div>
         ))}

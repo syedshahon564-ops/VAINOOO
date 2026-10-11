@@ -423,29 +423,51 @@ export default function MatchDetailsPage({
 
       {/* Bottom Sticky Join Button */}
       <div className="pt-4 border-t border-gray-200">
-        {hasUserJoinedMatch(match.id, getCurrentUser()) ||
-        activeParticipants.some(
-          (p) =>
-            typeof p !== 'string' &&
-            ((getCurrentUser()?.ign &&
-              p.ign.toLowerCase() === getCurrentUser()?.ign.toLowerCase()) ||
-              (getCurrentUser()?.uid && p.uid === getCurrentUser()?.uid))
-        ) ? (
-          <button
-            disabled
-            className="w-full py-3.5 rounded-xl bg-emerald-600 text-white font-black text-sm shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 cursor-not-allowed opacity-95"
-          >
-            <Check className="w-4 h-4" />
-            <span>স্লট বুক করা হয়েছে (JOINED)</span>
-          </button>
-        ) : (
-          <button
-            onClick={() => onJoinClick(match)}
-            className="w-full py-3.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-black text-sm shadow-lg shadow-red-600/30 transition-all flex items-center justify-center gap-2 active:scale-98"
-          >
-            <span>স্লট বুক করুন / Join Now (৳{match.entryFee})</span>
-          </button>
-        )}
+        {(() => {
+          const isJoined =
+            hasUserJoinedMatch(match.id, getCurrentUser()) ||
+            activeParticipants.some(
+              (p) =>
+                typeof p !== 'string' &&
+                ((getCurrentUser()?.ign &&
+                  p.ign.toLowerCase() === getCurrentUser()?.ign.toLowerCase()) ||
+                  (getCurrentUser()?.uid && p.uid === getCurrentUser()?.uid))
+            );
+          const isClosed =
+            match.status === 'LIVE' ||
+            match.status === 'COMPLETED' ||
+            (match.status as string) === 'MATCHING' ||
+            (match.filledSlots || 0) >= (match.totalSlots || 48);
+
+          if (isJoined) {
+            return (
+              <button
+                disabled
+                className="w-full py-3.5 rounded-xl bg-emerald-600 text-white font-black text-sm shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 cursor-not-allowed opacity-95"
+              >
+                <Check className="w-4 h-4" />
+                <span>স্লট বুক করা হয়েছে (JOINED)</span>
+              </button>
+            );
+          }
+
+          if (isClosed) {
+            return (
+              <div className="w-full py-3.5 rounded-xl bg-red-50 text-red-600 border border-red-200 font-black text-sm flex items-center justify-center gap-2">
+                <span>ম্যাচ চলমান / রেজিস্ট্রেশন বন্ধ (REGISTRATION CLOSED)</span>
+              </div>
+            );
+          }
+
+          return (
+            <button
+              onClick={() => onJoinClick(match)}
+              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-black text-sm shadow-lg shadow-red-600/30 transition-all flex items-center justify-center gap-2 active:scale-98"
+            >
+              <span>স্লট বুক করুন / Join Now (৳{match.entryFee})</span>
+            </button>
+          );
+        })()}
       </div>
 
       {/* HOW TO JOIN VIDEO MODAL */}

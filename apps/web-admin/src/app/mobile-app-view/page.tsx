@@ -1834,7 +1834,7 @@ export default function MobileAppViewPage(props: any) {
                                             (currentUser.uid && p.uid && p.uid === currentUser.uid)
                                         ));
                                     const matchDate = parseScheduleTimeToDate(m.time);
-                                    const isMatchLive = m.status === 'LIVE' || m.status === 'COMPLETED' || (matchDate ? matchDate.getTime() <= Date.now() : false);
+                                    const isMatchLive = m.status === 'LIVE' || m.status === 'COMPLETED' || (m.status as string) === 'MATCHING' || spotsLeft <= 0 || (matchDate ? matchDate.getTime() <= Date.now() : false);
 
                                     return (
                                       <div className="flex items-center gap-3 pt-0.5">
