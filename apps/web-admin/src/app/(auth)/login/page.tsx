@@ -2,8 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Trophy, Phone, Lock, User, Hash, Check, AlertCircle, Shield, Sparkles, Eye, EyeOff } from 'lucide-react';
-import { ApiClient } from '@/lib/api-client';
+import { Trophy, Phone, Lock, User, Mail, Check, AlertCircle, Shield, Eye, EyeOff } from 'lucide-react';
 import { loginUser, registerUser } from '@/lib/user-store';
 
 function AuthContent() {
@@ -12,19 +11,20 @@ function AuthContent() {
   const initialMode = searchParams.get('mode') === 'register' ? 'REGISTER' : 'LOGIN';
 
   const [mode, setMode] = useState<'LOGIN' | 'REGISTER'>(initialMode);
-  const [phone, setPhone] = useState('');
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [ign, setIgn] = useState('');
-  const [uid, setUid] = useState('');
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
   // Quick fill demo credentials
-  const fillDemo = (demoPhone: string, demoPass: string) => {
+  const fillDemo = (demoIdentifier: string, demoPass: string) => {
     setMode('LOGIN');
-    setPhone(demoPhone);
+    setUsername(demoIdentifier);
     setPassword(demoPass);
     setError(null);
   };
@@ -37,38 +37,52 @@ function AuthContent() {
 
     try {
       if (mode === 'REGISTER') {
-        if (!phone || !password || !ign) {
-          throw new Error('অনুগ্রহ করে সকল আবশ্যকীয় তথ্য পূরণ করুন');
+        const uName = username.trim();
+        const mail = email.trim();
+
+        if (!uName) throw new Error('Please enter a username');
+        if (uName.length < 3) throw new Error('Username must be at least 3 characters');
+        if (!mail) throw new Error('Please enter your email address (Gmail)');
+        if (!mail.includes('@')) throw new Error('Please enter a valid email address');
+        if (!password) throw new Error('Please enter a password');
+        if (password.length < 6) throw new Error('Password must be at least 6 characters');
+        if (password !== confirmPassword) throw new Error('Passwords do not match');
+
+        // 1 Account per device limitation
+        if (typeof window !== 'undefined') {
+          const registered = localStorage.getItem('ff_device_registered_account');
+          if (registered) {
+            throw new Error('Only 1 account is permitted per device. An account is already registered on this device.');
+          }
         }
 
-        // Try local user-store registration first (or sync)
         const localRes = registerUser({
-          phone: phone.trim(),
-          ign: ign.trim().toUpperCase(),
-          uid: uid.trim() || String(Math.floor(100000000 + Math.random() * 900000000)),
+          username: uName,
+          email: mail.toLowerCase(),
           password,
         });
 
         if (!localRes.success) {
-          throw new Error(localRes.error || 'রেজিস্ট্রেশন ব্যর্থ হয়েছে');
+          throw new Error(localRes.error || 'Registration failed');
         }
 
-        setSuccess(`রেজিস্ট্রেশন সম্পন্ন হয়েছে! স্বাগতম ${localRes.user?.ign}!`);
+        setSuccess(`Registration successful! Welcome, ${localRes.user?.username || localRes.user?.ign}!`);
         setTimeout(() => {
           router.push('/');
         }, 1000);
       } else {
         // Mode === LOGIN
-        if (!phone || !password) {
-          throw new Error('ফোন নম্বর এবং পাসওয়ার্ড প্রদান করুন');
+        const identifier = username.trim();
+        if (!identifier || !password) {
+          throw new Error('Please enter your username or email and password');
         }
 
-        const localRes = loginUser(phone.trim(), password);
+        const localRes = loginUser(identifier, password);
         if (!localRes.success) {
-          throw new Error(localRes.error || 'লগইন ব্যর্থ হয়েছে। ক্রেডেনশিয়াল যাচাই করুন।');
+          throw new Error(localRes.error || 'Login failed. Please verify your credentials.');
         }
 
-        setSuccess(`সফলভাবে লগইন হয়েছে! স্বাগতম ${localRes.user?.ign}`);
+        setSuccess(`Login successful! Welcome, ${localRes.user?.username || localRes.user?.ign}!`);
         setTimeout(() => {
           if (localRes.user?.role === 'ADMIN' || localRes.user?.role === 'SUPERVISOR') {
             router.push('/admin');
@@ -93,12 +107,12 @@ function AuthContent() {
             <Trophy className="w-7 h-7" />
           </div>
           <h2 className="text-2xl font-black text-gray-900 dark:text-white">
-            {mode === 'LOGIN' ? 'অ্যাকাউন্টে লগইন করুন' : 'নতুন প্লেয়ার অ্যাকাউন্ট তৈরি'}
+            {mode === 'LOGIN' ? 'Account Login' : 'Create Account'}
           </h2>
           <p className="text-xs text-gray-500 dark:text-gray-400">
             {mode === 'LOGIN'
-              ? 'আপনার নিবন্ধিত ফোন নম্বর ও পাসওয়ার্ড দিয়ে প্রবেশ করুন'
-              : 'ফ্রি ফায়ার ইন-গেম নেম (IGN) ও UID দিয়ে অ্যাকাউন্ট খুলুন'}
+              ? 'Enter your username or email and password to enter'
+              : 'Register your account with username and email'}
           </p>
         </div>
 
@@ -111,13 +125,13 @@ function AuthContent() {
               setError(null);
               setSuccess(null);
             }}
-            className={`py-2 rounded-xl text-xs font-black transition-all ${
+            className={`py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
               mode === 'LOGIN'
                 ? 'bg-red-600 text-white shadow-md shadow-red-600/30'
                 : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
             }`}
           >
-            লগইন (Login)
+            Login
           </button>
           <button
             type="button"
@@ -126,13 +140,13 @@ function AuthContent() {
               setError(null);
               setSuccess(null);
             }}
-            className={`py-2 rounded-xl text-xs font-black transition-all ${
+            className={`py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
               mode === 'REGISTER'
                 ? 'bg-red-600 text-white shadow-md shadow-red-600/30'
                 : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
             }`}
           >
-            রেজিস্টার (Register)
+            Register
           </button>
         </div>
 
@@ -153,61 +167,43 @@ function AuthContent() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-              ফোন নম্বর (Mobile Number)
+              {mode === 'LOGIN' ? 'Username or Email' : '1. Username'}
             </label>
             <div className="relative">
-              <Phone className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <User className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 required
-                placeholder="017xxxxxxxx"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white text-xs font-mono font-bold focus:border-red-500 focus:outline-none"
+                placeholder={mode === 'LOGIN' ? 'Enter username or email' : 'e.g. shadow_hunter'}
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white text-xs font-bold focus:border-red-500 focus:outline-none"
               />
             </div>
           </div>
 
           {mode === 'REGISTER' && (
-            <>
-              <div>
-                <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                  ফ্রি ফায়ার ইন-গেম নেম (IGN)
-                </label>
-                <div className="relative">
-                  <User className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    required
-                    placeholder="যেমন: BDX_STRIKER"
-                    value={ign}
-                    onChange={(e) => setIgn(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white text-xs font-bold focus:border-red-500 focus:outline-none"
-                  />
-                </div>
+            <div>
+              <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
+                2. Gmail ID (Email)
+              </label>
+              <div className="relative">
+                <Mail className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="email"
+                  required
+                  placeholder="e.g. yourname@gmail.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white text-xs focus:border-red-500 focus:outline-none"
+                />
               </div>
-
-              <div>
-                <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                  ফ্রি ফায়ার প্লেয়ার UID
-                </label>
-                <div className="relative">
-                  <Hash className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    placeholder="যেমন: 192837465"
-                    value={uid}
-                    onChange={(e) => setUid(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white text-xs focus:border-red-500 focus:outline-none font-mono"
-                  />
-                </div>
-              </div>
-            </>
+            </div>
           )}
 
           <div>
             <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-              পাসওয়ার্ড (Password)
+              {mode === 'REGISTER' ? '3. Password' : 'Password'}
             </label>
             <div className="relative">
               <Lock className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -222,24 +218,58 @@ function AuthContent() {
               <button
                 type="button"
                 onClick={() => setShowPassword((prev) => !prev)}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
-                title={showPassword ? 'পাসওয়ার্ড লুকান' : 'পাসওয়ার্ড দেখুন'}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors cursor-pointer"
+                title={showPassword ? 'Hide password' : 'Show password'}
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
           </div>
 
+          {mode === 'REGISTER' && (
+            <div>
+              <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
+                4. Confirm Password
+              </label>
+              <div className="relative">
+                <Lock className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  required
+                  placeholder="Re-enter password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white text-xs focus:border-red-500 focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword((prev) => !prev)}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors cursor-pointer"
+                  title={showConfirmPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {mode === 'REGISTER' && (
+            <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-500 text-[10px] flex items-center gap-1.5 font-medium">
+              <Shield className="w-3.5 h-3.5 flex-shrink-0" />
+              <span>Device Security: Only 1 account is permitted per device.</span>
+            </div>
+          )}
+
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 rounded-xl btn-red text-xs font-black disabled:opacity-50 mt-4 shadow-lg shadow-red-600/30"
+            className="w-full py-3 rounded-xl btn-red text-xs font-black disabled:opacity-50 mt-4 shadow-lg shadow-red-600/30 cursor-pointer"
           >
             {loading
-              ? 'অনুগ্রহ করে অপেক্ষা করুন...'
+              ? 'Please wait...'
               : mode === 'LOGIN'
-              ? 'অ্যাকাউন্টে প্রবেশ করুন'
-              : 'রেজিস্ট্রেশন সম্পূর্ণ করুন'}
+              ? 'Login'
+              : 'Create Account'}
           </button>
         </form>
 
@@ -247,7 +277,7 @@ function AuthContent() {
         <div className="pt-4 border-t border-gray-200 dark:border-white/10 space-y-3">
           <div>
             <span className="text-[10px] uppercase font-black text-amber-500 block tracking-wider text-center mb-1.5 flex items-center justify-center gap-1">
-              <Shield className="w-3 h-3 text-amber-500" /> ৫টি অফিশিয়াল ওনার / অ্যাডমিন অ্যাকাউন্ট (১-ক্লিক লগইন)
+              <Shield className="w-3 h-3 text-amber-500" /> Official Owner / Admin Accounts (1-Click Login)
             </span>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
               {[

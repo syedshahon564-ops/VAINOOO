@@ -46,6 +46,9 @@ export interface UserAccount {
   totalWins: number;
   totalEarnings?: number;
   createdAt: string;
+  username?: string;
+  email?: string;
+  deviceId?: string;
   avatar?: string;
   notes?: string;
   matchHistory?: UserMatchRecord[];
@@ -638,21 +641,23 @@ export function loginUser(identifier: string, pass: string): { success: boolean;
   const clean = identifier.trim().toLowerCase();
   const users = getUsers();
   const user = users.find((u) => 
+    (u.username && u.username.trim().toLowerCase() === clean) ||
+    (u.email && u.email.trim().toLowerCase() === clean) ||
     u.phone.trim().toLowerCase() === clean ||
     u.ign.trim().toLowerCase() === clean ||
     u.uid.trim().toLowerCase() === clean ||
     u.id.toLowerCase() === clean
   );
   if (!user) {
-    return { success: false, error: 'এই ফোন নম্বর বা ওনার আইডিতে কোনো অ্যাকাউন্ট পাওয়া যায়নি।' };
+    return { success: false, error: 'No account found with this username or email.' };
   }
   if (user.password !== pass) {
-    return { success: false, error: 'পাসওয়ার্ড সঠিক নয়। অনুগ্রহ করে পুনরায় চেষ্টা করুন।' };
+    return { success: false, error: 'Incorrect password. Please try again.' };
   }
   if (user.status === 'BANNED') {
     return {
       success: false,
-      error: 'আপনার অ্যাকাউন্টটি ব্যান (Banned) করা হয়েছে। সহায়তার জন্য অ্যাডমিনের সাথে যোগাযোগ করুন।',
+      error: 'Your account has been banned. Please contact support.',
     };
   }
 
@@ -667,22 +672,66 @@ export function loginUser(identifier: string, pass: string): { success: boolean;
 }
 
 export function registerUser(data: {
-  phone: string;
-  ign: string;
-  uid: string;
+  username?: string;
+  email?: string;
   password: string;
+  phone?: string;
+  ign?: string;
+  uid?: string;
 }): { success: boolean; user?: UserAccount; error?: string } {
-  const existing = getUserByPhone(data.phone);
-  if (existing) {
-    return { success: false, error: 'এই ফোন নম্বরটি ইতিমধ্যে ব্যবহৃত হয়েছে। লগইন করার চেষ্টা করুন।' };
+  // Device Check: Enforce maximum 1 account registered per device
+  if (typeof window !== 'undefined') {
+    const registeredDevice = localStorage.getItem('ff_device_registered_account');
+    if (registeredDevice) {
+      return {
+        success: false,
+        error: 'Only 1 account is permitted per device. An account is already registered on this device.',
+      };
+    }
   }
 
+  const users = getUsers();
+  const cleanUsername = (data.username || data.ign || '').trim().toLowerCase();
+  const cleanEmail = (data.email || '').trim().toLowerCase();
+  const cleanPhone = (data.phone || '').trim();
+
+  if (cleanUsername) {
+    const usernameTaken = users.some(
+      (u) =>
+        (u.username && u.username.toLowerCase() === cleanUsername) ||
+        (u.ign && u.ign.toLowerCase() === cleanUsername)
+    );
+    if (usernameTaken) {
+      return { success: false, error: 'This username is already taken. Please choose another one.' };
+    }
+  }
+
+  if (cleanEmail) {
+    const emailTaken = users.some((u) => u.email && u.email.toLowerCase() === cleanEmail);
+    if (emailTaken) {
+      return { success: false, error: 'This email is already registered. Please log in.' };
+    }
+  }
+
+  if (cleanPhone) {
+    const existing = getUserByPhone(cleanPhone);
+    if (existing) {
+      return { success: false, error: 'This phone number is already registered. Please log in.' };
+    }
+  }
+
+  const generatedUid = String(Math.floor(100000000 + Math.random() * 900000000));
+  const finalUsername = (data.username || data.ign || 'player_' + generatedUid.slice(-4)).trim();
+  const finalEmail = cleanEmail || `${finalUsername.toLowerCase()}@gmail.com`;
+
   const newUser = addUser({
-    phone: data.phone.trim(),
-    ign: data.ign.trim().toUpperCase(),
-    uid: data.uid.trim(),
+    username: finalUsername,
+    email: finalEmail,
+    phone: cleanPhone || '01' + Math.floor(100000000 + Math.random() * 900000000),
+    ign: finalUsername.toUpperCase(),
+    uid: data.uid?.trim() || generatedUid,
     password: data.password,
-    walletBalance: 0.0, // Strictly 0.0 BDT for new account registrations (no free bonus)
+    walletBalance: 0.0, // Strictly 0.0 BDT for new account registrations
     role: 'PLAYER',
     status: 'ACTIVE',
     matchesPlayed: 0,
@@ -690,11 +739,12 @@ export function registerUser(data: {
     totalWins: 0,
     totalEarnings: 0,
     matchHistory: [],
-    avatar: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=120',
+    avatar: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=240',
     notes: 'Self-registered player via portal.',
   });
 
   if (typeof window !== 'undefined') {
+    localStorage.setItem('ff_device_registered_account', finalUsername);
     localStorage.setItem('ff_user', JSON.stringify(newUser));
     localStorage.setItem('ff_token', 'local_jwt_' + newUser.id + '_' + Date.now());
     window.dispatchEvent(new CustomEvent('ff_users_updated', { detail: getUsers() }));

@@ -217,9 +217,13 @@ export default function MobileAppViewPage(props: any) {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showOverlayModal, setShowOverlayModal] = useState(false);
   const [authMode, setAuthMode] = useState<'LOGIN' | 'REGISTER'>('LOGIN');
+  const [authUsername, setAuthUsername] = useState('');
+  const [authEmail, setAuthEmail] = useState('');
   const [authPhone, setAuthPhone] = useState('');
   const [authPassword, setAuthPassword] = useState('');
+  const [authConfirmPassword, setAuthConfirmPassword] = useState('');
   const [showAuthPassword, setShowAuthPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [authIgn, setAuthIgn] = useState('');
   const [authUid, setAuthUid] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
@@ -228,8 +232,11 @@ export default function MobileAppViewPage(props: any) {
 
   // Profile modal states (matching uploaded user screenshot)
   const [showEditInfoModal, setShowEditInfoModal] = useState(false);
+  const [editUsernameInput, setEditUsernameInput] = useState('');
+  const [editEmailInput, setEditEmailInput] = useState('');
   const [editIgnInput, setEditIgnInput] = useState('');
   const [editUidInput, setEditUidInput] = useState('');
+  const [editAvatarInput, setEditAvatarInput] = useState('');
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
   const [newPassInput, setNewPassInput] = useState('');
   const [confirmPassInput, setConfirmPassInput] = useState('');
@@ -640,6 +647,33 @@ export default function MobileAppViewPage(props: any) {
     setLanguageTo(next);
   };
 
+  const handleAvatarFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!currentUser) {
+      setShowAuthModal(true);
+      return;
+    }
+    if (!file.type.startsWith('image/')) {
+      showPhoneToast('Please select a valid image file');
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      showPhoneToast('Image size should be under 8 MB');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = reader.result as string;
+      const updated = updateUser(currentUser.id, { avatar: base64 });
+      if (updated) {
+        setCurrentUser(updated);
+        showPhoneToast('Profile picture updated successfully!');
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthLoading(true);
@@ -648,37 +682,89 @@ export default function MobileAppViewPage(props: any) {
 
     try {
       if (authMode === 'REGISTER') {
-        if (!authPhone || !authPassword || !authIgn) {
-          throw new Error('অনুগ্রহ করে মোবাইল নম্বর, পাসওয়ার্ড ও IGN পূরণ করুন');
+        const uName = authUsername.trim();
+        const email = authEmail.trim();
+
+        if (!uName) {
+          throw new Error('Please enter a username');
         }
+        if (uName.length < 3) {
+          throw new Error('Username must be at least 3 characters');
+        }
+        if (!email) {
+          throw new Error('Please enter your email address (Gmail)');
+        }
+        if (!email.includes('@')) {
+          throw new Error('Please enter a valid email address');
+        }
+        if (!authPassword) {
+          throw new Error('Please enter a password');
+        }
+        if (authPassword.length < 6) {
+          throw new Error('Password must be at least 6 characters');
+        }
+        if (authPassword !== authConfirmPassword) {
+          throw new Error('Passwords do not match');
+        }
+
+        // 1 Account per device limit enforcement
+        if (typeof window !== 'undefined') {
+          const registeredOnThisDevice = localStorage.getItem('ff_device_registered_account');
+          if (registeredOnThisDevice) {
+            throw new Error('Only 1 account is permitted per device. An account is already registered on this phone.');
+          }
+        }
+
         const res = registerUser({
-          phone: authPhone.trim(),
-          ign: authIgn.trim().toUpperCase(),
-          uid: authUid.trim() || String(Math.floor(100000000 + Math.random() * 900000000)),
+          username: uName,
+          email: email.toLowerCase(),
           password: authPassword,
         });
-        if (!res.success) throw new Error(res.error || 'রেজিস্ট্রেশন ব্যর্থ হয়েছে');
-        if (res.user) setCurrentUser(res.user);
-        setAuthSuccess(`রেজিস্ট্রেশন সফল! স্বাগতম ${res.user?.ign}`);
+
+        if (!res.success) {
+          throw new Error(res.error || 'Registration failed');
+        }
+        if (res.user) {
+          setCurrentUser(res.user);
+        }
+        setAuthSuccess(`Registration successful! Welcome, ${res.user?.username || res.user?.ign}`);
         setTimeout(() => {
           setShowAuthModal(false);
           setAuthSuccess(null);
+          setAuthUsername('');
+          setAuthEmail('');
+          setAuthPassword('');
+          setAuthConfirmPassword('');
         }, 800);
       } else {
-        if (!authPhone || !authPassword) {
-          throw new Error('ফোন নম্বর বা ওনার আইডি এবং পাসওয়ার্ড লিখুন');
+        // LOGIN
+        const identifier = (authUsername || authEmail || authPhone).trim();
+        if (!identifier) {
+          throw new Error('Please enter your username or email');
         }
-        const res = loginUser(authPhone.trim(), authPassword);
-        if (!res.success) throw new Error(res.error || 'লগইন ব্যর্থ হয়েছে।');
-        if (res.user) setCurrentUser(res.user);
-        setAuthSuccess(`লগইন সফল! স্বাগতম ${res.user?.ign}`);
+        if (!authPassword) {
+          throw new Error('Please enter your password');
+        }
+
+        const res = loginUser(identifier, authPassword);
+        if (!res.success) {
+          throw new Error(res.error || 'Login failed. Please check your credentials.');
+        }
+        if (res.user) {
+          setCurrentUser(res.user);
+        }
+        setAuthSuccess(`Login successful! Welcome, ${res.user?.username || res.user?.ign}`);
         setTimeout(() => {
           setShowAuthModal(false);
           setAuthSuccess(null);
+          setAuthUsername('');
+          setAuthEmail('');
+          setAuthPassword('');
+          setAuthConfirmPassword('');
         }, 800);
       }
     } catch (err: any) {
-      setAuthError(err.message || 'ত্রুটি ঘটেছে');
+      setAuthError(err.message || 'An error occurred');
     } finally {
       setAuthLoading(false);
     }
@@ -1259,7 +1345,7 @@ export default function MobileAppViewPage(props: any) {
                         </div>
                         <div>
                           <span className="text-sm font-black text-[#1e293b]">
-                            Murubbi X Tournament
+                            FF Rivals
                           </span>
                         </div>
                       </div>
@@ -2492,13 +2578,10 @@ export default function MobileAppViewPage(props: any) {
                           </div>
                           <div>
                             <h3 className="text-sm font-black text-gray-900 dark:text-white">
-                              {tPhone('লগইন বা রেজিস্টার করুন', 'Login or Create Account')}
+                              Login or Create Account
                             </h3>
                             <p className="text-[11px] text-gray-400">
-                              {tPhone(
-                                'প্রোফাইল দেখতে, উইথড্র করতে ও টুর্নামেন্টে জয়েন করতে অ্যাকাউন্টে প্রবেশ করুন',
-                                'Sign in to access your profile, wallet, withdraw and tournaments'
-                              )}
+                              Sign in to access your profile, wallet, withdraw and tournaments
                             </p>
                           </div>
 
@@ -2508,18 +2591,18 @@ export default function MobileAppViewPage(props: any) {
                                 setAuthMode('LOGIN');
                                 setShowAuthModal(true);
                               }}
-                              className="py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-black text-xs shadow-md shadow-red-600/30"
+                              className="py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-black text-xs shadow-md shadow-red-600/30 cursor-pointer"
                             >
-                              {tPhone('লগইন করুন', 'Login')}
+                              Login
                             </button>
                             <button
                               onClick={() => {
                                 setAuthMode('REGISTER');
                                 setShowAuthModal(true);
                               }}
-                              className="py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-black font-black text-xs shadow-md shadow-amber-500/30"
+                              className="py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-black font-black text-xs shadow-md shadow-amber-500/30 cursor-pointer"
                             >
-                              {tPhone('নতুন রেজিস্টার', 'Register')}
+                              Register
                             </button>
                           </div>
                         </div>
@@ -2533,23 +2616,40 @@ export default function MobileAppViewPage(props: any) {
                             <div className="px-4 pb-4 pt-0">
                               {/* Avatar and User Identity */}
                               <div className="flex items-end gap-3.5 -mt-9 mb-3">
-                                <div className="relative w-20 h-20 rounded-full border-4 border-white shadow-md overflow-hidden bg-slate-900 flex-shrink-0">
-                                  <img
-                                    src={currentUser?.avatar || 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=240'}
-                                    alt="Avatar"
-                                    className="w-full h-full object-cover"
+                                <div className="relative group flex-shrink-0">
+                                  <div className="relative w-20 h-20 rounded-full border-4 border-white shadow-md overflow-hidden bg-slate-900 flex-shrink-0">
+                                    <img
+                                      src={currentUser?.avatar || 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=240'}
+                                      alt="Avatar"
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </div>
+                                  {/* Camera / Edit Badge to upload directly from gallery */}
+                                  <label
+                                    htmlFor="profile-avatar-file-input"
+                                    className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-red-600 hover:bg-red-500 text-white flex items-center justify-center shadow-md cursor-pointer border-2 border-white transition-transform active:scale-90"
+                                    title="Upload photo from gallery"
+                                  >
+                                    <Camera className="w-3.5 h-3.5" />
+                                  </label>
+                                  <input
+                                    id="profile-avatar-file-input"
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={handleAvatarFileUpload}
                                   />
                                 </div>
                                 <div className="space-y-0.5 pb-1 min-w-0">
                                   <h3 className="text-base font-black text-slate-900 truncate">
-                                    {currentUser?.ign || 'Abu Numan'}
+                                    {currentUser?.username || currentUser?.ign || 'Abu Numan'}
                                   </h3>
                                   <p className="text-[11px] text-slate-400 font-mono">
-                                    @{currentUser?.uid ? `g_${currentUser.uid}` : 'g_102910574942'}
+                                    @{currentUser?.username ? currentUser.username : (currentUser?.uid ? `g_${currentUser.uid}` : 'g_aiohdiuabf')}
                                   </p>
                                   <p className="text-[11px] text-slate-400 flex items-center gap-1 truncate">
                                     <Mail className="w-3 h-3 text-slate-400 flex-shrink-0" />
-                                    <span className="truncate">{currentUser?.phone ? `${currentUser.phone}@gmail.com` : 'numan06bd1@gmail.com'}</span>
+                                    <span className="truncate">{currentUser?.email || (currentUser?.phone ? `${currentUser.phone}@gmail.com` : 'oahriahcna@gmail.com')}</span>
                                   </p>
                                 </div>
                               </div>
@@ -2559,6 +2659,8 @@ export default function MobileAppViewPage(props: any) {
                                 <button
                                   type="button"
                                   onClick={() => {
+                                    setEditUsernameInput(currentUser?.username || currentUser?.ign || '');
+                                    setEditEmailInput(currentUser?.email || '');
                                     setEditIgnInput(currentUser?.ign || '');
                                     setEditUidInput(currentUser?.uid || '');
                                     setShowEditInfoModal(true);
@@ -2988,17 +3090,18 @@ export default function MobileAppViewPage(props: any) {
         />
       )}
 
-      {/* 6. AUTH LOGIN & REGISTER MODAL FOR MOBILE CLIENT */}
+      {/* 6. AUTH LOGIN & REGISTER MODAL FOR MOBILE CLIENT (100% ENGLISH) */}
       {showAuthModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
           <div className="relative w-full max-w-sm rounded-3xl bg-white dark:bg-[#12121a] border border-gray-200 dark:border-white/10 shadow-2xl overflow-hidden p-6 space-y-4">
             <button
+              type="button"
               onClick={() => {
                 setShowAuthModal(false);
                 setAuthError(null);
                 setAuthSuccess(null);
               }}
-              className="absolute top-4 right-4 p-2 rounded-full bg-gray-100 dark:bg-white/10 text-gray-500 hover:text-white"
+              className="absolute top-4 right-4 p-2 rounded-full bg-gray-100 dark:bg-white/10 text-gray-500 hover:text-white cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
@@ -3008,12 +3111,12 @@ export default function MobileAppViewPage(props: any) {
                 <Trophy className="w-6 h-6" />
               </div>
               <h3 className="text-lg font-black text-gray-900 dark:text-white">
-                {authMode === 'LOGIN' ? 'অ্যাকাউন্টে লগইন করুন' : 'নতুন প্লেয়ার রেজিস্টার'}
+                {authMode === 'LOGIN' ? 'Account Login' : 'Create Account'}
               </h3>
               <p className="text-[11px] text-gray-400">
                 {authMode === 'LOGIN'
-                  ? 'আপনার ফোন নম্বর ও পাসওয়ার্ড দিয়ে প্রবেশ করুন'
-                  : 'IGN ও UID দিয়ে অ্যাকাউন্ট খুলুন এবং ১০০ টাকা বোনাস পান'}
+                  ? 'Enter your username or email and password to enter'
+                  : 'Register your account with username and email'}
               </p>
             </div>
 
@@ -3025,11 +3128,11 @@ export default function MobileAppViewPage(props: any) {
                   setAuthMode('LOGIN');
                   setAuthError(null);
                 }}
-                className={`flex-1 py-1.5 rounded-lg text-xs font-black transition-all ${
+                className={`flex-1 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
                   authMode === 'LOGIN' ? 'bg-red-600 text-white shadow-sm' : 'text-gray-400 hover:text-white'
                 }`}
               >
-                লগইন (Login)
+                Login
               </button>
               <button
                 type="button"
@@ -3037,118 +3140,179 @@ export default function MobileAppViewPage(props: any) {
                   setAuthMode('REGISTER');
                   setAuthError(null);
                 }}
-                className={`flex-1 py-1.5 rounded-lg text-xs font-black transition-all ${
+                className={`flex-1 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
                   authMode === 'REGISTER' ? 'bg-red-600 text-white shadow-sm' : 'text-gray-400 hover:text-white'
                 }`}
               >
-                রেজিস্টার (Register)
+                Register
               </button>
             </div>
 
             {authError && (
-              <div className="p-2 rounded-xl bg-red-500/10 border border-red-500/30 text-red-500 text-xs font-bold text-center">
+              <div className="p-2.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-500 text-xs font-bold text-center">
                 {authError}
               </div>
             )}
             {authSuccess && (
-              <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-500 text-xs font-bold text-center flex items-center justify-center gap-1">
+              <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-500 text-xs font-bold text-center flex items-center justify-center gap-1.5">
                 <CheckCircle className="w-4 h-4" /> {authSuccess}
               </div>
             )}
 
             <form onSubmit={handleAuthSubmit} className="space-y-3">
-              <div>
-                <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                  {authMode === 'LOGIN' ? 'মোবাইল নম্বর বা ওনার আইডি (Phone / Owner ID)' : 'মোবাইল নম্বর (Phone Number)'}
-                </label>
-                <div className="relative">
-                  <Phone className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    required
-                    placeholder={authMode === 'LOGIN' ? '017XXXXXXXX বা ওনার আইডি (যেমন: OWNER_MAIN)' : '017XXXXXXXX'}
-                    value={authPhone}
-                    onChange={(e) => setAuthPhone(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 rounded-xl bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-white/10 text-xs text-gray-900 dark:text-white focus:outline-none focus:border-red-500 font-mono"
-                  />
-                </div>
-              </div>
-
-              {authMode === 'REGISTER' && (
+              {authMode === 'LOGIN' ? (
                 <>
                   <div>
                     <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                      ইন-গেম নেম (In-Game Name / IGN)
+                      Username or Email
                     </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. OP_STRIKER"
-                      value={authIgn}
-                      onChange={(e) => setAuthIgn(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-white/10 text-xs text-gray-900 dark:text-white focus:outline-none focus:border-red-500"
-                    />
+                    <div className="relative">
+                      <User className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        required
+                        placeholder="Enter your username or email"
+                        value={authUsername}
+                        onChange={(e) => setAuthUsername(e.target.value)}
+                        className="w-full pl-9 pr-3 py-2 rounded-xl bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-white/10 text-xs text-gray-900 dark:text-white focus:outline-none focus:border-red-500"
+                      />
+                    </div>
                   </div>
 
                   <div>
                     <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                      ফ্রি ফায়ার ইউআইডি (Free Fire UID)
+                      Password
                     </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. 192837465 (স্বয়ংক্রিয় IGN ডিটেক্ট হবে)"
-                      value={authUid}
-                      onChange={(e) => handleUidChange(e.target.value)}
-                      onBlur={() => {
-                        if (authUid) handleUidChange(authUid);
-                      }}
-                      className="w-full px-3 py-2 rounded-xl bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-white/10 text-xs text-gray-900 dark:text-white focus:outline-none focus:border-red-500 font-mono"
-                    />
+                    <div className="relative">
+                      <Lock className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type={showAuthPassword ? 'text' : 'password'}
+                        required
+                        placeholder="••••••••"
+                        value={authPassword}
+                        onChange={(e) => setAuthPassword(e.target.value)}
+                        className="w-full pl-9 pr-9 py-2 rounded-xl bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-white/10 text-xs text-gray-900 dark:text-white focus:outline-none focus:border-red-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowAuthPassword((prev) => !prev)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors cursor-pointer"
+                      >
+                        {showAuthPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* REGISTER FORM: 1. Username 2. Gmail ID 3. Password 4. Confirm Password */}
+                  <div>
+                    <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300 block mb-1">
+                      1. Username
+                    </label>
+                    <div className="relative">
+                      <User className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. shadow_hunter"
+                        value={authUsername}
+                        onChange={(e) => setAuthUsername(e.target.value)}
+                        className="w-full pl-9 pr-3 py-2 rounded-xl bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-white/10 text-xs text-gray-900 dark:text-white focus:outline-none focus:border-red-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300 block mb-1">
+                      2. Gmail ID (Email)
+                    </label>
+                    <div className="relative">
+                      <Mail className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="email"
+                        required
+                        placeholder="e.g. yourname@gmail.com"
+                        value={authEmail}
+                        onChange={(e) => setAuthEmail(e.target.value)}
+                        className="w-full pl-9 pr-3 py-2 rounded-xl bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-white/10 text-xs text-gray-900 dark:text-white focus:outline-none focus:border-red-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300 block mb-1">
+                      3. Password
+                    </label>
+                    <div className="relative">
+                      <Lock className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type={showAuthPassword ? 'text' : 'password'}
+                        required
+                        placeholder="At least 6 characters"
+                        value={authPassword}
+                        onChange={(e) => setAuthPassword(e.target.value)}
+                        className="w-full pl-9 pr-9 py-2 rounded-xl bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-white/10 text-xs text-gray-900 dark:text-white focus:outline-none focus:border-red-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowAuthPassword((prev) => !prev)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors cursor-pointer"
+                      >
+                        {showAuthPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300 block mb-1">
+                      4. Confirm Password
+                    </label>
+                    <div className="relative">
+                      <Lock className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        required
+                        placeholder="Re-enter password"
+                        value={authConfirmPassword}
+                        onChange={(e) => setAuthConfirmPassword(e.target.value)}
+                        className="w-full pl-9 pr-9 py-2 rounded-xl bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-white/10 text-xs text-gray-900 dark:text-white focus:outline-none focus:border-red-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword((prev) => !prev)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors cursor-pointer"
+                      >
+                        {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Device Limitation Notice */}
+                  <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-500 text-[10px] flex items-center gap-1.5 font-medium">
+                    <Shield className="w-3.5 h-3.5 flex-shrink-0" />
+                    <span>Device Security: Only 1 account is permitted per device.</span>
                   </div>
                 </>
               )}
 
-              <div>
-                <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                  পাসওয়ার্ড (Password)
-                </label>
-                <div className="relative">
-                  <Lock className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input
-                    type={showAuthPassword ? 'text' : 'password'}
-                    required
-                    placeholder="••••••••"
-                    value={authPassword}
-                    onChange={(e) => setAuthPassword(e.target.value)}
-                    className="w-full pl-9 pr-9 py-2 rounded-xl bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-white/10 text-xs text-gray-900 dark:text-white focus:outline-none focus:border-red-500"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowAuthPassword((prev) => !prev)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
-                  >
-                    {showAuthPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
-
               <button
                 type="submit"
                 disabled={authLoading}
-                className="w-full py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-black text-xs shadow-lg shadow-red-600/30 disabled:opacity-50"
+                className="w-full py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-black text-xs shadow-lg shadow-red-600/30 disabled:opacity-50 transition-all cursor-pointer"
               >
                 {authLoading
-                  ? 'অপেক্ষা করুন...'
+                  ? 'Please wait...'
                   : authMode === 'LOGIN'
-                  ? 'লগইন করুন'
-                  : 'রেজিস্ট্রেশন সম্পূর্ণ করুন'}
+                  ? 'Login'
+                  : 'Create Account'}
               </button>
             </form>
           </div>
         </div>
       )}
 
-      {/* 7. EDIT INFO MODAL */}
+      {/* 7. EDIT INFO MODAL (WITH GALLERY AVATAR EDIT) */}
       {showEditInfoModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fadeIn">
           <div className="w-full max-w-sm rounded-3xl bg-white border border-slate-200 p-6 shadow-2xl space-y-4">
@@ -3157,27 +3321,67 @@ export default function MobileAppViewPage(props: any) {
                 <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
                   <Edit className="w-4 h-4" />
                 </div>
-                <h3 className="text-sm font-black text-slate-900">{tPhone('প্রোফাইল তথ্য পরিবর্তন', 'Edit Profile Info')}</h3>
+                <h3 className="text-sm font-black text-slate-900">Edit Profile & Avatar</h3>
               </div>
               <button
                 type="button"
                 onClick={() => setShowEditInfoModal(false)}
-                className="w-7 h-7 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center text-xs"
+                className="w-7 h-7 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center text-xs cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
+            {/* Profile Avatar Gallery Picker */}
+            <div className="flex items-center gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-100">
+              <div className="relative w-14 h-14 rounded-full border-2 border-white shadow-sm overflow-hidden bg-slate-900 flex-shrink-0">
+                <img
+                  src={editAvatarInput || currentUser?.avatar || 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=240'}
+                  alt="Avatar"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="flex-1 space-y-1">
+                <p className="text-xs font-bold text-slate-900">Profile Picture</p>
+                <label
+                  htmlFor="edit-modal-avatar-file"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-white font-bold text-[11px] shadow-sm cursor-pointer transition-all active:scale-95"
+                >
+                  <Camera className="w-3.5 h-3.5" />
+                  <span>Choose from Gallery</span>
+                </label>
+                <input
+                  id="edit-modal-avatar-file"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                      setEditAvatarInput(reader.result as string);
+                    };
+                    reader.readAsDataURL(file);
+                  }}
+                />
+              </div>
+            </div>
+
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                if (currentUser && editIgnInput.trim()) {
+                if (currentUser) {
                   const updated = updateUser(currentUser.id, {
-                    ign: editIgnInput.trim().toUpperCase(),
+                    username: editUsernameInput.trim() || currentUser.username,
+                    email: editEmailInput.trim() || currentUser.email,
+                    ign: editIgnInput.trim().toUpperCase() || currentUser.ign,
                     uid: editUidInput.trim() || currentUser.uid,
+                    avatar: editAvatarInput || currentUser.avatar,
                   });
                   if (updated) {
                     setCurrentUser(updated);
+                    showPhoneToast('Profile updated successfully!');
                   }
                 }
                 setShowEditInfoModal(false);
@@ -3186,11 +3390,37 @@ export default function MobileAppViewPage(props: any) {
             >
               <div>
                 <label className="text-[11px] font-bold text-slate-600 block mb-1">
-                  {tPhone('ইন-গেম নেম (In-Game Name / IGN)', 'In-Game Name (IGN)')}
+                  Username
                 </label>
                 <input
                   type="text"
                   required
+                  value={editUsernameInput}
+                  onChange={(e) => setEditUsernameInput(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:outline-none focus:border-indigo-600 font-bold"
+                  placeholder="e.g. shadow_hunter"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold text-slate-600 block mb-1">
+                  Email Address (Gmail)
+                </label>
+                <input
+                  type="email"
+                  value={editEmailInput}
+                  onChange={(e) => setEditEmailInput(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:outline-none focus:border-indigo-600"
+                  placeholder="e.g. yourname@gmail.com"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold text-slate-600 block mb-1">
+                  In-Game Name (IGN)
+                </label>
+                <input
+                  type="text"
                   value={editIgnInput}
                   onChange={(e) => setEditIgnInput(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:outline-none focus:border-indigo-600 font-bold"
@@ -3200,7 +3430,7 @@ export default function MobileAppViewPage(props: any) {
 
               <div>
                 <label className="text-[11px] font-bold text-slate-600 block mb-1">
-                  {tPhone('ফ্রি ফায়ার ইউআইডি (Free Fire UID)', 'Free Fire UID')}
+                  Free Fire UID
                 </label>
                 <input
                   type="text"
@@ -3213,9 +3443,9 @@ export default function MobileAppViewPage(props: any) {
 
               <button
                 type="submit"
-                className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs shadow-md shadow-indigo-600/30 transition-all active:scale-95"
+                className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs shadow-md shadow-indigo-600/30 transition-all cursor-pointer"
               >
-                {tPhone('সংরক্ষণ করুন', 'Save Changes')}
+                Save Changes
               </button>
             </form>
           </div>
@@ -3569,7 +3799,7 @@ export default function MobileAppViewPage(props: any) {
             <div className="space-y-2 text-xs text-slate-700">
               <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
                 <span className="font-bold text-slate-500">Platform:</span>
-                <span className="font-mono font-bold text-slate-900">Murubbi X Tournament BD</span>
+                <span className="font-mono font-bold text-slate-900">FF Rivals</span>
               </div>
               <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
                 <span className="font-bold text-slate-500">Engine Build:</span>
@@ -3625,7 +3855,7 @@ export default function MobileAppViewPage(props: any) {
                   <span className="w-5 h-5 rounded-full bg-red-600 text-white flex items-center justify-center font-bold text-[10px] flex-shrink-0">
                     ১
                   </span>
-                  <span>ফোনের <b>Settings ➔ Apps</b> এ গিয়ে <b>Murubbi X</b> বা <b>FF Rival BD</b> সিলেক্ট করুন।</span>
+                  <span>ফোনের <b>Settings ➔ Apps</b> এ গিয়ে <b>FF Rivals</b> সিলেক্ট করুন।</span>
                 </div>
                 <div className="flex items-start gap-2">
                   <span className="w-5 h-5 rounded-full bg-red-600 text-white flex items-center justify-center font-bold text-[10px] flex-shrink-0">
@@ -3648,7 +3878,7 @@ export default function MobileAppViewPage(props: any) {
                 onClick={() => {
                   handleEnablePushNotification();
                   try {
-                    window.location.href = 'intent:#Intent;action=android.settings.action.MANAGE_OVERLAY_PERMISSION;package=com.murubbix.tournament;end';
+                    window.location.href = 'intent:#Intent;action=android.settings.action.MANAGE_OVERLAY_PERMISSION;package=com.ffrivalstour.app;end';
                   } catch (e) {}
                   setShowOverlayModal(false);
                 }}

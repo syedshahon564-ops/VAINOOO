@@ -8,7 +8,7 @@ export default function NotificationPermissionModal() {
   const [isOpen, setIsOpen] = useState(false);
   const [step, setStep] = useState<1 | 2>(1);
 
-  const appName = settings?.siteName || 'GR FF TOUR';
+  const appName = settings?.siteName || 'FF Rivals';
 
   useEffect(() => {
     try {
