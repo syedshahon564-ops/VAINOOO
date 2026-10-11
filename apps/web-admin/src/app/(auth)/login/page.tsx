@@ -56,7 +56,7 @@ function AuthContent() {
           }
         }
 
-        const localRes = registerUser({
+        const localRes = await registerUser({
           username: uName,
           email: mail.toLowerCase(),
           password,
@@ -77,7 +77,7 @@ function AuthContent() {
           throw new Error('Please enter your username or email and password');
         }
 
-        const localRes = loginUser(identifier, password);
+        const localRes = await loginUser(identifier, password);
         if (!localRes.success) {
           throw new Error(localRes.error || 'Login failed. Please verify your credentials.');
         }

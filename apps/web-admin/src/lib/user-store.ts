@@ -268,6 +268,72 @@ function notifyUsersChange(users: UserAccount[]) {
   }
 }
 
+let hasInitializedUserSync = false;
+
+export async function fetchUsersFromServer(): Promise<UserAccount[]> {
+  if (typeof window === 'undefined') return getUsers();
+  try {
+    const res = await fetch(`/api/users?t=${Date.now()}`, {
+      cache: 'no-store',
+      headers: { 'Cache-Control': 'no-cache' },
+    });
+    if (!res.ok) return getUsers();
+    const data = await res.json();
+    if (data.ok && Array.isArray(data.users)) {
+      const serverUsers: UserAccount[] = data.users;
+      const localUsers = getUsers();
+
+      const mergedMap = new Map<string, UserAccount>();
+      // Put local users
+      localUsers.forEach((u) => {
+        if (u && u.id) mergedMap.set(u.id, u);
+      });
+      // Merge with server users
+      serverUsers.forEach((u) => {
+        if (u && u.id) mergedMap.set(u.id, u);
+      });
+
+      const merged = Array.from(mergedMap.values());
+      try {
+        localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(merged));
+        notifyUsersChange(merged);
+      } catch (e) {}
+
+      // If local had newly registered users that the server didn't have, post sync
+      const missingOnServer = localUsers.filter((lu) => !serverUsers.some((su) => su.id === lu.id));
+      if (missingOnServer.length > 0) {
+        fetch('/api/users', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'sync', users: merged }),
+        }).catch(() => {});
+      }
+
+      return merged;
+    }
+  } catch (err) {
+    console.warn('Failed to fetch users from server database:', err);
+  }
+  return getUsers();
+}
+
+export function initUserSync() {
+  if (typeof window === 'undefined' || hasInitializedUserSync) return;
+  hasInitializedUserSync = true;
+
+  fetchUsersFromServer();
+  setInterval(fetchUsersFromServer, 10000);
+
+  window.addEventListener('focus', () => {
+    fetchUsersFromServer();
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      fetchUsersFromServer();
+    }
+  });
+}
+
 export function getUsers(): UserAccount[] {
   if (typeof window === 'undefined') return INITIAL_USERS;
   try {
@@ -345,6 +411,13 @@ export function saveUsers(users: UserAccount[]): void {
         localStorage.setItem('ff_user', JSON.stringify(updatedCurrent));
       }
     }
+
+    // Sync to server database in background
+    fetch('/api/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'sync', users }),
+    }).catch(() => {});
   } catch (e) {
     console.error('Failed to save users:', e);
   }
@@ -637,23 +710,46 @@ export function setUserStatus(userId: string, status: 'ACTIVE' | 'BANNED' | 'SUS
 }
 
 // Auth Helpers
-export function loginUser(identifier: string, pass: string): { success: boolean; user?: UserAccount; error?: string } {
-  const clean = identifier.trim().toLowerCase();
+export function loginUserSync(identifier: string, pass: string): { success: boolean; user?: UserAccount; error?: string } {
+  const clean = String(identifier || '').trim().toLowerCase();
+  const cleanPass = String(pass || '').trim();
+
+  if (!clean) {
+    return { success: false, error: 'Please enter your username or email.' };
+  }
+  if (!cleanPass) {
+    return { success: false, error: 'Please enter your password.' };
+  }
+
   const users = getUsers();
-  const user = users.find((u) => 
-    (u.username && u.username.trim().toLowerCase() === clean) ||
-    (u.email && u.email.trim().toLowerCase() === clean) ||
-    u.phone.trim().toLowerCase() === clean ||
-    u.ign.trim().toLowerCase() === clean ||
-    u.uid.trim().toLowerCase() === clean ||
-    u.id.toLowerCase() === clean
-  );
+  const user = users.find((u) => {
+    if (!u) return false;
+    const uUsername = String(u.username || '').trim().toLowerCase();
+    const uEmail = String(u.email || '').trim().toLowerCase();
+    const uPhone = String(u.phone || '').trim().toLowerCase();
+    const uIgn = String(u.ign || '').trim().toLowerCase();
+    const uUid = String(u.uid || '').trim().toLowerCase();
+    const uId = String(u.id || '').trim().toLowerCase();
+
+    return (
+      (uUsername && uUsername === clean) ||
+      (uEmail && uEmail === clean) ||
+      (uPhone && uPhone === clean) ||
+      (uIgn && uIgn === clean) ||
+      (uUid && uUid === clean) ||
+      (uId && uId === clean)
+    );
+  });
+
   if (!user) {
     return { success: false, error: 'No account found with this username or email.' };
   }
-  if (user.password !== pass) {
+
+  const uPass = String(user.password || '').trim();
+  if (uPass !== cleanPass) {
     return { success: false, error: 'Incorrect password. Please try again.' };
   }
+
   if (user.status === 'BANNED') {
     return {
       success: false,
@@ -671,14 +767,38 @@ export function loginUser(identifier: string, pass: string): { success: boolean;
   return { success: true, user };
 }
 
-export function registerUser(data: {
+export async function loginUser(identifier: string, pass: string): Promise<{ success: boolean; user?: UserAccount; error?: string }> {
+  // 1. Try local memory / localStorage first
+  const localRes = loginUserSync(identifier, pass);
+  if (localRes.success) return localRes;
+
+  // 2. If not found, fetch fresh live users from server database!
+  try {
+    const refreshed = await fetchUsersFromServer();
+    if (refreshed && refreshed.length > 0) {
+      const secondCheck = loginUserSync(identifier, pass);
+      if (secondCheck.success) return secondCheck;
+    }
+  } catch (err) {
+    console.warn('Live login fetch error:', err);
+  }
+
+  return localRes;
+}
+
+export async function registerUser(data: {
   username?: string;
   email?: string;
   password: string;
   phone?: string;
   ign?: string;
   uid?: string;
-}): { success: boolean; user?: UserAccount; error?: string } {
+}): Promise<{ success: boolean; user?: UserAccount; error?: string }> {
+  // Pull fresh users from server first to prevent race conditions
+  try {
+    await fetchUsersFromServer();
+  } catch (e) {}
+
   // Device Check: Enforce maximum 1 account registered per device
   if (typeof window !== 'undefined') {
     const registeredDevice = localStorage.getItem('ff_device_registered_account');
@@ -691,23 +811,24 @@ export function registerUser(data: {
   }
 
   const users = getUsers();
-  const cleanUsername = (data.username || data.ign || '').trim().toLowerCase();
-  const cleanEmail = (data.email || '').trim().toLowerCase();
-  const cleanPhone = (data.phone || '').trim();
+  const cleanUsername = String(data.username || data.ign || '').trim().toLowerCase();
+  const cleanEmail = String(data.email || '').trim().toLowerCase();
+  const cleanPhone = String(data.phone || '').trim();
 
   if (cleanUsername) {
-    const usernameTaken = users.some(
-      (u) =>
-        (u.username && u.username.toLowerCase() === cleanUsername) ||
-        (u.ign && u.ign.toLowerCase() === cleanUsername)
-    );
+    const usernameTaken = users.some((u) => {
+      if (!u) return false;
+      const uName = String(u.username || '').trim().toLowerCase();
+      const uIgn = String(u.ign || '').trim().toLowerCase();
+      return uName === cleanUsername || uIgn === cleanUsername;
+    });
     if (usernameTaken) {
       return { success: false, error: 'This username is already taken. Please choose another one.' };
     }
   }
 
   if (cleanEmail) {
-    const emailTaken = users.some((u) => u.email && u.email.toLowerCase() === cleanEmail);
+    const emailTaken = users.some((u) => u && String(u.email || '').trim().toLowerCase() === cleanEmail);
     if (emailTaken) {
       return { success: false, error: 'This email is already registered. Please log in.' };
     }
@@ -721,7 +842,7 @@ export function registerUser(data: {
   }
 
   const generatedUid = String(Math.floor(100000000 + Math.random() * 900000000));
-  const finalUsername = (data.username || data.ign || 'player_' + generatedUid.slice(-4)).trim();
+  const finalUsername = String(data.username || data.ign || 'player_' + generatedUid.slice(-4)).trim();
   const finalEmail = cleanEmail || `${finalUsername.toLowerCase()}@gmail.com`;
 
   const newUser = addUser({
@@ -730,7 +851,7 @@ export function registerUser(data: {
     phone: cleanPhone || '01' + Math.floor(100000000 + Math.random() * 900000000),
     ign: finalUsername.toUpperCase(),
     uid: data.uid?.trim() || generatedUid,
-    password: data.password,
+    password: String(data.password || '').trim(),
     walletBalance: 0.0, // Strictly 0.0 BDT for new account registrations
     role: 'PLAYER',
     status: 'ACTIVE',
@@ -748,6 +869,17 @@ export function registerUser(data: {
     localStorage.setItem('ff_user', JSON.stringify(newUser));
     localStorage.setItem('ff_token', 'local_jwt_' + newUser.id + '_' + Date.now());
     window.dispatchEvent(new CustomEvent('ff_users_updated', { detail: getUsers() }));
+  }
+
+  // Persist directly to server database
+  try {
+    await fetch('/api/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'register', user: newUser }),
+    });
+  } catch (err) {
+    console.warn('Failed to sync new user to server database:', err);
   }
 
   return { success: true, user: newUser };
@@ -792,6 +924,7 @@ export function useUserStore() {
   useEffect(() => {
     refresh();
     setLoaded(true);
+    initUserSync();
 
     const handleUpdate = () => {
       refresh();

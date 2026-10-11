@@ -715,7 +715,7 @@ export default function MobileAppViewPage(props: any) {
           }
         }
 
-        const res = registerUser({
+        const res = await registerUser({
           username: uName,
           email: email.toLowerCase(),
           password: authPassword,
@@ -746,7 +746,7 @@ export default function MobileAppViewPage(props: any) {
           throw new Error('Please enter your password');
         }
 
-        const res = loginUser(identifier, authPassword);
+        const res = await loginUser(identifier, authPassword);
         if (!res.success) {
           throw new Error(res.error || 'Login failed. Please check your credentials.');
         }
