@@ -1171,12 +1171,14 @@ export default function MobileAppViewPage(props: any) {
                 <Trophy className="w-4 h-4" /> {tPhone('ওয়েব লিডারবোর্ড', 'Web Leaderboard')}
               </Link>
 
-              <Link
-                href="/admin"
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-red-600 text-white hover:bg-red-700 shadow-md shadow-red-600/20"
-              >
-                <Shield className="w-4 h-4" /> {tPhone('অ্যাডমিন প্যানেল', 'Admin Panel')}
-              </Link>
+              {currentUser?.role === 'ADMIN' && (
+                <Link
+                  href="/admin"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-red-600 text-white hover:bg-red-700 shadow-md shadow-red-600/20"
+                >
+                  <Shield className="w-4 h-4" /> {tPhone('অ্যাডমিন প্যানেল', 'Admin Panel')}
+                </Link>
+              )}
 
               <button
                 onClick={() => setPhoneTheme(phoneTheme === 'dark' ? 'light' : 'dark')}
@@ -3020,12 +3022,14 @@ export default function MobileAppViewPage(props: any) {
                   <Trophy className="w-4 h-4" /> {tPhone('ওয়েবসাইটের সম্পূর্ণ লিডারবোর্ড দেখুন', 'View Full Web Leaderboard')}
                 </Link>
 
-                <Link
-                  href="/admin"
-                  className="px-5 py-3 rounded-xl text-xs font-black btn-red flex items-center gap-1.5 shadow-md shadow-red-600/20"
-                >
-                  <Shield className="w-4 h-4" /> {tPhone('অ্যাডমিন প্যানেল', 'Admin Panel')}
-                </Link>
+                {currentUser?.role === 'ADMIN' && (
+                  <Link
+                    href="/admin"
+                    className="px-5 py-3 rounded-xl text-xs font-black btn-red flex items-center gap-1.5 shadow-md shadow-red-600/20"
+                  >
+                    <Shield className="w-4 h-4" /> {tPhone('অ্যাডমিন প্যানেল', 'Admin Panel')}
+                  </Link>
+                )}
 
                 <Link
                   href="/"
@@ -3811,12 +3815,14 @@ export default function MobileAppViewPage(props: any) {
               </div>
             </div>
 
-            <Link
-              href="/admin"
-              className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-black font-black text-xs flex items-center justify-center gap-1.5 shadow-md shadow-amber-500/30"
-            >
-              👑 Open Master Admin Panel
-            </Link>
+            {currentUser?.role === 'ADMIN' && (
+              <Link
+                href="/admin"
+                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-black font-black text-xs flex items-center justify-center gap-1.5 shadow-md shadow-amber-500/30"
+              >
+                👑 Open Master Admin Panel
+              </Link>
+            )}
           </div>
         </div>
       )}

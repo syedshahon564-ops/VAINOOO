@@ -265,12 +265,6 @@ export default function CategoryDetailPage() {
             {t('ওয়ালেট ব্যালেন্স:', 'Wallet Balance:')}{' '}
             <strong className="text-emerald-600">৳{userBalance}</strong>
           </span>
-          <Link
-            href="/admin"
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-red-600 dark:text-red-400 hover:underline"
-          >
-            <PlusCircle className="w-4 h-4" /> {t('অ্যাডমিন প্যানেল', 'Admin Panel')}
-          </Link>
         </div>
       </div>
 
