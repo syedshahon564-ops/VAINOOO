@@ -47,13 +47,30 @@ export default function AppUpdateModal({ forceOpen = false }: AppUpdateModalProp
     setDownloadProgress(20);
 
     try {
-      // Trigger direct download with attachment header
-      window.location.href = '/api/download';
+      const downloadTarget = '/downloads/ffrivals.apk';
+      const fullUrl = typeof window !== 'undefined' ? window.location.origin + downloadTarget : downloadTarget;
+
+      // 1. Create native anchor click
+      const link = document.createElement('a');
+      link.href = downloadTarget;
+      link.setAttribute('download', 'ffrivals.apk');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // 2. Open external browser if in Capacitor
       try {
-        if (typeof window !== 'undefined' && (window as any)?.Capacitor?.Plugins?.App) {
-          window.open('/api/download', '_system');
+        if (typeof window !== 'undefined' && (window as any)?.Capacitor) {
+          window.open(fullUrl, '_system');
         }
       } catch {}
+
+      // 3. Fallback direct navigation
+      setTimeout(() => {
+        try {
+          window.location.href = downloadTarget;
+        } catch {}
+      }, 400);
 
       const int = setInterval(() => {
         setDownloadProgress((prev) => {
@@ -70,7 +87,7 @@ export default function AppUpdateModal({ forceOpen = false }: AppUpdateModalProp
         setDownloadSuccess(true);
       }, 1800);
     } catch {
-      window.location.href = '/api/download';
+      window.location.href = '/downloads/ffrivals.apk';
       setDownloading(false);
       setDownloadSuccess(true);
     }

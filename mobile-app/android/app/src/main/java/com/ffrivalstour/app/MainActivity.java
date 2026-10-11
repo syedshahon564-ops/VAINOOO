@@ -76,16 +76,22 @@ public class MainActivity extends BridgeActivity {
             "})()",
             new ValueCallback<String>() {
                 @Override
-                public void onReceiveValue(String value) {
-                    if (value != null && value.contains("HANDLED") && !value.contains("NOT_HANDLED")) {
-                        // Handled by in-page handler (modal closed, category closed, tab switched, etc.)
-                        return;
-                    }
-
-                    // 2. Not handled by in-page handler: check if browser/WebView has navigation history
+                public void onReceiveValue(final String value) {
                     new Handler(Looper.getMainLooper()).post(new Runnable() {
                         @Override
                         public void run() {
+                            if (value != null && value.contains("HANDLED") && !value.contains("NOT_HANDLED")) {
+                                // Handled by in-page handler (modal closed, category closed, tab switched, or exit toast shown)
+                                return;
+                            }
+
+                            if (value != null && value.contains("NOT_HANDLED")) {
+                                // In-page handler confirmed 2nd back press within 2s -> exit activity cleanly
+                                finish();
+                                return;
+                            }
+
+                            // 2. Not handled by in-page handler: check if browser/WebView has navigation history
                             if (webView.canGoBack()) {
                                 webView.goBack();
                             } else {

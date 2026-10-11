@@ -367,23 +367,29 @@ export default function MobileAppViewPage(props: any) {
   // Tab Navigation History
   const [tabHistory, setTabHistory] = useState<('home' | 'my-matches' | 'top-players' | 'wallet' | 'profile')[]>(['home']);
 
+  // Distinct Hash Navigation and In-App Back Manager
+  const pushHash = (hash: string) => {
+    if (typeof window === 'undefined') return;
+    try {
+      const fullHash = hash.startsWith('#') ? hash : '#' + hash;
+      if (window.location.hash !== fullHash) {
+        window.history.pushState({ screen: fullHash, time: Date.now() }, '', fullHash);
+      }
+    } catch {}
+  };
+
+  const pushHistory = (screenName: string) => {
+    pushHash(screenName);
+  };
+
   const switchTab = (tab: 'home' | 'my-matches' | 'top-players' | 'wallet' | 'profile') => {
     if (tab === activeTab) return;
     setTabHistory((prev) => [...prev, tab]);
     setActiveTab(tab);
-    if (typeof window !== 'undefined') {
-      window.history.pushState({ screen: `tab-${tab}`, time: Date.now() }, '');
-    }
+    pushHash('tab-' + tab);
   };
 
-  // In-app History and Slide-Back Manager
-  const pushHistory = (screenName: string) => {
-    if (typeof window !== 'undefined') {
-      try {
-        window.history.pushState({ screen: screenName, inAppTrap: true, time: Date.now() }, '', window.location.href);
-      } catch {}
-    }
-  };
+  const lastBackPressTimeRef = useRef<number>(0);
 
   const handleInAppBack = (): boolean => {
     // 0. Priority: if user is typing or keyboard is open, blur input first
@@ -395,11 +401,32 @@ export default function MobileAppViewPage(props: any) {
       }
     }
 
+    // 0.1 Check if any global modal/dialog in DOM is open (Important Notice or Permission modal)
+    if (typeof document !== 'undefined') {
+      const noticeModal = document.querySelector('[aria-labelledby="important-notice-title"]');
+      if (noticeModal) {
+        const btn = noticeModal.querySelector<HTMLElement>('button');
+        if (btn) {
+          btn.click();
+          return true;
+        }
+      }
+      const notifModal = document.querySelector('[aria-modal="true"]');
+      if (notifModal) {
+        const btn = notifModal.querySelector<HTMLElement>('button');
+        if (btn) {
+          btn.click();
+          return true;
+        }
+      }
+    }
+
     // If update modal is open, allow closing it so user is never trapped
     if (showUpdateModal) {
       setShowUpdateModal(false);
       return true;
     }
+
     // 1. Modals & sub-screens (close top-most first)
     if (activeChatTicket) {
       setActiveChatTicket(null);
@@ -461,11 +488,13 @@ export default function MobileAppViewPage(props: any) {
       setShowNotifDropdown(false);
       return true;
     }
+
     // 2. Category selection
     if (selectedCategory) {
       setSelectedCategory(null);
       return true;
     }
+
     // 3. Tab history navigation
     if (tabHistory.length > 1) {
       const updated = [...tabHistory];
@@ -480,7 +509,20 @@ export default function MobileAppViewPage(props: any) {
       setTabHistory(['home']);
       return true;
     }
-    return false;
+
+    // 4. Root Home screen reached: double back press within 2000ms prevention
+    const now = Date.now();
+    if (now - lastBackPressTimeRef.current < 2000) {
+      // Exit confirmed!
+      if (typeof window !== 'undefined' && (window as any)?.Capacitor?.Plugins?.App?.exitApp) {
+        (window as any).Capacitor.Plugins.App.exitApp();
+      }
+      return false; // Tells MainActivity.java to call finish()
+    } else {
+      lastBackPressTimeRef.current = now;
+      showPhoneToast(tPhone('অ্যাপ থেকে বের হতে আবার ব্যাক চাপুন', 'Press back again to exit'));
+      return true; // Toast shown, stay in app!
+    }
   };
 
   const handleInAppBackRef = useRef(handleInAppBack);
@@ -488,38 +530,68 @@ export default function MobileAppViewPage(props: any) {
     handleInAppBackRef.current = handleInAppBack;
   });
 
+  // Automatically synchronize active modal, category, or subview to browser history hash
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (activeChatTicket) pushHash('chat-' + activeChatTicket.id);
+    else if (showSupportModal) pushHash('modal-support');
+    else if (showFinanceModal) pushHash('modal-finance');
+    else if (bookingModalMatch) pushHash('modal-booking-' + bookingModalMatch.id);
+    else if (roomDetailsMatch) pushHash('modal-room-' + roomDetailsMatch.id);
+    else if (totalPrizeMatch) pushHash('modal-prize-' + totalPrizeMatch.id);
+    else if (selectedPlayerForDetails) pushHash('modal-player');
+    else if (matchDetailsScreen) pushHash('screen-match-' + matchDetailsScreen.id);
+    else if (showEditInfoModal) pushHash('modal-edit-info');
+    else if (showChangePasswordModal) pushHash('modal-password');
+    else if (showRulesModal) pushHash('modal-rules');
+    else if (showDevInfoModal) pushHash('modal-dev');
+    else if (showAuthModal) pushHash('modal-auth');
+    else if (showOverlayModal) pushHash('modal-overlay');
+    else if (selectedCategory) pushHash('cat-' + selectedCategory);
+  }, [
+    activeChatTicket,
+    showSupportModal,
+    showFinanceModal,
+    bookingModalMatch,
+    roomDetailsMatch,
+    totalPrizeMatch,
+    selectedPlayerForDetails,
+    matchDetailsScreen,
+    showEditInfoModal,
+    showChangePasswordModal,
+    showRulesModal,
+    showDevInfoModal,
+    showAuthModal,
+    showOverlayModal,
+    selectedCategory,
+  ]);
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    // Seed multiple history entries so Capacitor webView.canGoBack() is always true
+    (window as any).__inAppMobileViewActive = true;
+
+    // Seed history stack with distinct entries so Android webView.canGoBack() is always true
     try {
-      window.history.pushState({ trapBase: 1 }, '', window.location.href);
-      window.history.pushState({ trapActive: 2 }, '', window.location.href);
+      if (!window.location.hash || window.location.hash === '#' || window.location.hash === '#base') {
+        window.history.replaceState({ screen: 'base' }, '', '#base');
+        window.history.pushState({ screen: 'home' }, '', '#home');
+      }
     } catch {}
 
     const onPopState = (e: PopStateEvent) => {
       const handled = handleInAppBackRef.current();
       if (handled) {
-        // We moved back 1 step inside the app! Re-arm deep trap so future back swipes never exit
+        // Handled in-app. Ensure base history depth so Android gesture never falls through
         try {
-          window.history.pushState({ trapBase: 1 }, '', window.location.href);
-          window.history.pushState({ trapActive: 2 }, '', window.location.href);
+          if (!window.location.hash || window.location.hash === '' || window.location.hash === '#base') {
+            window.history.pushState({ screen: 'home' }, '', '#home');
+          }
         } catch {}
       } else {
-        // At root Home screen with nothing to back
-        const now = Date.now();
-        const lastPress = (window as any).__lastBackPressTime || 0;
-        if (now - lastPress < 2000) {
-          if ((window as any)?.Capacitor?.Plugins?.App?.exitApp) {
-            (window as any).Capacitor.Plugins.App.exitApp();
-          }
-        } else {
-          (window as any).__lastBackPressTime = now;
-          showPhoneToast(tPhone('অ্যাপ থেকে বের হতে আবার ব্যাক চাপুন', 'Press back again to exit'));
-          try {
-            window.history.pushState({ trapBase: 1 }, '', window.location.href);
-            window.history.pushState({ trapActive: 2 }, '', window.location.href);
-          } catch {}
+        // Double press exit confirmed
+        if ((window as any)?.Capacitor?.Plugins?.App?.exitApp) {
+          (window as any).Capacitor.Plugins.App.exitApp();
         }
       }
     };
@@ -528,22 +600,7 @@ export default function MobileAppViewPage(props: any) {
 
     // Global listener for Android MainActivity.java to invoke directly via evaluateJavascript
     (window as any).__handleAndroidBack = () => {
-      const handled = handleInAppBackRef.current();
-      if (!handled) {
-        const now = Date.now();
-        const lastPress = (window as any).__lastBackPressTime || 0;
-        if (now - lastPress < 2000) {
-          if ((window as any)?.Capacitor?.Plugins?.App?.exitApp) {
-            (window as any).Capacitor.Plugins.App.exitApp();
-          }
-          return false;
-        } else {
-          (window as any).__lastBackPressTime = now;
-          showPhoneToast(tPhone('অ্যাপ থেকে বের হতে আবার ব্যাক চাপুন', 'Press back again to exit'));
-          return true;
-        }
-      }
-      return true;
+      return handleInAppBackRef.current();
     };
 
     // Native Capacitor back button listener for Android APK
@@ -558,7 +615,9 @@ export default function MobileAppViewPage(props: any) {
     } catch {}
 
     return () => {
+      (window as any).__inAppMobileViewActive = false;
       window.removeEventListener('popstate', onPopState);
+      delete (window as any).__handleAndroidBack;
       if (capListenerHandle && capListenerHandle.remove) {
         capListenerHandle.remove();
       }

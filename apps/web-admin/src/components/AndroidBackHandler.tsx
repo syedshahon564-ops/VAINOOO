@@ -11,11 +11,17 @@ export default function AndroidBackHandler() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    // Keep history depth >= 3 so webView.canGoBack() in Capacitor is always true
+    // If in-app mobile view is active, it has its own dedicated state-aware handler
+    if ((window as any).__inAppMobileViewActive) {
+      return;
+    }
+
     const ensureDeepHistory = () => {
       try {
-        window.history.pushState({ trapBase: 1 }, '', window.location.href);
-        window.history.pushState({ trapActive: 2 }, '', window.location.href);
+        if (!window.location.hash || window.location.hash === '#' || window.location.hash === '#base') {
+          window.history.replaceState({ trapBase: 1 }, '', '#base');
+          window.history.pushState({ trapActive: 2 }, '', '#home');
+        }
       } catch {}
     };
 
@@ -26,6 +32,8 @@ export default function AndroidBackHandler() {
     // Expose global fallback for MainActivity.java when outside mobile-app-view
     if (pathname !== '/mobile-app-view') {
       (window as any).__handleAndroidBack = () => {
+        if ((window as any).__inAppMobileViewActive) return true;
+
         // 0. Priority: active input blur
         if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
           (document.activeElement as HTMLElement).blur();
@@ -61,6 +69,10 @@ export default function AndroidBackHandler() {
     }
 
     const handlePopState = (e: PopStateEvent) => {
+      if ((window as any).__inAppMobileViewActive) {
+        return;
+      }
+
       // 1. Check if in-page back handler exists
       if (typeof (window as any).__handleAndroidBack === 'function') {
         const handled = (window as any).__handleAndroidBack();
