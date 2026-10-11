@@ -386,6 +386,15 @@ export default function MobileAppViewPage(props: any) {
   };
 
   const handleInAppBack = (): boolean => {
+    // 0. Priority: if user is typing or keyboard is open, blur input first
+    if (typeof document !== 'undefined' && document.activeElement) {
+      const tag = document.activeElement.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA') {
+        (document.activeElement as HTMLElement).blur();
+        return true;
+      }
+    }
+
     // If update modal is open, allow closing it so user is never trapped
     if (showUpdateModal) {
       setShowUpdateModal(false);

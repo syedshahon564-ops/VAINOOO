@@ -11,7 +11,7 @@ export default function AndroidBackHandler() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    // Keep history depth >= 3 so webView.canGoBack() in Capacitor is ALWAYS TRUE
+    // Keep history depth >= 3 so webView.canGoBack() in Capacitor is always true
     const ensureDeepHistory = () => {
       try {
         window.history.pushState({ trapBase: 1 }, '', window.location.href);
@@ -23,12 +23,48 @@ export default function AndroidBackHandler() {
     window.addEventListener('touchstart', ensureDeepHistory, { once: true, passive: true });
     window.addEventListener('click', ensureDeepHistory, { once: true, passive: true });
 
+    // Expose global fallback for MainActivity.java when outside mobile-app-view
+    if (pathname !== '/mobile-app-view') {
+      (window as any).__handleAndroidBack = () => {
+        // 0. Priority: active input blur
+        if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+          (document.activeElement as HTMLElement).blur();
+          return true;
+        }
+
+        // 1. Priority: any open modal/dialog in DOM
+        const openDialog = document.querySelector('[role="dialog"]');
+        if (openDialog) {
+          const btn = openDialog.querySelector<HTMLElement>('button');
+          if (btn) {
+            btn.click();
+            return true;
+          }
+        }
+
+        // 2. Priority: navigate back if on sub-page
+        if (pathname && pathname !== '/' && pathname !== '/mobile-app-view') {
+          router.back();
+          return true;
+        }
+
+        // 3. At root: double back press prevention
+        const now = Date.now();
+        if (now - lastBackPressRef.current < 2000) {
+          return false; // Exit allowed
+        } else {
+          lastBackPressRef.current = now;
+          showExitToast();
+          return true; // Toast shown, stay in app
+        }
+      };
+    }
+
     const handlePopState = (e: PopStateEvent) => {
-      // 1. Check if an active in-page back handler exists (e.g. in mobile-app-view)
+      // 1. Check if in-page back handler exists
       if (typeof (window as any).__handleAndroidBack === 'function') {
         const handled = (window as any).__handleAndroidBack();
         if (handled) {
-          // Re-arm immediately
           ensureDeepHistory();
           return;
         }
@@ -54,7 +90,6 @@ export default function AndroidBackHandler() {
       // 4. At home root: Require 2 quick back presses within 2 seconds to exit
       const now = Date.now();
       if (now - lastBackPressRef.current < 2000) {
-        // Double press confirmed: allow native exit
         const cap = (window as any).Capacitor;
         if (cap?.Plugins?.App?.exitApp) {
           cap.Plugins.App.exitApp();
