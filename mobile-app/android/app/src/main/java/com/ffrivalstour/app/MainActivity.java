@@ -34,14 +34,6 @@ public class MainActivity extends BridgeActivity {
                 requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, 101);
             }
         }
-
-        // Request SMS permissions for automated bKash/Nagad detection
-        if (checkSelfPermission(android.Manifest.permission.RECEIVE_SMS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
-            requestPermissions(new String[]{
-                android.Manifest.permission.RECEIVE_SMS,
-                android.Manifest.permission.READ_SMS
-            }, 102);
-        }
     }
 
     public class WebAppInterface {
