@@ -3439,9 +3439,8 @@ export default function MobileAppViewPage(props: any) {
                 <div className="relative">
                   <input
                     type="text"
-                    inputMode="numeric"
                     value={editUidInput}
-                    onChange={(e) => setEditUidInput(toEnDigits(e.target.value))}
+                    onChange={(e) => setEditUidInput(e.target.value)}
                     className="w-full pl-3 pr-8 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:outline-none focus:border-indigo-600 font-mono font-bold"
                     placeholder="e.g. 102910574942"
                   />
@@ -3450,12 +3449,8 @@ export default function MobileAppViewPage(props: any) {
                     title="ক্লিপবোর্ড থেকে UID পেস্ট করুন"
                     onClick={async () => {
                       try {
-                        let text = await readClipboardText();
-                        if (!text && typeof window !== 'undefined') {
-                          text = window.prompt('কপি করা Free Fire UID এখানে পেস্ট করুন:') || '';
-                        }
-                        const digits = toEnDigits(text);
-                        if (digits) setEditUidInput(digits);
+                        const text = await readClipboardText();
+                        if (text) setEditUidInput(text.trim());
                       } catch {}
                     }}
                     className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-indigo-600 active:scale-95 transition-all"
