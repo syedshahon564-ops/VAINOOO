@@ -44,5 +44,6 @@ mobile-app/android/app/build/
 mobile-app/android/local.properties
 mobile-app/android/app/release/
 mobile-app/android/keystore.properties
+mobile-app/android/app/src/main/assets/game-data/
 *.keystore
 *.jks

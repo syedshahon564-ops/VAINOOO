@@ -25,7 +25,13 @@ body {
   color: var(--text-current);
   min-height: 100vh;
   overflow-x: hidden;
-  transition: background-color 0.25s ease, color 0.25s ease;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, button, a, input, select, textarea, [role="button"] {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* Category Card Red Gradient (as seen in screenshots) */
@@ -53,8 +59,8 @@ body {
 }
 
 html.dark .glass-panel {
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
 }
 

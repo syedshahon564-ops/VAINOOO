@@ -1,14 +1,13 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Download, Sparkles, ShieldAlert, CheckCircle2, ArrowRight, Zap, RefreshCw } from 'lucide-react';
+import { Download, Sparkles, ShieldCheck, CheckCircle2, X } from 'lucide-react';
 
 interface AppUpdateModalProps {
   forceOpen?: boolean;
 }
 
-const LATEST_VERSION = 'v3.5.0';
-const APP_STORAGE_KEY = 'ff_app_installed_version_v350';
+const DISMISS_STORAGE_KEY = 'ff_app_download_dismissed_session';
 
 export default function AppUpdateModal({ forceOpen = false }: AppUpdateModalProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -25,26 +24,36 @@ export default function AppUpdateModal({ forceOpen = false }: AppUpdateModalProp
     try {
       if (typeof window !== 'undefined') {
         const searchParams = new URLSearchParams(window.location.search);
-        const urlVersion = searchParams.get('v');
-        const installedVersion = localStorage.getItem(APP_STORAGE_KEY);
+        
+        // 1. NEVER show download prompt if the user is ALREADY inside the mobile app
+        const isInsideApp =
+          searchParams.get('app') === 'true' ||
+          Boolean((window as any)?.AndroidBridge) ||
+          Boolean((window as any)?.Capacitor);
 
-        // If the user already updated to this exact latest version (v3.5.0), allow entry
-        if (urlVersion === '3.5.0' || installedVersion === LATEST_VERSION) {
+        if (isInsideApp) {
           setIsOpen(false);
           return;
         }
 
-        // Everyone else must be prompted with the mandatory update
+        // 2. If the user dismissed the prompt in this session, don't nag them again
+        const dismissed = sessionStorage.getItem(DISMISS_STORAGE_KEY);
+        if (dismissed === 'true') {
+          setIsOpen(false);
+          return;
+        }
+
+        // 3. Prompt website visitors to download the official 30 MB Android app
         setIsOpen(true);
       }
     } catch {
-      setIsOpen(true);
+      setIsOpen(false);
     }
   }, [forceOpen]);
 
-  const handleUpdateNow = () => {
+  const handleDownloadApp = () => {
     setDownloading(true);
-    setDownloadProgress(20);
+    setDownloadProgress(30);
 
     try {
       const downloadTarget = '/downloads/ffrivals.apk';
@@ -80,12 +89,12 @@ export default function AppUpdateModal({ forceOpen = false }: AppUpdateModalProp
           }
           return prev + 25;
         });
-      }, 400);
+      }, 350);
 
       setTimeout(() => {
         setDownloading(false);
         setDownloadSuccess(true);
-      }, 1800);
+      }, 1500);
     } catch {
       window.location.href = '/downloads/ffrivals.apk';
       setDownloading(false);
@@ -93,9 +102,9 @@ export default function AppUpdateModal({ forceOpen = false }: AppUpdateModalProp
     }
   };
 
-  const handleInstalledContinue = () => {
+  const handleDismiss = () => {
     try {
-      localStorage.setItem(APP_STORAGE_KEY, LATEST_VERSION);
+      sessionStorage.setItem(DISMISS_STORAGE_KEY, 'true');
     } catch {}
     setIsOpen(false);
   };
@@ -103,64 +112,70 @@ export default function AppUpdateModal({ forceOpen = false }: AppUpdateModalProp
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-4 bg-black/90 backdrop-blur-xl animate-in fade-in duration-300">
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-300">
       {/* Outer Card with glowing border */}
       <div className="relative w-full max-w-sm rounded-3xl bg-gradient-to-b from-[#180a0a] via-[#11111a] to-[#0a0a10] border-2 border-red-500/50 p-5 sm:p-6 text-white shadow-2xl shadow-red-600/30 text-center space-y-4">
         
+        {/* Close Button */}
+        <button
+          onClick={handleDismiss}
+          type="button"
+          aria-label="Close"
+          className="absolute top-4 right-4 p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-gray-300 hover:text-white transition-all cursor-pointer"
+        >
+          <X className="w-4 h-4" />
+        </button>
+
         {/* Animated Badge Icon */}
         <div className="relative w-16 h-16 mx-auto rounded-2xl bg-gradient-to-tr from-red-600 via-amber-500 to-rose-600 p-0.5 shadow-2xl shadow-red-600/40">
           <div className="w-full h-full rounded-2xl bg-[#0f0a12] flex items-center justify-center">
             <Sparkles className="w-8 h-8 text-amber-400 animate-pulse" />
           </div>
           <span className="absolute -top-2 -right-2 px-2 py-0.5 rounded-full bg-red-600 text-[10px] font-black tracking-wider text-white border-2 border-[#11111a] shadow-md animate-bounce">
-            NEW 20 MB
+            ৩০ MB
           </span>
         </div>
 
-        {/* Title & Warning */}
+        {/* Title */}
         <div className="space-y-1">
           <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-red-500/20 border border-red-500/40 text-red-400 text-[10px] font-black uppercase tracking-wider mb-1">
-            <ShieldAlert className="w-3 h-3 text-red-400" />
-            নতুন আপডেট আবশ্যক (Mandatory Update)
+            <ShieldCheck className="w-3 h-3 text-emerald-400" />
+            অফিসিয়াল Android অ্যাপ
           </div>
           <h3 className="text-xl font-black tracking-wide text-white">
-            অ্যাপ আপডেট করুন! 🚀
+            FF RIVALS অ্যাপ ডাউনলোড করুন! 🚀
           </h3>
           <p className="text-xs text-gray-300 leading-relaxed pt-1">
-            <span className="text-amber-400 font-bold">FF RIVALS TOUR BD</span> অ্যাপে প্রবেশ করতে হলে অবশ্যই সর্বশেষ <span className="text-red-400 font-bold">২০ MB (v3.5.0)</span> আপডেট সম্পন্ন করতে হবে।
+            সুপারফাস্ট টুর্নামেন্ট অভিজ্ঞতা, ম্যাচ রুম আইডি ও পুশ নোটিফিকেশন পেতে আমাদের <span className="text-amber-400 font-bold">৩০ MB</span> অফিশিয়াল অ্যাপটি ফোনে ইনস্টল করুন।
           </p>
         </div>
 
         {/* Specs Badges */}
         <div className="flex items-center justify-center gap-2 text-[11px] font-bold">
           <span className="px-3 py-1 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/30">
-            📦 সাইজ: ২০ এমবি (20 MB)
+            📦 সাইজ: ৩০ MB
           </span>
           <span className="px-3 py-1 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-            ⚡ ভার্সন: v3.5.0 Latest
+            🛡️ ১০০% নিরাপদ ও ভাইরাস মুক্ত
           </span>
         </div>
 
-        {/* What's New Feature List */}
+        {/* Feature List */}
         <div className="rounded-2xl bg-white/[0.04] border border-white/10 p-3 text-left space-y-2 text-[11px]">
           <p className="text-[10px] font-black text-gray-400 uppercase tracking-wider pb-0.5 border-b border-white/10">
-            লেটেস্ট সংস্করণের নতুন সুবিধাসমূহ:
+            মোবাইল অ্যাপে খেলার সুবিধাসমূহ:
           </p>
           <div className="flex items-start gap-2 text-emerald-400 font-medium">
             <CheckCircle2 className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
-            <span>আসল ফ্রি ফায়ার UID অটো-ভেরিফাই ও রিয়েল গেম নেম</span>
+            <span>সরাসরি ফোনে টুর্নামেন্ট রুম আইডি ও পাসওয়ার্ড নোটিফিকেশন</span>
           </div>
           <div className="flex items-start gap-2 text-emerald-400 font-medium">
             <CheckCircle2 className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
-            <span>ম্যাচ শুরুর ৫ মিনিট আগে অটোমেটিক রুম আইডি ও পাসওয়ার্ড</span>
+            <span>ল্যাগ-ফ্রি ফুলস্ক্রিন গেমিং ইন্টারফেস</span>
           </div>
           <div className="flex items-start gap-2 text-amber-300 font-medium">
             <CheckCircle2 className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
-            <span>ইনস্ট্যান্ট bKash / Nagad ডিপোজিট ও উইথড্র সিস্টেম</span>
-          </div>
-          <div className="flex items-start gap-2 text-rose-300 font-medium">
-            <CheckCircle2 className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
-            <span>হোয়াইট স্ক্রিন ফিক্সড ও সুপারফাস্ট ল্যাগ-ফ্রি পারফরম্যান্স</span>
+            <span>ইনস্ট্যান্ট bKash / Nagad ডিপোজিট ও উইথড্রল</span>
           </div>
         </div>
 
@@ -188,61 +203,31 @@ export default function AppUpdateModal({ forceOpen = false }: AppUpdateModalProp
               <span>APK ফাইলটি ডাউনলোড শুরু হয়েছে!</span>
             </div>
             <p className="text-[10px] text-gray-300 font-normal">
-              আপনার ফোনের Downloads ফোল্ডার বা নোটিফিকেশন বার থেকে <span className="text-white font-bold">ffrivals.apk</span> ফাইলটি ওপেন করে &apos;Install&apos; বা &apos;Update&apos; করুন।
+              আপনার ফোনের Downloads ফোল্ডার বা নোটিফিকেশন বার থেকে <span className="text-white font-bold">ffrivals.apk</span> ফাইলটি ওপেন করে &apos;Install&apos; করুন।
             </p>
           </div>
         )}
 
         {/* Action Buttons */}
         <div className="space-y-2 pt-1">
-          {!downloadSuccess ? (
-            <button
-              onClick={handleUpdateNow}
-              disabled={downloading}
-              className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-red-600 via-rose-600 to-amber-600 hover:brightness-110 active:scale-95 text-white font-black text-sm flex items-center justify-center gap-2 shadow-xl shadow-red-600/40 transition-all border border-amber-400/40 cursor-pointer"
-            >
-              <Download className={`w-5 h-5 ${downloading ? 'animate-bounce' : ''}`} />
-              <span>
-                {downloading ? 'ডাউনলোড হচ্ছে (২০ MB)...' : '📥 এখনই আপডেট করুন (২০ MB)'}
-              </span>
-            </button>
-          ) : (
-            <div className="space-y-2">
-              <button
-                onClick={handleInstalledContinue}
-                className="w-full py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 transition-all cursor-pointer"
-              >
-                <CheckCircle2 className="w-4 h-4" />
-                <span>ইনস্টল সম্পন্ন করেছি, অ্যাপে প্রবেশ করুন</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  window.location.href = '/api/download';
-                }}
-                className="w-full py-2 rounded-xl text-gray-400 hover:text-white text-[11px] font-semibold flex items-center justify-center gap-1 transition-colors"
-              >
-                <RefreshCw className="w-3 h-3" />
-                <span>পুনরায় ডাউনলোড করতে ক্লিক করুন (20 MB)</span>
-              </button>
-            </div>
-          )}
-
-          <a
-            href="/api/download"
-            download="ffrivals.apk"
-            className="block text-[11px] text-amber-400 hover:text-amber-300 font-bold underline pt-1"
+          <button
+            onClick={handleDownloadApp}
+            disabled={downloading}
+            className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-red-600 via-rose-600 to-amber-600 hover:brightness-110 active:scale-95 text-white font-black text-sm flex items-center justify-center gap-2 shadow-xl shadow-red-600/40 transition-all border border-amber-400/40 cursor-pointer"
           >
-            📥 সরাসরি APK ডাউনলোড লিঙ্ক (Direct APK Link - 20 MB)
-          </a>
+            <Download className={`w-5 h-5 ${downloading ? 'animate-bounce' : ''}`} />
+            <span>
+              {downloading ? 'ডাউনলোড হচ্ছে (৩০ MB)...' : '📥 অ্যাপ ডাউনলোড করুন (৩০ MB)'}
+            </span>
+          </button>
 
-          {/* Skip / Continue button so users are never stuck */}
+          {/* Continue in browser button */}
           <button
             type="button"
-            onClick={handleInstalledContinue}
+            onClick={handleDismiss}
             className="w-full py-2 text-[11px] text-gray-400 hover:text-gray-200 transition-colors cursor-pointer"
           >
-            পরে আপডেট করব / সরাসরি অ্যাপে প্রবেশ করুন (Skip)
+            🌐 ব্রাউজারে চালিয়ে যান (Continue in Browser)
           </button>
         </div>
       </div>

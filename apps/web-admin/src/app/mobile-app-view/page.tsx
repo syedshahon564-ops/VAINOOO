@@ -70,6 +70,7 @@ import SupportTicketModal from '@/components/SupportTicketModal';
 import SupportChatScreen from '@/components/SupportChatScreen';
 import { SupportTicket } from '@/lib/support-store';
 import { useLanguage } from '@/components/LanguageProvider';
+import { readClipboardText, toEnDigits } from '@/lib/clipboard';
 import {
   getCurrentUser,
   loginUser,
@@ -244,18 +245,8 @@ export default function MobileAppViewPage(props: any) {
   const [passMessage, setPassMessage] = useState<{ text: string; isError: boolean } | null>(null);
   const [showRulesModal, setShowRulesModal] = useState(false);
   const [showDevInfoModal, setShowDevInfoModal] = useState(false);
-  // Mandatory 4 MB Update Modal state
-  const [showUpdateModal, setShowUpdateModal] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return false;
-    try {
-      const searchParams = new URLSearchParams(window.location.search);
-      if (searchParams.get('v') === '3.5.0') return false;
-      const installed = localStorage.getItem('ff_app_installed_version_v350');
-      return installed !== 'v3.5.0';
-    } catch {
-      return true;
-    }
-  });
+  // App Download / Update Modal state (defaults to false so users are never blocked)
+  const [showUpdateModal, setShowUpdateModal] = useState<boolean>(false);
   const [updateDownloading, setUpdateDownloading] = useState(false);
   const [updateSuccess, setUpdateSuccess] = useState(false);
   const [updateProgress, setUpdateProgress] = useState(0);
@@ -319,7 +310,7 @@ export default function MobileAppViewPage(props: any) {
 
   const handleUidChange = async (val: string) => {
     setAuthUid(val);
-    const clean = val.trim().replace(/\D/g, '');
+    const clean = toEnDigits(val);
     if (clean.length >= 8 && (!authIgn || authIgn.startsWith('OP_') || authIgn.startsWith('BD_') || authIgn.startsWith('RIVAL_'))) {
       try {
         const profile = await checkFreeFireUID(clean);
@@ -2101,8 +2092,10 @@ export default function MobileAppViewPage(props: any) {
                                 return (
                                   <div
                                     key={cat.slug}
+                                    role="button"
+                                    tabIndex={0}
                                     onClick={() => setSelectedCategory(cat.slug)}
-                                    className="group cursor-pointer rounded-xl overflow-hidden relative border border-white/10 shadow hover:border-red-500 transition-all h-28 flex flex-col justify-end p-2 bg-slate-800"
+                                    className="group cursor-pointer rounded-xl overflow-hidden relative border border-white/10 shadow hover:border-red-500 active:scale-[0.97] transition-transform duration-75 h-28 flex flex-col justify-end p-2 bg-slate-800 touch-manipulation"
                                   >
                                     <img
                                       src={cat.bannerImage}
@@ -3448,7 +3441,7 @@ export default function MobileAppViewPage(props: any) {
                     type="text"
                     inputMode="numeric"
                     value={editUidInput}
-                    onChange={(e) => setEditUidInput(e.target.value.replace(/\D/g, ''))}
+                    onChange={(e) => setEditUidInput(toEnDigits(e.target.value))}
                     className="w-full pl-3 pr-8 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:outline-none focus:border-indigo-600 font-mono font-bold"
                     placeholder="e.g. 102910574942"
                   />
@@ -3457,14 +3450,11 @@ export default function MobileAppViewPage(props: any) {
                     title="ক্লিপবোর্ড থেকে UID পেস্ট করুন"
                     onClick={async () => {
                       try {
-                        let text = '';
-                        if (typeof navigator !== 'undefined' && navigator.clipboard?.readText) {
-                          try { text = await navigator.clipboard.readText(); } catch {}
-                        }
+                        let text = await readClipboardText();
                         if (!text && typeof window !== 'undefined') {
                           text = window.prompt('কপি করা Free Fire UID এখানে পেস্ট করুন:') || '';
                         }
-                        const digits = (text || '').replace(/\D/g, '');
+                        const digits = toEnDigits(text);
                         if (digits) setEditUidInput(digits);
                       } catch {}
                     }}
@@ -3629,7 +3619,7 @@ export default function MobileAppViewPage(props: any) {
                 <Sparkles className="w-8 h-8 text-amber-400 animate-pulse" />
               </div>
               <span className="absolute -top-2 -right-2 px-2 py-0.5 rounded-full bg-red-600 text-[10px] font-black tracking-wider text-white border-2 border-[#11111a] shadow-md animate-bounce">
-                NEW 20 MB
+                NEW 30 MB
               </span>
             </div>
 
@@ -3637,20 +3627,20 @@ export default function MobileAppViewPage(props: any) {
             <div className="space-y-1">
               <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-red-500/20 border border-red-500/40 text-red-400 text-[10px] font-black uppercase tracking-wider mb-1">
                 <ShieldAlert className="w-3 h-3 text-red-400" />
-                নতুন আপডেট আবশ্যক (Mandatory Update)
+                অফিসিয়াল Android অ্যাপ
               </div>
               <h3 className="text-xl font-black tracking-wide text-white">
-                অ্যাপ আপডেট করুন! 🚀
+                FF RIVALS অ্যাপ ডাউনলোড করুন! 🚀
               </h3>
               <p className="text-xs text-gray-300 leading-relaxed pt-1">
-                <span className="text-amber-400 font-bold">FF RIVALS TOUR BD</span> অ্যাপে প্রবেশ করতে হলে অবশ্যই সর্বশেষ <span className="text-red-400 font-bold">২০ MB (v3.5.0)</span> আপডেট সম্পন্ন করতে হবে। আপডেট না করলে অ্যাপে প্রবেশ করা যাবে না।
+                সুপারফাস্ট টুর্নামেন্ট অভিজ্ঞতা ও নোটিফিকেশন পেতে আমাদের <span className="text-amber-400 font-bold">৩০ MB</span> অফিশিয়াল অ্যাপটি ফোনে ইনস্টল করুন।
               </p>
             </div>
 
             {/* Specs Badges */}
             <div className="flex items-center justify-center gap-2 text-[11px] font-bold">
               <span className="px-3 py-1 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                📦 সাইজ: ২০ এমবি (20 MB)
+                📦 সাইজ: ৩০ এমবি (30 MB)
               </span>
               <span className="px-3 py-1 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
                 ⚡ ভার্সন: v3.5.0 Latest
@@ -3751,7 +3741,7 @@ export default function MobileAppViewPage(props: any) {
                 >
                   <Download className={`w-5 h-5 ${updateDownloading ? 'animate-bounce' : ''}`} />
                   <span>
-                    {updateDownloading ? 'ডাউনলোড হচ্ছে (২০ MB)...' : '📥 এখনই আপডেট করুন (২০ MB)'}
+                    {updateDownloading ? 'ডাউনলোড হচ্ছে (৩০ MB)...' : '📥 অ্যাপ ডাউনলোড করুন (৩০ MB)'}
                   </span>
                 </button>
               ) : (
@@ -3778,7 +3768,7 @@ export default function MobileAppViewPage(props: any) {
                     className="w-full py-2 rounded-xl text-gray-400 hover:text-white text-[11px] font-semibold flex items-center justify-center gap-1 transition-colors"
                   >
                     <RefreshCw className="w-3 h-3" />
-                    <span>পুনরায় ডাউনলোড করতে ক্লিক করুন (20 MB)</span>
+                    <span>পুনরায় ডাউনলোড করতে ক্লিক করুন (30 MB)</span>
                   </button>
                 </div>
               )}
@@ -3789,7 +3779,7 @@ export default function MobileAppViewPage(props: any) {
                 download="ffrivals.apk"
                 className="block text-[11px] text-amber-400 hover:text-amber-300 font-bold underline pt-1"
               >
-                📥 সরাসরি APK ডাউনলোড করুন (Direct Link - 20 MB)
+                📥 সরাসরি APK ডাউনলোড করুন (Direct Link - 30 MB)
               </a>
 
               {/* Skip / Continue button so player is never locked out */}

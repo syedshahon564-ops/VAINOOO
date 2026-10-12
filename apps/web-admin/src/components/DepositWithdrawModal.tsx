@@ -96,18 +96,28 @@ export default function DepositWithdrawModal({
   };
 
   const handlePastePhone = async () => {
-    const text = await readClipboardText();
-    if (text) {
-      const clean = text.replace(/[^0-9+]/g, '');
-      if (clean) setPhone(clean);
-    }
+    try {
+      let text = await readClipboardText();
+      if (!text && typeof window !== 'undefined') {
+        text = window.prompt('প্রেরক মোবাইল নম্বর পেস্ট করুন:') || '';
+      }
+      if (text) {
+        const clean = text.replace(/[^0-9+]/g, '');
+        if (clean) setPhone(clean);
+      }
+    } catch {}
   };
 
   const handlePasteTrx = async () => {
-    const text = await readClipboardText();
-    if (text) {
-      setTrxId(text.trim().toUpperCase());
-    }
+    try {
+      let text = await readClipboardText();
+      if (!text && typeof window !== 'undefined') {
+        text = window.prompt('TrxID / ট্রানজেকশন আইডি পেস্ট করুন:') || '';
+      }
+      if (text) {
+        setTrxId(text.trim().toUpperCase());
+      }
+    } catch {}
   };
 
   const handleDepositSubmit = async (e: React.FormEvent) => {

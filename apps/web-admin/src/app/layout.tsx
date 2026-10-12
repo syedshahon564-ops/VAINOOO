@@ -13,6 +13,8 @@ export const viewport: Viewport = {
   themeColor: '#dc2626',
   width: 'device-width',
   initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export const metadata: Metadata = {
@@ -34,9 +36,6 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <meta httpEquiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-        <meta httpEquiv="Pragma" content="no-cache" />
-        <meta httpEquiv="Expires" content="0" />
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -59,15 +58,7 @@ export default function RootLayout({
                         }
                       }
                     });
-                  }
-
-                  // Force instant reload if running on older build version
-                  if (storedVer !== CURRENT_VERSION) {
                     localStorage.setItem('ff_app_build_version', CURRENT_VERSION);
-                    if (!sessionStorage.getItem('ff_auto_updated_v4')) {
-                      sessionStorage.setItem('ff_auto_updated_v4', 'true');
-                      window.location.reload();
-                    }
                   }
                 } catch(e) {}
               })();

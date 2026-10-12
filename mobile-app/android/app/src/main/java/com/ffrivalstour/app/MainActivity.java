@@ -119,11 +119,16 @@ public class MainActivity extends BridgeActivity {
                     public void run() {
                         try {
                             ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
-                            if (clipboard != null && clipboard.hasPrimaryClip() && clipboard.getPrimaryClip().getItemCount() > 0) {
-                                ClipData.Item item = clipboard.getPrimaryClip().getItemAt(0);
-                                CharSequence text = item.coerceToText(MainActivity.this);
-                                if (text != null) {
-                                    clipText.set(text.toString());
+                            if (clipboard != null && clipboard.hasPrimaryClip()) {
+                                ClipData clipData = clipboard.getPrimaryClip();
+                                if (clipData != null && clipData.getItemCount() > 0) {
+                                    ClipData.Item item = clipData.getItemAt(0);
+                                    if (item != null) {
+                                        CharSequence text = item.coerceToText(MainActivity.this);
+                                        if (text != null && text.length() > 0) {
+                                            clipText.set(text.toString());
+                                        }
+                                    }
                                 }
                             }
                         } catch (Exception e) {
@@ -133,7 +138,7 @@ public class MainActivity extends BridgeActivity {
                         }
                     }
                 });
-                latch.await(600, TimeUnit.MILLISECONDS);
+                latch.await(1000, TimeUnit.MILLISECONDS);
                 return clipText.get();
             } catch (Exception e) {
                 e.printStackTrace();
@@ -226,6 +231,11 @@ public class MainActivity extends BridgeActivity {
             settings.setDatabaseEnabled(true);
             settings.setCacheMode(WebSettings.LOAD_DEFAULT);
             settings.setJavaScriptEnabled(true);
+
+            // Enable hardware acceleration for buttery-smooth 60fps rendering & instant touch
+            webView.setLayerType(android.view.View.LAYER_TYPE_HARDWARE, null);
+            settings.setRenderPriority(WebSettings.RenderPriority.HIGH);
+            settings.setEnableSmoothTransition(true);
 
             // Enable focus, long-click and paste context menu for Ridmik, Gboard and all keyboards
             webView.setFocusable(true);

@@ -295,7 +295,8 @@ export default function HomePage() {
                 <Link
                   key={cat.slug}
                   href={`/category/${cat.slug}`}
-                  className="category-card-red p-5 flex items-center justify-between group cursor-pointer"
+                  prefetch={true}
+                  className="category-card-red p-5 flex items-center justify-between group cursor-pointer active:scale-[0.98] transition-transform duration-100"
                 >
                   <div className="flex items-center gap-4 z-10">
                     <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-white/30 bg-black/40 shadow-xl flex-shrink-0">
@@ -348,7 +349,8 @@ export default function HomePage() {
                 <Link
                   key={cat.slug}
                   href={`/category/${cat.slug}`}
-                  className="category-card-red p-5 flex items-center justify-between group cursor-pointer"
+                  prefetch={true}
+                  className="category-card-red p-5 flex items-center justify-between group cursor-pointer active:scale-[0.98] transition-transform duration-100"
                 >
                   <div className="flex items-center gap-4 z-10">
                     <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-white/30 bg-black/40 shadow-xl flex-shrink-0">
@@ -399,7 +401,8 @@ export default function HomePage() {
                 <Link
                   key={cat.slug}
                   href={`/category/${cat.slug}`}
-                  className="category-card-red p-5 flex items-center justify-between group cursor-pointer"
+                  prefetch={true}
+                  className="category-card-red p-5 flex items-center justify-between group cursor-pointer active:scale-[0.98] transition-transform duration-100"
                 >
                   <div className="flex items-center gap-4 z-10">
                     <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-white/30 bg-black/40 shadow-xl flex-shrink-0">

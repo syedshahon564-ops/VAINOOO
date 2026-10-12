@@ -112,7 +112,7 @@ export default function AppDownloadModal({ isOpen, onClose }: AppDownloadModalPr
               onClick={handleDownloadClick}
               className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 transition-all cursor-pointer"
             >
-              <Download className="w-4 h-4" /> {t('APK ফাইল ডাউনলোড করুন (4.2 MB)', 'Download APK File (4.2 MB)')}
+              <Download className="w-4 h-4" /> {t('APK ফাইল ডাউনলোড করুন (৩০ MB)', 'Download APK File (30 MB)')}
             </button>
           </div>
 

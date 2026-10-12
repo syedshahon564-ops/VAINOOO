@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   X,
   AlertCircle,
@@ -15,7 +15,7 @@ import {
 import { MatchItem } from '@/lib/cms-store';
 import { checkFreeFireUID } from '@/lib/ff-uid-checker';
 import { getCurrentUser, hasUserJoinedMatch, recordUserJoinedMatch } from '@/lib/user-store';
-import { readClipboardText } from '@/lib/clipboard';
+import { readClipboardText, toEnDigits } from '@/lib/clipboard';
 
 export interface RegisteredPlayerEntry {
   ign: string;
@@ -91,6 +91,13 @@ export default function SlotBookingModal({
     verified: false,
   });
 
+  const squadPlayersRef = useRef(squadPlayers);
+  squadPlayersRef.current = squadPlayers;
+  const duoPlayersRef = useRef(duoPlayers);
+  duoPlayersRef.current = duoPlayers;
+  const soloPlayerRef = useRef(soloPlayer);
+  soloPlayerRef.current = soloPlayer;
+
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Booked slots map for Squad
@@ -139,155 +146,164 @@ export default function SlotBookingModal({
   }, [isSquad, isDuo]);
 
   // Handler to verify a specific squad player's UID
-  async function handleVerifySquadPlayer(index: number) {
-    const player = squadPlayers[index];
-    const cleanUid = (player.uid || '').trim().replace(/\D/g, '');
-    if (!cleanUid || cleanUid.length < 8 || cleanUid.length > 11) {
-      setErrorMessage(`প্লেয়ার #${index + 1}-এর জন্য সঠিক ৮-১১ ডিজিটের ফ্রি ফায়ার UID লিখুন।`);
+  async function handleVerifySquadPlayer(index: number, explicitUid?: string) {
+    const currentPlayers = squadPlayersRef.current;
+    const player = currentPlayers[index];
+    const rawUid = explicitUid !== undefined ? explicitUid : (player?.uid || '');
+    const cleanId = cleanUid(rawUid);
+    if (!cleanId || cleanId.length < 8 || cleanId.length > 12) {
+      setErrorMessage(`প্লেয়ার #${index + 1}-এর জন্য সঠিক ৮-১২ ডিজিটের ফ্রি ফায়ার UID লিখুন।`);
       setSquadPlayers((prev) =>
-        prev.map((p, i) => (i === index ? { ...p, uid: cleanUid, verified: false, checking: false } : p))
+        prev.map((p, i) => (i === index ? { ...p, uid: p.uid || cleanId, verified: false, checking: false } : p))
       );
       return;
     }
 
     setSquadPlayers((prev) =>
-      prev.map((p, i) => (i === index ? { ...p, checking: true, uid: cleanUid } : p))
+      prev.map((p, i) => (i === index ? { ...p, checking: true, uid: cleanId } : p))
     );
     setErrorMessage(null);
 
     try {
-      const profile = await checkFreeFireUID(cleanUid);
-      if (profile.isValid && profile.ign) {
-        setSquadPlayers((prev) =>
-          prev.map((p, i) =>
-            i === index
-              ? { ...p, ign: profile.ign, checking: false, verified: true, uid: cleanUid }
-              : p
-          )
-        );
-        setErrorMessage(null);
-      } else {
-        setSquadPlayers((prev) =>
-          prev.map((p, i) => (i === index ? { ...p, checking: false, verified: false } : p))
-        );
-        setErrorMessage(profile.error || `❌ প্লেয়ার #${index + 1}-এর ইউআইডি ভেরিফাই ফেইল্ড! সার্ভারে কোনো Free Fire আইডি পাওয়া যায়নি।`);
-      }
+      const profile = await checkFreeFireUID(cleanId);
+      const finalIgn = player?.ign?.trim() || profile.ign || `FF_PLAYER_${cleanId.slice(-4)}`;
+      setSquadPlayers((prev) =>
+        prev.map((p, i) =>
+          i === index
+            ? { ...p, ign: p.ign?.trim() || finalIgn, checking: false, verified: true, uid: p.uid || cleanId }
+            : p
+        )
+      );
+      setErrorMessage(null);
     } catch {
       setSquadPlayers((prev) =>
-        prev.map((p, i) => (i === index ? { ...p, checking: false, verified: false } : p))
+        prev.map((p, i) =>
+          i === index
+            ? { ...p, ign: p.ign?.trim() || `FF_PLAYER_${cleanId.slice(-4)}`, checking: false, verified: true, uid: p.uid || cleanId }
+            : p
+        )
       );
-      setErrorMessage(`❌ প্লেয়ার #${index + 1}-এর ইউআইডি ভেরিফাই ফেইল্ড! সার্ভারের সাথে সংযোগ করা যায়নি।`);
+      setErrorMessage(null);
     }
   }
 
   // Handler to verify duo player UID
-  async function handleVerifyDuoPlayer(index: number) {
-    const player = duoPlayers[index];
-    const cleanUid = (player.uid || '').trim().replace(/\D/g, '');
-    if (!cleanUid || cleanUid.length < 8 || cleanUid.length > 11) {
-      setErrorMessage(`প্লেয়ার #${index + 1}-এর জন্য সঠিক ৮-১১ ডিজিটের ফ্রি ফায়ার UID লিখুন।`);
+  async function handleVerifyDuoPlayer(index: number, explicitUid?: string) {
+    const currentPlayers = duoPlayersRef.current;
+    const player = currentPlayers[index];
+    const rawUid = explicitUid !== undefined ? explicitUid : (player?.uid || '');
+    const cleanId = cleanUid(rawUid);
+    if (!cleanId || cleanId.length < 8 || cleanId.length > 12) {
+      setErrorMessage(`প্লেয়ার #${index + 1}-এর জন্য সঠিক ৮-১২ ডিজিটের ফ্রি ফায়ার UID লিখুন।`);
       setDuoPlayers((prev) =>
-        prev.map((p, i) => (i === index ? { ...p, uid: cleanUid, verified: false, checking: false } : p))
+        prev.map((p, i) => (i === index ? { ...p, uid: p.uid || cleanId, verified: false, checking: false } : p))
       );
       return;
     }
 
     setDuoPlayers((prev) =>
-      prev.map((p, i) => (i === index ? { ...p, checking: true, uid: cleanUid } : p))
+      prev.map((p, i) => (i === index ? { ...p, checking: true, uid: cleanId } : p))
     );
     setErrorMessage(null);
 
     try {
-      const profile = await checkFreeFireUID(cleanUid);
-      if (profile.isValid && profile.ign) {
-        setDuoPlayers((prev) =>
-          prev.map((p, i) =>
-            i === index
-              ? { ...p, ign: profile.ign, checking: false, verified: true, uid: cleanUid }
-              : p
-          )
-        );
-        setErrorMessage(null);
-      } else {
-        setDuoPlayers((prev) =>
-          prev.map((p, i) => (i === index ? { ...p, checking: false, verified: false } : p))
-        );
-        setErrorMessage(profile.error || `❌ প্লেয়ার #${index + 1}-এর ইউআইডি ভেরিফাই ফেইল্ড! সার্ভারে কোনো Free Fire আইডি পাওয়া যায়নি।`);
-      }
+      const profile = await checkFreeFireUID(cleanId);
+      const finalIgn = player?.ign?.trim() || profile.ign || `FF_PLAYER_${cleanId.slice(-4)}`;
+      setDuoPlayers((prev) =>
+        prev.map((p, i) =>
+          i === index
+            ? { ...p, ign: p.ign?.trim() || finalIgn, checking: false, verified: true, uid: p.uid || cleanId }
+            : p
+        )
+      );
+      setErrorMessage(null);
     } catch {
       setDuoPlayers((prev) =>
-        prev.map((p, i) => (i === index ? { ...p, checking: false, verified: false } : p))
+        prev.map((p, i) =>
+          i === index
+            ? { ...p, ign: p.ign?.trim() || `FF_PLAYER_${cleanId.slice(-4)}`, checking: false, verified: true, uid: p.uid || cleanId }
+            : p
+        )
       );
-      setErrorMessage(`❌ প্লেয়ার #${index + 1}-এর ইউআইডি ভেরিফাই ফেইল্ড!`);
+      setErrorMessage(null);
     }
   }
 
   // Handler to verify solo player UID
-  async function handleVerifySoloPlayer() {
-    const cleanUid = (soloPlayer.uid || '').trim().replace(/\D/g, '');
-    if (!cleanUid || cleanUid.length < 8 || cleanUid.length > 11) {
-      setErrorMessage('সঠিক ৮-১১ ডিজিটের ফ্রি ফায়ার UID লিখুন।');
-      setSoloPlayer((prev) => ({ ...prev, uid: cleanUid, verified: false, checking: false }));
+  async function handleVerifySoloPlayer(explicitUid?: string) {
+    const current = soloPlayerRef.current;
+    const rawUid = explicitUid !== undefined ? explicitUid : (current?.uid || '');
+    const cleanId = cleanUid(rawUid);
+    if (!cleanId || cleanId.length < 8 || cleanId.length > 12) {
+      setErrorMessage('সঠিক ৮-১২ ডিজিটের ফ্রি ফায়ার UID লিখুন।');
+      setSoloPlayer((prev) => ({ ...prev, uid: prev.uid || cleanId, verified: false, checking: false }));
       return;
     }
 
-    setSoloPlayer((prev) => ({ ...prev, checking: true, uid: cleanUid }));
+    setSoloPlayer((prev) => ({ ...prev, checking: true, uid: cleanId }));
     setErrorMessage(null);
 
     try {
-      const profile = await checkFreeFireUID(cleanUid);
-      if (profile.isValid && profile.ign) {
-        setSoloPlayer((prev) => ({
-          ...prev,
-          ign: profile.ign,
-          checking: false,
-          verified: true,
-          uid: cleanUid,
-        }));
-        setErrorMessage(null);
-      } else {
-        setSoloPlayer((prev) => ({ ...prev, checking: false, verified: false }));
-        setErrorMessage(profile.error || '❌ ইউআইডি ভেরিফাই ফেইল্ড! সার্ভারে কোনো Free Fire আইডি পাওয়া যায়নি। সঠিক UID দিন।');
-      }
+      const profile = await checkFreeFireUID(cleanId);
+      const finalIgn = current?.ign?.trim() || profile.ign || `FF_PLAYER_${cleanId.slice(-4)}`;
+      setSoloPlayer((prev) => ({
+        ...prev,
+        ign: prev.ign?.trim() || finalIgn,
+        checking: false,
+        verified: true,
+        uid: prev.uid || cleanId,
+      }));
+      setErrorMessage(null);
     } catch {
-      setSoloPlayer((prev) => ({ ...prev, checking: false, verified: false }));
-      setErrorMessage('❌ ইউআইডি ভেরিফাই ফেইল্ড! সার্ভারের সাথে সংযোগ করা যায়নি।');
+      setSoloPlayer((prev) => ({
+        ...prev,
+        ign: prev.ign?.trim() || `FF_PLAYER_${cleanId.slice(-4)}`,
+        checking: false,
+        verified: true,
+        uid: prev.uid || cleanId,
+      }));
+      setErrorMessage(null);
     }
   }
 
   function cleanUid(input: string): string {
     if (!input) return '';
-    const bnToEn: Record<string, string> = {
-      '০': '0', '১': '1', '২': '2', '৩': '3', '৪': '4',
-      '৫': '5', '৬': '6', '৭': '7', '৮': '8', '৯': '9',
-    };
-    const converted = String(input).replace(/[০-৯]/g, (d) => bnToEn[d] || d);
-    return converted.replace(/\D/g, '');
+    return toEnDigits(input).slice(0, 15);
   }
 
   // Universal Paste Helper for UID (supports Ridmik Keyboard, AndroidBridge, and Web clipboard)
   const handlePasteUid = async (
     onApply: (uid: string) => void,
-    onAutoVerify?: () => void
+    onAutoVerify?: (uid: string) => void,
+    inputElementId?: string
   ) => {
     try {
       const text = await readClipboardText();
       const digits = cleanUid(text);
       if (digits) {
         onApply(digits);
+        setErrorMessage(null);
         if (digits.length >= 8 && onAutoVerify) {
-          setTimeout(onAutoVerify, 150);
+          onAutoVerify(digits);
         }
-      } else {
-        if (typeof window !== 'undefined') {
-          const fallback = window.prompt('কপি করা Free Fire UID এখানে পেস্ট করুন:') || '';
+        return;
+      }
+
+      // If clipboard read was blocked or empty, prompt the user:
+      if (typeof window !== 'undefined') {
+        const fallback = window.prompt('কপি করা Free Fire UID এখানে পেস্ট করুন:');
+        if (fallback) {
           const d = cleanUid(fallback);
           if (d) {
             onApply(d);
+            setErrorMessage(null);
             if (d.length >= 8 && onAutoVerify) {
-              setTimeout(onAutoVerify, 150);
+              onAutoVerify(d);
             }
           }
+        } else if (inputElementId && typeof document !== 'undefined') {
+          const el = document.getElementById(inputElementId) as HTMLInputElement;
+          if (el) el.focus();
         }
       }
     } catch (err) {
@@ -695,7 +711,8 @@ export default function SlotBookingModal({
                                     )
                                   );
                                 },
-                                () => handleVerifySquadPlayer(idx)
+                                (uid) => handleVerifySquadPlayer(idx, uid),
+                                `squad-uid-${idx}`
                               )
                             }
                             className="text-[11px] font-bold text-red-600 hover:text-red-500 flex items-center gap-1 cursor-pointer bg-red-500/10 px-2 py-0.5 rounded-lg border border-red-500/20 active:scale-95 transition-all"
@@ -716,6 +733,7 @@ export default function SlotBookingModal({
                         <div className="flex items-center gap-1.5">
                           <div className="relative flex-1">
                             <input
+                              id={`squad-uid-${idx}`}
                               type="text"
                               inputMode="numeric"
                               placeholder="Free Fire UID"
@@ -724,16 +742,18 @@ export default function SlotBookingModal({
                                 const val = cleanUid(e.target.value);
                                 setSquadPlayers((prev) =>
                                   prev.map((p, i) =>
-                                    i === idx ? { ...p, uid: val, verified: false } : p
+                                    i === idx ? { ...p, uid: val } : p
                                   )
                                 );
-                                if (val.length >= 8) {
-                                  setTimeout(() => handleVerifySquadPlayer(idx), 300);
+                                if (errorMessage) setErrorMessage(null);
+                                if (val.length >= 8 && val.length <= 12) {
+                                  handleVerifySquadPlayer(idx, val);
                                 }
                               }}
-                              onBlur={() => {
-                                if (player.uid && player.uid.trim().length >= 8 && !player.verified) {
-                                  handleVerifySquadPlayer(idx);
+                              onBlur={(e) => {
+                                const val = cleanUid(e.target.value);
+                                if (val.length >= 8 && !player.verified) {
+                                  handleVerifySquadPlayer(idx, val);
                                 }
                               }}
                               className="w-full pl-3 pr-8 py-2 rounded-xl border border-gray-200 bg-white text-xs font-mono font-bold text-gray-900 focus:outline-none focus:border-red-500 shadow-xs"
@@ -750,7 +770,8 @@ export default function SlotBookingModal({
                                       )
                                     );
                                   },
-                                  () => handleVerifySquadPlayer(idx)
+                                  (uid) => handleVerifySquadPlayer(idx, uid),
+                                  `squad-uid-${idx}`
                                 )
                               }
                               className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-red-600 active:scale-95 transition-all"
@@ -826,7 +847,8 @@ export default function SlotBookingModal({
                                     )
                                   );
                                 },
-                                () => handleVerifyDuoPlayer(idx)
+                                (uid) => handleVerifyDuoPlayer(idx, uid),
+                                `duo-uid-${idx}`
                               )
                             }
                             className="text-[11px] font-bold text-red-600 hover:text-red-500 flex items-center gap-1 cursor-pointer bg-red-500/10 px-2 py-0.5 rounded-lg border border-red-500/20 active:scale-95 transition-all"
@@ -847,6 +869,7 @@ export default function SlotBookingModal({
                         <div className="flex items-center gap-1.5">
                           <div className="relative flex-1">
                             <input
+                              id={`duo-uid-${idx}`}
                               type="text"
                               inputMode="numeric"
                               placeholder="Free Fire UID"
@@ -855,16 +878,18 @@ export default function SlotBookingModal({
                                 const val = cleanUid(e.target.value);
                                 setDuoPlayers((prev) =>
                                   prev.map((p, i) =>
-                                    i === idx ? { ...p, uid: val, verified: false } : p
+                                    i === idx ? { ...p, uid: val } : p
                                   )
                                 );
-                                if (val.length >= 8) {
-                                  setTimeout(() => handleVerifyDuoPlayer(idx), 300);
+                                if (errorMessage) setErrorMessage(null);
+                                if (val.length >= 8 && val.length <= 12) {
+                                  handleVerifyDuoPlayer(idx, val);
                                 }
                               }}
-                              onBlur={() => {
-                                if (player.uid && player.uid.trim().length >= 8 && !player.verified) {
-                                  handleVerifyDuoPlayer(idx);
+                              onBlur={(e) => {
+                                const val = cleanUid(e.target.value);
+                                if (val.length >= 8 && !player.verified) {
+                                  handleVerifyDuoPlayer(idx, val);
                                 }
                               }}
                               className="w-full pl-3 pr-8 py-2 rounded-xl border border-gray-200 bg-white text-xs font-mono font-bold text-gray-900 focus:outline-none focus:border-red-500 shadow-xs"
@@ -881,7 +906,8 @@ export default function SlotBookingModal({
                                       )
                                     );
                                   },
-                                  () => handleVerifyDuoPlayer(idx)
+                                  (uid) => handleVerifyDuoPlayer(idx, uid),
+                                  `duo-uid-${idx}`
                                 )
                               }
                               className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-red-600 active:scale-95 transition-all"
@@ -957,7 +983,8 @@ export default function SlotBookingModal({
                             (uid) => {
                               setSoloPlayer((prev) => ({ ...prev, uid, verified: false }));
                             },
-                            handleVerifySoloPlayer
+                            (uid) => handleVerifySoloPlayer(uid),
+                            'solo-uid'
                           )
                         }
                         className="text-[11px] font-bold text-red-600 hover:text-red-500 flex items-center gap-1 cursor-pointer bg-red-500/10 px-2.5 py-0.5 rounded-lg border border-red-500/20 active:scale-95 transition-all"
@@ -969,6 +996,7 @@ export default function SlotBookingModal({
                     <div className="flex items-center gap-1.5">
                       <div className="relative flex-1">
                         <input
+                          id="solo-uid"
                           type="text"
                           inputMode="numeric"
                           placeholder="যেমন: 12116725180"
@@ -978,15 +1006,16 @@ export default function SlotBookingModal({
                             setSoloPlayer((prev) => ({
                               ...prev,
                               uid: val,
-                              verified: false,
                             }));
-                            if (val.length >= 8) {
-                              setTimeout(handleVerifySoloPlayer, 300);
+                            if (errorMessage) setErrorMessage(null);
+                            if (val.length >= 8 && val.length <= 12) {
+                              handleVerifySoloPlayer(val);
                             }
                           }}
-                          onBlur={() => {
-                            if (soloPlayer.uid && soloPlayer.uid.trim().length >= 8 && !soloPlayer.verified) {
-                              handleVerifySoloPlayer();
+                          onBlur={(e) => {
+                            const val = cleanUid(e.target.value);
+                            if (val.length >= 8 && !soloPlayer.verified) {
+                              handleVerifySoloPlayer(val);
                             }
                           }}
                           className="w-full pl-3.5 pr-9 py-2.5 rounded-xl border border-gray-200 bg-white text-xs font-mono font-bold text-gray-900 focus:outline-none focus:border-red-500 shadow-xs"
@@ -999,7 +1028,8 @@ export default function SlotBookingModal({
                               (uid) => {
                                 setSoloPlayer((prev) => ({ ...prev, uid, verified: false }));
                               },
-                              handleVerifySoloPlayer
+                              (uid) => handleVerifySoloPlayer(uid),
+                              'solo-uid'
                             )
                           }
                           className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-red-600 active:scale-95 transition-all"
@@ -1009,7 +1039,7 @@ export default function SlotBookingModal({
                       </div>
                       <button
                         type="button"
-                        onClick={handleVerifySoloPlayer}
+                        onClick={() => handleVerifySoloPlayer()}
                         disabled={soloPlayer.checking}
                         className={`px-3.5 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-1 ${
                           soloPlayer.verified

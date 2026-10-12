@@ -3,6 +3,23 @@
  * Works across Android WebView (via AndroidBridge), modern mobile browsers (Ridmik/Gboard), and desktop browsers.
  */
 
+/**
+ * Convert Bengali, Arabic-Indic, and full-width numbers to standard ASCII 0-9 digits
+ * and strip any non-digit formatting.
+ */
+export function toEnDigits(input: string | number | null | undefined): string {
+  if (input === null || input === undefined) return '';
+  const bnToEn: Record<string, string> = {
+    '০': '0', '১': '1', '২': '2', '৩': '3', '৪': '4',
+    '৫': '5', '৬': '6', '৭': '7', '৮': '8', '৯': '9',
+    '٠': '0', '١': '1', '٢': '2', '٣': '3', '٤': '4',
+    '٥': '5', '٦': '6', '٧': '7', '٨': '8', '٩': '9',
+  };
+  return String(input)
+    .replace(/[০-৯٠-٩]/g, (d) => bnToEn[d] || d)
+    .replace(/\D/g, '');
+}
+
 export async function readClipboardText(): Promise<string> {
   // 1. If running inside our Android APK, query AndroidBridge (bypasses browser prompt & works 100%)
   if (typeof window !== 'undefined' && (window as any).AndroidBridge?.getClipboardText) {
