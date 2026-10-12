@@ -1,0 +1,59 @@
+{
+  "ownerAuth": {
+    "ownerId": "admin",
+    "ownerPass": "owner1234",
+    "updatedAt": "2026-10-12T14:25:00.000Z"
+  },
+  "settings": {
+    "autoCreditEnabled": true,
+    "notifySound": true,
+    "secretApiKey": "ff_rivals_secure_sms_key_2026",
+    "webhookUrl": "https://web-production-2c40b.up.railway.app/api/webhook/payment"
+  },
+  "connectedDevices": [
+    {
+      "deviceId": "dev_samsung_a54_01",
+      "deviceName": "Samsung Galaxy (bKash & Nagad SIM)",
+      "phone": "017XXXXXXXX",
+      "status": "ONLINE",
+      "battery": 94,
+      "lastPing": "2026-10-12T14:25:00.000Z"
+    }
+  ],
+  "incomingPayments": [
+    {
+      "id": "pay_demo_01",
+      "trxId": "BKH9283746",
+      "provider": "BKASH",
+      "sender": "01712345678",
+      "amount": 500,
+      "status": "CLAIMED",
+      "claimedBy": "BDX_STRIKER",
+      "claimedAt": "2026-10-12T13:40:00.000Z",
+      "rawMessage": "You have received Tk 500.00 from 01712345678. TrxID BKH9283746",
+      "createdAt": "2026-10-12T13:38:00.000Z"
+    },
+    {
+      "id": "pay_demo_02",
+      "trxId": "NG88291034",
+      "provider": "NAGAD",
+      "sender": "01999887766",
+      "amount": 250,
+      "status": "UNCLAIMED",
+      "claimedBy": null,
+      "claimedAt": null,
+      "rawMessage": "Money received. Amount: Tk 250.00. Sender: 01999887766. TxnID: NG88291034",
+      "createdAt": "2026-10-12T14:15:00.000Z"
+    }
+  ],
+  "depositLogs": [
+    {
+      "id": "log_demo_01",
+      "userId": "BDX_STRIKER",
+      "trxId": "BKH9283746",
+      "amount": 500,
+      "status": "SUCCESS",
+      "processedAt": "2026-10-12T13:40:00.000Z"
+    }
+  ]
+}
