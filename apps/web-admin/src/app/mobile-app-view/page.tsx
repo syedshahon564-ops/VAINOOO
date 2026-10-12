@@ -3447,18 +3447,7 @@ export default function MobileAppViewPage(props: any) {
                   <input
                     type="text"
                     inputMode="numeric"
-                    autoComplete="off"
-                    autoCorrect="off"
-                    spellCheck={false}
                     value={editUidInput}
-                    onPaste={(e) => {
-                      const text = e.clipboardData?.getData('text') || '';
-                      const digits = text.replace(/\D/g, '');
-                      if (digits) {
-                        e.preventDefault();
-                        setEditUidInput(digits);
-                      }
-                    }}
                     onChange={(e) => setEditUidInput(e.target.value.replace(/\D/g, ''))}
                     className="w-full pl-3 pr-8 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:outline-none focus:border-indigo-600 font-mono font-bold"
                     placeholder="e.g. 102910574942"

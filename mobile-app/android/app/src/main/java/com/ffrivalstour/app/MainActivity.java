@@ -147,9 +147,12 @@ public class MainActivity extends BridgeActivity {
                 @Override
                 public void run() {
                     try {
+                        if (text == null || text.trim().isEmpty()) {
+                            return;
+                        }
                         ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
                         if (clipboard != null) {
-                            ClipData clip = ClipData.newPlainText("FF Rivals", text != null ? text : "");
+                            ClipData clip = ClipData.newPlainText("FF Rivals", text);
                             clipboard.setPrimaryClip(clip);
                         }
                     } catch (Exception e) {

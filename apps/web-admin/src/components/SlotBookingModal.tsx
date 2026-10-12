@@ -718,26 +718,8 @@ export default function SlotBookingModal({
                             <input
                               type="text"
                               inputMode="numeric"
-                              autoComplete="off"
-                              autoCorrect="off"
-                              spellCheck={false}
                               placeholder="Free Fire UID"
                               value={player.uid}
-                              onPaste={(e) => {
-                                const text = e.clipboardData?.getData('text') || '';
-                                const digits = cleanUid(text);
-                                if (digits) {
-                                  e.preventDefault();
-                                  setSquadPlayers((prev) =>
-                                    prev.map((p, i) =>
-                                      i === idx ? { ...p, uid: digits, verified: false } : p
-                                    )
-                                  );
-                                  if (digits.length >= 8) {
-                                    setTimeout(() => handleVerifySquadPlayer(idx), 200);
-                                  }
-                                }
-                              }}
                               onChange={(e) => {
                                 const val = cleanUid(e.target.value);
                                 setSquadPlayers((prev) =>
@@ -745,6 +727,9 @@ export default function SlotBookingModal({
                                     i === idx ? { ...p, uid: val, verified: false } : p
                                   )
                                 );
+                                if (val.length >= 8) {
+                                  setTimeout(() => handleVerifySquadPlayer(idx), 300);
+                                }
                               }}
                               onBlur={() => {
                                 if (player.uid && player.uid.trim().length >= 8 && !player.verified) {
@@ -864,26 +849,8 @@ export default function SlotBookingModal({
                             <input
                               type="text"
                               inputMode="numeric"
-                              autoComplete="off"
-                              autoCorrect="off"
-                              spellCheck={false}
                               placeholder="Free Fire UID"
                               value={player.uid}
-                              onPaste={(e) => {
-                                const text = e.clipboardData?.getData('text') || '';
-                                const digits = cleanUid(text);
-                                if (digits) {
-                                  e.preventDefault();
-                                  setDuoPlayers((prev) =>
-                                    prev.map((p, i) =>
-                                      i === idx ? { ...p, uid: digits, verified: false } : p
-                                    )
-                                  );
-                                  if (digits.length >= 8) {
-                                    setTimeout(() => handleVerifyDuoPlayer(idx), 200);
-                                  }
-                                }
-                              }}
                               onChange={(e) => {
                                 const val = cleanUid(e.target.value);
                                 setDuoPlayers((prev) =>
@@ -891,6 +858,9 @@ export default function SlotBookingModal({
                                     i === idx ? { ...p, uid: val, verified: false } : p
                                   )
                                 );
+                                if (val.length >= 8) {
+                                  setTimeout(() => handleVerifyDuoPlayer(idx), 300);
+                                }
                               }}
                               onBlur={() => {
                                 if (player.uid && player.uid.trim().length >= 8 && !player.verified) {
@@ -1001,26 +971,8 @@ export default function SlotBookingModal({
                         <input
                           type="text"
                           inputMode="numeric"
-                          autoComplete="off"
-                          autoCorrect="off"
-                          spellCheck={false}
                           placeholder="যেমন: 12116725180"
                           value={soloPlayer.uid}
-                          onPaste={(e) => {
-                            const text = e.clipboardData?.getData('text') || '';
-                            const digits = cleanUid(text);
-                            if (digits) {
-                              e.preventDefault();
-                              setSoloPlayer((prev) => ({
-                                ...prev,
-                                uid: digits,
-                                verified: false,
-                              }));
-                              if (digits.length >= 8) {
-                                setTimeout(handleVerifySoloPlayer, 200);
-                              }
-                            }
-                          }}
                           onChange={(e) => {
                             const val = cleanUid(e.target.value);
                             setSoloPlayer((prev) => ({
@@ -1028,6 +980,9 @@ export default function SlotBookingModal({
                               uid: val,
                               verified: false,
                             }));
+                            if (val.length >= 8) {
+                              setTimeout(handleVerifySoloPlayer, 300);
+                            }
                           }}
                           onBlur={() => {
                             if (soloPlayer.uid && soloPlayer.uid.trim().length >= 8 && !soloPlayer.verified) {
