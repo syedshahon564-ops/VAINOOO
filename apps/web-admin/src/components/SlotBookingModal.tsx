@@ -347,6 +347,10 @@ export default function SlotBookingModal({
         // Clash Squad requires 4 players with UIDs
         for (let i = 0; i < 4; i++) {
           const p = squadPlayers[i];
+          if ((!p.uid || p.uid.length < 8) && /^\d{8,12}$/.test(p.ign?.trim() || '')) {
+            p.uid = p.ign.trim();
+            p.ign = '';
+          }
           const clean = cleanUid(p.uid);
           if (!clean || clean.length < 8) {
             setErrorMessage(`ক্লাশ স্কোয়াড ম্যাচে Player #${i + 1}-এর জন্য ৮-১২ ডিজিটের Free Fire UID লিখুন।`);
@@ -360,6 +364,10 @@ export default function SlotBookingModal({
         }
       } else {
         // Player 1 (Leader) is mandatory
+        if ((!squadPlayers[0].uid || squadPlayers[0].uid.length < 8) && /^\d{8,12}$/.test(squadPlayers[0].ign?.trim() || '')) {
+          squadPlayers[0].uid = squadPlayers[0].ign.trim();
+          squadPlayers[0].ign = '';
+        }
         const leaderClean = cleanUid(squadPlayers[0].uid);
         if (!leaderClean || leaderClean.length < 8) {
           setErrorMessage('Player 1 (Leader)-এর সঠিক ৮-১২ ডিজিটের Free Fire UID লিখুন।');
@@ -373,6 +381,10 @@ export default function SlotBookingModal({
 
         for (let i = 1; i < 4; i++) {
           const p = squadPlayers[i];
+          if ((!p.uid || p.uid.length < 8) && /^\d{8,12}$/.test(p.ign?.trim() || '')) {
+            p.uid = p.ign.trim();
+            p.ign = '';
+          }
           const c = cleanUid(p.uid);
           if (c && c.length >= 8) {
             p.uid = c;
@@ -421,6 +433,10 @@ export default function SlotBookingModal({
 
     // 2. DUO MODE (Leader required, Player 2 optional)
     if (isDuo) {
+      if ((!duoPlayers[0].uid || duoPlayers[0].uid.length < 8) && /^\d{8,12}$/.test(duoPlayers[0].ign?.trim() || '')) {
+        duoPlayers[0].uid = duoPlayers[0].ign.trim();
+        duoPlayers[0].ign = '';
+      }
       const leaderClean = cleanUid(duoPlayers[0].uid);
       if (!leaderClean || leaderClean.length < 8) {
         setErrorMessage('Player 1 (Leader)-এর সঠিক ৮-১২ ডিজিটের Free Fire UID লিখুন।');
@@ -432,6 +448,10 @@ export default function SlotBookingModal({
         duoPlayers[0].ign = cur?.ign?.trim() || `FF_PLAYER_${leaderClean.slice(-4)}`;
       }
 
+      if ((!duoPlayers[1].uid || duoPlayers[1].uid.length < 8) && /^\d{8,12}$/.test(duoPlayers[1].ign?.trim() || '')) {
+        duoPlayers[1].uid = duoPlayers[1].ign.trim();
+        duoPlayers[1].ign = '';
+      }
       const p2Clean = cleanUid(duoPlayers[1].uid);
       if (p2Clean && p2Clean.length >= 8) {
         duoPlayers[1].uid = p2Clean;
@@ -477,6 +497,10 @@ export default function SlotBookingModal({
     }
 
     // 3. SOLO MODE (No slot grid - direct registration for 1 player)
+    if ((!soloPlayer.uid || soloPlayer.uid.length < 8) && /^\d{8,12}$/.test(soloPlayer.ign?.trim() || '')) {
+      soloPlayer.uid = soloPlayer.ign.trim();
+      soloPlayer.ign = '';
+    }
     const soloClean = cleanUid(soloPlayer.uid);
     if (!soloClean || soloClean.length < 8) {
       setErrorMessage('আপনার সঠিক ৮-১২ ডিজিটের Free Fire UID লিখুন।');
@@ -738,6 +762,24 @@ export default function SlotBookingModal({
                             <Clipboard className="w-3 h-3" />
                             <span>পেস্ট করুন</span>
                           </button>
+                          <button
+                            type="button"
+                            onClick={() => handleVerifySquadPlayer(idx)}
+                            disabled={player.checking}
+                            className={`px-2 py-0.5 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1 ${
+                              player.verified
+                                ? 'bg-emerald-600 text-white shadow-xs'
+                                : 'bg-red-600 hover:bg-red-700 text-white shadow-xs'
+                            }`}
+                          >
+                            {player.checking ? (
+                              <Loader2 className="w-3 h-3 animate-spin text-white" />
+                            ) : player.verified ? (
+                              '✓ ভেরিফাইড'
+                            ) : (
+                              'ভেরিফাই'
+                            )}
+                          </button>
                           {player.verified && (
                             <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-700 border border-emerald-300 flex items-center gap-0.5">
                               <ShieldCheck className="w-3 h-3 text-emerald-600" /> Verified
@@ -747,60 +789,21 @@ export default function SlotBookingModal({
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {/* UID Input + Paste + Verify */}
-                        <div className="flex items-center gap-1.5">
-                          <div className="relative flex-1">
-                            <input
-                              id={`squad-uid-${idx}`}
-                              type="text"
-                              placeholder="Free Fire UID"
-                              value={player.uid}
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                setSquadPlayers((prev) =>
-                                  prev.map((p, i) => (i === idx ? { ...p, uid: val } : p))
-                                );
-                                if (errorMessage) setErrorMessage(null);
-                              }}
-                              className="w-full pl-3 pr-8 py-2 rounded-xl border border-gray-200 bg-white text-xs font-mono font-bold text-gray-900 focus:outline-none focus:border-red-500 shadow-xs"
-                            />
-                            <button
-                              type="button"
-                              title="ক্লিপবোর্ড থেকে UID পেস্ট করুন"
-                              onClick={async () => {
-                                try {
-                                  const text = await readClipboardText();
-                                  if (text) {
-                                    setSquadPlayers((prev) =>
-                                      prev.map((p, i) => (i === idx ? { ...p, uid: text.trim() } : p))
-                                    );
-                                    if (errorMessage) setErrorMessage(null);
-                                  }
-                                } catch {}
-                              }}
-                              className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-red-600 active:scale-95 transition-all"
-                            >
-                              <Clipboard className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => handleVerifySquadPlayer(idx)}
-                            disabled={player.checking}
-                            className={`px-3 py-2 rounded-xl text-[11px] font-black transition-all flex items-center gap-1 flex-shrink-0 ${
-                              player.verified
-                                ? 'bg-emerald-600 text-white shadow-xs'
-                                : 'bg-red-600 hover:bg-red-700 text-white shadow-xs'
-                            }`}
-                          >
-                            {player.checking ? (
-                              <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
-                            ) : player.verified ? (
-                              '✓ ভেরিফাইড'
-                            ) : (
-                              'ভেরিফাই'
-                            )}
-                          </button>
+                        {/* UID Input */}
+                        <div>
+                          <input
+                            type="text"
+                            placeholder="Free Fire UID"
+                            value={player.uid}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setSquadPlayers((prev) =>
+                                prev.map((p, i) => (i === idx ? { ...p, uid: val } : p))
+                              );
+                              if (errorMessage) setErrorMessage(null);
+                            }}
+                            className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-xs font-bold text-gray-900 focus:outline-none focus:border-red-500 shadow-xs"
+                          />
                         </div>
 
                         {/* In-Game Name (IGN) */}
@@ -858,6 +861,24 @@ export default function SlotBookingModal({
                             <Clipboard className="w-3 h-3" />
                             <span>পেস্ট করুন</span>
                           </button>
+                          <button
+                            type="button"
+                            onClick={() => handleVerifyDuoPlayer(idx)}
+                            disabled={player.checking}
+                            className={`px-2 py-0.5 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1 ${
+                              player.verified
+                                ? 'bg-emerald-600 text-white shadow-xs'
+                                : 'bg-red-600 hover:bg-red-700 text-white shadow-xs'
+                            }`}
+                          >
+                            {player.checking ? (
+                              <Loader2 className="w-3 h-3 animate-spin text-white" />
+                            ) : player.verified ? (
+                              '✓ ভেরিফাইড'
+                            ) : (
+                              'ভেরিফাই'
+                            )}
+                          </button>
                           {player.verified && (
                             <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-700 border border-emerald-300 flex items-center gap-0.5">
                               <ShieldCheck className="w-3 h-3 text-emerald-600" /> Verified
@@ -868,59 +889,20 @@ export default function SlotBookingModal({
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         {/* Free Fire UID */}
-                        <div className="flex items-center gap-1.5">
-                          <div className="relative flex-1">
-                            <input
-                              id={`duo-uid-${idx}`}
-                              type="text"
-                              placeholder="Free Fire UID"
-                              value={player.uid}
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                setDuoPlayers((prev) =>
-                                  prev.map((p, i) => (i === idx ? { ...p, uid: val } : p))
-                                );
-                                if (errorMessage) setErrorMessage(null);
-                              }}
-                              className="w-full pl-3 pr-8 py-2 rounded-xl border border-gray-200 bg-white text-xs font-mono font-bold text-gray-900 focus:outline-none focus:border-red-500 shadow-xs"
-                            />
-                            <button
-                              type="button"
-                              title="ক্লিপবোর্ড থেকে UID পেস্ট করুন"
-                              onClick={async () => {
-                                try {
-                                  const text = await readClipboardText();
-                                  if (text) {
-                                    setDuoPlayers((prev) =>
-                                      prev.map((p, i) => (i === idx ? { ...p, uid: text.trim() } : p))
-                                    );
-                                    if (errorMessage) setErrorMessage(null);
-                                  }
-                                } catch {}
-                              }}
-                              className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-red-600 active:scale-95 transition-all"
-                            >
-                              <Clipboard className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => handleVerifyDuoPlayer(idx)}
-                            disabled={player.checking}
-                            className={`px-3 py-2 rounded-xl text-[11px] font-black transition-all flex items-center gap-1 flex-shrink-0 ${
-                              player.verified
-                                ? 'bg-emerald-600 text-white shadow-xs'
-                                : 'bg-red-600 hover:bg-red-700 text-white shadow-xs'
-                            }`}
-                          >
-                            {player.checking ? (
-                              <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
-                            ) : player.verified ? (
-                              '✓ ভেরিফাইড'
-                            ) : (
-                              'ভেরিফাই'
-                            )}
-                          </button>
+                        <div>
+                          <input
+                            type="text"
+                            placeholder="Free Fire UID"
+                            value={player.uid}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setDuoPlayers((prev) =>
+                                prev.map((p, i) => (i === idx ? { ...p, uid: val } : p))
+                              );
+                              if (errorMessage) setErrorMessage(null);
+                            }}
+                            className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-xs font-bold text-gray-900 focus:outline-none focus:border-red-500 shadow-xs"
+                          />
                         </div>
 
                         {/* In-Game Name (IGN) */}
@@ -964,77 +946,58 @@ export default function SlotBookingModal({
                       <label className="text-xs font-bold text-gray-700 block">
                         Free Fire UID:
                       </label>
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          try {
-                            const text = await readClipboardText();
-                            if (text) {
-                              setSoloPlayer((prev) => ({ ...prev, uid: text.trim() }));
-                              if (errorMessage) setErrorMessage(null);
-                            }
-                          } catch {}
-                        }}
-                        className="text-[11px] font-bold text-red-600 hover:text-red-500 flex items-center gap-1 cursor-pointer bg-red-500/10 px-2.5 py-0.5 rounded-lg border border-red-500/20 active:scale-95 transition-all"
-                      >
-                        <Clipboard className="w-3 h-3" />
-                        <span>পেস্ট করুন</span>
-                      </button>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <div className="relative flex-1">
-                        <input
-                          id="solo-uid"
-                          type="text"
-                          placeholder="যেমন: 12116725180"
-                          value={soloPlayer.uid}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setSoloPlayer((prev) => ({
-                              ...prev,
-                              uid: val,
-                            }));
-                            if (errorMessage) setErrorMessage(null);
-                          }}
-                          className="w-full pl-3.5 pr-9 py-2.5 rounded-xl border border-gray-200 bg-white text-xs font-mono font-bold text-gray-900 focus:outline-none focus:border-red-500 shadow-xs"
-                        />
-                        <button
-                          type="button"
-                          title="ক্লিপবোর্ড থেকে UID পেস্ট করুন"
-                          onClick={async () => {
-                            try {
-                              const text = await readClipboardText();
-                              if (text) {
-                                setSoloPlayer((prev) => ({ ...prev, uid: text.trim() }));
-                                if (errorMessage) setErrorMessage(null);
-                              }
-                            } catch {}
-                          }}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-red-600 active:scale-95 transition-all"
-                        >
-                          <Clipboard className="w-4 h-4" />
-                        </button>
+                      <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              try {
+                                const text = await readClipboardText();
+                                if (text) {
+                                  setSoloPlayer((prev) => ({ ...prev, uid: text.trim() }));
+                                  if (errorMessage) setErrorMessage(null);
+                                }
+                              } catch {}
+                            }}
+                            className="text-[11px] font-bold text-red-600 hover:text-red-500 flex items-center gap-1 cursor-pointer bg-red-500/10 px-2.5 py-0.5 rounded-lg border border-red-500/20 active:scale-95 transition-all"
+                          >
+                            <Clipboard className="w-3 h-3" />
+                            <span>পেস্ট করুন</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleVerifySoloPlayer()}
+                            disabled={soloPlayer.checking}
+                            className={`px-2.5 py-0.5 rounded-lg text-xs font-black transition-all flex items-center gap-1 ${
+                              soloPlayer.verified
+                                ? 'bg-emerald-600 text-white shadow-xs'
+                                : 'bg-red-600 hover:bg-red-700 text-white shadow-xs'
+                            }`}
+                          >
+                            {soloPlayer.checking ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
+                            ) : soloPlayer.verified ? (
+                              '✓ ভেরিফাইড'
+                            ) : (
+                              'ভেরিফাই'
+                            )}
+                          </button>
+                        </div>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => handleVerifySoloPlayer()}
-                        disabled={soloPlayer.checking}
-                        className={`px-3.5 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-1 ${
-                          soloPlayer.verified
-                            ? 'bg-emerald-600 text-white shadow-xs'
-                            : 'bg-red-600 hover:bg-red-700 text-white shadow-xs'
-                        }`}
-                      >
-                        {soloPlayer.checking ? (
-                          <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
-                        ) : soloPlayer.verified ? (
-                          '✓ ভেরিফাইড'
-                        ) : (
-                          'ভেরিফাই'
-                        )}
-                      </button>
+                      <input
+                        type="text"
+                        placeholder="যেমন: 12116725180"
+                        value={soloPlayer.uid}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setSoloPlayer((prev) => ({
+                            ...prev,
+                            uid: val,
+                          }));
+                          if (errorMessage) setErrorMessage(null);
+                        }}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 bg-white text-xs font-bold text-gray-900 focus:outline-none focus:border-red-500 shadow-xs"
+                      />
                     </div>
-                  </div>
 
                   {/* In-Game Name (IGN) Auto-filled */}
                   <div>
