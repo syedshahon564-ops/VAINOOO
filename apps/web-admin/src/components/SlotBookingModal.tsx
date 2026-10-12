@@ -15,6 +15,7 @@ import {
 import { MatchItem } from '@/lib/cms-store';
 import { checkFreeFireUID } from '@/lib/ff-uid-checker';
 import { getCurrentUser, hasUserJoinedMatch, recordUserJoinedMatch } from '@/lib/user-store';
+import { readClipboardText } from '@/lib/clipboard';
 
 export interface RegisteredPlayerEntry {
   ign: string;
@@ -270,34 +271,28 @@ export default function SlotBookingModal({
     onAutoVerify?: () => void
   ) => {
     try {
-      let text = '';
-      // 1. Native Android Bridge (Ridmik & Android direct OS clipboard)
-      if (typeof window !== 'undefined' && (window as any).AndroidBridge?.getClipboardText) {
-        try {
-          text = (window as any).AndroidBridge.getClipboardText() || '';
-        } catch {}
-      }
-
-      // 2. Web Clipboard API
-      if (!text && typeof navigator !== 'undefined' && navigator.clipboard?.readText) {
-        try {
-          text = await navigator.clipboard.readText();
-        } catch {}
-      }
-
-      // 3. Fallback prompt
-      if (!text && typeof window !== 'undefined') {
-        text = window.prompt('কপি করা Free Fire UID এখানে পেস্ট করুন:') || '';
-      }
-
+      const text = await readClipboardText();
       const digits = cleanUid(text);
       if (digits) {
         onApply(digits);
         if (digits.length >= 8 && onAutoVerify) {
           setTimeout(onAutoVerify, 150);
         }
+      } else {
+        if (typeof window !== 'undefined') {
+          const fallback = window.prompt('কপি করা Free Fire UID এখানে পেস্ট করুন:') || '';
+          const d = cleanUid(fallback);
+          if (d) {
+            onApply(d);
+            if (d.length >= 8 && onAutoVerify) {
+              setTimeout(onAutoVerify, 150);
+            }
+          }
+        }
       }
-    } catch {}
+    } catch (err) {
+      console.warn('handlePasteUid error:', err);
+    }
   };
 
   const handleSelectSquadSlot = (slotNum: number) => {
@@ -688,11 +683,32 @@ export default function SlotBookingModal({
                             ? `Player ${idx + 1} (আবশ্যক)`
                             : `Player ${idx + 1} (ঐচ্ছিক / Optional)`}
                         </span>
-                        {player.verified && (
-                          <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-700 border border-emerald-300 flex items-center gap-0.5">
-                            <ShieldCheck className="w-3 h-3 text-emerald-600" /> Verified
-                          </span>
-                        )}
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handlePasteUid(
+                                (uid) => {
+                                  setSquadPlayers((prev) =>
+                                    prev.map((p, i) =>
+                                      i === idx ? { ...p, uid, verified: false } : p
+                                    )
+                                  );
+                                },
+                                () => handleVerifySquadPlayer(idx)
+                              )
+                            }
+                            className="text-[11px] font-bold text-red-600 hover:text-red-500 flex items-center gap-1 cursor-pointer bg-red-500/10 px-2 py-0.5 rounded-lg border border-red-500/20 active:scale-95 transition-all"
+                          >
+                            <Clipboard className="w-3 h-3" />
+                            <span>পেস্ট করুন</span>
+                          </button>
+                          {player.verified && (
+                            <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-700 border border-emerald-300 flex items-center gap-0.5">
+                              <ShieldCheck className="w-3 h-3 text-emerald-600" /> Verified
+                            </span>
+                          )}
+                        </div>
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -813,11 +829,32 @@ export default function SlotBookingModal({
                           </span>
                           {idx === 0 ? 'Player 1 (Leader - আবশ্যক)' : 'Player 2 (ঐচ্ছিক / Optional)'}
                         </span>
-                        {player.verified && (
-                          <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-700 border border-emerald-300 flex items-center gap-0.5">
-                            <ShieldCheck className="w-3 h-3 text-emerald-600" /> Verified
-                          </span>
-                        )}
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handlePasteUid(
+                                (uid) => {
+                                  setDuoPlayers((prev) =>
+                                    prev.map((p, i) =>
+                                      i === idx ? { ...p, uid, verified: false } : p
+                                    )
+                                  );
+                                },
+                                () => handleVerifyDuoPlayer(idx)
+                              )
+                            }
+                            className="text-[11px] font-bold text-red-600 hover:text-red-500 flex items-center gap-1 cursor-pointer bg-red-500/10 px-2 py-0.5 rounded-lg border border-red-500/20 active:scale-95 transition-all"
+                          >
+                            <Clipboard className="w-3 h-3" />
+                            <span>পেস্ট করুন</span>
+                          </button>
+                          {player.verified && (
+                            <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-700 border border-emerald-300 flex items-center gap-0.5">
+                              <ShieldCheck className="w-3 h-3 text-emerald-600" /> Verified
+                            </span>
+                          )}
+                        </div>
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -939,9 +976,26 @@ export default function SlotBookingModal({
 
                   {/* Free Fire UID First */}
                   <div>
-                    <label className="text-xs font-bold text-gray-700 block mb-1">
-                      Free Fire UID:
-                    </label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-xs font-bold text-gray-700 block">
+                        Free Fire UID:
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handlePasteUid(
+                            (uid) => {
+                              setSoloPlayer((prev) => ({ ...prev, uid, verified: false }));
+                            },
+                            handleVerifySoloPlayer
+                          )
+                        }
+                        className="text-[11px] font-bold text-red-600 hover:text-red-500 flex items-center gap-1 cursor-pointer bg-red-500/10 px-2.5 py-0.5 rounded-lg border border-red-500/20 active:scale-95 transition-all"
+                      >
+                        <Clipboard className="w-3 h-3" />
+                        <span>পেস্ট করুন</span>
+                      </button>
+                    </div>
                     <div className="flex items-center gap-1.5">
                       <div className="relative flex-1">
                         <input
