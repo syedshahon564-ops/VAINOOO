@@ -35,6 +35,7 @@ export default function DepositWithdrawModal({
   initialTab = 'DEPOSIT',
 }: DepositWithdrawModalProps) {
   const { settings } = useCMS();
+  const [liveSettings, setLiveSettings] = useState<any>(null);
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<'DEPOSIT' | 'WITHDRAW'>(initialTab);
   const [method, setMethod] = useState<'BKASH' | 'NAGAD' | 'ROCKET'>('BKASH');
@@ -45,6 +46,22 @@ export default function DepositWithdrawModal({
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error' | 'pending'; text: string } | null>(null);
 
+  // Always fetch fresh live settings from server whenever modal opens
+  React.useEffect(() => {
+    if (isOpen) {
+      fetch(`/api/cms?t=${Date.now()}`, { cache: 'no-store' })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data?.settings) {
+            setLiveSettings(data.settings);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [isOpen]);
+
+  const activeSettings = liveSettings || settings;
+
   const currentUser = getCurrentUser();
   const currentBalance = currentUser ? (currentUser.walletBalance || 0) : 1450.0;
 
@@ -53,17 +70,17 @@ export default function DepositWithdrawModal({
   const paymentNumbers: Record<string, { label: string; number: string; type: string }> = {
     BKASH: {
       label: 'bKash (বিকাশ)',
-      number: settings?.bkashNumber || '01712345678',
+      number: activeSettings?.bkashNumber || '01712345678',
       type: 'Personal (Send Money)',
     },
     NAGAD: {
       label: 'Nagad (নগদ)',
-      number: settings?.nagadNumber || '01812345678',
+      number: activeSettings?.nagadNumber || '01812345678',
       type: 'Personal (Send Money)',
     },
     ROCKET: {
       label: 'Dutch-Bangla Rocket (ডাচ-বাংলা/রকেট)',
-      number: settings?.rocketNumber || '01912345678-5',
+      number: activeSettings?.rocketNumber || '01912345678-5',
       type: 'Personal (Send Money)',
     },
   };
@@ -375,19 +392,19 @@ export default function DepositWithdrawModal({
               </div>
 
               {/* Payment Instruction Banner & Text from Settings */}
-              {settings?.paymentInstructionText && (
+              {activeSettings?.paymentInstructionText && (
                 <div className="p-3.5 rounded-2xl bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-white/10 space-y-2">
                   <div className="flex items-center gap-2 text-xs font-bold text-gray-800 dark:text-gray-200">
                     <ShieldCheck className="w-4 h-4 text-emerald-500" />
                     <span>সেন্ড মানি নির্দেশাবলী:</span>
                   </div>
                   <p className="text-[11px] text-gray-600 dark:text-gray-400 whitespace-pre-line leading-relaxed">
-                    {settings.paymentInstructionText}
+                    {activeSettings.paymentInstructionText}
                   </p>
-                  {settings.paymentInstructionImage && settings.paymentInstructionImage !== '/logo.png' && (
+                  {activeSettings.paymentInstructionImage && activeSettings.paymentInstructionImage !== '/logo.png' && (
                     <div className="pt-1">
                       <img
-                        src={settings.paymentInstructionImage}
+                        src={activeSettings.paymentInstructionImage}
                         alt="Payment QR/Guide"
                         className="max-h-36 rounded-xl border border-gray-200 dark:border-white/10 object-contain mx-auto"
                       />

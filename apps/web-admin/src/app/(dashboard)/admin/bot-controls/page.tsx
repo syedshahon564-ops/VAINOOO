@@ -73,9 +73,9 @@ export default function BotControlsPage() {
 
   // Payment Settings Form
   const [paymentForm, setPaymentForm] = useState({
-    bkashNumber: settings?.bkashNumber || '01712345678',
-    nagadNumber: settings?.nagadNumber || '01812345678',
-    rocketNumber: settings?.rocketNumber || '01912345678-5',
+    bkashNumber: settings?.bkashNumber || '',
+    nagadNumber: settings?.nagadNumber || '',
+    rocketNumber: settings?.rocketNumber || '',
     paymentInstructionImage: settings?.paymentInstructionImage || '/logo.png',
     paymentInstructionText:
       settings?.paymentInstructionText ||
@@ -152,9 +152,9 @@ export default function BotControlsPage() {
   useEffect(() => {
     if (settings) {
       setPaymentForm({
-        bkashNumber: settings.bkashNumber || '01712345678',
-        nagadNumber: settings.nagadNumber || '01812345678',
-        rocketNumber: settings.rocketNumber || '01912345678-5',
+        bkashNumber: settings.bkashNumber || '',
+        nagadNumber: settings.nagadNumber || '',
+        rocketNumber: settings.rocketNumber || '',
         paymentInstructionImage: settings.paymentInstructionImage || '/logo.png',
         paymentInstructionText:
           settings.paymentInstructionText ||

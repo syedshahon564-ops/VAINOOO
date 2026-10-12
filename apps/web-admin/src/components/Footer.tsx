@@ -67,14 +67,18 @@ export default function Footer() {
           <div>
             <h4 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-4">Payment Methods</h4>
             <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-rose-500" />
-                <span>bKash: {settings?.bkashNumber || '01712345678'}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-amber-500" />
-                <span>Nagad: {settings?.nagadNumber || '01812345678'}</span>
-              </div>
+              {settings?.bkashNumber && (
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-rose-500" />
+                  <span>bKash: {settings.bkashNumber}</span>
+                </div>
+              )}
+              {settings?.nagadNumber && (
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-amber-500" />
+                  <span>Nagad: {settings.nagadNumber}</span>
+                </div>
+              )}
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-purple-500" />
                 <span>DBBL Rocket (Instant)</span>

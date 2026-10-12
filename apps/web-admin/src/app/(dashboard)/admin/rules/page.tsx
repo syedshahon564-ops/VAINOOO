@@ -12,10 +12,10 @@ export default function AdminRulesPage() {
   const [categoryRules, setCategoryRules] = useState<Record<string, string>>(settings.categoryRules || {});
   const [selectedRuleCategory, setSelectedRuleCategory] = useState<string>('clash-squad');
   const [howToJoinGuide, setHowToJoinGuide] = useState(settings.howToJoinGuide);
-  const [telegramUrl, setTelegramUrl] = useState(settings.telegramUrl);
-  const [whatsappNumber, setWhatsappNumber] = useState(settings.whatsappNumber);
-  const [bkashNumber, setBkashNumber] = useState(settings.bkashNumber || '01886121980');
-  const [nagadNumber, setNagadNumber] = useState(settings.nagadNumber || '01886121980');
+  const [telegramUrl, setTelegramUrl] = useState(settings.telegramUrl || '');
+  const [whatsappNumber, setWhatsappNumber] = useState(settings.whatsappNumber || '');
+  const [bkashNumber, setBkashNumber] = useState(settings.bkashNumber || '');
+  const [nagadNumber, setNagadNumber] = useState(settings.nagadNumber || '');
   const [importantNoticeTitle, setImportantNoticeTitle] = useState(settings.importantNoticeTitle || 'Important Notice');
   const [importantNoticeBody, setImportantNoticeBody] = useState(settings.importantNoticeBody || '');
   const [importantNoticeEnabled, setImportantNoticeEnabled] = useState(settings.importantNoticeEnabled ?? true);
@@ -30,8 +30,8 @@ export default function AdminRulesPage() {
       setHowToJoinGuide(settings.howToJoinGuide || '');
       setTelegramUrl(settings.telegramUrl || '');
       setWhatsappNumber(settings.whatsappNumber || '');
-      setBkashNumber(settings.bkashNumber || '01886121980');
-      setNagadNumber(settings.nagadNumber || '01886121980');
+      setBkashNumber(settings.bkashNumber || '');
+      setNagadNumber(settings.nagadNumber || '');
       setImportantNoticeTitle(settings.importantNoticeTitle || 'Important Notice');
       setImportantNoticeBody(settings.importantNoticeBody || '');
       setImportantNoticeEnabled(settings.importantNoticeEnabled ?? true);
@@ -54,8 +54,8 @@ export default function AdminRulesPage() {
       howToJoinGuide,
       telegramUrl,
       whatsappNumber,
-      bkashNumber,
-      nagadNumber,
+      bkashNumber: bkashNumber.trim(),
+      nagadNumber: nagadNumber.trim(),
       importantNoticeTitle,
       importantNoticeBody,
       importantNoticeEnabled,
