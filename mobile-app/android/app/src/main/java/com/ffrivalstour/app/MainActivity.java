@@ -1,10 +1,14 @@
 package com.ffrivalstour.app;
 
+import android.content.ClipData;
+import android.content.ClipboardManager;
+import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.webkit.CookieManager;
 import android.webkit.DownloadListener;
 import android.webkit.ValueCallback;
 import android.webkit.WebSettings;
@@ -72,6 +76,33 @@ public class MainActivity extends BridgeActivity {
         }
 
         @android.webkit.JavascriptInterface
+        public String getClipboardText() {
+            try {
+                ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+                if (clipboard != null && clipboard.hasPrimaryClip() && clipboard.getPrimaryClip().getItemCount() > 0) {
+                    CharSequence text = clipboard.getPrimaryClip().getItemAt(0).getText();
+                    return text != null ? text.toString() : "";
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return "";
+        }
+
+        @android.webkit.JavascriptInterface
+        public void setClipboardText(String text) {
+            try {
+                ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+                if (clipboard != null) {
+                    ClipData clip = ClipData.newPlainText("Copied Text", text);
+                    clipboard.setPrimaryClip(clip);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        @android.webkit.JavascriptInterface
         public void exitApp() {
             runOnUiThread(new Runnable() {
                 @Override
@@ -90,8 +121,18 @@ public class MainActivity extends BridgeActivity {
             WebSettings settings = webView.getSettings();
             settings.setDomStorageEnabled(true);
             settings.setDatabaseEnabled(true);
-            settings.setCacheMode(WebSettings.LOAD_NO_CACHE);
-            webView.clearCache(true);
+            settings.setCacheMode(WebSettings.LOAD_DEFAULT);
+            settings.setJavaScriptEnabled(true);
+
+            // Enable long-click and paste context menu for Ridmik and other keyboards
+            webView.setLongClickable(true);
+            webView.setHapticFeedbackEnabled(true);
+
+            // Enable persistent session cookies so user is NEVER logged out on app exit
+            CookieManager cookieManager = CookieManager.getInstance();
+            cookieManager.setAcceptCookie(true);
+            cookieManager.setAcceptThirdPartyCookies(webView, true);
+
             webView.addJavascriptInterface(new WebAppInterface(), "AndroidBridge");
 
             // Handle file downloads (e.g. APK update download) in external browser / Download Manager
@@ -108,6 +149,22 @@ public class MainActivity extends BridgeActivity {
                 }
             });
         }
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        try {
+            CookieManager.getInstance().flush();
+        } catch (Exception e) {}
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        try {
+            CookieManager.getInstance().flush();
+        } catch (Exception e) {}
     }
 
     private void handleSystemBack() {

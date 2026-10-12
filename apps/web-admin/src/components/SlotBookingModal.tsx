@@ -254,22 +254,43 @@ export default function SlotBookingModal({
     }
   }
 
-  // Universal Paste Helper for UID
+  function cleanUid(input: string): string {
+    if (!input) return '';
+    const bnToEn: Record<string, string> = {
+      '০': '0', '১': '1', '২': '2', '৩': '3', '৪': '4',
+      '৫': '5', '৬': '6', '৭': '7', '৮': '8', '৯': '9',
+    };
+    const converted = String(input).replace(/[০-৯]/g, (d) => bnToEn[d] || d);
+    return converted.replace(/\D/g, '');
+  }
+
+  // Universal Paste Helper for UID (supports Ridmik Keyboard, AndroidBridge, and Web clipboard)
   const handlePasteUid = async (
     onApply: (uid: string) => void,
     onAutoVerify?: () => void
   ) => {
     try {
       let text = '';
-      if (typeof navigator !== 'undefined' && navigator.clipboard?.readText) {
+      // 1. Native Android Bridge (Ridmik & Android direct OS clipboard)
+      if (typeof window !== 'undefined' && (window as any).AndroidBridge?.getClipboardText) {
+        try {
+          text = (window as any).AndroidBridge.getClipboardText() || '';
+        } catch {}
+      }
+
+      // 2. Web Clipboard API
+      if (!text && typeof navigator !== 'undefined' && navigator.clipboard?.readText) {
         try {
           text = await navigator.clipboard.readText();
         } catch {}
       }
+
+      // 3. Fallback prompt
       if (!text && typeof window !== 'undefined') {
         text = window.prompt('কপি করা Free Fire UID এখানে পেস্ট করুন:') || '';
       }
-      const digits = (text || '').replace(/\D/g, '');
+
+      const digits = cleanUid(text);
       if (digits) {
         onApply(digits);
         if (digits.length >= 8 && onAutoVerify) {
@@ -688,7 +709,7 @@ export default function SlotBookingModal({
                               value={player.uid}
                               onPaste={(e) => {
                                 const text = e.clipboardData?.getData('text') || '';
-                                const digits = text.replace(/\D/g, '');
+                                const digits = cleanUid(text);
                                 if (digits) {
                                   e.preventDefault();
                                   setSquadPlayers((prev) =>
@@ -702,7 +723,7 @@ export default function SlotBookingModal({
                                 }
                               }}
                               onChange={(e) => {
-                                const val = e.target.value.replace(/\D/g, '');
+                                const val = cleanUid(e.target.value);
                                 setSquadPlayers((prev) =>
                                   prev.map((p, i) =>
                                     i === idx ? { ...p, uid: val, verified: false } : p
@@ -813,7 +834,7 @@ export default function SlotBookingModal({
                               value={player.uid}
                               onPaste={(e) => {
                                 const text = e.clipboardData?.getData('text') || '';
-                                const digits = text.replace(/\D/g, '');
+                                const digits = cleanUid(text);
                                 if (digits) {
                                   e.preventDefault();
                                   setDuoPlayers((prev) =>
@@ -827,7 +848,7 @@ export default function SlotBookingModal({
                                 }
                               }}
                               onChange={(e) => {
-                                const val = e.target.value.replace(/\D/g, '');
+                                const val = cleanUid(e.target.value);
                                 setDuoPlayers((prev) =>
                                   prev.map((p, i) =>
                                     i === idx ? { ...p, uid: val, verified: false } : p
@@ -933,7 +954,7 @@ export default function SlotBookingModal({
                           value={soloPlayer.uid}
                           onPaste={(e) => {
                             const text = e.clipboardData?.getData('text') || '';
-                            const digits = text.replace(/\D/g, '');
+                            const digits = cleanUid(text);
                             if (digits) {
                               e.preventDefault();
                               setSoloPlayer((prev) => ({
@@ -947,7 +968,7 @@ export default function SlotBookingModal({
                             }
                           }}
                           onChange={(e) => {
-                            const val = e.target.value.replace(/\D/g, '');
+                            const val = cleanUid(e.target.value);
                             setSoloPlayer((prev) => ({
                               ...prev,
                               uid: val,

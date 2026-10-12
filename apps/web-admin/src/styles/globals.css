@@ -126,3 +126,10 @@ html.dark ::-webkit-scrollbar-thumb {
 .animate-train-marquee:active {
   animation-play-state: paused;
 }
+
+/* Ensure inputs & textareas allow text selection and paste from custom keyboards (Ridmik, Gboard, Samsung) */
+input, textarea, [contenteditable="true"] {
+  -webkit-user-select: text !important;
+  user-select: text !important;
+  -webkit-touch-callout: default !important;
+}

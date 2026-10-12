@@ -402,13 +402,13 @@ export function saveUsers(users: UserAccount[]): void {
     localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
     notifyUsersChange(users);
 
-    // If currently logged-in user was updated, update ff_user in localStorage as well
-    const currentLoggedStr = localStorage.getItem('ff_user');
+    // If currently logged-in user was updated, update ff_user and session
+    const currentLoggedStr = localStorage.getItem('ff_user') || getCookieUser();
     if (currentLoggedStr) {
-      const current = JSON.parse(currentLoggedStr);
+      const current = typeof currentLoggedStr === 'string' ? JSON.parse(currentLoggedStr) : currentLoggedStr;
       const updatedCurrent = users.find((u) => u.id === current.id || u.phone === current.phone);
       if (updatedCurrent) {
-        localStorage.setItem('ff_user', JSON.stringify(updatedCurrent));
+        saveSession(updatedCurrent);
       }
     }
 
@@ -759,8 +759,7 @@ export function loginUserSync(identifier: string, pass: string): { success: bool
 
   // Save current active user
   if (typeof window !== 'undefined') {
-    localStorage.setItem('ff_user', JSON.stringify(user));
-    localStorage.setItem('ff_token', 'local_jwt_' + user.id + '_' + Date.now());
+    saveSession(user);
     window.dispatchEvent(new CustomEvent('ff_users_updated', { detail: getUsers() }));
   }
 
@@ -900,8 +899,7 @@ export async function registerUser(data: {
       localStorage.setItem('ff_device_registered_accounts', JSON.stringify(registeredList));
       localStorage.setItem('ff_device_registered_account', finalUsername);
     } catch {}
-    localStorage.setItem('ff_user', JSON.stringify(newUser));
-    localStorage.setItem('ff_token', 'local_jwt_' + newUser.id + '_' + Date.now());
+    saveSession(newUser);
     window.dispatchEvent(new CustomEvent('ff_users_updated', { detail: getUsers() }));
   }
 
@@ -919,12 +917,52 @@ export async function registerUser(data: {
   return { success: true, user: newUser };
 }
 
+export function saveSession(user: UserAccount) {
+  if (typeof window === 'undefined') return;
+  try {
+    const jsonStr = JSON.stringify(user);
+    localStorage.setItem('ff_user', jsonStr);
+    localStorage.setItem('ff_token', 'local_jwt_' + user.id + '_' + Date.now());
+    // Also save in persistent cookie with 10 years expiry
+    const expires = new Date(Date.now() + 3650 * 864e5).toUTCString();
+    document.cookie = `ff_user=${encodeURIComponent(jsonStr)}; expires=${expires}; path=/; SameSite=Lax`;
+  } catch (e) {}
+}
+
+export function clearSession() {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.removeItem('ff_user');
+    localStorage.removeItem('ff_token');
+    document.cookie = 'ff_user=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Lax';
+  } catch (e) {}
+}
+
+export function getCookieUser(): string | null {
+  if (typeof document === 'undefined') return null;
+  try {
+    const match = document.cookie.match(/(?:^|;\s*)ff_user=([^;]*)/);
+    if (match && match[1]) {
+      return decodeURIComponent(match[1]);
+    }
+  } catch (e) {}
+  return null;
+}
+
 export function getCurrentUser(): UserAccount | null {
   if (typeof window === 'undefined') return null;
   try {
-    const data = localStorage.getItem('ff_user');
+    let data = localStorage.getItem('ff_user');
+    if (!data) {
+      data = getCookieUser();
+      if (data) {
+        try {
+          localStorage.setItem('ff_user', data);
+        } catch (e) {}
+      }
+    }
     if (!data) return null;
-    const parsed = JSON.parse(data);
+    const parsed = typeof data === 'string' ? JSON.parse(data) : data;
     // Refresh with latest data from users list
     const fresh = getUserById(parsed.id) || getUserByPhone(parsed.phone);
     return fresh || parsed;
@@ -935,8 +973,7 @@ export function getCurrentUser(): UserAccount | null {
 
 export function logoutUser(): void {
   if (typeof window !== 'undefined') {
-    localStorage.removeItem('ff_user');
-    localStorage.removeItem('ff_token');
+    clearSession();
     window.dispatchEvent(new CustomEvent('ff_users_updated', { detail: getUsers() }));
   }
 }
