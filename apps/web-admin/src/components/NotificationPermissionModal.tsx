@@ -16,13 +16,8 @@ export default function NotificationPermissionModal() {
 
       // Check if already granted
       const permissionState = localStorage.getItem('ff_notif_permission_state');
-      if (permissionState === 'granted') {
-        setIsOpen(false);
-        return;
-      }
-
-      if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-        localStorage.setItem('ff_notif_permission_state', 'granted');
+      if (permissionState === 'granted' || (typeof Notification !== 'undefined' && Notification.permission === 'granted')) {
+        syncWebPushSubscription();
         setIsOpen(false);
         return;
       }
@@ -64,20 +59,65 @@ export default function NotificationPermissionModal() {
     setStep(2);
   };
 
+function urlBase64ToUint8Array(base64String: string) {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
+async function syncWebPushSubscription() {
+  if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+    return;
+  }
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+      const keyRes = await fetch('/api/notifications/vapid-key');
+      const { publicKey } = await keyRes.json();
+      if (!publicKey) return;
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(publicKey),
+      });
+    }
+    if (sub) {
+      await fetch('/api/notifications/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subscription: sub }),
+      });
+    }
+  } catch (err) {
+    console.warn('Sync push subscription error:', err);
+  }
+}
+
   const handleAllowNotifications = async () => {
     try {
       if (typeof window !== 'undefined' && (window as any).AndroidBridge?.requestNotificationPermission) {
         (window as any).AndroidBridge.requestNotificationPermission();
       }
 
+      let granted = false;
       if (typeof Notification !== 'undefined' && typeof Notification.requestPermission === 'function') {
-        await Notification.requestPermission();
+        const res = await Notification.requestPermission();
+        granted = res === 'granted';
       }
 
       // If inside Capacitor / Android WebView
       const cap = (typeof window !== 'undefined' && (window as any).Capacitor);
       if (cap?.Plugins?.PushNotifications?.requestPermissions) {
         await cap.Plugins.PushNotifications.requestPermissions();
+      }
+
+      if (granted) {
+        await syncWebPushSubscription();
       }
     } catch (e) {
       console.warn('Notification permission error:', e);

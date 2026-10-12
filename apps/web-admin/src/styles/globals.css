@@ -128,8 +128,14 @@ html.dark ::-webkit-scrollbar-thumb {
 }
 
 /* Ensure inputs & textareas allow text selection and paste from custom keyboards (Ridmik, Gboard, Samsung) */
-input, textarea, [contenteditable="true"] {
+input, textarea, select, [contenteditable="true"], .selectable-text {
   -webkit-user-select: text !important;
   user-select: text !important;
   -webkit-touch-callout: default !important;
+  touch-action: manipulation;
+}
+
+input:focus, textarea:focus {
+  -webkit-user-select: text !important;
+  user-select: text !important;
 }

@@ -44,21 +44,19 @@ export default function RootLayout({
                 try {
                   var CURRENT_VERSION = '4.0.0';
                   var storedVer = localStorage.getItem('ff_app_build_version');
-                  
-                  // Clean up all old Service Workers
+
+                  // Register production Service Worker for Push Notifications
                   if ('serviceWorker' in navigator) {
-                    navigator.serviceWorker.getRegistrations().then(function(regs) {
-                      for (var i = 0; i < regs.length; i++) {
-                        regs[i].unregister();
-                      }
-                    });
+                    navigator.serviceWorker.register('/sw.js').catch(function() {});
                   }
-                  
-                  // Clean up stale CacheStorage
-                  if ('caches' in window) {
+
+                  // Clean up stale CacheStorage on major version bump
+                  if (storedVer !== CURRENT_VERSION && 'caches' in window) {
                     caches.keys().then(function(keys) {
                       for (var j = 0; j < keys.length; j++) {
-                        caches.delete(keys[j]);
+                        if (keys[j] !== 'ff-rivals-v4') {
+                          caches.delete(keys[j]);
+                        }
                       }
                     });
                   }

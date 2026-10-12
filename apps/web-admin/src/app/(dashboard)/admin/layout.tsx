@@ -24,6 +24,7 @@ import {
   EyeOff,
   Scan,
   LifeBuoy,
+  Bell,
 } from 'lucide-react';
 import { getCurrentUser } from '@/lib/user-store';
 import { getSupportTickets, syncSupportTicketsFromServer } from '@/lib/support-store';
@@ -235,6 +236,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { label: '📊 Dashboard', href: '/admin', icon: LayoutDashboard },
     { label: '🎮 Match Management', href: '/admin/tournaments', icon: Trophy },
     { label: '🏆 Match OCR Payout', href: '/admin/match-results', icon: Scan },
+    { label: '🔔 Push Notifications', href: '/admin/notifications', icon: Bell },
     { label: '🎧 Support Desk', href: '/admin/support', icon: LifeBuoy, badge: openTicketsCount },
     { label: '📁 Categories & Images', href: '/admin/categories', icon: FolderEdit },
     { label: '👥 Users & Balances', href: '/admin/users', icon: Users },

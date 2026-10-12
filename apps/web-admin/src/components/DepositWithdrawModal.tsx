@@ -12,9 +12,11 @@ import {
   CheckCircle2,
   ShieldCheck,
   Clock,
+  Clipboard,
 } from 'lucide-react';
 import { useCMS } from '@/lib/cms-store';
 import { useLanguage } from '@/components/LanguageProvider';
+import { readClipboardText } from '@/lib/clipboard';
 import {
   getCurrentUser,
   addBalance,
@@ -91,6 +93,21 @@ export default function DepositWithdrawModal({
     navigator.clipboard.writeText(currentPayment.number);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handlePastePhone = async () => {
+    const text = await readClipboardText();
+    if (text) {
+      const clean = text.replace(/[^0-9+]/g, '');
+      if (clean) setPhone(clean);
+    }
+  };
+
+  const handlePasteTrx = async () => {
+    const text = await readClipboardText();
+    if (text) {
+      setTrxId(text.trim().toUpperCase());
+    }
   };
 
   const handleDepositSubmit = async (e: React.FormEvent) => {
@@ -447,9 +464,19 @@ export default function DepositWithdrawModal({
 
               {/* Sender Phone Number */}
               <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block">
-                  {t('যে নম্বর থেকে টাকা পাঠিয়েছেন:', 'Sender Phone Number:')}
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block">
+                    {t('যে নম্বর থেকে টাকা পাঠিয়েছেন:', 'Sender Phone Number:')}
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handlePastePhone}
+                    className="text-[11px] font-bold text-red-600 dark:text-red-400 hover:text-red-500 flex items-center gap-1 cursor-pointer bg-red-500/10 px-2 py-0.5 rounded-lg border border-red-500/20 active:scale-95 transition-all"
+                  >
+                    <Clipboard className="w-3 h-3" />
+                    <span>পেস্ট করুন</span>
+                  </button>
+                </div>
                 <input
                   type="text"
                   value={phone}
@@ -462,9 +489,19 @@ export default function DepositWithdrawModal({
 
               {/* Transaction ID */}
               <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block">
-                  {t('ট্রানজেকশন আইডি (TrxID):', 'Transaction ID (TrxID):')}
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block">
+                    {t('ট্রানজেকশন আইডি (TrxID):', 'Transaction ID (TrxID):')}
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handlePasteTrx}
+                    className="text-[11px] font-bold text-amber-600 dark:text-amber-400 hover:text-amber-500 flex items-center gap-1 cursor-pointer bg-amber-500/10 px-2 py-0.5 rounded-lg border border-amber-500/20 active:scale-95 transition-all"
+                  >
+                    <Clipboard className="w-3 h-3" />
+                    <span>পেস্ট করুন</span>
+                  </button>
+                </div>
                 <input
                   type="text"
                   value={trxId}
@@ -553,9 +590,19 @@ export default function DepositWithdrawModal({
 
               {/* Receiver Phone Number */}
               <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block">
-                  {t('যে নম্বরে টাকা গ্রহণ করবেন:', 'Receiver Phone Number:')}
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block">
+                    {t('যে নম্বরে টাকা গ্রহণ করবেন:', 'Receiver Phone Number:')}
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handlePastePhone}
+                    className="text-[11px] font-bold text-red-600 dark:text-red-400 hover:text-red-500 flex items-center gap-1 cursor-pointer bg-red-500/10 px-2 py-0.5 rounded-lg border border-red-500/20 active:scale-95 transition-all"
+                  >
+                    <Clipboard className="w-3 h-3" />
+                    <span>পেস্ট করুন</span>
+                  </button>
+                </div>
                 <input
                   type="text"
                   value={phone}
