@@ -99,30 +99,76 @@ export const revalidate = 0;
 
 export async function POST(req: Request) {
   try {
+    const url = new URL(req.url);
     const db = readPaymentsDb();
-    const apiKey = req.headers.get('x-api-key');
+    const queryKey = url.searchParams.get('key') || url.searchParams.get('apiKey') || url.searchParams.get('secret');
+    const headerKey = req.headers.get('x-api-key');
+    const apiKey = headerKey || queryKey;
     const expectedKey = process.env.WEBHOOK_SECRET_KEY || db.settings?.secretApiKey || 'ff_rivals_secure_sms_key_2026';
 
     if (!apiKey || apiKey !== expectedKey) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized: Invalid x-api-key header' },
+        { success: false, error: 'Unauthorized: Invalid API key (use x-api-key header or ?key= query)' },
         { status: 401 }
       );
     }
 
-    const payload = await req.json();
-    const provider = String(payload.provider || 'BKASH').toUpperCase();
-    const sender = String(payload.sender || '').trim();
-    const rawTrx = String(payload.trx_id || payload.trxId || '').trim().toUpperCase();
-    const amountNum = parseFloat(String(payload.amount || '0'));
-    const rawMessage = String(payload.raw_message || payload.rawMessage || '');
+    let payload: any = {};
+    const contentType = req.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      try {
+        payload = await req.json();
+      } catch {
+        payload = {};
+      }
+    } else {
+      const text = await req.text();
+      try {
+        payload = JSON.parse(text);
+      } catch {
+        payload = { raw_message: text };
+      }
+    }
+
+    let rawMessage = String(
+      payload.raw_message || payload.rawMessage || payload.message || payload.text || payload.body || ''
+    ).trim();
+    let rawTrx = String(payload.trx_id || payload.trxId || '').trim().toUpperCase();
+    let amountNum = parseFloat(String(payload.amount || '0'));
+    let sender = String(payload.sender || '').trim();
+    let provider = String(payload.provider || 'BKASH').toUpperCase();
     const timestamp = payload.timestamp || new Date().toISOString();
 
+    // Smart Auto-Extraction from raw SMS message if fields are missing
+    if (rawMessage) {
+      if (!rawTrx) {
+        const trxMatch = rawMessage.match(/(?:TrxID|TxnID|Trx|Transaction ID)\s*[:.]?\s*([A-Z0-9]{8,14})/i);
+        if (trxMatch) rawTrx = trxMatch[1].toUpperCase();
+      }
+      if (isNaN(amountNum) || amountNum <= 0) {
+        const amtMatch = rawMessage.match(/(?:Tk|BDT|amount)\s*[:.]?\s*([\d,]+\.?\d*)/i);
+        if (amtMatch) amountNum = parseFloat(amtMatch[1].replace(/,/g, ''));
+      }
+      if (!sender) {
+        const senderMatch = rawMessage.match(/(?:from|sender)\s*[:.]?\s*(01\d{9})/i);
+        if (senderMatch) sender = senderMatch[1];
+      }
+      if (/nagad/i.test(rawMessage)) provider = 'NAGAD';
+      else if (/rocket/i.test(rawMessage)) provider = 'ROCKET';
+      else if (/bkash/i.test(rawMessage)) provider = 'BKASH';
+    }
+
     if (!rawTrx) {
-      return NextResponse.json({ success: false, error: 'trx_id is required' }, { status: 400 });
+      return NextResponse.json(
+        { success: false, error: 'trx_id is required or could not be detected from SMS text' },
+        { status: 400 }
+      );
     }
     if (isNaN(amountNum) || amountNum <= 0) {
-      return NextResponse.json({ success: false, error: 'Valid positive amount is required' }, { status: 400 });
+      return NextResponse.json(
+        { success: false, error: 'Valid positive amount is required or could not be detected from SMS text' },
+        { status: 400 }
+      );
     }
 
     db.incomingPayments = db.incomingPayments || [];
@@ -222,3 +268,49 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
+
+export async function GET(req: Request) {
+  const url = new URL(req.url);
+  const queryKey = url.searchParams.get('key') || url.searchParams.get('apiKey') || url.searchParams.get('secret');
+  const headerKey = req.headers.get('x-api-key');
+  const apiKey = headerKey || queryKey;
+  const db = readPaymentsDb();
+  const expectedKey = process.env.WEBHOOK_SECRET_KEY || db.settings?.secretApiKey || 'ff_rivals_secure_sms_key_2026';
+
+  if (!apiKey || apiKey !== expectedKey) {
+    return NextResponse.json({
+      status: 'ONLINE',
+      service: 'FF Rivals bKash/Nagad Webhook Service',
+      instructions: 'Send POST requests with ?key=ff_rivals_secure_sms_key_2026 or Header x-api-key',
+    });
+  }
+
+  const rawText = url.searchParams.get('text') || url.searchParams.get('msg') || url.searchParams.get('message') || '';
+  const trx = url.searchParams.get('trx_id') || url.searchParams.get('trx') || '';
+  const amt = url.searchParams.get('amount') || '';
+
+  if (rawText || (trx && amt)) {
+    const mockPostReq = new Request(req.url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': expectedKey,
+      },
+      body: JSON.stringify({
+        trx_id: trx,
+        amount: amt,
+        raw_message: rawText,
+        sender: url.searchParams.get('sender') || url.searchParams.get('phone') || '',
+        provider: url.searchParams.get('provider') || 'BKASH',
+      }),
+    });
+    return POST(mockPostReq);
+  }
+
+  return NextResponse.json({
+    status: 'AUTHENTICATED',
+    message: 'Webhook endpoint is active and ready to receive incoming payments.',
+    totalPayments: (db.incomingPayments || []).length,
+  });
+}
+

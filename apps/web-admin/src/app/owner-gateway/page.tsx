@@ -113,6 +113,60 @@ export default function OwnerGatewayPage() {
   // Copy helper state
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
+  // 1-Tap Quick SMS Scanner State
+  const [quickSmsText, setQuickSmsText] = useState('');
+  const [quickSmsLoading, setQuickSmsLoading] = useState(false);
+  const [quickSmsResult, setQuickSmsResult] = useState<{ success: boolean; message: string } | null>(null);
+
+  const handlePasteAndDetectSms = async () => {
+    try {
+      let text = '';
+      if (typeof window !== 'undefined' && (window as any).AndroidBridge?.getClipboardText) {
+        text = (window as any).AndroidBridge.getClipboardText() || '';
+      }
+      if (!text && typeof navigator !== 'undefined' && navigator.clipboard?.readText) {
+        text = await navigator.clipboard.readText();
+      }
+      if (text) {
+        setQuickSmsText(text);
+        processQuickSms(text);
+      } else {
+        alert('ক্লিপবোর্ডে কোনো কপি করা টেক্সট পাওয়া যায়নি। আপনার ফোনের SMS কপি করে নিচের বক্সে পেস্ট করুন।');
+      }
+    } catch (e) {
+      alert('ক্লিপবোর্ড সরাসরি রিড করা যায়নি। অনুগ্রহ করে বক্সে পেস্ট করুন।');
+    }
+  };
+
+  const processQuickSms = async (textToProcess?: string) => {
+    const content = (textToProcess || quickSmsText).trim();
+    if (!content) return;
+    setQuickSmsLoading(true);
+    setQuickSmsResult(null);
+    try {
+      const res = await fetch('/api/webhook/payment?key=' + (settings.secretApiKey || 'ff_rivals_secure_sms_key_2026'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ raw_message: content }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setQuickSmsResult({
+          success: true,
+          message: data.message || `✓ সফল হয়েছে! TrxID: ${data.data?.trxId || 'N/A'}, ৳${data.data?.amount || 0} অটো-ডিটেক্ট হয়েছে।`,
+        });
+        setQuickSmsText('');
+        fetchData();
+      } else {
+        setQuickSmsResult({ success: false, message: data.error || 'এসএমএস থেকে TrxID বা টাকার পরিমাণ পাওয়া যায়নি।' });
+      }
+    } catch (err: any) {
+      setQuickSmsResult({ success: false, message: err.message || 'রিকোয়েস্ট ফেইল্ড।' });
+    } finally {
+      setQuickSmsLoading(false);
+    }
+  };
+
   // Check saved session
   useEffect(() => {
     const saved = localStorage.getItem('ff_owner_token');
@@ -498,7 +552,60 @@ export default function OwnerGatewayPage() {
         </div>
       </header>
 
-      {/* 2. Top Control Panel (3 Feature Cards) */}
+      {/* 2. 1-Tap Smart SMS Scanner Hero Box */}
+      <div className="p-5 rounded-3xl bg-gradient-to-r from-emerald-950/60 via-slate-900 to-teal-950/60 border border-emerald-500/30 shadow-xl space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <span className="p-2 rounded-xl bg-emerald-500/20 text-emerald-400">
+              <Sparkles className="w-5 h-5" />
+            </span>
+            <div>
+              <h2 className="text-base font-black text-white">
+                ১-ক্লিকে বিকাশ/নগদ SMS ডিটেক্টর (Easy 1-Tap Auto-Deposit)
+              </h2>
+              <p className="text-xs text-slate-400">
+                ফোনে বিকাশ বা নগদ থেকে টাকা আসার যেকোনো SMS কপি করে নিচে পেস্ট করুন—বট স্বয়ংক্রিয়ভাবে টাকা যোগ করে দেবে!
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={handlePasteAndDetectSms}
+            className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center justify-center gap-2 shadow-md transition-all active:scale-95 whitespace-nowrap"
+          >
+            <Copy className="w-4 h-4" />
+            <span>📋 ক্লিপবোর্ড থেকে পেস্ট করুন</span>
+          </button>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-2 pt-1">
+          <input
+            type="text"
+            placeholder="যেমন: You have received Tk 200.00 from 017xxxxxxxx... TrxID 9B7XYZ89"
+            value={quickSmsText}
+            onChange={(e) => setQuickSmsText(e.target.value)}
+            className="flex-1 px-4 py-2.5 rounded-xl bg-slate-950/80 border border-slate-700 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono"
+          />
+          <button
+            onClick={() => processQuickSms()}
+            disabled={quickSmsLoading || !quickSmsText.trim()}
+            className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-black font-black text-xs flex items-center justify-center gap-2 shadow-md disabled:opacity-50 whitespace-nowrap cursor-pointer"
+          >
+            {quickSmsLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+            <span>অটো-অ্যাড করুন</span>
+          </button>
+        </div>
+
+        {quickSmsResult && (
+          <div className={`p-3 rounded-xl text-xs font-bold flex items-center gap-2 ${
+            quickSmsResult.success ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
+          }`}>
+            {quickSmsResult.success ? <CheckCircle className="w-4 h-4" /> : <AlertTriangle className="w-4 h-4" />}
+            <span>{quickSmsResult.message}</span>
+          </div>
+        )}
+      </div>
+
+      {/* 3. Top Control Panel (3 Feature Cards) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Card 1: Bot Auto-Credit Switch */}
         <div className="p-5 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-900/60 border border-slate-800 shadow-lg space-y-4 relative overflow-hidden">

@@ -76,7 +76,7 @@ export default function DepositWithdrawModal({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleDepositSubmit = (e: React.FormEvent) => {
+  const handleDepositSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     setMessage(null);
@@ -103,12 +103,44 @@ export default function DepositWithdrawModal({
       return;
     }
 
-    const userId = currentUser?.id || 'u-1';
+    const userId = currentUser?.username || currentUser?.ign || currentUser?.id || phone;
     const userPhone = currentUser?.phone || phone;
-    const userName = currentUser?.ign || 'Player';
+    const userName = currentUser?.ign || currentUser?.username || 'Player';
 
+    // 1. Try Instant Auto-Verification against Webhook / Incoming Payments database
+    try {
+      const verifyRes = await fetch('/api/deposit/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: userId,
+          trx_id: cleanTrx,
+          expected_amount: Number(amount),
+        }),
+      });
+      const verifyData = await verifyRes.json();
+      if (verifyData.success && verifyData.status === 'SUCCESS') {
+        setSubmitting(false);
+        setMessage({
+          type: 'success',
+          text: `🎉 অভিনন্দন! TrxID (${cleanTrx}) স্বয়ংক্রিয়ভাবে ভেরিফাই হয়েছে এবং আপনার ওয়ালেটে ৳${verifyData.credit_amount || amount} যোগ করা হয়েছে!`,
+        });
+        setTrxId('');
+        setPhone('');
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('ff_users_updated'));
+        }
+        setTimeout(() => {
+          setMessage(null);
+          onClose();
+        }, 2500);
+        return;
+      }
+    } catch (e) {}
+
+    // 2. If not pre-matched in database yet, save as pending deposit request
     const res = submitDepositRequest({
-      userId,
+      userId: currentUser?.id || 'u-1',
       userPhone,
       userName,
       method,
@@ -122,7 +154,7 @@ export default function DepositWithdrawModal({
     if (res.success) {
       setMessage({
         type: 'pending',
-        text: `⏳ আপনার ৳${amount} ডিপোজিট রিকোয়েস্ট জমা হয়েছে (পেন্ডিং)! এডমিন অফিসিয়াল স্টেটমেন্ট মিলিয়ে TrxID (${cleanTrx}) যাচাই করার পর ব্যালেন্স যোগ করবেন।`,
+        text: `⏳ আপনার ৳${amount} ডিপোজিট রিকোয়েস্ট জমা হয়েছে! এডমিন TrxID (${cleanTrx}) মিলিয়ে ব্যালেন্স যোগ করবেন।`,
       });
       setTrxId('');
       setPhone('');
