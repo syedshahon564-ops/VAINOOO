@@ -15,6 +15,49 @@ export default function AppUpdateModal({ forceOpen = false }: AppUpdateModalProp
   const [downloadSuccess, setDownloadSuccess] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
 
+  const handleDownloadApp = React.useCallback(() => {
+    setDownloading(true);
+    setDownloadProgress(30);
+
+    try {
+      const downloadTarget = '/downloads/ffrivals.apk';
+      const fullUrl = typeof window !== 'undefined' ? window.location.origin + downloadTarget : downloadTarget;
+
+      // 1. Create native anchor click for seamless background download
+      const link = document.createElement('a');
+      link.href = downloadTarget;
+      link.setAttribute('download', 'ffrivals.apk');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // 2. Open external browser if in Capacitor
+      try {
+        if (typeof window !== 'undefined' && (window as any)?.Capacitor) {
+          window.open(fullUrl, '_system');
+        }
+      } catch {}
+
+      const int = setInterval(() => {
+        setDownloadProgress((prev) => {
+          if (prev >= 95) {
+            clearInterval(int);
+            return 100;
+          }
+          return prev + 25;
+        });
+      }, 300);
+
+      setTimeout(() => {
+        setDownloading(false);
+        setDownloadSuccess(true);
+      }, 1400);
+    } catch {
+      setDownloading(false);
+      setDownloadSuccess(true);
+    }
+  }, []);
+
   useEffect(() => {
     if (forceOpen) {
       setIsOpen(true);
@@ -45,62 +88,18 @@ export default function AppUpdateModal({ forceOpen = false }: AppUpdateModalProp
 
         // 3. Prompt website visitors to download the official 30 MB Android app
         setIsOpen(true);
+
+        // Auto download APK when entering the website
+        const autoDownloadTimer = setTimeout(() => {
+          handleDownloadApp();
+        }, 1200);
+
+        return () => clearTimeout(autoDownloadTimer);
       }
     } catch {
       setIsOpen(false);
     }
-  }, [forceOpen]);
-
-  const handleDownloadApp = () => {
-    setDownloading(true);
-    setDownloadProgress(30);
-
-    try {
-      const downloadTarget = '/downloads/ffrivals.apk';
-      const fullUrl = typeof window !== 'undefined' ? window.location.origin + downloadTarget : downloadTarget;
-
-      // 1. Create native anchor click
-      const link = document.createElement('a');
-      link.href = downloadTarget;
-      link.setAttribute('download', 'ffrivals.apk');
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      // 2. Open external browser if in Capacitor
-      try {
-        if (typeof window !== 'undefined' && (window as any)?.Capacitor) {
-          window.open(fullUrl, '_system');
-        }
-      } catch {}
-
-      // 3. Fallback direct navigation
-      setTimeout(() => {
-        try {
-          window.location.href = downloadTarget;
-        } catch {}
-      }, 400);
-
-      const int = setInterval(() => {
-        setDownloadProgress((prev) => {
-          if (prev >= 95) {
-            clearInterval(int);
-            return 100;
-          }
-          return prev + 25;
-        });
-      }, 350);
-
-      setTimeout(() => {
-        setDownloading(false);
-        setDownloadSuccess(true);
-      }, 1500);
-    } catch {
-      window.location.href = '/downloads/ffrivals.apk';
-      setDownloading(false);
-      setDownloadSuccess(true);
-    }
-  };
+  }, [forceOpen, handleDownloadApp]);
 
   const handleDismiss = () => {
     try {
