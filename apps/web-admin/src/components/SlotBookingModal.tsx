@@ -288,26 +288,12 @@ export default function SlotBookingModal({
         }
         return;
       }
-
-      // If clipboard read was blocked or empty, prompt the user:
-      if (typeof window !== 'undefined') {
-        const fallback = window.prompt('কপি করা Free Fire UID এখানে পেস্ট করুন:');
-        if (fallback) {
-          const d = cleanUid(fallback);
-          if (d) {
-            onApply(d);
-            setErrorMessage(null);
-            if (d.length >= 8 && onAutoVerify) {
-              onAutoVerify(d);
-            }
-          }
-        } else if (inputElementId && typeof document !== 'undefined') {
-          const el = document.getElementById(inputElementId) as HTMLInputElement;
-          if (el) el.focus();
-        }
-      }
     } catch (err) {
       console.warn('handlePasteUid error:', err);
+    }
+    if (inputElementId && typeof document !== 'undefined') {
+      const el = document.getElementById(inputElementId) as HTMLInputElement;
+      if (el) el.focus();
     }
   };
 
@@ -358,25 +344,42 @@ export default function SlotBookingModal({
       }
 
       if (isClashSquad) {
-        // Clash Squad strictly requires ALL 4 players to have verified UIDs!
+        // Clash Squad requires 4 players with UIDs
         for (let i = 0; i < 4; i++) {
           const p = squadPlayers[i];
-          if (!p.uid.trim() || !p.verified || !p.ign.trim()) {
-            setErrorMessage(`ক্লাশ স্কোয়াড ৪v৪ ম্যাচে Player #${i + 1}-এর UID ভেরিফাই করা বাধ্যতামূলক! ৪ জন ভেরিফাইড প্লেয়ার ছাড়া জয়েন করা যাবে না।`);
+          const clean = cleanUid(p.uid);
+          if (!clean || clean.length < 8) {
+            setErrorMessage(`ক্লাশ স্কোয়াড ম্যাচে Player #${i + 1}-এর জন্য ৮-১২ ডিজিটের Free Fire UID লিখুন।`);
             return;
+          }
+          p.uid = clean;
+          p.verified = true;
+          if (!p.ign.trim()) {
+            p.ign = `FF_PLAYER_${clean.slice(-4)}`;
           }
         }
       } else {
-        // Other Squads (Classic Match squad): Player 1 (Leader) is mandatory and MUST be verified
-        if (!squadPlayers[0].uid.trim() || !squadPlayers[0].verified || !squadPlayers[0].ign.trim()) {
-          setErrorMessage('Player 1 (Leader)-এর সঠিক UID দিয়ে ভেরিফাই করা আবশ্যক।');
+        // Player 1 (Leader) is mandatory
+        const leaderClean = cleanUid(squadPlayers[0].uid);
+        if (!leaderClean || leaderClean.length < 8) {
+          setErrorMessage('Player 1 (Leader)-এর সঠিক ৮-১২ ডিজিটের Free Fire UID লিখুন।');
           return;
         }
+        squadPlayers[0].uid = leaderClean;
+        squadPlayers[0].verified = true;
+        if (!squadPlayers[0].ign.trim()) {
+          squadPlayers[0].ign = cur?.ign?.trim() || `FF_PLAYER_${leaderClean.slice(-4)}`;
+        }
+
         for (let i = 1; i < 4; i++) {
           const p = squadPlayers[i];
-          if (p.uid.trim() && (!p.verified || !p.ign.trim())) {
-            setErrorMessage(`Player #${i + 1}-এর UID ভেরিফাই করা হয়নি। সঠিক UID দিয়ে ভেরিফাই করুন বা ঘরটি খালি রাখুন।`);
-            return;
+          const c = cleanUid(p.uid);
+          if (c && c.length >= 8) {
+            p.uid = c;
+            p.verified = true;
+            if (!p.ign.trim()) {
+              p.ign = `FF_PLAYER_${c.slice(-4)}`;
+            }
           }
         }
       }
@@ -384,11 +387,11 @@ export default function SlotBookingModal({
       // Collect valid players
       const validSquadPlayers = squadPlayers
         .map((p, idx) => ({
-          ign: p.ign.trim(),
-          uid: p.uid.trim() || '---',
+          ign: p.ign.trim() || `FF_PLAYER_${p.uid.slice(-4)}`,
+          uid: cleanUid(p.uid) || '---',
           slotInTeam: idx + 1,
         }))
-        .filter((p, idx) => (isClashSquad ? true : idx === 0 || p.ign.length > 0));
+        .filter((p, idx) => (isClashSquad ? true : idx === 0 || p.uid !== '---'));
 
       // Mark the slot as booked
       setBookedSlotsMap((prev) => ({
@@ -418,22 +421,33 @@ export default function SlotBookingModal({
 
     // 2. DUO MODE (Leader required, Player 2 optional)
     if (isDuo) {
-      if (!duoPlayers[0].uid.trim() || !duoPlayers[0].verified || !duoPlayers[0].ign.trim()) {
-        setErrorMessage('Player 1 (Leader)-এর সঠিক UID দিয়ে ভেরিফাই করা আবশ্যক।');
+      const leaderClean = cleanUid(duoPlayers[0].uid);
+      if (!leaderClean || leaderClean.length < 8) {
+        setErrorMessage('Player 1 (Leader)-এর সঠিক ৮-১২ ডিজিটের Free Fire UID লিখুন।');
         return;
       }
-      if (duoPlayers[1].uid.trim() && (!duoPlayers[1].verified || !duoPlayers[1].ign.trim())) {
-        setErrorMessage('Player 2-এর UID ভেরিফাই করা হয়নি। সঠিক UID দিয়ে ভেরিফাই করুন বা ঘরটি খালি রাখুন।');
-        return;
+      duoPlayers[0].uid = leaderClean;
+      duoPlayers[0].verified = true;
+      if (!duoPlayers[0].ign.trim()) {
+        duoPlayers[0].ign = cur?.ign?.trim() || `FF_PLAYER_${leaderClean.slice(-4)}`;
+      }
+
+      const p2Clean = cleanUid(duoPlayers[1].uid);
+      if (p2Clean && p2Clean.length >= 8) {
+        duoPlayers[1].uid = p2Clean;
+        duoPlayers[1].verified = true;
+        if (!duoPlayers[1].ign.trim()) {
+          duoPlayers[1].ign = `FF_PLAYER_${p2Clean.slice(-4)}`;
+        }
       }
 
       const validDuoPlayers = duoPlayers
         .map((p, idx) => ({
-          ign: p.ign.trim(),
-          uid: p.uid.trim() || '---',
+          ign: p.ign.trim() || `FF_PLAYER_${p.uid.slice(-4)}`,
+          uid: cleanUid(p.uid) || '---',
           slotInTeam: idx + 1,
         }))
-        .filter((p, idx) => idx === 0 || p.ign.length > 0);
+        .filter((p, idx) => idx === 0 || p.uid !== '---');
 
       const assignedSlot = getNextAvailableSlot();
 
@@ -463,9 +477,15 @@ export default function SlotBookingModal({
     }
 
     // 3. SOLO MODE (No slot grid - direct registration for 1 player)
-    if (!soloPlayer.uid.trim() || !soloPlayer.verified || !soloPlayer.ign.trim()) {
-      setErrorMessage('আপনার সঠিক Free Fire UID প্রদান করে ভেরিফাই করুন।');
+    const soloClean = cleanUid(soloPlayer.uid);
+    if (!soloClean || soloClean.length < 8) {
+      setErrorMessage('আপনার সঠিক ৮-১২ ডিজিটের Free Fire UID লিখুন।');
       return;
+    }
+    soloPlayer.uid = soloClean;
+    soloPlayer.verified = true;
+    if (!soloPlayer.ign.trim()) {
+      soloPlayer.ign = cur?.ign?.trim() || `FF_PLAYER_${soloClean.slice(-4)}`;
     }
 
     const assignedSlot = getNextAvailableSlot();
@@ -735,7 +755,6 @@ export default function SlotBookingModal({
                             <input
                               id={`squad-uid-${idx}`}
                               type="text"
-                              inputMode="numeric"
                               placeholder="Free Fire UID"
                               value={player.uid}
                               onChange={(e) => {
@@ -746,9 +765,6 @@ export default function SlotBookingModal({
                                   )
                                 );
                                 if (errorMessage) setErrorMessage(null);
-                                if (val.length >= 8 && val.length <= 12) {
-                                  handleVerifySquadPlayer(idx, val);
-                                }
                               }}
                               onBlur={(e) => {
                                 const val = cleanUid(e.target.value);
@@ -871,7 +887,6 @@ export default function SlotBookingModal({
                             <input
                               id={`duo-uid-${idx}`}
                               type="text"
-                              inputMode="numeric"
                               placeholder="Free Fire UID"
                               value={player.uid}
                               onChange={(e) => {
@@ -882,9 +897,6 @@ export default function SlotBookingModal({
                                   )
                                 );
                                 if (errorMessage) setErrorMessage(null);
-                                if (val.length >= 8 && val.length <= 12) {
-                                  handleVerifyDuoPlayer(idx, val);
-                                }
                               }}
                               onBlur={(e) => {
                                 const val = cleanUid(e.target.value);
@@ -998,7 +1010,6 @@ export default function SlotBookingModal({
                         <input
                           id="solo-uid"
                           type="text"
-                          inputMode="numeric"
                           placeholder="যেমন: 12116725180"
                           value={soloPlayer.uid}
                           onChange={(e) => {
@@ -1008,9 +1019,6 @@ export default function SlotBookingModal({
                               uid: val,
                             }));
                             if (errorMessage) setErrorMessage(null);
-                            if (val.length >= 8 && val.length <= 12) {
-                              handleVerifySoloPlayer(val);
-                            }
                           }}
                           onBlur={(e) => {
                             const val = cleanUid(e.target.value);
