@@ -126,21 +126,26 @@ export default function SlotBookingModal({
     const cur = getCurrentUser();
     if (cur) {
       const defaultName = cur.ign || cur.username || '';
-      const defaultUid = cur.uid || '---';
+      const defaultUid = cur.uid && cur.uid !== '---' ? cur.uid : '';
       if (isSquad) {
         setSquadPlayers((prev) => [
-          { ign: prev[0].ign || defaultName, uid: defaultUid, checking: false, verified: true },
+          { ign: prev[0].ign || defaultName, uid: prev[0].uid || defaultUid, checking: false, verified: true },
           prev[1],
           prev[2],
           prev[3],
         ]);
       } else if (isDuo) {
         setDuoPlayers((prev) => [
-          { ign: prev[0].ign || defaultName, uid: defaultUid, checking: false, verified: true },
+          { ign: prev[0].ign || defaultName, uid: prev[0].uid || defaultUid, checking: false, verified: true },
           prev[1],
         ]);
       } else {
-        setSoloPlayer({ ign: defaultName, uid: defaultUid, checking: false, verified: true });
+        setSoloPlayer((prev) => ({
+          ign: prev.ign || defaultName,
+          uid: prev.uid || defaultUid,
+          checking: false,
+          verified: true,
+        }));
       }
     }
   }, [isSquad, isDuo]);
@@ -343,54 +348,63 @@ export default function SlotBookingModal({
         return;
       }
 
+      const p1 = squadPlayers[0];
+      const p1Name = p1.ign?.trim() || cur?.ign?.trim() || cur?.username?.trim();
+      const p1Uid = cleanUid(p1.uid) || cur?.uid || '';
+
+      if (!p1Name && !p1Uid) {
+        setErrorMessage('Player 1 (Leader)-এর নাম (IGN) অথবা UID লিখুন।');
+        return;
+      }
+
       if (isClashSquad) {
-        // Clash Squad requires 4 player names
+        // Clash Squad requires 4 player entries (name or UID)
         for (let i = 0; i < 4; i++) {
           const p = squadPlayers[i];
-          if (!p.ign || !p.ign.trim()) {
-            setErrorMessage(`ক্লাশ স্কোয়াড ম্যাচে Player #${i + 1}-এর নাম (IGN) লিখুন।`);
+          if (!p.ign?.trim() && !cleanUid(p.uid)) {
+            setErrorMessage(`ক্লাশ স্কোয়াড ম্যাচে Player #${i + 1}-এর নাম বা UID লিখুন।`);
             return;
           }
-        }
-      } else {
-        // Player 1 (Leader) is mandatory
-        const leaderName = squadPlayers[0].ign?.trim();
-        if (!leaderName) {
-          setErrorMessage('Player 1 (Leader)-এর নাম (IGN) লিখুন।');
-          return;
         }
       }
 
       // Collect valid players
       const validSquadPlayers = squadPlayers
-        .map((p, idx) => ({
-          ign: p.ign.trim(),
-          uid: p.uid?.trim() || cur?.uid || `P${idx + 1}`,
-          slotInTeam: idx + 1,
-        }))
-        .filter((p, idx) => (isClashSquad ? true : idx === 0 || Boolean(p.ign)));
+        .map((p, idx) => {
+          const cUid = cleanUid(p.uid);
+          const pName = p.ign?.trim();
+          return {
+            ign: pName || (idx === 0 ? p1Name || `Player 1` : cUid ? `FF_${cUid.slice(-4)}` : `Player ${idx + 1}`),
+            uid: cUid || (idx === 0 ? p1Uid || cur?.uid || '---' : `P${idx + 1}`),
+            slotInTeam: idx + 1,
+          };
+        })
+        .filter((p, idx) => (isClashSquad ? true : idx === 0 || Boolean(squadPlayers[idx].ign?.trim() || cleanUid(squadPlayers[idx].uid))));
+
+      const leaderIgn = validSquadPlayers[0]?.ign || p1Name || 'Leader';
+      const leaderUid = validSquadPlayers[0]?.uid || p1Uid || cur?.uid || '---';
 
       // Mark the slot as booked
       setBookedSlotsMap((prev) => ({
         ...prev,
         [selectedSlotNumber]: {
-          ign: squadPlayers[0].ign.trim(),
-          uid: cur?.uid || '---',
+          ign: leaderIgn,
+          uid: leaderUid,
           badge: 'SQUAD',
         },
       }));
 
       recordUserJoinedMatch(match.id, cur, {
-        ign: squadPlayers[0].ign.trim(),
-        uid: cur?.uid || '---',
+        ign: leaderIgn,
+        uid: leaderUid,
         slot: selectedSlotNumber,
       });
 
       onSuccess({
         slotNumber: selectedSlotNumber,
         teamNumber: selectedSlotNumber,
-        ign: squadPlayers[0].ign.trim(),
-        uid: cur?.uid || '---',
+        ign: leaderIgn,
+        uid: leaderUid,
         players: validSquadPlayers,
       });
       return;
@@ -398,42 +412,51 @@ export default function SlotBookingModal({
 
     // 2. DUO MODE (Leader required, Player 2 optional)
     if (isDuo) {
-      const leaderName = duoPlayers[0].ign?.trim();
-      if (!leaderName) {
-        setErrorMessage('Player 1 (Leader)-এর নাম (IGN) লিখুন।');
+      const p1 = duoPlayers[0];
+      const p1Name = p1.ign?.trim() || cur?.ign?.trim() || cur?.username?.trim();
+      const p1Uid = cleanUid(p1.uid) || cur?.uid || '';
+
+      if (!p1Name && !p1Uid) {
+        setErrorMessage('Player 1 (Leader)-এর নাম (IGN) অথবা UID লিখুন।');
         return;
       }
 
       const validDuoPlayers = duoPlayers
-        .map((p, idx) => ({
-          ign: p.ign.trim(),
-          uid: p.uid?.trim() || cur?.uid || `P${idx + 1}`,
-          slotInTeam: idx + 1,
-        }))
-        .filter((p, idx) => idx === 0 || Boolean(p.ign));
+        .map((p, idx) => {
+          const cUid = cleanUid(p.uid);
+          const pName = p.ign?.trim();
+          return {
+            ign: pName || (idx === 0 ? p1Name || `Player 1` : cUid ? `FF_${cUid.slice(-4)}` : `Player ${idx + 1}`),
+            uid: cUid || (idx === 0 ? p1Uid || cur?.uid || '---' : `P${idx + 1}`),
+            slotInTeam: idx + 1,
+          };
+        })
+        .filter((p, idx) => idx === 0 || Boolean(duoPlayers[idx].ign?.trim() || cleanUid(duoPlayers[idx].uid)));
 
       const assignedSlot = getNextAvailableSlot();
+      const leaderIgn = validDuoPlayers[0]?.ign || p1Name || 'Leader';
+      const leaderUid = validDuoPlayers[0]?.uid || p1Uid || cur?.uid || '---';
 
       setBookedSlotsMap((prev) => ({
         ...prev,
         [assignedSlot]: {
-          ign: duoPlayers[0].ign.trim(),
-          uid: cur?.uid || '---',
+          ign: leaderIgn,
+          uid: leaderUid,
           badge: 'DUO',
         },
       }));
 
       recordUserJoinedMatch(match.id, cur, {
-        ign: duoPlayers[0].ign.trim(),
-        uid: cur?.uid || '---',
+        ign: leaderIgn,
+        uid: leaderUid,
         slot: assignedSlot,
       });
 
       onSuccess({
         slotNumber: assignedSlot,
         teamNumber: assignedSlot,
-        ign: duoPlayers[0].ign.trim(),
-        uid: cur?.uid || '---',
+        ign: leaderIgn,
+        uid: leaderUid,
         players: validDuoPlayers,
       });
       return;
@@ -441,37 +464,41 @@ export default function SlotBookingModal({
 
     // 3. SOLO MODE (No slot grid - direct registration for 1 player)
     const soloName = soloPlayer.ign?.trim() || cur?.ign?.trim() || cur?.username?.trim();
-    if (!soloName) {
-      setErrorMessage('আপনার ইন-গেম নাম (IGN) লিখুন।');
+    const soloUid = cleanUid(soloPlayer.uid) || cur?.uid || '';
+
+    if (!soloName && !soloUid) {
+      setErrorMessage('আপনার ইন-গেম নাম (IGN) অথবা UID লিখুন।');
       return;
     }
-    soloPlayer.ign = soloName;
+
+    const finalSoloName = soloName || (soloUid ? `FF_${soloUid.slice(-4)}` : 'Player');
+    const finalSoloUid = soloUid || cur?.uid || '---';
 
     const assignedSlot = getNextAvailableSlot();
 
     setBookedSlotsMap((prev) => ({
       ...prev,
       [assignedSlot]: {
-        ign: soloName,
-        uid: cur?.uid || '---',
+        ign: finalSoloName,
+        uid: finalSoloUid,
         badge: 'SOLO',
       },
     }));
 
     recordUserJoinedMatch(match.id, cur, {
-      ign: soloPlayer.ign.trim(),
-      uid: soloPlayer.uid.trim(),
+      ign: finalSoloName,
+      uid: finalSoloUid,
       slot: assignedSlot,
     });
 
     onSuccess({
       slotNumber: assignedSlot,
-      ign: soloPlayer.ign.trim(),
-      uid: soloPlayer.uid.trim() || '---',
+      ign: finalSoloName,
+      uid: finalSoloUid,
       players: [
         {
-          ign: soloPlayer.ign.trim(),
-          uid: soloPlayer.uid.trim() || '---',
+          ign: finalSoloName,
+          uid: finalSoloUid,
           slotInTeam: 1,
         },
       ],
@@ -650,11 +677,11 @@ export default function SlotBookingModal({
             <div className="text-xs text-gray-600 bg-blue-50/70 border border-blue-200 p-2.5 rounded-xl leading-relaxed">
               {isSquad
                 ? isClashSquad
-                  ? 'ক্লাশ স্কোয়াড ৪v৪ ম্যাচে অবশ্যই ৪ জন প্লেয়ারের নাম দিতে হবে।'
-                  : 'স্কোয়াড লিডার (Player 1) দেওয়া আবশ্যক। বাকি প্লেয়ারদের নাম ঐচ্ছিক।'
+                  ? 'ক্লাশ স্কোয়াড ৪v৪ ম্যাচে প্রতিটি প্লেয়ারের UID এবং ইন-গেম নাম দিন।'
+                  : 'স্কোয়াড লিডার (Player 1) দেওয়া আবশ্যক। বাকি প্লেয়ারদের তথ্য ঐচ্ছিক।'
                 : isDuo
                 ? 'Player 1 (লিডার) আবশ্যক। Player 2 ঐচ্ছিক।'
-                : 'আপনার ফ্রি ফায়ার ইন-গেম নাম (IGN) দিয়ে কনফার্ম করুন।'}
+                : 'আপনার ফ্রি ফায়ার UID এবং ইন-গেম নাম (IGN) দিয়ে কনফার্ম করুন।'}
             </div>
 
             {/* Form Fields */}
@@ -665,7 +692,7 @@ export default function SlotBookingModal({
                   {squadPlayers.map((player, idx) => (
                     <div
                       key={idx}
-                      className="p-3.5 rounded-2xl bg-gray-50 border border-gray-200 space-y-2.5"
+                      className="p-3.5 rounded-2xl bg-gray-50 border border-gray-200 space-y-3"
                     >
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-black text-gray-900 flex items-center gap-1.5">
@@ -678,40 +705,90 @@ export default function SlotBookingModal({
                             ? `Player ${idx + 1} (আবশ্যক)`
                             : `Player ${idx + 1} (ঐচ্ছিক / Optional)`}
                         </span>
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            try {
-                              const text = await readClipboardText();
-                              if (text) {
-                                setSquadPlayers((prev) =>
-                                  prev.map((p, i) => (i === idx ? { ...p, ign: text.trim() } : p))
-                                );
-                                if (errorMessage) setErrorMessage(null);
-                              }
-                            } catch {}
-                          }}
-                          className="text-[11px] font-bold text-red-600 hover:text-red-500 flex items-center gap-1 cursor-pointer bg-red-500/10 px-2 py-0.5 rounded-lg border border-red-500/20 active:scale-95 transition-all"
-                        >
-                          <Clipboard className="w-3 h-3" />
-                          <span>পেস্ট করুন</span>
-                        </button>
                       </div>
 
-                      <div>
-                        <input
-                          type="text"
-                          placeholder={idx === 0 ? "Player 1 ইন-গেম নাম (IGN)" : `Player ${idx + 1} ইন-গেম নাম (IGN)`}
-                          value={player.ign}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setSquadPlayers((prev) =>
-                              prev.map((p, i) => (i === idx ? { ...p, ign: val } : p))
-                            );
-                            if (errorMessage) setErrorMessage(null);
-                          }}
-                          className="w-full px-3 py-2.5 rounded-xl border border-gray-200 bg-white text-xs font-bold text-gray-900 focus:outline-none focus:border-red-500 shadow-xs"
-                        />
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        {/* Free Fire UID */}
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <label className="text-[11px] font-bold text-gray-700">
+                              Free Fire UID:
+                            </label>
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                try {
+                                  const text = await readClipboardText();
+                                  if (text) {
+                                    const digits = toEnDigits(text) || text.trim();
+                                    setSquadPlayers((prev) =>
+                                      prev.map((p, i) => (i === idx ? { ...p, uid: digits } : p))
+                                    );
+                                    if (errorMessage) setErrorMessage(null);
+                                  }
+                                } catch {}
+                              }}
+                              className="text-[10px] font-bold text-red-600 hover:text-red-500 flex items-center gap-1 cursor-pointer bg-red-500/10 px-2 py-0.5 rounded-lg border border-red-500/20 active:scale-95 transition-all"
+                            >
+                              <Clipboard className="w-2.5 h-2.5" />
+                              <span>পেস্ট করুন</span>
+                            </button>
+                          </div>
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            placeholder={idx === 0 ? "ফ্রি ফায়ার UID (যেমন: 123456789)" : `Player ${idx + 1} UID (ঐচ্ছিক)`}
+                            value={player.uid}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setSquadPlayers((prev) =>
+                                prev.map((p, i) => (i === idx ? { ...p, uid: val } : p))
+                              );
+                              if (errorMessage) setErrorMessage(null);
+                            }}
+                            className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-xs font-bold text-gray-900 focus:outline-none focus:border-red-500 shadow-xs"
+                          />
+                        </div>
+
+                        {/* In-Game Name (IGN) */}
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <label className="text-[11px] font-bold text-gray-700">
+                              ইন-গেম নাম (IGN):
+                            </label>
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                try {
+                                  const text = await readClipboardText();
+                                  if (text) {
+                                    setSquadPlayers((prev) =>
+                                      prev.map((p, i) => (i === idx ? { ...p, ign: text.trim() } : p))
+                                    );
+                                    if (errorMessage) setErrorMessage(null);
+                                  }
+                                } catch {}
+                              }}
+                              className="text-[10px] font-bold text-red-600 hover:text-red-500 flex items-center gap-1 cursor-pointer bg-red-500/10 px-2 py-0.5 rounded-lg border border-red-500/20 active:scale-95 transition-all"
+                            >
+                              <Clipboard className="w-2.5 h-2.5" />
+                              <span>পেস্ট করুন</span>
+                            </button>
+                          </div>
+                          <input
+                            type="text"
+                            placeholder={idx === 0 ? "Player 1 নাম (যেমন: ABU NUMAN)" : `Player ${idx + 1} নাম (ঐচ্ছিক)`}
+                            value={player.ign}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setSquadPlayers((prev) =>
+                                prev.map((p, i) => (i === idx ? { ...p, ign: val } : p))
+                              );
+                              if (errorMessage) setErrorMessage(null);
+                            }}
+                            className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-xs font-bold text-gray-900 focus:outline-none focus:border-red-500 shadow-xs"
+                          />
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -724,7 +801,7 @@ export default function SlotBookingModal({
                   {duoPlayers.map((player, idx) => (
                     <div
                       key={idx}
-                      className="p-3.5 rounded-2xl bg-gray-50 border border-gray-200 space-y-2.5"
+                      className="p-3.5 rounded-2xl bg-gray-50 border border-gray-200 space-y-3"
                     >
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-black text-gray-900 flex items-center gap-1.5">
@@ -733,40 +810,90 @@ export default function SlotBookingModal({
                           </span>
                           {idx === 0 ? 'Player 1 (Leader - আবশ্যক)' : 'Player 2 (ঐচ্ছিক / Optional)'}
                         </span>
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            try {
-                              const text = await readClipboardText();
-                              if (text) {
-                                setDuoPlayers((prev) =>
-                                  prev.map((p, i) => (i === idx ? { ...p, ign: text.trim() } : p))
-                                );
-                                if (errorMessage) setErrorMessage(null);
-                              }
-                            } catch {}
-                          }}
-                          className="text-[11px] font-bold text-red-600 hover:text-red-500 flex items-center gap-1 cursor-pointer bg-red-500/10 px-2 py-0.5 rounded-lg border border-red-500/20 active:scale-95 transition-all"
-                        >
-                          <Clipboard className="w-3 h-3" />
-                          <span>পেস্ট করুন</span>
-                        </button>
                       </div>
 
-                      <div>
-                        <input
-                          type="text"
-                          placeholder={idx === 0 ? "Player 1 ইন-গেম নাম (IGN)" : "Player 2 ইন-গেম নাম (IGN)"}
-                          value={player.ign}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setDuoPlayers((prev) =>
-                              prev.map((p, i) => (i === idx ? { ...p, ign: val } : p))
-                            );
-                            if (errorMessage) setErrorMessage(null);
-                          }}
-                          className="w-full px-3 py-2.5 rounded-xl border border-gray-200 bg-white text-xs font-bold text-gray-900 focus:outline-none focus:border-red-500 shadow-xs"
-                        />
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        {/* Free Fire UID */}
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <label className="text-[11px] font-bold text-gray-700">
+                              Free Fire UID:
+                            </label>
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                try {
+                                  const text = await readClipboardText();
+                                  if (text) {
+                                    const digits = toEnDigits(text) || text.trim();
+                                    setDuoPlayers((prev) =>
+                                      prev.map((p, i) => (i === idx ? { ...p, uid: digits } : p))
+                                    );
+                                    if (errorMessage) setErrorMessage(null);
+                                  }
+                                } catch {}
+                              }}
+                              className="text-[10px] font-bold text-red-600 hover:text-red-500 flex items-center gap-1 cursor-pointer bg-red-500/10 px-2 py-0.5 rounded-lg border border-red-500/20 active:scale-95 transition-all"
+                            >
+                              <Clipboard className="w-2.5 h-2.5" />
+                              <span>পেস্ট করুন</span>
+                            </button>
+                          </div>
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            placeholder={idx === 0 ? "ফ্রি ফায়ার UID (যেমন: 123456789)" : "Player 2 UID (ঐচ্ছিক)"}
+                            value={player.uid}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setDuoPlayers((prev) =>
+                                prev.map((p, i) => (i === idx ? { ...p, uid: val } : p))
+                              );
+                              if (errorMessage) setErrorMessage(null);
+                            }}
+                            className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-xs font-bold text-gray-900 focus:outline-none focus:border-red-500 shadow-xs"
+                          />
+                        </div>
+
+                        {/* In-Game Name (IGN) */}
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <label className="text-[11px] font-bold text-gray-700">
+                              ইন-গেম নাম (IGN):
+                            </label>
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                try {
+                                  const text = await readClipboardText();
+                                  if (text) {
+                                    setDuoPlayers((prev) =>
+                                      prev.map((p, i) => (i === idx ? { ...p, ign: text.trim() } : p))
+                                    );
+                                    if (errorMessage) setErrorMessage(null);
+                                  }
+                                } catch {}
+                              }}
+                              className="text-[10px] font-bold text-red-600 hover:text-red-500 flex items-center gap-1 cursor-pointer bg-red-500/10 px-2 py-0.5 rounded-lg border border-red-500/20 active:scale-95 transition-all"
+                            >
+                              <Clipboard className="w-2.5 h-2.5" />
+                              <span>পেস্ট করুন</span>
+                            </button>
+                          </div>
+                          <input
+                            type="text"
+                            placeholder={idx === 0 ? "Player 1 নাম (যেমন: ABU NUMAN)" : "Player 2 নাম (ঐচ্ছিক)"}
+                            value={player.ign}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setDuoPlayers((prev) =>
+                                prev.map((p, i) => (i === idx ? { ...p, ign: val } : p))
+                              );
+                              if (errorMessage) setErrorMessage(null);
+                            }}
+                            className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-xs font-bold text-gray-900 focus:outline-none focus:border-red-500 shadow-xs"
+                          />
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -776,37 +903,79 @@ export default function SlotBookingModal({
               {/* CASE C: SOLO (1 PLAYER - NO SLOT PICKING) */}
               {isSolo && (
                 <div className="p-4 rounded-2xl bg-gray-50 border border-gray-200 space-y-3.5">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-gray-700 block">
-                      ইন-গেম নাম (IGN):
-                    </label>
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        try {
-                          const text = await readClipboardText();
-                          if (text) {
-                            setSoloPlayer((prev) => ({ ...prev, ign: text.trim() }));
-                            if (errorMessage) setErrorMessage(null);
-                          }
-                        } catch {}
-                      }}
-                      className="text-[11px] font-bold text-red-600 hover:text-red-500 flex items-center gap-1 cursor-pointer bg-red-500/10 px-2.5 py-0.5 rounded-lg border border-red-500/20 active:scale-95 transition-all"
-                    >
-                      <Clipboard className="w-3 h-3" />
-                      <span>পেস্ট করুন</span>
-                    </button>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* Solo UID */}
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-gray-700 block">
+                          Free Fire UID:
+                        </label>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              const text = await readClipboardText();
+                              if (text) {
+                                const digits = toEnDigits(text) || text.trim();
+                                setSoloPlayer((prev) => ({ ...prev, uid: digits }));
+                                if (errorMessage) setErrorMessage(null);
+                              }
+                            } catch {}
+                          }}
+                          className="text-[11px] font-bold text-red-600 hover:text-red-500 flex items-center gap-1 cursor-pointer bg-red-500/10 px-2.5 py-0.5 rounded-lg border border-red-500/20 active:scale-95 transition-all"
+                        >
+                          <Clipboard className="w-3 h-3" />
+                          <span>পেস্ট করুন</span>
+                        </button>
+                      </div>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="আপনার ফ্রি ফায়ার UID (যেমন: 123456789)"
+                        value={soloPlayer.uid}
+                        onChange={(e) => {
+                          setSoloPlayer((prev) => ({ ...prev, uid: e.target.value }));
+                          if (errorMessage) setErrorMessage(null);
+                        }}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 bg-white text-xs font-bold text-gray-900 focus:outline-none focus:border-red-500 shadow-xs"
+                      />
+                    </div>
+
+                    {/* Solo IGN */}
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-gray-700 block">
+                          ইন-গেম নাম (IGN):
+                        </label>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              const text = await readClipboardText();
+                              if (text) {
+                                setSoloPlayer((prev) => ({ ...prev, ign: text.trim() }));
+                                if (errorMessage) setErrorMessage(null);
+                              }
+                            } catch {}
+                          }}
+                          className="text-[11px] font-bold text-red-600 hover:text-red-500 flex items-center gap-1 cursor-pointer bg-red-500/10 px-2.5 py-0.5 rounded-lg border border-red-500/20 active:scale-95 transition-all"
+                        >
+                          <Clipboard className="w-3 h-3" />
+                          <span>পেস্ট করুন</span>
+                        </button>
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="আপনার ফ্রি ফায়ার নাম (যেমন: ABU NUMAN)"
+                        value={soloPlayer.ign}
+                        onChange={(e) => {
+                          setSoloPlayer((prev) => ({ ...prev, ign: e.target.value }));
+                          if (errorMessage) setErrorMessage(null);
+                        }}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 bg-white text-xs font-bold text-gray-900 focus:outline-none focus:border-red-500 shadow-xs"
+                      />
+                    </div>
                   </div>
-                  <input
-                    type="text"
-                    placeholder="আপনার ফ্রি ফায়ার নাম (যেমন: ABU NUMAN)"
-                    value={soloPlayer.ign}
-                    onChange={(e) => {
-                      setSoloPlayer((prev) => ({ ...prev, ign: e.target.value }));
-                      if (errorMessage) setErrorMessage(null);
-                    }}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 bg-white text-xs font-bold text-gray-900 focus:outline-none focus:border-red-500 shadow-xs"
-                  />
                 </div>
               )}
             </div>
