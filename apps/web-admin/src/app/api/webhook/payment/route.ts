@@ -94,6 +94,69 @@ function writeUsers(users: any[]) {
   } catch (e) {}
 }
 
+async function forwardToExternalWebhookBridge(bridge: any, payment: any) {
+  if (!bridge || !bridge.enabled || !bridge.externalUrl) return;
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 6000);
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      'User-Agent': 'FF-Rivals-Webhook-Bridge/1.0',
+      'x-webhook-source': 'ff-rivals-tour',
+    };
+    if (bridge.secret) {
+      headers['x-api-key'] = bridge.secret;
+      headers['Authorization'] = `Bearer ${bridge.secret}`;
+    }
+
+    const forwardPayload = {
+      event: 'payment.received',
+      provider: payment.provider,
+      trx_id: payment.trxId,
+      amount: payment.amount,
+      sender: payment.sender,
+      status: payment.status,
+      claimedBy: payment.claimedBy || null,
+      raw_message: payment.rawMessage || '',
+      timestamp: payment.createdAt || new Date().toISOString(),
+      source: 'FF_RIVALS_TOUR',
+    };
+
+    const res = await fetch(bridge.externalUrl, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(forwardPayload),
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+
+    const isSuccess = res.ok || res.status === 200 || res.status === 201;
+    const db = readPaymentsDb();
+    if (db.webhookBridge) {
+      db.webhookBridge.totalForwarded = (db.webhookBridge.totalForwarded || 0) + 1;
+      if (isSuccess) {
+        db.webhookBridge.totalSuccess = (db.webhookBridge.totalSuccess || 0) + 1;
+        db.webhookBridge.lastForwardStatus = 'SUCCESS';
+      } else {
+        db.webhookBridge.lastForwardStatus = `HTTP_${res.status}`;
+      }
+      db.webhookBridge.lastForwardAt = new Date().toISOString();
+      writePaymentsDb(db);
+    }
+  } catch (err: any) {
+    try {
+      const db = readPaymentsDb();
+      if (db.webhookBridge) {
+        db.webhookBridge.totalForwarded = (db.webhookBridge.totalForwarded || 0) + 1;
+        db.webhookBridge.lastForwardStatus = 'ERROR: ' + err.message;
+        db.webhookBridge.lastForwardAt = new Date().toISOString();
+        writePaymentsDb(db);
+      }
+    } catch {}
+  }
+}
+
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
@@ -256,6 +319,11 @@ export async function POST(req: Request) {
 
     writePaymentsDb(db);
 
+    // Asynchronously forward to external webhook bridge if enabled (e.g. WebhookFlow)
+    if (db.webhookBridge?.enabled && db.webhookBridge?.externalUrl) {
+      forwardToExternalWebhookBridge(db.webhookBridge, newPayment).catch(() => {});
+    }
+
     return NextResponse.json({
       success: true,
       status: autoClaimedUser ? 'AUTO_CREDITED' : 'STORED',
@@ -263,6 +331,7 @@ export async function POST(req: Request) {
         ? `Payment received and automatically credited ৳${amountNum} to user ${autoClaimedUser.username}`
         : 'Incoming payment stored successfully with status UNCLAIMED',
       data: newPayment,
+      webhook_relayed: Boolean(db.webhookBridge?.enabled && db.webhookBridge?.externalUrl),
     }, { status: 201 });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

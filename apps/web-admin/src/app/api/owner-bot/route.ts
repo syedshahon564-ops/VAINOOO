@@ -137,6 +137,16 @@ export async function GET(req: Request) {
         secretApiKey: settings.secretApiKey || 'ff_rivals_secure_sms_key_2026',
         webhookUrl: settings.webhookUrl || 'https://web-production-2c40b.up.railway.app/api/webhook/payment',
       },
+      webhookBridge: db.webhookBridge || {
+        enabled: true,
+        name: 'nagad',
+        externalUrl: 'http://localhost:5000/api/webhooks/whk_345e4ac9587b',
+        secret: '',
+        lastForwardStatus: 'READY',
+        lastForwardAt: null,
+        totalForwarded: 0,
+        totalSuccess: 0,
+      },
     });
   } catch (error: any) {
     return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
@@ -267,6 +277,108 @@ export async function POST(req: Request) {
       }
       writePaymentsDb(db);
       return NextResponse.json({ ok: true, device: deviceData });
+    }
+
+    // 6. Save Webhook Bridge URL & Configuration
+    if (body.action === 'save_webhook_bridge') {
+      const { enabled, name, externalUrl, secret } = body;
+      const currentBridge = db.webhookBridge || {};
+      db.webhookBridge = {
+        ...currentBridge,
+        enabled: enabled !== undefined ? Boolean(enabled) : true,
+        name: String(name || 'nagad').trim(),
+        externalUrl: String(externalUrl || '').trim(),
+        secret: String(secret || '').trim(),
+        updatedAt: new Date().toISOString(),
+      };
+      writePaymentsDb(db);
+      return NextResponse.json({
+        ok: true,
+        message: 'Webhook Bridge সফলভাবে সেভ ও কানেক্ট করা হয়েছে!',
+        webhookBridge: db.webhookBridge,
+      });
+    }
+
+    // 7. Test Webhook Bridge (Send Test Ping to External Webhook URL)
+    if (body.action === 'test_webhook_bridge') {
+      const targetUrl = String(body.externalUrl || db.webhookBridge?.externalUrl || '').trim();
+      const secret = String(body.secret || db.webhookBridge?.secret || '').trim();
+      if (!targetUrl) {
+        return NextResponse.json({ ok: false, error: 'কোনো Webhook URL দেওয়া হয়নি!' }, { status: 400 });
+      }
+
+      const testPayload = {
+        event: 'payment.received',
+        webhook_source: 'FF_RIVALS_TOUR_BD',
+        provider: 'NAGAD',
+        sender: '01712345678',
+        amount: 300,
+        trx_id: 'NG' + Math.floor(10000000 + Math.random() * 90000000),
+        raw_message: 'Money received. Amount: Tk 300.00. Sender: 01712345678. TxnID: NG' + Math.floor(10000000 + Math.random() * 90000000),
+        status: 'UNCLAIMED',
+        timestamp: new Date().toISOString(),
+        test_mode: true,
+        message: 'WebhookFlow Bridge Connection Test from FF Rivals Owner Gateway',
+      };
+
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 6000);
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'User-Agent': 'FF-Rivals-Webhook-Bridge/1.0',
+        };
+        if (secret) {
+          headers['x-api-key'] = secret;
+          headers['Authorization'] = `Bearer ${secret}`;
+        }
+
+        const forwardRes = await fetch(targetUrl, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(testPayload),
+          signal: controller.signal,
+        });
+        clearTimeout(timeout);
+
+        const responseText = await forwardRes.text().catch(() => '');
+        const isSuccess = forwardRes.ok || forwardRes.status === 200 || forwardRes.status === 201;
+
+        db.webhookBridge = db.webhookBridge || {};
+        db.webhookBridge.totalForwarded = (db.webhookBridge.totalForwarded || 0) + 1;
+        if (isSuccess) {
+          db.webhookBridge.totalSuccess = (db.webhookBridge.totalSuccess || 0) + 1;
+        }
+        db.webhookBridge.lastForwardStatus = isSuccess ? 'SUCCESS' : `HTTP_${forwardRes.status}`;
+        db.webhookBridge.lastForwardAt = new Date().toISOString();
+        db.webhookBridge.lastForwardResponse = responseText.slice(0, 200);
+        writePaymentsDb(db);
+
+        return NextResponse.json({
+          ok: true,
+          status: forwardRes.status,
+          statusText: forwardRes.statusText,
+          responseBody: responseText.slice(0, 300),
+          isSuccess,
+          message: isSuccess
+            ? `✓ সফলভাবে কানেক্ট হয়েছে! রেসপন্স: ${forwardRes.status} ${forwardRes.statusText}`
+            : `⚠️ রেসপন্স এসেছে: ${forwardRes.status} ${forwardRes.statusText}`,
+          webhookBridge: db.webhookBridge,
+        });
+      } catch (err: any) {
+        db.webhookBridge = db.webhookBridge || {};
+        db.webhookBridge.totalForwarded = (db.webhookBridge.totalForwarded || 0) + 1;
+        db.webhookBridge.lastForwardStatus = 'ERROR: ' + err.message;
+        db.webhookBridge.lastForwardAt = new Date().toISOString();
+        writePaymentsDb(db);
+
+        return NextResponse.json({
+          ok: false,
+          error: `URL এ পৌঁছানো সম্ভব হয়নি (${err.message})। URL ঠিক আছে কিনা চেক করুন।`,
+          webhookBridge: db.webhookBridge,
+        }, { status: 502 });
+      }
     }
 
     return NextResponse.json({ ok: false, error: 'অজানা অ্যাকশন' }, { status: 400 });

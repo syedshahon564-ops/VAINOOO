@@ -29,6 +29,10 @@ import {
   QrCode,
   Sliders,
   Sparkles,
+  Link2,
+  Globe,
+  Radio,
+  Layers,
 } from 'lucide-react';
 
 interface PaymentItem {
@@ -93,6 +97,22 @@ export default function OwnerGatewayPage() {
   const [showSimulateModal, setShowSimulateModal] = useState(false);
   const [showManualCreditModal, setShowManualCreditModal] = useState<PaymentItem | null>(null);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showWebhookBridgeModal, setShowWebhookBridgeModal] = useState(false);
+
+  // Webhook Bridge State (Connect with WebhookFlow & External Webhooks)
+  const [webhookBridge, setWebhookBridge] = useState({
+    enabled: true,
+    name: 'nagad',
+    externalUrl: 'http://localhost:5000/api/webhooks/whk_345e4ac9587b',
+    secret: '',
+    lastForwardStatus: 'READY',
+    lastForwardAt: null as string | null,
+    totalForwarded: 0,
+    totalSuccess: 0,
+  });
+  const [bridgeSaving, setBridgeSaving] = useState(false);
+  const [bridgeTesting, setBridgeTesting] = useState(false);
+  const [bridgeTestResult, setBridgeTestResult] = useState<{ success: boolean; message: string } | null>(null);
 
   // Simulator Form State
   const [simProvider, setSimProvider] = useState<'BKASH' | 'NAGAD'>('BKASH');
@@ -187,6 +207,7 @@ export default function OwnerGatewayPage() {
         setPayments(data.payments || []);
         setDevices(data.devices || []);
         if (data.settings) setSettings(data.settings);
+        if (data.webhookBridge) setWebhookBridge(data.webhookBridge);
       }
     } catch (err) {
       console.error(err);
@@ -373,6 +394,74 @@ export default function OwnerGatewayPage() {
     } catch {}
   };
 
+  // Webhook Bridge Handlers
+  const handleSaveWebhookBridge = async () => {
+    setBridgeSaving(true);
+    setBridgeTestResult(null);
+    try {
+      const res = await fetch('/api/owner-bot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'save_webhook_bridge',
+          enabled: webhookBridge.enabled,
+          name: webhookBridge.name,
+          externalUrl: webhookBridge.externalUrl,
+          secret: webhookBridge.secret,
+        }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setWebhookBridge(data.webhookBridge);
+        setBridgeTestResult({ success: true, message: '✓ Webhook Bridge সফলভাবে সেভ ও কানেক্ট হয়েছে!' });
+        setTimeout(() => setShowWebhookBridgeModal(false), 1500);
+      } else {
+        setBridgeTestResult({ success: false, message: data.error || 'সেভ করা সম্ভব হয়নি।' });
+      }
+    } catch (err: any) {
+      setBridgeTestResult({ success: false, message: err.message || 'রিকোয়েস্ট ফেইল্ড।' });
+    } finally {
+      setBridgeSaving(false);
+    }
+  };
+
+  const handleTestWebhookBridge = async () => {
+    setBridgeTesting(true);
+    setBridgeTestResult(null);
+    try {
+      const res = await fetch('/api/owner-bot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'test_webhook_bridge',
+          externalUrl: webhookBridge.externalUrl,
+          secret: webhookBridge.secret,
+        }),
+      });
+      const data = await res.json();
+      if (data.ok && data.isSuccess) {
+        setBridgeTestResult({
+          success: true,
+          message: data.message || `✓ সফলভাবে টেস্ট পে-লোড পাঠানো হয়েছে! (HTTP ${data.status})`,
+        });
+        if (data.webhookBridge) setWebhookBridge(data.webhookBridge);
+      } else {
+        setBridgeTestResult({
+          success: false,
+          message: data.message || data.error || `⚠️ রেসপন্স এসেছে: HTTP ${data.status || 'Unreachable'}`,
+        });
+        if (data.webhookBridge) setWebhookBridge(data.webhookBridge);
+      }
+    } catch (err: any) {
+      setBridgeTestResult({
+        success: false,
+        message: 'কানেকশন ফেইল্ড: ' + (err.message || 'URL এ পৌঁছানো সম্ভব হয়নি'),
+      });
+    } finally {
+      setBridgeTesting(false);
+    }
+  };
+
   // Filtered Payments
   const filteredPayments = payments.filter((p) => {
     if (providerFilter !== 'ALL' && p.provider !== providerFilter) return false;
@@ -535,6 +624,15 @@ export default function OwnerGatewayPage() {
           </button>
 
           <button
+            onClick={() => setShowWebhookBridgeModal(true)}
+            className="px-3 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-indigo-600/20 active:scale-95 transition-all"
+            title="Connect external webhook (WebhookFlow)"
+          >
+            <Link2 className="w-4 h-4 text-cyan-300" />
+            <span>Webhook কানেক্ট</span>
+          </button>
+
+          <button
             onClick={() => setShowSettingsModal(true)}
             className="px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 hover:text-white text-xs font-bold flex items-center gap-1.5"
           >
@@ -605,8 +703,8 @@ export default function OwnerGatewayPage() {
         )}
       </div>
 
-      {/* 3. Top Control Panel (3 Feature Cards) */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* 3. Top Control Panel (4 Feature Cards) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Card 1: Bot Auto-Credit Switch */}
         <div className="p-5 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-900/60 border border-slate-800 shadow-lg space-y-4 relative overflow-hidden">
           <div className="flex items-center justify-between">
@@ -710,6 +808,59 @@ export default function OwnerGatewayPage() {
             >
               <Send className="w-4 h-4 text-black" />
               <span>টেস্ট এসএমএস পাঠান (Simulate)</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Card 4: Webhook Bridge / WebhookFlow Connector */}
+        <div className="p-5 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-900/60 border border-indigo-500/30 shadow-lg space-y-4 relative overflow-hidden">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
+              <Link2 className="w-4 h-4 text-indigo-400" /> WebhookFlow
+            </span>
+            <span
+              className={`text-[10px] font-black px-2.5 py-0.5 rounded-full border ${
+                webhookBridge.enabled
+                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 animate-pulse'
+                  : 'bg-slate-700/50 text-slate-400 border-slate-600'
+              }`}
+            >
+              {webhookBridge.enabled ? '● LIVE' : '○ OFF'}
+            </span>
+          </div>
+
+          <div>
+            <h3 className="text-base font-black text-white flex items-center gap-2">
+              <span>{webhookBridge.name || 'nagad'}</span>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                Bridge
+              </span>
+            </h3>
+            <p className="text-[11px] font-mono text-slate-400 mt-1 truncate bg-slate-950/80 p-1.5 rounded-lg border border-slate-800">
+              {webhookBridge.externalUrl || 'URL সেট করা হয়নি'}
+            </p>
+            <div className="flex items-center justify-between text-[10px] text-slate-400 mt-2">
+              <span>ফরওয়ার্ড: <strong className="text-white">{webhookBridge.totalForwarded || 0}</strong></span>
+              <span>সফল: <strong className="text-emerald-400">{webhookBridge.totalSuccess || 0}</strong></span>
+              <span>স্ট্যাটাস: <strong className="text-cyan-400">{webhookBridge.lastForwardStatus || 'READY'}</strong></span>
+            </div>
+          </div>
+
+          <div className="pt-2 grid grid-cols-2 gap-2">
+            <button
+              onClick={() => setShowWebhookBridgeModal(true)}
+              className="py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs transition-all flex items-center justify-center gap-1.5 shadow-md shadow-indigo-600/30"
+            >
+              <Sliders className="w-3.5 h-3.5" />
+              <span>কানেক্ট / এডিট</span>
+            </button>
+            <button
+              onClick={handleTestWebhookBridge}
+              disabled={bridgeTesting}
+              className="py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-cyan-300 font-bold text-xs transition-all flex items-center justify-center gap-1.5"
+            >
+              {bridgeTesting ? <RefreshCw className="w-3.5 h-3.5 animate-spin text-cyan-400" /> : <Send className="w-3.5 h-3.5" />}
+              <span>টেস্ট পিং</span>
             </button>
           </div>
         </div>
@@ -1210,6 +1361,181 @@ export default function OwnerGatewayPage() {
                 পাসওয়ার্ড সেভ করুন
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* 9. MODAL: WEBHOOK BRIDGE & URL CONNECTOR (WebhookFlow Integration) */}
+      {showWebhookBridgeModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="w-full max-w-lg bg-slate-900 border border-indigo-500/40 rounded-3xl p-6 space-y-4 shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" />
+
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-xl bg-indigo-500/20 text-indigo-400">
+                  <Link2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-white flex items-center gap-2">
+                    <span>Webhook Bridge Connector</span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                      LIVE
+                    </span>
+                  </h3>
+                  <p className="text-[11px] text-slate-400">
+                    WebhookFlow বা অন্য যেকোনো Webhook URL এর সাথে সরাসরি লিংক করুন
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowWebhookBridgeModal(false)}
+                className="text-slate-400 hover:text-white text-base"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-4 text-xs">
+              {/* Name & Active Toggle */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+                <div className="sm:col-span-2">
+                  <label className="text-[11px] font-bold text-slate-300 block mb-1">
+                    Webhook নাম (Identifier)
+                  </label>
+                  <input
+                    type="text"
+                    value={webhookBridge.name}
+                    onChange={(e) => setWebhookBridge((prev) => ({ ...prev, name: e.target.value }))}
+                    placeholder="যেমন: nagad"
+                    className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-xs text-white font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-bold text-slate-300 block mb-1">
+                    কানেকশন স্ট্যাটাস
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setWebhookBridge((prev) => ({ ...prev, enabled: !prev.enabled }))}
+                    className={`w-full py-2 px-3 rounded-xl font-bold text-xs border transition-all flex items-center justify-center gap-1.5 ${
+                      webhookBridge.enabled
+                        ? 'bg-emerald-600/20 text-emerald-300 border-emerald-500/40'
+                        : 'bg-slate-800 text-slate-400 border-slate-700'
+                    }`}
+                  >
+                    <span>{webhookBridge.enabled ? '● Active' : '○ Disabled'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* External Webhook URL */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-[11px] font-bold text-slate-300">
+                    External Webhook URL (কানেক্ট করার URL):
+                  </label>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        let text = '';
+                        if (typeof window !== 'undefined' && (window as any).AndroidBridge?.getClipboardText) {
+                          text = (window as any).AndroidBridge.getClipboardText() || '';
+                        }
+                        if (!text && typeof navigator !== 'undefined' && navigator.clipboard?.readText) {
+                          text = await navigator.clipboard.readText();
+                        }
+                        if (text) {
+                          setWebhookBridge((prev) => ({ ...prev, externalUrl: text.trim() }));
+                        }
+                      } catch {}
+                    }}
+                    className="text-[10px] font-bold text-indigo-400 hover:text-indigo-300 flex items-center gap-1 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20"
+                  >
+                    <Copy className="w-2.5 h-2.5" />
+                    <span>পেস্ট করুন</span>
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  value={webhookBridge.externalUrl}
+                  onChange={(e) => setWebhookBridge((prev) => ({ ...prev, externalUrl: e.target.value }))}
+                  placeholder="যেমন: http://localhost:5000/api/webhooks/whk_345e4ac9587b"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs font-mono text-cyan-300 focus:outline-none focus:border-indigo-500 shadow-inner"
+                />
+              </div>
+
+              {/* Secret Header / Key */}
+              <div>
+                <label className="text-[11px] font-bold text-slate-300 block mb-1">
+                  Webhook Secret / Header Key (ঐচ্ছিক):
+                </label>
+                <input
+                  type="text"
+                  value={webhookBridge.secret}
+                  onChange={(e) => setWebhookBridge((prev) => ({ ...prev, secret: e.target.value }))}
+                  placeholder="Header x-api-key বা Secret Token (থাকলে দিন)"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-xs font-mono text-slate-200"
+                />
+              </div>
+
+              {/* Quick Info Box: Our System's Inbound Webhook URL */}
+              <div className="p-3 rounded-2xl bg-slate-950/90 border border-indigo-500/20 space-y-2">
+                <span className="text-[10px] font-bold text-indigo-300 uppercase block tracking-wider">
+                  💡 আপনার নিজস্ব রিসিভিং Webhook URL (WebhookFlow তে বসানোর জন্য):
+                </span>
+                <div className="flex items-center justify-between gap-2 p-1.5 rounded-lg bg-slate-900 border border-slate-800">
+                  <code className="text-[11px] font-mono text-emerald-400 break-all select-all">
+                    {`https://web-production-2c40b.up.railway.app/api/webhooks/${webhookBridge.name || 'whk_345e4ac9587b'}`}
+                  </code>
+                  <button
+                    type="button"
+                    onClick={() => handleCopy(`https://web-production-2c40b.up.railway.app/api/webhooks/${webhookBridge.name || 'whk_345e4ac9587b'}`, 'whk_direct')}
+                    className="p-1 rounded bg-slate-800 text-slate-300 hover:text-white"
+                  >
+                    {copiedKey === 'whk_direct' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Test Result Message Box */}
+              {bridgeTestResult && (
+                <div
+                  className={`p-3 rounded-xl text-xs font-bold flex items-center gap-2 border ${
+                    bridgeTestResult.success
+                      ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
+                      : 'bg-rose-500/10 text-rose-300 border-rose-500/30'
+                  }`}
+                >
+                  {bridgeTestResult.success ? <CheckCircle className="w-4 h-4 text-emerald-400 flex-shrink-0" /> : <AlertTriangle className="w-4 h-4 text-rose-400 flex-shrink-0" />}
+                  <span>{bridgeTestResult.message}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="pt-2 grid grid-cols-2 gap-3 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={handleTestWebhookBridge}
+                disabled={bridgeTesting || !webhookBridge.externalUrl}
+                className="py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-indigo-500/30 text-indigo-300 font-bold text-xs flex items-center justify-center gap-1.5 disabled:opacity-50"
+              >
+                {bridgeTesting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                <span>টেস্ট পিং পাঠান</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleSaveWebhookBridge}
+                disabled={bridgeSaving}
+                className="py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-indigo-600/30 disabled:opacity-50"
+              >
+                {bridgeSaving ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                <span>সেভ ও কানেক্ট করুন</span>
+              </button>
+            </div>
           </div>
         </div>
       )}
