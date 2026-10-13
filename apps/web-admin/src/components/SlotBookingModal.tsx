@@ -150,126 +150,161 @@ export default function SlotBookingModal({
     }
   }, [isSquad, isDuo]);
 
-  // Handler to verify a specific squad player's UID
+  const debounceTimersRef = useRef<Record<string, NodeJS.Timeout>>({});
+
+  // Handler to verify a specific squad player's UID and auto-populate IGN
   async function handleVerifySquadPlayer(index: number, explicitUid?: string) {
-    const currentPlayers = squadPlayersRef.current;
-    const player = currentPlayers[index];
-    const rawUid = explicitUid !== undefined ? explicitUid : (player?.uid || '');
+    const rawUid = explicitUid !== undefined ? explicitUid : (squadPlayersRef.current[index]?.uid || '');
     const cleanId = cleanUid(rawUid);
     if (!cleanId || cleanId.length < 8 || cleanId.length > 12) {
-      setErrorMessage(`প্লেয়ার #${index + 1}-এর জন্য সঠিক ৮-১২ ডিজিটের ফ্রি ফায়ার UID লিখুন।`);
-      setSquadPlayers((prev) =>
-        prev.map((p, i) => (i === index ? { ...p, uid: p.uid || cleanId, verified: false, checking: false } : p))
-      );
       return;
     }
 
     setSquadPlayers((prev) =>
       prev.map((p, i) => (i === index ? { ...p, checking: true, uid: cleanId } : p))
     );
-    setErrorMessage(null);
 
     try {
       const profile = await checkFreeFireUID(cleanId);
-      const finalIgn = player?.ign?.trim() || profile.ign || `FF_PLAYER_${cleanId.slice(-4)}`;
+      const realIgn = profile.ign || `FF_PLAYER_${cleanId.slice(-4)}`;
       setSquadPlayers((prev) =>
         prev.map((p, i) =>
           i === index
-            ? { ...p, ign: p.ign?.trim() || finalIgn, checking: false, verified: true, uid: p.uid || cleanId }
+            ? { ...p, ign: realIgn, checking: false, verified: true, uid: cleanId }
             : p
         )
       );
-      setErrorMessage(null);
+      if (errorMessage) setErrorMessage(null);
     } catch {
       setSquadPlayers((prev) =>
         prev.map((p, i) =>
           i === index
-            ? { ...p, ign: p.ign?.trim() || `FF_PLAYER_${cleanId.slice(-4)}`, checking: false, verified: true, uid: p.uid || cleanId }
+            ? { ...p, checking: false, verified: true, uid: cleanId }
             : p
         )
       );
-      setErrorMessage(null);
     }
   }
 
-  // Handler to verify duo player UID
+  // Handler to verify duo player UID and auto-populate IGN
   async function handleVerifyDuoPlayer(index: number, explicitUid?: string) {
-    const currentPlayers = duoPlayersRef.current;
-    const player = currentPlayers[index];
-    const rawUid = explicitUid !== undefined ? explicitUid : (player?.uid || '');
+    const rawUid = explicitUid !== undefined ? explicitUid : (duoPlayersRef.current[index]?.uid || '');
     const cleanId = cleanUid(rawUid);
     if (!cleanId || cleanId.length < 8 || cleanId.length > 12) {
-      setErrorMessage(`প্লেয়ার #${index + 1}-এর জন্য সঠিক ৮-১২ ডিজিটের ফ্রি ফায়ার UID লিখুন।`);
-      setDuoPlayers((prev) =>
-        prev.map((p, i) => (i === index ? { ...p, uid: p.uid || cleanId, verified: false, checking: false } : p))
-      );
       return;
     }
 
     setDuoPlayers((prev) =>
       prev.map((p, i) => (i === index ? { ...p, checking: true, uid: cleanId } : p))
     );
-    setErrorMessage(null);
 
     try {
       const profile = await checkFreeFireUID(cleanId);
-      const finalIgn = player?.ign?.trim() || profile.ign || `FF_PLAYER_${cleanId.slice(-4)}`;
+      const realIgn = profile.ign || `FF_PLAYER_${cleanId.slice(-4)}`;
       setDuoPlayers((prev) =>
         prev.map((p, i) =>
           i === index
-            ? { ...p, ign: p.ign?.trim() || finalIgn, checking: false, verified: true, uid: p.uid || cleanId }
+            ? { ...p, ign: realIgn, checking: false, verified: true, uid: cleanId }
             : p
         )
       );
-      setErrorMessage(null);
+      if (errorMessage) setErrorMessage(null);
     } catch {
       setDuoPlayers((prev) =>
         prev.map((p, i) =>
           i === index
-            ? { ...p, ign: p.ign?.trim() || `FF_PLAYER_${cleanId.slice(-4)}`, checking: false, verified: true, uid: p.uid || cleanId }
+            ? { ...p, checking: false, verified: true, uid: cleanId }
             : p
         )
       );
-      setErrorMessage(null);
     }
   }
 
-  // Handler to verify solo player UID
+  // Handler to verify solo player UID and auto-populate IGN
   async function handleVerifySoloPlayer(explicitUid?: string) {
-    const current = soloPlayerRef.current;
-    const rawUid = explicitUid !== undefined ? explicitUid : (current?.uid || '');
+    const rawUid = explicitUid !== undefined ? explicitUid : (soloPlayerRef.current?.uid || '');
     const cleanId = cleanUid(rawUid);
     if (!cleanId || cleanId.length < 8 || cleanId.length > 12) {
-      setErrorMessage('সঠিক ৮-১২ ডিজিটের ফ্রি ফায়ার UID লিখুন।');
-      setSoloPlayer((prev) => ({ ...prev, uid: prev.uid || cleanId, verified: false, checking: false }));
       return;
     }
 
     setSoloPlayer((prev) => ({ ...prev, checking: true, uid: cleanId }));
-    setErrorMessage(null);
 
     try {
       const profile = await checkFreeFireUID(cleanId);
-      const finalIgn = current?.ign?.trim() || profile.ign || `FF_PLAYER_${cleanId.slice(-4)}`;
+      const realIgn = profile.ign || `FF_PLAYER_${cleanId.slice(-4)}`;
       setSoloPlayer((prev) => ({
         ...prev,
-        ign: prev.ign?.trim() || finalIgn,
+        ign: realIgn,
         checking: false,
         verified: true,
-        uid: prev.uid || cleanId,
+        uid: cleanId,
       }));
-      setErrorMessage(null);
+      if (errorMessage) setErrorMessage(null);
     } catch {
       setSoloPlayer((prev) => ({
         ...prev,
-        ign: prev.ign?.trim() || `FF_PLAYER_${cleanId.slice(-4)}`,
         checking: false,
         verified: true,
-        uid: prev.uid || cleanId,
+        uid: cleanId,
       }));
-      setErrorMessage(null);
     }
   }
+
+  const handleSquadUidChange = (idx: number, rawVal: string) => {
+    setSquadPlayers((prev) =>
+      prev.map((p, i) => (i === idx ? { ...p, uid: rawVal, verified: false } : p))
+    );
+    if (errorMessage) setErrorMessage(null);
+
+    const clean = cleanUid(rawVal);
+    const key = `squad_${idx}`;
+    if (debounceTimersRef.current[key]) {
+      clearTimeout(debounceTimersRef.current[key]);
+    }
+
+    if (clean.length >= 8 && clean.length <= 12) {
+      debounceTimersRef.current[key] = setTimeout(() => {
+        handleVerifySquadPlayer(idx, clean);
+      }, 400);
+    }
+  };
+
+  const handleDuoUidChange = (idx: number, rawVal: string) => {
+    setDuoPlayers((prev) =>
+      prev.map((p, i) => (i === idx ? { ...p, uid: rawVal, verified: false } : p))
+    );
+    if (errorMessage) setErrorMessage(null);
+
+    const clean = cleanUid(rawVal);
+    const key = `duo_${idx}`;
+    if (debounceTimersRef.current[key]) {
+      clearTimeout(debounceTimersRef.current[key]);
+    }
+
+    if (clean.length >= 8 && clean.length <= 12) {
+      debounceTimersRef.current[key] = setTimeout(() => {
+        handleVerifyDuoPlayer(idx, clean);
+      }, 400);
+    }
+  };
+
+  const handleSoloUidChange = (rawVal: string) => {
+    setSoloPlayer((prev) => ({ ...prev, uid: rawVal, verified: false }));
+    if (errorMessage) setErrorMessage(null);
+
+    const clean = cleanUid(rawVal);
+    const key = 'solo';
+    if (debounceTimersRef.current[key]) {
+      clearTimeout(debounceTimersRef.current[key]);
+    }
+
+    if (clean.length >= 8 && clean.length <= 12) {
+      debounceTimersRef.current[key] = setTimeout(() => {
+        handleVerifySoloPlayer(clean);
+      }, 400);
+    }
+  };
 
   function cleanUid(input: string): string {
     if (!input) return '';
@@ -711,8 +746,20 @@ export default function SlotBookingModal({
                         {/* Free Fire UID */}
                         <div className="space-y-1">
                           <div className="flex items-center justify-between">
-                            <label className="text-[11px] font-bold text-gray-700">
-                              Free Fire UID:
+                            <label className="text-[11px] font-bold text-gray-700 flex items-center gap-1.5">
+                              <span>Free Fire UID:</span>
+                              {player.checking && (
+                                <span className="text-[10px] text-blue-600 font-semibold flex items-center gap-0.5">
+                                  <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                                  <span>খোঁজা হচ্ছে...</span>
+                                </span>
+                              )}
+                              {player.verified && !player.checking && player.uid && (
+                                <span className="text-[10px] text-emerald-600 font-semibold flex items-center gap-0.5">
+                                  <ShieldCheck className="w-2.5 h-2.5 text-emerald-600" />
+                                  <span>ভেরিফাইড</span>
+                                </span>
+                              )}
                             </label>
                             <button
                               type="button"
@@ -722,9 +769,12 @@ export default function SlotBookingModal({
                                   if (text) {
                                     const digits = toEnDigits(text) || text.trim();
                                     setSquadPlayers((prev) =>
-                                      prev.map((p, i) => (i === idx ? { ...p, uid: digits } : p))
+                                      prev.map((p, i) => (i === idx ? { ...p, uid: digits, verified: false } : p))
                                     );
                                     if (errorMessage) setErrorMessage(null);
+                                    if (digits.length >= 8 && digits.length <= 12) {
+                                      handleVerifySquadPlayer(idx, digits);
+                                    }
                                   }
                                 } catch {}
                               }}
@@ -739,13 +789,7 @@ export default function SlotBookingModal({
                             inputMode="numeric"
                             placeholder={idx === 0 ? "ফ্রি ফায়ার UID (যেমন: 123456789)" : `Player ${idx + 1} UID (ঐচ্ছিক)`}
                             value={player.uid}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              setSquadPlayers((prev) =>
-                                prev.map((p, i) => (i === idx ? { ...p, uid: val } : p))
-                              );
-                              if (errorMessage) setErrorMessage(null);
-                            }}
+                            onChange={(e) => handleSquadUidChange(idx, e.target.value)}
                             className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-xs font-bold text-gray-900 focus:outline-none focus:border-red-500 shadow-xs"
                           />
                         </div>
@@ -753,8 +797,11 @@ export default function SlotBookingModal({
                         {/* In-Game Name (IGN) */}
                         <div className="space-y-1">
                           <div className="flex items-center justify-between">
-                            <label className="text-[11px] font-bold text-gray-700">
-                              ইন-গেম নাম (IGN):
+                            <label className="text-[11px] font-bold text-gray-700 flex items-center gap-1.5">
+                              <span>ইন-গেম নাম (IGN):</span>
+                              {player.checking && (
+                                <span className="text-[10px] text-blue-600 font-semibold">অটো আসছে...</span>
+                              )}
                             </label>
                             <button
                               type="button"
@@ -816,8 +863,20 @@ export default function SlotBookingModal({
                         {/* Free Fire UID */}
                         <div className="space-y-1">
                           <div className="flex items-center justify-between">
-                            <label className="text-[11px] font-bold text-gray-700">
-                              Free Fire UID:
+                            <label className="text-[11px] font-bold text-gray-700 flex items-center gap-1.5">
+                              <span>Free Fire UID:</span>
+                              {player.checking && (
+                                <span className="text-[10px] text-blue-600 font-semibold flex items-center gap-0.5">
+                                  <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                                  <span>খোঁজা হচ্ছে...</span>
+                                </span>
+                              )}
+                              {player.verified && !player.checking && player.uid && (
+                                <span className="text-[10px] text-emerald-600 font-semibold flex items-center gap-0.5">
+                                  <ShieldCheck className="w-2.5 h-2.5 text-emerald-600" />
+                                  <span>ভেরিফাইড</span>
+                                </span>
+                              )}
                             </label>
                             <button
                               type="button"
@@ -827,9 +886,12 @@ export default function SlotBookingModal({
                                   if (text) {
                                     const digits = toEnDigits(text) || text.trim();
                                     setDuoPlayers((prev) =>
-                                      prev.map((p, i) => (i === idx ? { ...p, uid: digits } : p))
+                                      prev.map((p, i) => (i === idx ? { ...p, uid: digits, verified: false } : p))
                                     );
                                     if (errorMessage) setErrorMessage(null);
+                                    if (digits.length >= 8 && digits.length <= 12) {
+                                      handleVerifyDuoPlayer(idx, digits);
+                                    }
                                   }
                                 } catch {}
                               }}
@@ -844,13 +906,7 @@ export default function SlotBookingModal({
                             inputMode="numeric"
                             placeholder={idx === 0 ? "ফ্রি ফায়ার UID (যেমন: 123456789)" : "Player 2 UID (ঐচ্ছিক)"}
                             value={player.uid}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              setDuoPlayers((prev) =>
-                                prev.map((p, i) => (i === idx ? { ...p, uid: val } : p))
-                              );
-                              if (errorMessage) setErrorMessage(null);
-                            }}
+                            onChange={(e) => handleDuoUidChange(idx, e.target.value)}
                             className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-xs font-bold text-gray-900 focus:outline-none focus:border-red-500 shadow-xs"
                           />
                         </div>
@@ -858,8 +914,11 @@ export default function SlotBookingModal({
                         {/* In-Game Name (IGN) */}
                         <div className="space-y-1">
                           <div className="flex items-center justify-between">
-                            <label className="text-[11px] font-bold text-gray-700">
-                              ইন-গেম নাম (IGN):
+                            <label className="text-[11px] font-bold text-gray-700 flex items-center gap-1.5">
+                              <span>ইন-গেম নাম (IGN):</span>
+                              {player.checking && (
+                                <span className="text-[10px] text-blue-600 font-semibold">অটো আসছে...</span>
+                              )}
                             </label>
                             <button
                               type="button"
@@ -907,8 +966,20 @@ export default function SlotBookingModal({
                     {/* Solo UID */}
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between">
-                        <label className="text-xs font-bold text-gray-700 block">
-                          Free Fire UID:
+                        <label className="text-xs font-bold text-gray-700 flex items-center gap-1.5">
+                          <span>Free Fire UID:</span>
+                          {soloPlayer.checking && (
+                            <span className="text-[10px] text-blue-600 font-semibold flex items-center gap-0.5">
+                              <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                              <span>খোঁজা হচ্ছে...</span>
+                            </span>
+                          )}
+                          {soloPlayer.verified && !soloPlayer.checking && soloPlayer.uid && (
+                            <span className="text-[10px] text-emerald-600 font-semibold flex items-center gap-0.5">
+                              <ShieldCheck className="w-2.5 h-2.5 text-emerald-600" />
+                              <span>ভেরিফাইড</span>
+                            </span>
+                          )}
                         </label>
                         <button
                           type="button"
@@ -917,8 +988,11 @@ export default function SlotBookingModal({
                               const text = await readClipboardText();
                               if (text) {
                                 const digits = toEnDigits(text) || text.trim();
-                                setSoloPlayer((prev) => ({ ...prev, uid: digits }));
+                                setSoloPlayer((prev) => ({ ...prev, uid: digits, verified: false }));
                                 if (errorMessage) setErrorMessage(null);
+                                if (digits.length >= 8 && digits.length <= 12) {
+                                  handleVerifySoloPlayer(digits);
+                                }
                               }
                             } catch {}
                           }}
@@ -933,10 +1007,7 @@ export default function SlotBookingModal({
                         inputMode="numeric"
                         placeholder="আপনার ফ্রি ফায়ার UID (যেমন: 123456789)"
                         value={soloPlayer.uid}
-                        onChange={(e) => {
-                          setSoloPlayer((prev) => ({ ...prev, uid: e.target.value }));
-                          if (errorMessage) setErrorMessage(null);
-                        }}
+                        onChange={(e) => handleSoloUidChange(e.target.value)}
                         className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 bg-white text-xs font-bold text-gray-900 focus:outline-none focus:border-red-500 shadow-xs"
                       />
                     </div>
@@ -944,8 +1015,11 @@ export default function SlotBookingModal({
                     {/* Solo IGN */}
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between">
-                        <label className="text-xs font-bold text-gray-700 block">
-                          ইন-গেম নাম (IGN):
+                        <label className="text-xs font-bold text-gray-700 flex items-center gap-1.5">
+                          <span>ইন-গেম নাম (IGN):</span>
+                          {soloPlayer.checking && (
+                            <span className="text-[10px] text-blue-600 font-semibold">অটো আসছে...</span>
+                          )}
                         </label>
                         <button
                           type="button"
