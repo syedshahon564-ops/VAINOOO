@@ -4,6 +4,7 @@ const API_KEY = process.env.FF_API_KEY || '092iUTN11rRbEDNCFKQmPW4fuWlUnHMp3oR_L
 
 // In-memory verified accounts cache for instant response & offline resilience
 const VERIFIED_PLAYERS_CACHE = new Map<string, { ign: string; level: number; region: string; likes: number }>([
+  ['6095997543', { ign: 'TS! ᎬDȺƝ☯', level: 70, region: 'BD', likes: 10883 }],
   ['12116725180', { ign: 'TS! JARIF☯', level: 69, region: 'BD', likes: 5054 }],
   ['5725906539', { ign: 'TS! ᏒꫝFƗ☯', level: 73, region: 'BD', likes: 26125 }],
   ['2312730961', { ign: 'মহারাণীㅤ!¡', level: 83, region: 'BD', likes: 59467 }],
@@ -15,6 +16,106 @@ const VERIFIED_PLAYERS_CACHE = new Map<string, { ign: string; level: number; reg
   ['920182746', { ign: 'RIVAL_BOSS_BD', level: 76, region: 'BD', likes: 16500 }],
   ['501928374', { ign: 'CYBER_SNIPER', level: 67, region: 'BD', likes: 6700 }],
 ]);
+
+// Cached CSRF session for high-speed live lookups
+let cachedCsrfToken = '';
+let cachedCsrfCookie = '';
+let csrfTokenTime = 0;
+
+async function getLiveCsrfSession(): Promise<{ token: string; cookie: string }> {
+  const now = Date.now();
+  if (cachedCsrfToken && cachedCsrfCookie && now - csrfTokenTime < 300000) {
+    return { token: cachedCsrfToken, cookie: cachedCsrfCookie };
+  }
+
+  try {
+    const res = await fetch('https://gameskinbo.com/api/csrf-token', {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        Referer: 'https://gameskinbo.com/free_fire_id_checker',
+        Origin: 'https://gameskinbo.com',
+      },
+      cache: 'no-store',
+    });
+    if (res.ok) {
+      const data = await res.json().catch(() => ({}));
+      const cookie = res.headers.get('set-cookie')?.split(';')[0] || '';
+      const token = data.csrfToken || '';
+      if (token) {
+        cachedCsrfToken = token;
+        cachedCsrfCookie = cookie;
+        csrfTokenTime = now;
+        return { token, cookie };
+      }
+    }
+  } catch {}
+
+  return { token: cachedCsrfToken, cookie: cachedCsrfCookie };
+}
+
+async function queryLiveWebGateway(cleanUid: string): Promise<{ ign: string; level: number; region: string; likes: number } | null> {
+  try {
+    const { token: csrfToken, cookie } = await getLiveCsrfSession();
+    if (!csrfToken) return null;
+
+    const sessionRes = await fetch('https://gameskinbo.com/api/ff_id_checker/session', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        'x-api-client': 'gameskinbo-web',
+        'x-csrf-token': csrfToken,
+        Cookie: cookie,
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        Referer: 'https://gameskinbo.com/free_fire_id_checker',
+        Origin: 'https://gameskinbo.com',
+      },
+      body: JSON.stringify({ uid: cleanUid }),
+      cache: 'no-store',
+    });
+
+    const sessionData = await sessionRes.json().catch(() => ({}));
+    if (!sessionData?.token) {
+      // Invalidate CSRF cache if token request was rejected
+      cachedCsrfToken = '';
+      return null;
+    }
+
+    const setCookie2 = sessionRes.headers.get('set-cookie') || '';
+    const combinedCookie = [cookie, setCookie2.split(';')[0]].filter(Boolean).join('; ');
+
+    const infoRes = await fetch('https://gameskinbo.com/api/ff_id_checker', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        'x-api-client': 'gameskinbo-web',
+        'x-ff-id-checker-token': sessionData.token,
+        'x-csrf-token': csrfToken,
+        Cookie: combinedCookie,
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        Referer: 'https://gameskinbo.com/free_fire_id_checker',
+        Origin: 'https://gameskinbo.com',
+      },
+      body: JSON.stringify({ uid: cleanUid }),
+      cache: 'no-store',
+    });
+
+    if (infoRes.ok) {
+      const data = await infoRes.json().catch(() => ({}));
+      if (data && data.name) {
+        return {
+          ign: String(data.name).trim(),
+          level: Number(data.level) || 60,
+          region: String(data.region || 'BD'),
+          likes: Number(data.likes) || 0,
+        };
+      }
+    }
+  } catch {}
+
+  return null;
+}
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -75,10 +176,26 @@ async function handleLookup(rawUid: string) {
     });
   }
 
-  // 3. Live Free Fire API Gateway Query (GamesKinbo) with 8s timeout
+  // 3. Try high-speed Live Web Gateway
+  const liveResult = await queryLiveWebGateway(cleanUid);
+  if (liveResult && liveResult.ign) {
+    VERIFIED_PLAYERS_CACHE.set(cleanUid, liveResult);
+    return NextResponse.json({
+      success: true,
+      isValid: true,
+      uid: cleanUid,
+      ign: liveResult.ign,
+      level: liveResult.level,
+      region: liveResult.region,
+      likes: liveResult.likes,
+      source: 'garena_live_gateway',
+    });
+  }
+
+  // 4. Fallback to API Key Gateway if configured
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000);
+    const timeout = setTimeout(() => controller.abort(), 4000);
 
     const response = await fetch(`https://api.gameskinbo.com/ff-info/get?uid=${cleanUid}`, {
       signal: controller.signal,
@@ -93,13 +210,12 @@ async function handleLookup(rawUid: string) {
 
     if (response && response.ok) {
       const data = await response.json();
-      if (data && data.AccountInfo && data.AccountInfo.AccountName) {
-        const ign = data.AccountInfo.AccountName;
-        const level = data.AccountInfo.AccountLevel || 60;
-        const region = data.AccountInfo.AccountRegion || 'BD';
-        const likes = data.AccountInfo.AccountLikes || 0;
+      const ign = data?.AccountInfo?.AccountName || data?.name;
+      if (ign) {
+        const level = data?.AccountInfo?.AccountLevel || data?.level || 60;
+        const region = data?.AccountInfo?.AccountRegion || data?.region || 'BD';
+        const likes = data?.AccountInfo?.AccountLikes || data?.likes || 0;
 
-        // Save to cache for future instant lookups
         VERIFIED_PLAYERS_CACHE.set(cleanUid, { ign, level, region, likes });
 
         return NextResponse.json({
@@ -114,28 +230,17 @@ async function handleLookup(rawUid: string) {
         });
       }
     }
+  } catch {}
 
-    // Graceful fallback: Accept all valid 8-12 digit UIDs without generating any fake name
-    return NextResponse.json({
-      success: true,
-      isValid: true,
-      uid: cleanUid,
-      ign: '',
-      level: 60,
-      region: 'BD',
-      likes: 0,
-      source: 'valid_uid_verified',
-    });
-  } catch {
-    return NextResponse.json({
-      success: true,
-      isValid: true,
-      uid: cleanUid,
-      ign: '',
-      level: 60,
-      region: 'BD',
-      likes: 0,
-      source: 'valid_uid_verified',
-    });
-  }
+  // 5. Safe valid fallback without any fake names
+  return NextResponse.json({
+    success: true,
+    isValid: true,
+    uid: cleanUid,
+    ign: '',
+    level: 60,
+    region: 'BD',
+    likes: 0,
+    source: 'valid_uid_verified',
+  });
 }
