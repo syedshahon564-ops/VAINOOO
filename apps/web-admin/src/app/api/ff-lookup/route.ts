@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const API_KEY = process.env.FF_API_KEY || 'WlFqUL5QPxBoWnOVUwMUIfcU2V_eYZWsDOdbhqHb4DU';
+const API_KEY = process.env.FF_API_KEY || 'VAoRxqqrTMahPgt-SGhjOStdaq4_quoy6hsoq_wXxEE';
 
 // In-memory verified accounts cache for instant response & offline resilience
 const VERIFIED_PLAYERS_CACHE = new Map<string, { ign: string; level: number; region: string; likes: number }>([
