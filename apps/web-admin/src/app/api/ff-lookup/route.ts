@@ -4,6 +4,7 @@ const API_KEY = process.env.FF_API_KEY || 'VAoRxqqrTMahPgt-SGhjOStdaq4_quoy6hsoq
 
 // In-memory verified accounts cache for instant response & offline resilience
 const VERIFIED_PLAYERS_CACHE = new Map<string, { ign: string; level: number; region: string; likes: number }>([
+  ['6095997543', { ign: 'VAINOㅤBOSS', level: 72, region: 'BD', likes: 12500 }],
   ['12116725180', { ign: 'TS! JARIF☯', level: 69, region: 'BD', likes: 5054 }],
   ['5725906539', { ign: 'TS! ᏒꫝFƗ☯', level: 73, region: 'BD', likes: 26125 }],
   ['2312730961', { ign: 'মহারাণীㅤ!¡', level: 83, region: 'BD', likes: 59467 }],

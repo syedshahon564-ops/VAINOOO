@@ -166,11 +166,17 @@ export default function SlotBookingModal({
 
     try {
       const profile = await checkFreeFireUID(cleanId);
-      const realIgn = profile.ign || `FF_PLAYER_${cleanId.slice(-4)}`;
+      const isRealName = profile && profile.isValid && profile.ign && !profile.ign.startsWith('FF_PLAYER_');
       setSquadPlayers((prev) =>
         prev.map((p, i) =>
           i === index
-            ? { ...p, ign: realIgn, checking: false, verified: true, uid: cleanId }
+            ? {
+                ...p,
+                ign: isRealName ? profile.ign : p.ign,
+                checking: false,
+                verified: true,
+                uid: cleanId,
+              }
             : p
         )
       );
@@ -200,11 +206,17 @@ export default function SlotBookingModal({
 
     try {
       const profile = await checkFreeFireUID(cleanId);
-      const realIgn = profile.ign || `FF_PLAYER_${cleanId.slice(-4)}`;
+      const isRealName = profile && profile.isValid && profile.ign && !profile.ign.startsWith('FF_PLAYER_');
       setDuoPlayers((prev) =>
         prev.map((p, i) =>
           i === index
-            ? { ...p, ign: realIgn, checking: false, verified: true, uid: cleanId }
+            ? {
+                ...p,
+                ign: isRealName ? profile.ign : p.ign,
+                checking: false,
+                verified: true,
+                uid: cleanId,
+              }
             : p
         )
       );
@@ -232,10 +244,10 @@ export default function SlotBookingModal({
 
     try {
       const profile = await checkFreeFireUID(cleanId);
-      const realIgn = profile.ign || `FF_PLAYER_${cleanId.slice(-4)}`;
+      const isRealName = profile && profile.isValid && profile.ign && !profile.ign.startsWith('FF_PLAYER_');
       setSoloPlayer((prev) => ({
         ...prev,
-        ign: realIgn,
+        ign: isRealName ? profile.ign : prev.ign,
         checking: false,
         verified: true,
         uid: cleanId,
