@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const API_KEY = process.env.FF_API_KEY || 'VAoRxqqrTMahPgt-SGhjOStdaq4_quoy6hsoq_wXxEE';
+const API_KEY = process.env.FF_API_KEY || '092iUTN11rRbEDNCFKQmPW4fuWlUnHMp3oR_LMf-H1c';
 
 // In-memory verified accounts cache for instant response & offline resilience
 const VERIFIED_PLAYERS_CACHE = new Map<string, { ign: string; level: number; region: string; likes: number }>([
-  ['6095997543', { ign: 'VAINOㅤBOSS', level: 72, region: 'BD', likes: 12500 }],
   ['12116725180', { ign: 'TS! JARIF☯', level: 69, region: 'BD', likes: 5054 }],
   ['5725906539', { ign: 'TS! ᏒꫝFƗ☯', level: 73, region: 'BD', likes: 26125 }],
   ['2312730961', { ign: 'মহারাণীㅤ!¡', level: 83, region: 'BD', likes: 59467 }],
@@ -116,28 +115,26 @@ async function handleLookup(rawUid: string) {
       }
     }
 
-    // Graceful fallback: Accept all valid 8-11 digit UIDs when external API quota is exceeded or offline
-    const fallbackIgn = `FF_PLAYER_${cleanUid.slice(-4)}`;
+    // Graceful fallback: Accept all valid 8-12 digit UIDs without generating any fake name
     return NextResponse.json({
       success: true,
       isValid: true,
       uid: cleanUid,
-      ign: fallbackIgn,
+      ign: '',
       level: 60,
       region: 'BD',
-      likes: 1200,
+      likes: 0,
       source: 'valid_uid_verified',
     });
   } catch {
-    const fallbackIgn = `FF_PLAYER_${cleanUid.slice(-4)}`;
     return NextResponse.json({
       success: true,
       isValid: true,
       uid: cleanUid,
-      ign: fallbackIgn,
+      ign: '',
       level: 60,
       region: 'BD',
-      likes: 1200,
+      likes: 0,
       source: 'valid_uid_verified',
     });
   }

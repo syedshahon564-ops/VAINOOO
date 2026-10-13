@@ -16,16 +16,6 @@ export interface VerifiedPlayerProfile {
 
 // Known verified tournament players database
 const VERIFIED_FF_PLAYERS: Record<string, VerifiedPlayerProfile> = {
-  '6095997543': {
-    isValid: true,
-    uid: '6095997543',
-    ign: 'VAINOㅤBOSS',
-    level: 72,
-    region: 'Bangladesh (BD)',
-    likeCount: 12500,
-    avatarUrl: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=120',
-    badge: 'GRANDMASTER',
-  },
   '12116725180': {
     isValid: true,
     uid: '12116725180',
@@ -177,35 +167,32 @@ export async function checkFreeFireUID(uid: string): Promise<VerifiedPlayerProfi
       return {
         isValid: true,
         uid: cleanUID,
-        ign: `FF_PLAYER_${cleanUID.slice(-4)}`,
+        ign: '',
         level: 60,
         region: 'Bangladesh (BD)',
-        likeCount: 1200,
-        avatarUrl: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=120',
-        badge: 'HEROIC',
+        likeCount: 0,
+        avatarUrl: '',
       };
     }
 
     return {
       isValid: true,
       uid: cleanUID,
-      ign: `FF_PLAYER_${cleanUID.slice(-4)}`,
+      ign: '',
       level: 60,
       region: 'Bangladesh (BD)',
-      likeCount: 1200,
-      avatarUrl: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=120',
-      badge: 'HEROIC',
+      likeCount: 0,
+      avatarUrl: '',
     };
   } catch {
     return {
       isValid: true,
       uid: cleanUID,
-      ign: `FF_PLAYER_${cleanUID.slice(-4)}`,
+      ign: '',
       level: 60,
       region: 'Bangladesh (BD)',
-      likeCount: 1200,
-      avatarUrl: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=120',
-      badge: 'HEROIC',
+      likeCount: 0,
+      avatarUrl: '',
     };
   }
 }
