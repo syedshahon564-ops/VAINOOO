@@ -64,7 +64,11 @@ import PlayerDetailsModal, { PlayerDetailsData } from '@/components/PlayerDetail
 import TotalPrizeDetailsModal from '@/components/TotalPrizeDetailsModal';
 import MatchDetailsPage from '@/components/MatchDetailsPage';
 import ImageUploadInput from '@/components/ImageUploadInput';
-import LiveMatchCountdown, { formatMatchSchedule, parseScheduleTimeToDate } from '@/components/LiveMatchCountdown';
+import LiveMatchCountdown, {
+  formatMatchSchedule,
+  parseScheduleTimeToDate,
+  isMatchFinished,
+} from '@/components/LiveMatchCountdown';
 import DepositWithdrawModal from '@/components/DepositWithdrawModal';
 import SupportTicketModal from '@/components/SupportTicketModal';
 import SupportChatScreen from '@/components/SupportChatScreen';
@@ -1013,14 +1017,14 @@ export default function MobileAppViewPage(props: any) {
   const currentCategoryMatches = React.useMemo(
     () =>
       selectedCategory
-        ? matches.filter((m) => m.categorySlug === selectedCategory && m.status !== 'COMPLETED')
+        ? matches.filter((m) => m.categorySlug === selectedCategory && !isMatchFinished(m))
         : [],
     [selectedCategory, matches]
   );
   const completedCategoryMatches = React.useMemo(
     () =>
       selectedCategory
-        ? matches.filter((m) => m.categorySlug === selectedCategory && m.status === 'COMPLETED')
+        ? matches.filter((m) => m.categorySlug === selectedCategory && isMatchFinished(m))
         : [],
     [selectedCategory, matches]
   );
@@ -2088,7 +2092,7 @@ export default function MobileAppViewPage(props: any) {
 
                             <div className="grid grid-cols-2 gap-2">
                               {categoriesList.map((cat) => {
-                                const count = matches.filter((m) => m.categorySlug === cat.slug).length;
+                                const count = matches.filter((m) => m.categorySlug === cat.slug && !isMatchFinished(m)).length;
                                 return (
                                   <div
                                     key={cat.slug}

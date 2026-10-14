@@ -151,7 +151,7 @@ export default function DepositWithdrawModal({
     const userPhone = currentUser?.phone || phone;
     const userName = currentUser?.ign || currentUser?.username || 'Player';
 
-    // 1. Try Instant Auto-Verification against Webhook / Incoming Payments database
+    // 1. Live Instant Verification against Webhook / Incoming Payments database
     try {
       const verifyRes = await fetch('/api/deposit/verify', {
         method: 'POST',
@@ -163,51 +163,51 @@ export default function DepositWithdrawModal({
         }),
       });
       const verifyData = await verifyRes.json();
+      setSubmitting(false);
+
       if (verifyData.success && verifyData.status === 'SUCCESS') {
-        setSubmitting(false);
+        const creditAmt = Number(verifyData.credit_amount || verifyData.data?.amount_credited || amount);
+        if (currentUser?.id) {
+          addBalance(currentUser.id, creditAmt, `ডিপোজিট সফল (${cleanTrx})`);
+        }
         setMessage({
           type: 'success',
-          text: `🎉 অভিনন্দন! TrxID (${cleanTrx}) স্বয়ংক্রিয়ভাবে ভেরিফাই হয়েছে এবং আপনার ওয়ালেটে ৳${verifyData.credit_amount || amount} যোগ করা হয়েছে!`,
+          text: `🎉 ট্রানজেকশন সফল হয়েছে (SUCCESS)! ৳${creditAmt} ওয়ালেটে সাথে সাথে যোগ করা হয়েছে।`,
         });
         setTrxId('');
         setPhone('');
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent('ff_users_updated'));
+          window.dispatchEvent(new CustomEvent('ff_user_profile_updated'));
         }
         setTimeout(() => {
           setMessage(null);
           onClose();
-        }, 2500);
+        }, 3000);
         return;
       }
-    } catch (e) {}
 
-    // 2. If not pre-matched in database yet, save as pending deposit request
-    const res = submitDepositRequest({
-      userId: currentUser?.id || 'u-1',
-      userPhone,
-      userName,
-      method,
-      amount: Number(amount),
-      accountNumber: phone,
-      trxId: cleanTrx,
-      autoVerify: false,
-    });
-    setSubmitting(false);
+      if (verifyData.status === 'ALREADY_USED') {
+        setMessage({
+          type: 'error',
+          text: '❌ ট্রানজেকশন ব্যর্থ হয়েছে (FAILED)! এই TrxID দিয়ে ইতিমধ্যে টাকা গ্রহণ করা হয়েছে।',
+        });
+        return;
+      }
 
-    if (res.success) {
+      // If invalid / wrong TrxID or payment not found on server -> FAILED
       setMessage({
-        type: 'pending',
-        text: `⏳ আপনার ৳${amount} ডিপোজিট রিকোয়েস্ট জমা হয়েছে! এডমিন TrxID (${cleanTrx}) মিলিয়ে ব্যালেন্স যোগ করবেন।`,
+        type: 'error',
+        text: verifyData.message || '❌ ট্রানজেকশন ভেরিফিকেশন ব্যর্থ হয়েছে (FAILED)! ভুল TrxID অথবা কোনো পেমেন্ট পাওয়া যায়নি। সঠিক TrxID লিখুন।',
       });
-      setTrxId('');
-      setPhone('');
-      setTimeout(() => {
-        setMessage(null);
-        onClose();
-      }, 3500);
-    } else {
-      setMessage({ type: 'error', text: 'ডিপোজিট রিকোয়েস্ট পাঠানো যায়নি।' });
+      return;
+    } catch (e: any) {
+      setSubmitting(false);
+      setMessage({
+        type: 'error',
+        text: '❌ ট্রানজেকশন ভেরিফিকেশন ব্যর্থ হয়েছে (FAILED)! সঠিক TrxID দিয়ে আবার চেষ্টা করুন।',
+      });
+      return;
     }
   };
 

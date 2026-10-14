@@ -28,7 +28,11 @@ import RoomDetailsModal from '@/components/RoomDetailsModal';
 import SlotBookingModal from '@/components/SlotBookingModal';
 import TotalPrizeDetailsModal from '@/components/TotalPrizeDetailsModal';
 import MatchDetailsPage from '@/components/MatchDetailsPage';
-import LiveMatchCountdown, { formatMatchSchedule, parseScheduleTimeToDate } from '@/components/LiveMatchCountdown';
+import LiveMatchCountdown, {
+  formatMatchSchedule,
+  parseScheduleTimeToDate,
+  isMatchFinished,
+} from '@/components/LiveMatchCountdown';
 import { addUserBooking } from '@/lib/match-scheduler';
 import {
   getCurrentUser,
@@ -55,7 +59,7 @@ export default function CategoryDetailPage() {
   const categoryMatches = React.useMemo(
     () =>
       allCategoryMatches
-        .filter((m) => m.status !== 'COMPLETED')
+        .filter((m) => !isMatchFinished(m))
         .sort(
           (a, b) =>
             (parseScheduleTimeToDate(a.time)?.getTime() || 0) -
@@ -64,7 +68,7 @@ export default function CategoryDetailPage() {
     [allCategoryMatches]
   );
   const completedMatches = React.useMemo(
-    () => allCategoryMatches.filter((m) => m.status === 'COMPLETED'),
+    () => allCategoryMatches.filter((m) => isMatchFinished(m)),
     [allCategoryMatches]
   );
 

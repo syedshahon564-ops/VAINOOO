@@ -101,6 +101,44 @@ export function formatMatchSchedule(matchTime: string): string {
   )} ${period}`;
 }
 
+/**
+ * Checks whether a match has concluded or ended so it leaves active category lobbies.
+ */
+export function isMatchFinished(match: {
+  status?: string;
+  results?: any[];
+  time?: string;
+  startTimeIso?: string;
+}): boolean {
+  if (!match) return false;
+  const s = String(match.status || '').toUpperCase();
+  if (
+    s === 'COMPLETED' ||
+    s === 'FINISHED' ||
+    s === 'ENDED' ||
+    s === 'RESULT_PUBLISHED' ||
+    s === 'CANCELLED'
+  ) {
+    return true;
+  }
+  if (Array.isArray(match.results) && match.results.length > 0) {
+    return true;
+  }
+  if (match.time) {
+    try {
+      const d = parseScheduleTimeToDate(match.time, match.startTimeIso);
+      if (d && !isNaN(d.getTime())) {
+        const elapsedMins = (Date.now() - d.getTime()) / (60 * 1000);
+        // If 45 minutes have elapsed since the scheduled start time, match has concluded
+        if (elapsedMins > 45) {
+          return true;
+        }
+      }
+    } catch (e) {}
+  }
+  return false;
+}
+
 // Centralized Shared Singleton Ticker to eliminate multi-timer CPU & React thrashing
 let globalTimestamp = typeof window !== 'undefined' ? Date.now() : 0;
 const tickListeners = new Set<() => void>();

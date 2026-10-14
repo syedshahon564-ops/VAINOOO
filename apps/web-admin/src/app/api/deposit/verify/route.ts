@@ -109,14 +109,14 @@ export async function POST(req: Request) {
       (p: any) => String(p.trxId).toUpperCase() === rawTrx
     );
 
-    // 1. Not Found -> PENDING
+    // 1. Not Found -> FAILED (Explicit failed response for invalid/fake transactions)
     if (payIdx === -1) {
       return NextResponse.json({
         success: false,
-        status: 'PENDING',
-        message: 'পেমেন্ট নোটিফিকেশন এখনো আসেনি। দয়া করে ১-২ মিনিট অপেক্ষা করে আবার ভেরিফাই করুন (Payment notification not yet received. Please wait 1-2 minutes and retry).',
+        status: 'FAILED',
+        message: '❌ ট্রানজেকশন ভেরিফিকেশন ব্যর্থ হয়েছে (FAILED)! TrxID ভুল অথবা এখনও কোনো পেমেন্ট সার্ভারে আসেনি। সঠিক TrxID লিখুন।',
         trx_id: rawTrx,
-      }, { status: 200 });
+      }, { status: 400 });
     }
 
     const payment = db.incomingPayments[payIdx];
@@ -126,7 +126,7 @@ export async function POST(req: Request) {
       return NextResponse.json({
         success: false,
         status: 'ALREADY_USED',
-        message: 'এই Transaction ID দিয়ে ইতিমধ্যে ডিপোজিট গ্রহণ করা হয়েছে (This transaction ID has already been claimed).',
+        message: '❌ ভেরিফিকেশন ব্যর্থ হয়েছে (FAILED)! এই TrxID দিয়ে ইতিমধ্যে টাকা গ্রহণ করা হয়েছে।',
         trx_id: rawTrx,
         claimed_by: payment.claimedBy,
         claimed_at: payment.claimedAt,
@@ -178,7 +178,8 @@ export async function POST(req: Request) {
     return NextResponse.json({
       success: true,
       status: 'SUCCESS',
-      message: `অভিনন্দন! আপনার ৳${creditAmount} ব্যালেন্স সফলভাবে যোগ করা হয়েছে।`,
+      credit_amount: creditAmount,
+      message: `🎉 ট্রানজেকশন সফল হয়েছে (SUCCESS)! ৳${creditAmount} আপনার ওয়ালেটে সাথে সাথে যোগ করা হয়েছে।`,
       data: {
         user_id: finalUserName,
         amount_credited: creditAmount,

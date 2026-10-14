@@ -121,35 +121,7 @@ export default function SlotBookingModal({
     return initial;
   });
 
-  // Pre-fill logged-in user info for Player 1 / Leader
-  useEffect(() => {
-    const cur = getCurrentUser();
-    if (cur) {
-      const defaultName = cur.ign || cur.username || '';
-      const defaultUid = cur.uid && cur.uid !== '---' ? cur.uid : '';
-      if (isSquad) {
-        setSquadPlayers((prev) => [
-          { ign: prev[0].ign || defaultName, uid: prev[0].uid || defaultUid, checking: false, verified: true },
-          prev[1],
-          prev[2],
-          prev[3],
-        ]);
-      } else if (isDuo) {
-        setDuoPlayers((prev) => [
-          { ign: prev[0].ign || defaultName, uid: prev[0].uid || defaultUid, checking: false, verified: true },
-          prev[1],
-        ]);
-      } else {
-        setSoloPlayer((prev) => ({
-          ign: prev.ign || defaultName,
-          uid: prev.uid || defaultUid,
-          checking: false,
-          verified: true,
-        }));
-      }
-    }
-  }, [isSquad, isDuo]);
-
+  // Initial state starts completely blank for UID & Name as requested
   const debounceTimersRef = useRef<Record<string, NodeJS.Timeout>>({});
 
   // Handler to verify a specific squad player's UID and auto-populate IGN
@@ -396,11 +368,11 @@ export default function SlotBookingModal({
       }
 
       const p1 = squadPlayers[0];
-      const p1Name = p1.ign?.trim() || cur?.ign?.trim() || cur?.username?.trim();
-      const p1Uid = cleanUid(p1.uid) || cur?.uid || '';
+      const p1Name = p1.ign?.trim();
+      const p1Uid = cleanUid(p1.uid);
 
       if (!p1Name && !p1Uid) {
-        setErrorMessage('Player 1 (Leader)-এর নাম (IGN) অথবা UID লিখুন।');
+        setErrorMessage('Player 1 (Leader)-এর Free Fire UID অথবা নাম (IGN) লিখুন।');
         return;
       }
 
@@ -422,14 +394,14 @@ export default function SlotBookingModal({
           const pName = p.ign?.trim();
           return {
             ign: pName || (idx === 0 ? p1Name || `Player 1` : cUid ? `FF_${cUid.slice(-4)}` : `Player ${idx + 1}`),
-            uid: cUid || (idx === 0 ? p1Uid || cur?.uid || '---' : `P${idx + 1}`),
+            uid: cUid || (idx === 0 ? p1Uid || '---' : `P${idx + 1}`),
             slotInTeam: idx + 1,
           };
         })
         .filter((p, idx) => (isClashSquad ? true : idx === 0 || Boolean(squadPlayers[idx].ign?.trim() || cleanUid(squadPlayers[idx].uid))));
 
       const leaderIgn = validSquadPlayers[0]?.ign || p1Name || 'Leader';
-      const leaderUid = validSquadPlayers[0]?.uid || p1Uid || cur?.uid || '---';
+      const leaderUid = validSquadPlayers[0]?.uid || p1Uid || '---';
 
       // Mark the slot as booked
       setBookedSlotsMap((prev) => ({
@@ -460,11 +432,11 @@ export default function SlotBookingModal({
     // 2. DUO MODE (Leader required, Player 2 optional)
     if (isDuo) {
       const p1 = duoPlayers[0];
-      const p1Name = p1.ign?.trim() || cur?.ign?.trim() || cur?.username?.trim();
-      const p1Uid = cleanUid(p1.uid) || cur?.uid || '';
+      const p1Name = p1.ign?.trim();
+      const p1Uid = cleanUid(p1.uid);
 
       if (!p1Name && !p1Uid) {
-        setErrorMessage('Player 1 (Leader)-এর নাম (IGN) অথবা UID লিখুন।');
+        setErrorMessage('Player 1 (Leader)-এর Free Fire UID অথবা নাম (IGN) লিখুন।');
         return;
       }
 
@@ -474,7 +446,7 @@ export default function SlotBookingModal({
           const pName = p.ign?.trim();
           return {
             ign: pName || (idx === 0 ? p1Name || `Player 1` : cUid ? `FF_${cUid.slice(-4)}` : `Player ${idx + 1}`),
-            uid: cUid || (idx === 0 ? p1Uid || cur?.uid || '---' : `P${idx + 1}`),
+            uid: cUid || (idx === 0 ? p1Uid || '---' : `P${idx + 1}`),
             slotInTeam: idx + 1,
           };
         })
@@ -482,7 +454,7 @@ export default function SlotBookingModal({
 
       const assignedSlot = getNextAvailableSlot();
       const leaderIgn = validDuoPlayers[0]?.ign || p1Name || 'Leader';
-      const leaderUid = validDuoPlayers[0]?.uid || p1Uid || cur?.uid || '---';
+      const leaderUid = validDuoPlayers[0]?.uid || p1Uid || '---';
 
       setBookedSlotsMap((prev) => ({
         ...prev,
@@ -510,16 +482,16 @@ export default function SlotBookingModal({
     }
 
     // 3. SOLO MODE (No slot grid - direct registration for 1 player)
-    const soloName = soloPlayer.ign?.trim() || cur?.ign?.trim() || cur?.username?.trim();
-    const soloUid = cleanUid(soloPlayer.uid) || cur?.uid || '';
+    const soloName = soloPlayer.ign?.trim();
+    const soloUid = cleanUid(soloPlayer.uid);
 
     if (!soloName && !soloUid) {
-      setErrorMessage('আপনার ইন-গেম নাম (IGN) অথবা UID লিখুন।');
+      setErrorMessage('আপনার Free Fire UID অথবা ইন-গেম নাম (IGN) লিখুন।');
       return;
     }
 
     const finalSoloName = soloName || (soloUid ? `FF_${soloUid.slice(-4)}` : 'Player');
-    const finalSoloUid = soloUid || cur?.uid || '---';
+    const finalSoloUid = soloUid || '---';
 
     const assignedSlot = getNextAvailableSlot();
 

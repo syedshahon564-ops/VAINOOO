@@ -75,7 +75,7 @@ export default function WalletPage() {
     }
   }
 
-  function handleDeposit(e: React.FormEvent) {
+  async function handleDeposit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setMessage(null);
@@ -100,25 +100,60 @@ export default function WalletPage() {
     }
 
     const user = getCurrentUser();
-    const userId = user?.id || 'u-1';
-    const res = submitDepositRequest({
-      userId,
-      userPhone: user?.phone || phone,
-      userName: user?.ign || 'Player',
-      method,
-      amount: Number(amount),
-      accountNumber: phone,
-      trxId: cleanTrx,
-      autoVerify: false,
-    });
-    setMessage({
-      type: 'success',
-      text: `⏳ আপনার ৳${amount} ডিপোজিট রিকোয়েস্ট জমা হয়েছে (পেন্ডিং)! এডমিন bKash/Nagad স্টেটমেন্ট মিলিয়ে TrxID (${cleanTrx}) যাচাই করে ব্যালেন্স যোগ করবেন।`,
-    });
-    setTrxId('');
-    setPhone('');
-    setLoading(false);
-    loadHistory();
+    const userId = user?.username || user?.ign || user?.id || phone;
+
+    try {
+      const verifyRes = await fetch('/api/deposit/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: userId,
+          trx_id: cleanTrx,
+          expected_amount: Number(amount),
+        }),
+      });
+      const verifyData = await verifyRes.json();
+      setLoading(false);
+
+      if (verifyData.success && verifyData.status === 'SUCCESS') {
+        const creditAmt = Number(verifyData.credit_amount || verifyData.data?.amount_credited || amount);
+        if (user?.id) {
+          addBalance(user.id, creditAmt, `ডিপোজিট সফল (${cleanTrx})`);
+        }
+        setMessage({
+          type: 'success',
+          text: `🎉 ট্রানজেকশন সফল হয়েছে (SUCCESS)! ৳${creditAmt} ওয়ালেটে সাথে সাথে যোগ করা হয়েছে।`,
+        });
+        setTrxId('');
+        setPhone('');
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('ff_users_updated'));
+          window.dispatchEvent(new CustomEvent('ff_user_profile_updated'));
+        }
+        loadHistory();
+        return;
+      }
+
+      if (verifyData.status === 'ALREADY_USED') {
+        setMessage({
+          type: 'error',
+          text: '❌ ট্রানজেকশন ব্যর্থ হয়েছে (FAILED)! এই TrxID দিয়ে ইতিমধ্যে টাকা গ্রহণ করা হয়েছে।',
+        });
+        return;
+      }
+
+      // If invalid / wrong TrxID or payment not found on server -> FAILED
+      setMessage({
+        type: 'error',
+        text: verifyData.message || '❌ ট্রানজেকশন ভেরিফিকেশন ব্যর্থ হয়েছে (FAILED)! ভুল TrxID অথবা কোনো পেমেন্ট পাওয়া যায়নি। সঠিক TrxID লিখুন।',
+      });
+    } catch (err: any) {
+      setLoading(false);
+      setMessage({
+        type: 'error',
+        text: '❌ ট্রানজেকশন ভেরিফিকেশন ব্যর্থ হয়েছে (FAILED)! সঠিক TrxID দিয়ে আবার চেষ্টা করুন।',
+      });
+    }
   }
 
   function handleWithdraw(e: React.FormEvent) {

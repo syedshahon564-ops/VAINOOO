@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+export { isMatchFinished } from '@/components/LiveMatchCountdown';
 
 export interface MatchItem {
   id: string;

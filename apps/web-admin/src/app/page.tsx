@@ -16,7 +16,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
-import { useCMS } from '@/lib/cms-store';
+import { useCMS, isMatchFinished } from '@/lib/cms-store';
 import { useLanguage } from '@/components/LanguageProvider';
 import AppDownloadModal from '@/components/AppDownloadModal';
 import MobileAppViewPage from './mobile-app-view/page';
@@ -103,9 +103,9 @@ export default function HomePage() {
     setShowDownloadModal(true);
   };
 
-  // Helper to get real-time match count for any category
+  // Helper to get real-time match count for any category (active only)
   const getMatchCount = (slug: string) => {
-    return matches.filter((m) => m.categorySlug === slug).length;
+    return matches.filter((m) => m.categorySlug === slug && !isMatchFinished(m)).length;
   };
 
   const catSpecial = categories['special-match'];
