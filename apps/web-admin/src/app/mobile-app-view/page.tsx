@@ -1821,7 +1821,7 @@ export default function MobileAppViewPage(props: any) {
                                   {/* 3. Progress Bar + Join Button Row */}
                                   {(() => {
                                     const userJoined = hasUserJoinedMatch(m.id, currentUser) ||
-                                      bookedMatchesList.some((bm) => bm.matchId === m.id || bm.title === m.title) ||
+                                      bookedMatchesList.some((bm) => bm.matchId === m.id) ||
                                       (currentUser &&
                                         (m.participants || []).some(
                                           (p) =>

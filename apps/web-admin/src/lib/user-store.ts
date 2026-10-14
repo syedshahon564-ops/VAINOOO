@@ -69,7 +69,7 @@ export interface BalanceTransaction {
   status?: 'completed' | 'pending' | 'failed' | string;
 }
 
-const USERS_STORAGE_KEY = 'ff_esports_users_db_v2';
+const USERS_STORAGE_KEY = 'ff_esports_users_db_v4';
 const TRANSACTIONS_STORAGE_KEY = 'ff_esports_balance_tx_v2';
 
 export const INITIAL_USERS: UserAccount[] = [
@@ -126,136 +126,6 @@ export const INITIAL_USERS: UserAccount[] = [
     createdAt: '2026-09-01T00:00:00Z',
     avatar: '/logo.png',
     notes: 'FF Rival Tour BD Operations Owner.',
-  },
-  // Player Accounts
-  {
-    id: 'u-1',
-    phone: '01712345678',
-    ign: 'BDX_STRIKER',
-    uid: '192837465',
-    password: 'striker@2026',
-    walletBalance: 1450.0,
-    role: 'PLAYER',
-    status: 'ACTIVE',
-    matchesPlayed: 38,
-    totalKills: 142,
-    totalWins: 12,
-    totalEarnings: 8600,
-    createdAt: '2026-09-15T10:30:00Z',
-    avatar: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=120',
-    notes: 'Verified tournament player. Top 10 contender.',
-    matchHistory: [
-      {
-        id: 'rec-1',
-        matchTitle: 'BR SURVIVAL #108 (CLASSIC)',
-        category: 'Classic BR',
-        date: '2026-10-06 19:00',
-        slotNumber: 4,
-        kills: 8,
-        rank: 1,
-        isBooyah: true,
-        prizeEarned: 1200,
-      },
-      {
-        id: 'rec-2',
-        matchTitle: 'CLASH SQUAD 4V4 #92',
-        category: 'Clash Squad',
-        date: '2026-10-05 20:30',
-        slotNumber: 1,
-        kills: 14,
-        rank: 1,
-        isBooyah: true,
-        prizeEarned: 800,
-      },
-      {
-        id: 'rec-3',
-        matchTitle: 'CS HEADSHOT SPECIAL #44',
-        category: 'Headshot Only',
-        date: '2026-10-04 18:00',
-        slotNumber: 2,
-        kills: 11,
-        rank: 2,
-        isBooyah: false,
-        prizeEarned: 450,
-      },
-      {
-        id: 'rec-4',
-        matchTitle: 'LONE WOLF 1V1 #31',
-        category: 'Lone Wolf',
-        date: '2026-10-03 21:15',
-        slotNumber: 1,
-        kills: 5,
-        rank: 1,
-        isBooyah: true,
-        prizeEarned: 300,
-      },
-    ],
-  },
-  {
-    id: 'u-2',
-    phone: '01899887766',
-    ign: 'TANVIR_FF',
-    uid: '283746519',
-    password: 'tanvir#ff99',
-    walletBalance: 820.0,
-    role: 'PLAYER',
-    status: 'ACTIVE',
-    matchesPlayed: 18,
-    totalKills: 64,
-    totalWins: 7,
-    totalEarnings: 3900,
-    createdAt: '2026-09-18T14:15:00Z',
-    avatar: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=120',
-  },
-  {
-    id: 'u-3',
-    phone: '01911223344',
-    ign: 'RAKIB_OP',
-    uid: '394857201',
-    password: 'rakib_op12',
-    walletBalance: 350.0,
-    role: 'PLAYER',
-    status: 'ACTIVE',
-    matchesPlayed: 12,
-    totalKills: 38,
-    totalWins: 3,
-    totalEarnings: 1800,
-    createdAt: '2026-09-22T08:00:00Z',
-    avatar: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=120',
-  },
-  {
-    id: 'u-4',
-    phone: '01644556677',
-    ign: 'SADIK_HEADSHOT',
-    uid: '405968172',
-    password: 'headshot405',
-    walletBalance: 2100.0,
-    role: 'PLAYER',
-    status: 'ACTIVE',
-    matchesPlayed: 35,
-    totalKills: 142,
-    totalWins: 19,
-    totalEarnings: 9400,
-    createdAt: '2026-09-10T16:45:00Z',
-    avatar: 'https://images.unsplash.com/photo-1563089145-599997674d42?q=80&w=120',
-    notes: 'Pro CS 4v4 headshot specialist.',
-  },
-  {
-    id: 'u-5',
-    phone: '01577889900',
-    ign: 'MAHIN_KILLER',
-    uid: '516079283',
-    password: 'mahin#killer',
-    walletBalance: 0.0,
-    role: 'PLAYER',
-    status: 'BANNED',
-    matchesPlayed: 8,
-    totalKills: 14,
-    totalWins: 1,
-    totalEarnings: 400,
-    createdAt: '2026-09-28T19:20:00Z',
-    avatar: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?q=80&w=120',
-    notes: 'Suspicious headshot ratio detected by anti-cheat. Account restricted.',
   },
 ];
 
@@ -663,16 +533,26 @@ export function deductBalance(
   return { success: true, newBalance };
 }
 
-const JOINED_MATCHES_KEY = 'ff_user_joined_matches_v1';
+const JOINED_MATCHES_KEY = 'ff_user_joined_matches_v2';
 
 export function hasUserJoinedMatch(matchId: string, user?: UserAccount | null): boolean {
-  if (typeof window === 'undefined') return false;
+  if (typeof window === 'undefined' || !matchId) return false;
   try {
     const raw = localStorage.getItem(JOINED_MATCHES_KEY);
     if (raw) {
       const map = JSON.parse(raw) as Record<string, any>;
-      if (map[matchId]) return true;
-      if (user && Object.values(map).some((entry: any) => entry.matchId === matchId && (entry.userId === user.id || (entry.uid && entry.uid === user.uid) || (entry.phone && entry.phone === user.phone)))) {
+      const entry = map[matchId];
+      if (entry) {
+        // If match was joined > 16 hours ago (yesterday/past session), expire it so tomorrow players can join fresh!
+        if (entry.joinedAt) {
+          const joinedTime = new Date(entry.joinedAt).getTime();
+          const hoursAgo = (Date.now() - joinedTime) / (1000 * 60 * 60);
+          if (hoursAgo > 16) {
+            delete map[matchId];
+            localStorage.setItem(JOINED_MATCHES_KEY, JSON.stringify(map));
+            return false;
+          }
+        }
         return true;
       }
     }
@@ -965,7 +845,11 @@ export function getCurrentUser(): UserAccount | null {
     const parsed = typeof data === 'string' ? JSON.parse(data) : data;
     // Refresh with latest data from users list
     const fresh = getUserById(parsed.id) || getUserByPhone(parsed.phone);
-    return fresh || parsed;
+    if (!fresh && parsed.role !== 'ADMIN') {
+      clearSession();
+      return null;
+    }
+    return fresh || (parsed.role === 'ADMIN' ? parsed : null);
   } catch (e) {
     return null;
   }

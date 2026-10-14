@@ -809,7 +809,20 @@ export function getUserBookedMatches(): UserBookedMatch[] {
   if (typeof window === 'undefined') return [];
   try {
     const raw = localStorage.getItem(USER_BOOKINGS_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
+    if (!raw) return [];
+    const list = JSON.parse(raw);
+    if (!Array.isArray(list)) return [];
+    // Auto-expire bookings older than 18 hours so yesterday's matches don't lock tomorrow's matches
+    const now = Date.now();
+    const active = list.filter((b: any) => {
+      if (!b || !b.bookedAt) return false;
+      const hours = (now - new Date(b.bookedAt).getTime()) / (1000 * 60 * 60);
+      return hours < 18;
+    });
+    if (active.length !== list.length) {
+      saveUserBookedMatches(active);
+    }
+    return active;
   } catch (e) {
     return [];
   }

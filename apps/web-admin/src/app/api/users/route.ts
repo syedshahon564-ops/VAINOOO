@@ -147,6 +147,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: 'User not found' }, { status: 404 });
     }
 
+    // 4. Purge Non-Owners Action (keeps only owner accounts, deleting all player IDs)
+    if (body.action === 'purge_non_owners' || body.action === 'reset_players') {
+      const ownersOnly = currentUsers.filter((u: any) => u.role === 'ADMIN' || String(u.id).startsWith('u-owner'));
+      writeUsersToFile(ownersOnly);
+      return NextResponse.json({ ok: true, message: 'All player accounts deleted, only owner IDs preserved.', count: ownersOnly.length, users: ownersOnly });
+    }
+
     return NextResponse.json({ ok: false, error: 'Invalid action' }, { status: 400 });
   } catch (error: any) {
     return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
