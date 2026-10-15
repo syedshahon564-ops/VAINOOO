@@ -13,7 +13,7 @@ export default function MatchesPage() {
   const [loading, setLoading] = useState(true);
   const [bookingLoading, setBookingLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [filterMode, setFilterMode] = useState<string>('ALL');
+  const [filterMode, setFilterMode] = useState<string>('BR_SOLO');
 
   useEffect(() => {
     fetchTournaments();
@@ -112,7 +112,6 @@ export default function MatchesPage() {
   }
 
   const filteredTournaments = tournaments.filter((t) => {
-    if (filterMode === 'ALL') return true;
     return t.gameMode === filterMode;
   });
 
@@ -129,7 +128,7 @@ export default function MatchesPage() {
 
         {/* Filter Pills */}
         <div className="flex flex-wrap items-center gap-2">
-          {['ALL', 'BR_SOLO', 'BR_DUO', 'BR_SQUAD', 'CS_4V4'].map((mode) => (
+          {['BR_SOLO', 'BR_DUO', 'BR_SQUAD', 'CS_4V4'].map((mode) => (
             <button
               key={mode}
               onClick={() => setFilterMode(mode)}

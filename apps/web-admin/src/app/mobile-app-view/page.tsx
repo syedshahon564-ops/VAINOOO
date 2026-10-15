@@ -1029,10 +1029,9 @@ export default function MobileAppViewPage(props: any) {
     [selectedCategory, matches]
   );
 
-  const [subTypeFilter, setSubTypeFilter] = useState<'ALL' | 'SOLO' | 'DUO' | 'SQUAD'>('ALL');
+  const [subTypeFilter, setSubTypeFilter] = useState<'SOLO' | 'DUO' | 'SQUAD'>('SOLO');
   const filteredCurrentMatches = React.useMemo(() => {
     return currentCategoryMatches.filter((m) => {
-      if (subTypeFilter === 'ALL') return true;
       const typeStr = (m.type || m.matchType || '').toUpperCase();
       const titleStr = (m.title || '').toUpperCase();
       if (subTypeFilter === 'SOLO') {
@@ -1667,7 +1666,6 @@ export default function MobileAppViewPage(props: any) {
                           {/* Match Sub-Type Switcher (Solo, Duo, Squad) */}
                           <div className="flex items-center gap-1 p-1 rounded-xl border border-gray-200 bg-white shadow-xs">
                             {[
-                              { key: 'ALL', labelBn: 'সব ম্যাচ', labelEn: 'All' },
                               { key: 'SOLO', labelBn: 'সোলো (Solo)', labelEn: 'Solo' },
                               { key: 'DUO', labelBn: 'ডুও (Duo)', labelEn: 'Duo' },
                               { key: 'SQUAD', labelBn: 'স্কোয়াড (Squad)', labelEn: 'Squad' },
@@ -1695,9 +1693,7 @@ export default function MobileAppViewPage(props: any) {
                                 {tPhone('বর্তমানে কোনো ম্যাচ নেই', 'No Matches Active Currently')}
                               </p>
                               <p className="text-[10px] text-gray-500">
-                                {subTypeFilter !== 'ALL'
-                                  ? tPhone(`এই ফিল্টারে (${subTypeFilter}) কোনো ম্যাচ পাওয়া যায়নি। অন্য ফিল্টার সিলেক্ট করুন।`, `No matches found for ${subTypeFilter}.`)
-                                  : tPhone('অ্যাডমিন প্যানেল থেকে নতুন ম্যাচ শিডিউল করা হলে এখানে দেখতে পাবেন।', 'New tournaments will appear here when scheduled by Admin.')}
+                                {tPhone(`এই ফিল্টারে (${subTypeFilter}) কোনো ম্যাচ পাওয়া যায়নি। অন্য ফিল্টার সিলেক্ট করুন।`, `No matches found for ${subTypeFilter}.`)}
                               </p>
                             </div>
                           ) : (
