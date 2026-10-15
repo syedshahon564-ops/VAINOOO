@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Wallet, ArrowDownRight, ArrowUpRight, Check, AlertCircle, Copy } from 'lucide-react';
+import { Wallet, ArrowDownRight, ArrowUpRight, Check, AlertCircle, Copy, CheckCircle2, Loader2 } from 'lucide-react';
 import { getCurrentUser, addBalance, deductBalance, getTransactions, submitDepositRequest } from '@/lib/user-store';
 import { useCMS } from '@/lib/cms-store';
 
@@ -115,43 +115,36 @@ export default function WalletPage() {
       const verifyData = await verifyRes.json();
       setLoading(false);
 
-      if (verifyData.success && verifyData.status === 'SUCCESS') {
+      if (verifyData.success && (verifyData.status === 'SUCCESS' || verifyData.credit_amount)) {
         const creditAmt = Number(verifyData.credit_amount || verifyData.data?.amount_credited || amount);
         if (user?.id) {
-          addBalance(user.id, creditAmt, `ডিপোজিট সফল (${cleanTrx})`);
+          addBalance(user.id, creditAmt, `ডিপোজিট সফল (${cleanTrx})`, 'deposit', cleanTrx);
         }
         setMessage({
           type: 'success',
-          text: `🎉 ট্রানজেকশন সফল হয়েছে (SUCCESS)! ৳${creditAmt} ওয়ালেটে সাথে সাথে যোগ করা হয়েছে।`,
+          text: verifyData.message || `🎉 ডিপোজিট সফল হয়েছে! ৳${creditAmt} যোগ করা হয়েছে।`,
         });
         setTrxId('');
         setPhone('');
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent('ff_users_updated'));
           window.dispatchEvent(new CustomEvent('ff_user_profile_updated'));
+          window.dispatchEvent(new Event('storage'));
         }
         loadHistory();
         return;
       }
 
-      if (verifyData.status === 'ALREADY_USED') {
-        setMessage({
-          type: 'error',
-          text: '❌ ট্রানজেকশন ব্যর্থ হয়েছে (FAILED)! এই TrxID দিয়ে ইতিমধ্যে টাকা গ্রহণ করা হয়েছে।',
-        });
-        return;
-      }
-
-      // If invalid / wrong TrxID or payment not found on server -> FAILED
+      // Display server error directly
       setMessage({
         type: 'error',
-        text: verifyData.message || '❌ ট্রানজেকশন ভেরিফিকেশন ব্যর্থ হয়েছে (FAILED)! ভুল TrxID অথবা কোনো পেমেন্ট পাওয়া যায়নি। সঠিক TrxID লিখুন।',
+        text: verifyData.message || '❌ ট্রানজেকশন ভেরিফিকেশন ব্যর্থ হয়েছে! সঠিক TrxID লিখুন।',
       });
     } catch (err: any) {
       setLoading(false);
       setMessage({
         type: 'error',
-        text: '❌ ট্রানজেকশন ভেরিফিকেশন ব্যর্থ হয়েছে (FAILED)! সঠিক TrxID দিয়ে আবার চেষ্টা করুন।',
+        text: '❌ ট্রানজেকশন ভেরিফিকেশন ব্যর্থ হয়েছে! ইন্টারনেট সংযোগ চেক করে আবার চেষ্টা করুন।',
       });
     }
   }
@@ -333,7 +326,8 @@ export default function WalletPage() {
                   type="text"
                   required
                   value={trxId}
-                  onChange={(e) => setTrxId(e.target.value)}
+                  maxLength={14}
+                  onChange={(e) => setTrxId(e.target.value.toUpperCase().trim())}
                   className="w-full mt-1.5 px-4 py-2.5 rounded-xl bg-black/40 border border-white/10 text-white text-xs focus:border-gold focus:outline-none uppercase"
                   placeholder="e.g. BKA8927189"
                 />
@@ -342,9 +336,19 @@ export default function WalletPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3.5 rounded-xl btn-gold text-xs font-bold disabled:opacity-50 mt-4"
+                className="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-emerald-600/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50 mt-4"
               >
-                {loading ? 'Submitting...' : 'Submit Deposit Request'}
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>যাচাই ও যোগ করা হচ্ছে...</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-4 h-4 text-emerald-200" />
+                    <span>Verify & Add Money (টাকা যোগ করুন)</span>
+                  </>
+                )}
               </button>
             </form>
           ) : (

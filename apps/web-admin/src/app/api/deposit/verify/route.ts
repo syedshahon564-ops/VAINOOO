@@ -91,50 +91,72 @@ function writeUsers(users: any[]) {
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
+/**
+ * DEPOSIT VERIFICATION API ENDPOINT (POST /api/deposit/verify)
+ *
+ * Payload:
+ * {
+ *   "user_id": string,
+ *   "trx_id": string,
+ *   "expected_amount": number
+ * }
+ */
 export async function POST(req: Request) {
   try {
     const payload = await req.json();
     const userId = String(payload.user_id || payload.userId || '').trim();
-    const rawTrx = String(payload.trx_id || payload.trxId || '').trim().toUpperCase();
+    const normalizedTrxId = String(payload.trx_id || payload.trxId || '').trim().toUpperCase();
+    const rawExpectedAmount = payload.expected_amount !== undefined ? payload.expected_amount : payload.expectedAmount;
+    const expectedAmount = rawExpectedAmount !== undefined && rawExpectedAmount !== null ? Number(rawExpectedAmount) : null;
 
-    if (!userId || !rawTrx) {
+    if (!userId || !normalizedTrxId) {
       return NextResponse.json(
-        { success: false, error: 'user_id and trx_id are required' },
+        { success: false, message: '❌ user_id এবং trx_id আবশ্যক।' },
         { status: 400 }
       );
     }
 
     const db = readPaymentsDb();
-    const payIdx = (db.incomingPayments || []).findIndex(
-      (p: any) => String(p.trxId).toUpperCase() === rawTrx
+    const incomingPayments = db.incomingPayments || [];
+
+    // Search incoming_payments WHERE trx_id = normalizedTrxId
+    const payIdx = incomingPayments.findIndex(
+      (p: any) => String(p.trx_id || p.trxId || '').trim().toUpperCase() === normalizedTrxId
     );
 
-    // 1. Not Found -> FAILED (Explicit failed response for invalid/fake transactions)
+    // c) If not found: return 404
     if (payIdx === -1) {
       return NextResponse.json({
         success: false,
-        status: 'FAILED',
-        message: '❌ ট্রানজেকশন ভেরিফিকেশন ব্যর্থ হয়েছে (FAILED)! TrxID ভুল অথবা এখনও কোনো পেমেন্ট সার্ভারে আসেনি। সঠিক TrxID লিখুন।',
-        trx_id: rawTrx,
-      }, { status: 400 });
+        message: '❌ ট্রানজেকশন আইডি পাওয়া যায়নি! টাকা পাঠানোর পর ১ মিনিট অপেক্ষা করে আবার চেষ্টা করুন।',
+      }, { status: 404 });
     }
 
-    const payment = db.incomingPayments[payIdx];
+    const payment = incomingPayments[payIdx];
 
-    // 2. Already Claimed -> ALREADY_USED
+    // d) If found but status === 'CLAIMED': return 400
     if (payment.status === 'CLAIMED') {
       return NextResponse.json({
         success: false,
-        status: 'ALREADY_USED',
-        message: '❌ ভেরিফিকেশন ব্যর্থ হয়েছে (FAILED)! এই TrxID দিয়ে ইতিমধ্যে টাকা গ্রহণ করা হয়েছে।',
-        trx_id: rawTrx,
-        claimed_by: payment.claimedBy,
-        claimed_at: payment.claimedAt,
+        message: '⚠️ এই ট্রানজেকশন আইডিটি ইতোমধ্যে ব্যবহার করা হয়েছে!',
+        claimed_by: payment.claimed_by || payment.claimedBy,
+        claimed_at: payment.claimed_at || payment.claimedAt,
       }, { status: 400 });
     }
 
-    // 3. UNCLAIMED -> Atomic update & credit
-    const creditAmount = Number(payment.amount) || 0;
+    // e) If expected_amount does not match the actual payment amount: return 400
+    const actualAmount = Number(payment.amount);
+    if (expectedAmount !== null && !isNaN(expectedAmount) && expectedAmount > 0) {
+      if (Math.abs(expectedAmount - actualAmount) > 0.01) {
+        return NextResponse.json({
+          success: false,
+          message: '❌ টাকার পরিমাণ মেলেনি! আপনি পাঠিয়েছেন ৳' + payment.amount,
+        }, { status: 400 });
+      }
+    }
+
+    // f) Valid -> Atomic transaction
+    const nowIso = new Date().toISOString();
     const users = readUsers();
     const userIdx = users.findIndex(
       (u: any) =>
@@ -145,51 +167,60 @@ export async function POST(req: Request) {
     );
 
     let currentBalance = 0;
-    let newBalance = creditAmount;
+    let newBalance = actualAmount;
     let finalUserName = userId;
 
     if (userIdx !== -1) {
-      currentBalance = Number(users[userIdx].walletBalance) || 0;
-      newBalance = currentBalance + creditAmount;
+      currentBalance = Number(users[userIdx].walletBalance ?? users[userIdx].balance ?? 0);
+      newBalance = Number((currentBalance + actualAmount).toFixed(2));
       users[userIdx].walletBalance = newBalance;
-      finalUserName = users[userIdx].username || users[userIdx].ign;
+      users[userIdx].balance = newBalance;
+      finalUserName = users[userIdx].username || users[userIdx].ign || userId;
       writeUsers(users);
     }
 
-    // Update payment record
+    // 1. Mark payment as CLAIMED
     payment.status = 'CLAIMED';
+    payment.claimed_by = finalUserName;
     payment.claimedBy = finalUserName;
-    payment.claimedAt = new Date().toISOString();
-    db.incomingPayments[payIdx] = payment;
+    payment.claimed_at = nowIso;
+    payment.claimedAt = nowIso;
+    incomingPayments[payIdx] = payment;
+    db.incomingPayments = incomingPayments;
 
-    // Create deposit audit log
+    // 2. Record entry in wallet_transactions / deposit_history
     db.depositLogs = db.depositLogs || [];
     db.depositLogs.unshift({
-      id: 'log_' + Date.now(),
+      id: 'dep_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+      trx_id: normalizedTrxId,
+      trxId: normalizedTrxId,
+      user_id: finalUserName,
       userId: finalUserName,
-      trxId: rawTrx,
-      amount: creditAmount,
+      amount: actualAmount,
+      provider: payment.provider,
       status: 'SUCCESS',
-      processedAt: new Date().toISOString(),
+      created_at: nowIso,
+      processedAt: nowIso,
     });
 
     writePaymentsDb(db);
 
+    // 3. Return HTTP 200 with required format
     return NextResponse.json({
       success: true,
       status: 'SUCCESS',
-      credit_amount: creditAmount,
-      message: `🎉 ট্রানজেকশন সফল হয়েছে (SUCCESS)! ৳${creditAmount} আপনার ওয়ালেটে সাথে সাথে যোগ করা হয়েছে।`,
+      message: '🎉 ডিপোজিট সফল হয়েছে! ৳' + payment.amount + ' যোগ করা হয়েছে।',
+      credit_amount: payment.amount,
       data: {
         user_id: finalUserName,
-        amount_credited: creditAmount,
+        amount_credited: actualAmount,
         previous_balance: currentBalance,
         new_balance: newBalance,
         provider: payment.provider,
-        trx_id: rawTrx,
+        trx_id: normalizedTrxId,
       },
     }, { status: 200 });
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
 }

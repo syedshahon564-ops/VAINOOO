@@ -209,12 +209,16 @@ export async function POST(req: Request) {
         if (trxMatch) rawTrx = trxMatch[1].toUpperCase();
       }
       if (isNaN(amountNum) || amountNum <= 0) {
-        const amtMatch = rawMessage.match(/(?:Tk|BDT|amount)\s*[:.]?\s*([\d,]+\.?\d*)/i);
+        const amtMatch =
+          rawMessage.match(/(?:received|cash in|deposit)\s*(?:Tk\.?|BDT)?\s*([\d,]+\.?\d*)/i) ||
+          rawMessage.match(/(?:Tk\.?|BDT)\s*([\d,]+\.?\d*)/i) ||
+          rawMessage.match(/(?:amount)\s*[:.]?\s*([\d,]+\.?\d*)/i);
         if (amtMatch) amountNum = parseFloat(amtMatch[1].replace(/,/g, ''));
       }
-      if (!sender) {
+      if (!sender || sender.toLowerCase() === 'bkash' || sender.toLowerCase() === 'nagad' || sender.toLowerCase() === 'rocket') {
         const senderMatch = rawMessage.match(/(?:from|sender)\s*[:.]?\s*(01\d{9})/i);
         if (senderMatch) sender = senderMatch[1];
+        else if (!sender) sender = 'bKash';
       }
       if (/nagad/i.test(rawMessage)) provider = 'NAGAD';
       else if (/rocket/i.test(rawMessage)) provider = 'ROCKET';
@@ -238,7 +242,7 @@ export async function POST(req: Request) {
 
     // Idempotency check: duplicate TrxID
     const existing = db.incomingPayments.find(
-      (p: any) => String(p.trxId).toUpperCase() === rawTrx
+      (p: any) => String(p.trx_id || p.trxId || '').toUpperCase() === rawTrx
     );
 
     if (existing) {
@@ -272,16 +276,22 @@ export async function POST(req: Request) {
       }
     }
 
+    const nowIso = new Date().toISOString();
     const newPayment = {
       id: 'pay_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+      trx_id: rawTrx,
       trxId: rawTrx,
-      provider,
-      sender,
       amount: amountNum,
-      status: autoClaimedUser ? 'CLAIMED' : 'UNCLAIMED',
-      claimedBy: autoClaimedUser ? (autoClaimedUser.username || autoClaimedUser.ign) : null,
-      claimedAt: autoClaimedUser ? new Date().toISOString() : null,
+      provider,
+      sender: sender || 'bKash',
+      raw_message: rawMessage,
       rawMessage,
+      status: autoClaimedUser ? 'CLAIMED' : 'UNCLAIMED',
+      claimed_by: autoClaimedUser ? (autoClaimedUser.username || autoClaimedUser.ign) : null,
+      claimedBy: autoClaimedUser ? (autoClaimedUser.username || autoClaimedUser.ign) : null,
+      claimed_at: autoClaimedUser ? nowIso : null,
+      claimedAt: autoClaimedUser ? nowIso : null,
+      created_at: timestamp,
       createdAt: timestamp,
       autoCredited: Boolean(autoClaimedUser),
     };

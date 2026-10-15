@@ -175,3 +175,19 @@ model BotSession {
 
   tournament      Tournament   @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
 }
+
+model IncomingPayment {
+  id          String    @id @default(uuid())
+  trx_id      String    @unique @map("trx_id")
+  amount      Float
+  provider    String    // 'BKASH', 'NAGAD', 'ROCKET'
+  sender      String    // e.g. '017XXXXXXXX' or 'bKash'
+  raw_message String    @map("raw_message") @db.Text
+  status      String    @default("UNCLAIMED") // 'UNCLAIMED' or 'CLAIMED'
+  claimed_by  String?   @map("claimed_by")
+  claimed_at  DateTime? @map("claimed_at")
+  created_at  DateTime  @default(now()) @map("created_at")
+
+  @@index([trx_id])
+  @@map("incoming_payments")
+}

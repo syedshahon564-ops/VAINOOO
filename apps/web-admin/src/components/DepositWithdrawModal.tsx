@@ -13,6 +13,7 @@ import {
   ShieldCheck,
   Clock,
   Clipboard,
+  Loader2,
 } from 'lucide-react';
 import { useCMS } from '@/lib/cms-store';
 import { useLanguage } from '@/components/LanguageProvider';
@@ -165,47 +166,40 @@ export default function DepositWithdrawModal({
       const verifyData = await verifyRes.json();
       setSubmitting(false);
 
-      if (verifyData.success && verifyData.status === 'SUCCESS') {
+      if (verifyData.success && (verifyData.status === 'SUCCESS' || verifyData.credit_amount)) {
         const creditAmt = Number(verifyData.credit_amount || verifyData.data?.amount_credited || amount);
         if (currentUser?.id) {
-          addBalance(currentUser.id, creditAmt, `ডিপোজিট সফল (${cleanTrx})`);
+          addBalance(currentUser.id, creditAmt, `ডিপোজিট সফল (${cleanTrx})`, 'deposit', cleanTrx);
         }
         setMessage({
           type: 'success',
-          text: `🎉 ট্রানজেকশন সফল হয়েছে (SUCCESS)! ৳${creditAmt} ওয়ালেটে সাথে সাথে যোগ করা হয়েছে।`,
+          text: verifyData.message || `🎉 ডিপোজিট সফল হয়েছে! ৳${creditAmt} যোগ করা হয়েছে।`,
         });
         setTrxId('');
         setPhone('');
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent('ff_users_updated'));
           window.dispatchEvent(new CustomEvent('ff_user_profile_updated'));
+          window.dispatchEvent(new Event('storage'));
         }
         setTimeout(() => {
           setMessage(null);
           onClose();
-        }, 3000);
+        }, 2500);
         return;
       }
 
-      if (verifyData.status === 'ALREADY_USED') {
-        setMessage({
-          type: 'error',
-          text: '❌ ট্রানজেকশন ব্যর্থ হয়েছে (FAILED)! এই TrxID দিয়ে ইতিমধ্যে টাকা গ্রহণ করা হয়েছে।',
-        });
-        return;
-      }
-
-      // If invalid / wrong TrxID or payment not found on server -> FAILED
+      // Display server error message (404 not found, 400 claimed, 400 amount mismatch, etc.)
       setMessage({
         type: 'error',
-        text: verifyData.message || '❌ ট্রানজেকশন ভেরিফিকেশন ব্যর্থ হয়েছে (FAILED)! ভুল TrxID অথবা কোনো পেমেন্ট পাওয়া যায়নি। সঠিক TrxID লিখুন।',
+        text: verifyData.message || '❌ ট্রানজেকশন ভেরিফিকেশন ব্যর্থ হয়েছে! সঠিক TrxID লিখুন।',
       });
       return;
     } catch (e: any) {
       setSubmitting(false);
       setMessage({
         type: 'error',
-        text: '❌ ট্রানজেকশন ভেরিফিকেশন ব্যর্থ হয়েছে (FAILED)! সঠিক TrxID দিয়ে আবার চেষ্টা করুন।',
+        text: '❌ ট্রানজেকশন ভেরিফিকেশন ব্যর্থ হয়েছে! ইন্টারনেট সংযোগ চেক করে আবার চেষ্টা করুন।',
       });
       return;
     }
@@ -515,9 +509,10 @@ export default function DepositWithdrawModal({
                 <input
                   type="text"
                   value={trxId}
-                  onChange={(e) => setTrxId(e.target.value.toUpperCase())}
+                  maxLength={14}
+                  onChange={(e) => setTrxId(e.target.value.toUpperCase().trim())}
                   required
-                  placeholder="যেমন: BKA7891234"
+                  placeholder="যেমন: BKA7891234 বা 9K45EFA9"
                   className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/30 text-sm font-mono uppercase text-gray-900 dark:text-white focus:outline-none focus:border-red-500"
                 />
               </div>
@@ -525,10 +520,19 @@ export default function DepositWithdrawModal({
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full py-3.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-red-600/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-emerald-600/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
               >
-                <ArrowDownRight className="w-4 h-4" />
-                <span>{submitting ? 'যাচাই করা হচ্ছে...' : 'ডিপোজিট রিকোয়েস্ট পাঠান'}</span>
+                {submitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>যাচাই ও যোগ করা হচ্ছে...</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-4 h-4 text-emerald-200" />
+                    <span>Verify & Add Money (টাকা যোগ করুন)</span>
+                  </>
+                )}
               </button>
             </form>
           ) : (
