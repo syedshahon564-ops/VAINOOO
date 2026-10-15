@@ -202,6 +202,56 @@ export async function POST(req: Request) {
     let provider = String(payload.provider || 'BKASH').toUpperCase();
     const timestamp = payload.timestamp || new Date().toISOString();
 
+    // Device Healthcheck / Ping / Heartbeat detection:
+    const isPing =
+      payload.action === 'ping' ||
+      payload.action === 'check' ||
+      payload.action === 'health' ||
+      payload.type === 'PING' ||
+      payload.type === 'HEARTBEAT' ||
+      payload.event === 'heartbeat' ||
+      payload.status === 'ping' ||
+      payload.ping === true;
+
+    if (isPing) {
+      const devName = String(
+        payload.deviceName || payload.device || req.headers.get('x-device-name') || 'Android Forwarder'
+      ).trim();
+      const phoneNum = String(payload.phone || payload.sender || 'Active').trim();
+      const batteryLevel = Number(payload.battery || 100);
+
+      db.connectedDevices = db.connectedDevices || [];
+      const dIdx = db.connectedDevices.findIndex(
+        (d: any) =>
+          d.deviceName === devName ||
+          d.deviceId === 'dev_' + devName.toLowerCase().replace(/\s+/g, '_')
+      );
+      const devObj = {
+        deviceId: 'dev_' + devName.toLowerCase().replace(/\s+/g, '_'),
+        deviceName: devName,
+        phone: phoneNum,
+        status: 'ONLINE',
+        battery: batteryLevel,
+        lastPing: new Date().toISOString(),
+      };
+      if (dIdx !== -1) db.connectedDevices[dIdx] = devObj;
+      else db.connectedDevices.unshift(devObj);
+
+      writePaymentsDb(db);
+
+      return NextResponse.json({
+        success: true,
+        connected: true,
+        status: 'ONLINE',
+        device: devObj,
+        message: 'Device connected successfully to FF Rivals Tournament Server',
+        serverTime: new Date().toISOString(),
+        settings: {
+          autoCreditEnabled: db.settings?.autoCreditEnabled ?? true,
+        },
+      }, { status: 200 });
+    }
+
     // Smart Auto-Extraction from raw SMS message if fields are missing
     if (rawMessage) {
       if (!rawTrx) {
@@ -358,7 +408,9 @@ export async function GET(req: Request) {
 
   if (!apiKey || apiKey !== expectedKey) {
     return NextResponse.json({
+      ok: true,
       status: 'ONLINE',
+      connected: true,
       service: 'FF Rivals bKash/Nagad Webhook Service',
       instructions: 'Send POST requests with ?key=ff_rivals_secure_sms_key_2026 or Header x-api-key',
     });
@@ -367,6 +419,18 @@ export async function GET(req: Request) {
   const rawText = url.searchParams.get('text') || url.searchParams.get('msg') || url.searchParams.get('message') || '';
   const trx = url.searchParams.get('trx_id') || url.searchParams.get('trx') || '';
   const amt = url.searchParams.get('amount') || '';
+
+  if (!rawText && !trx) {
+    return NextResponse.json({
+      ok: true,
+      status: 'ONLINE',
+      connected: true,
+      authenticated: true,
+      service: 'FF Rivals bKash/Nagad Webhook Service',
+      totalPaymentsReceived: (db.incomingPayments || []).length,
+      activeDevices: (db.connectedDevices || []).length,
+    });
+  }
 
   if (rawText || (trx && amt)) {
     const mockPostReq = new Request(req.url, {
