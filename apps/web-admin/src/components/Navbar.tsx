@@ -196,6 +196,16 @@ export default function Navbar() {
             </span>
           </button>
 
+          {/* 24/7 Support Icon Button */}
+          <button
+            type="button"
+            onClick={() => setShowSupportModal(true)}
+            className="p-2 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center justify-center shadow-xs active:scale-95 transition-all hover:bg-emerald-100"
+            title={t('২৪/৭ লাইভ সাপোর্ট', '24/7 Live Support')}
+          >
+            <Headphones className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+          </button>
+
           {/* Profile Button */}
           {user ? (
             <div className="flex items-center gap-2">
