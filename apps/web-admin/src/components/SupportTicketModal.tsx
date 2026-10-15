@@ -15,6 +15,7 @@ import {
   Plus,
   Bot,
   Sparkles,
+  Headphones,
 } from 'lucide-react';
 import { getCurrentUser } from '@/lib/user-store';
 import {
@@ -149,7 +150,7 @@ export default function SupportTicketModal({
         <div className="p-4 bg-gradient-to-r from-red-700 via-red-600 to-black text-white relative flex items-center justify-between shadow-md">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-black/40 border border-white/20 flex items-center justify-center text-amber-400 shadow-inner">
-              <LifeBuoy className="w-5 h-5" />
+              <Headphones className="w-5 h-5 text-amber-400" />
             </div>
             <div>
               <div className="flex items-center gap-2">
