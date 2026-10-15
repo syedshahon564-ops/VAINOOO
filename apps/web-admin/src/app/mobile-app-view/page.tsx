@@ -1347,6 +1347,19 @@ export default function MobileAppViewPage(props: any) {
                             বাংলা
                           </button>
                         </div>
+
+                        {/* Support Icon */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowSupportModal(true);
+                            pushHistory('support-modal');
+                          }}
+                          title={tPhone('২৪/৭ লাইভ সাপোর্ট', '24/7 Live Support')}
+                          className="p-1.5 rounded-full relative transition-all bg-emerald-50 hover:bg-emerald-100 text-emerald-600 border border-emerald-500/30 flex items-center justify-center active:scale-95 shadow-xs"
+                        >
+                          <Headphones className="w-3.5 h-3.5 text-emerald-600" />
+                        </button>
                       </div>
                     </div>
                   ) : activeTab === 'profile' ? (
@@ -1440,6 +1453,21 @@ export default function MobileAppViewPage(props: any) {
                           <Wallet className="w-3 h-3" /> ৳{userBalance.toFixed(0)}
                         </button>
 
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowSupportModal(true);
+                            pushHistory('support-modal');
+                          }}
+                          title={tPhone('২৪/৭ লাইভ সাপোর্ট', '24/7 Live Support')}
+                          className={`p-1.5 rounded-full relative transition-all flex items-center justify-center active:scale-95 shadow-xs ${
+                            phoneTheme === 'dark'
+                              ? 'bg-white/5 text-emerald-400 hover:text-white border border-emerald-500/30'
+                              : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-500/30'
+                          }`}
+                        >
+                          <Headphones className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                        </button>
                       </div>
                     </div>
                   )}
