@@ -438,76 +438,7 @@ export default function HomePage() {
             })}
           </div>
         </section>
-
-        {/* 24/7 LIVE CUSTOMER SUPPORT BANNER (UNDER HEADSHOT SECTION) */}
-        <section className="pt-2 pb-6">
-          <div
-            role="button"
-            tabIndex={0}
-            onClick={() => setShowSupportModal(true)}
-            className="rounded-3xl p-5 sm:p-6 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-700 text-white shadow-xl hover:shadow-2xl active:scale-[0.99] transition-all cursor-pointer border border-emerald-400/30 relative overflow-hidden group select-none"
-          >
-            <div className="absolute -right-10 -bottom-10 w-44 h-44 bg-white/10 rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform" />
-            <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white shadow-inner flex-shrink-0 border border-white/30">
-                  <Headphones className="w-8 h-8 sm:w-9 sm:h-9 text-white animate-pulse" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-base sm:text-lg font-black uppercase tracking-wide text-white">
-                      {t('২৪/৭ হেল্প ও কাস্টমার সাপোর্ট', '24/7 Help & Live Support')}
-                    </h3>
-                    <span className="flex items-center gap-1.5 text-xs font-black px-2.5 py-0.5 rounded-full bg-emerald-400/30 border border-emerald-300/40 text-emerald-100">
-                      <span className="w-2 h-2 rounded-full bg-emerald-300 animate-ping inline-block" />
-                      {t('লাইভ সহায়তা', 'Live Support')}
-                    </span>
-                  </div>
-                  <p className="text-xs sm:text-sm text-emerald-100 font-medium leading-relaxed mt-1 max-w-xl">
-                    {t(
-                      'ডিপোজিট, উইথড্র, রুম আইডি বা যেকোনো সমস্যায় আমাদের অফিসিয়াল WhatsApp, Telegram ও লাইভ চ্যাটে যোগাযোগ করুন।',
-                      'Instant live assistance for deposits, withdrawals, room passwords, and match issues via WhatsApp & Telegram.'
-                    )}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 self-end sm:self-center">
-                <button
-                  type="button"
-                  className="px-5 py-2.5 rounded-xl bg-white text-emerald-800 font-black text-xs hover:bg-emerald-50 transition-all shadow-md flex items-center gap-2"
-                >
-                  <Headphones className="w-4 h-4 text-emerald-700" />
-                  <span>{t('লাইভ চ্যাট খুলুন', 'Open Live Chat')}</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </section>
       </div>
-
-      {/* FLOATING 24/7 LIVE SUPPORT ACTION BUTTON (ALWAYS PINNED) */}
-      <button
-        type="button"
-        onClick={() => setShowSupportModal(true)}
-        className="fixed right-5 bottom-6 z-50 flex items-center gap-2.5 px-4 py-3 rounded-full bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:brightness-110 active:scale-95 text-white shadow-2xl shadow-emerald-950/50 border-2 border-white/50 transition-all cursor-pointer group pointer-events-auto"
-        title="24/7 Customer Support"
-      >
-        <div className="relative flex items-center justify-center">
-          <Headphones className="w-5 h-5 text-white animate-pulse" />
-          <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-300 animate-ping" />
-        </div>
-        <span className="text-xs font-black tracking-wide pr-0.5 text-white">
-          {t('২৪/৭ লাইভ সাপোর্ট', '24/7 Support')}
-        </span>
-      </button>
-
-      {/* Support Ticket Modal */}
-      <SupportTicketModal
-        isOpen={showSupportModal}
-        onClose={() => setShowSupportModal(false)}
-        lang={language as any}
-      />
 
       {/* App Download Modal */}
       <AppDownloadModal

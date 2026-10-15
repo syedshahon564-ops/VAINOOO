@@ -1987,46 +1987,6 @@ export default function MobileAppViewPage(props: any) {
                                 );
                               })}
                             </div>
-
-                            {/* 24/7 Live Customer Support Banner */}
-                            <div
-                              role="button"
-                              tabIndex={0}
-                              onClick={() => {
-                                setShowSupportModal(true);
-                                pushHistory('support-modal');
-                              }}
-                              className="mt-3 rounded-2xl p-3.5 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-700 text-white shadow-lg hover:shadow-xl active:scale-[0.98] transition-all cursor-pointer border border-emerald-400/30 select-none relative overflow-hidden group touch-manipulation"
-                            >
-                              <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-white/10 rounded-full blur-xl pointer-events-none group-hover:scale-125 transition-transform" />
-                              <div className="relative z-10 flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                  <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white shadow-inner flex-shrink-0 border border-white/30">
-                                    <Headphones className="w-6 h-6 text-white animate-pulse" />
-                                  </div>
-                                  <div>
-                                    <div className="flex items-center gap-2">
-                                      <h4 className="text-xs font-black uppercase tracking-wide text-white">
-                                        {tPhone('২৪/৭ হেল্প ও কাস্টমার সাপোর্ট', '24/7 Help & Live Support')}
-                                      </h4>
-                                      <span className="flex items-center gap-1 text-[9px] font-black px-1.5 py-0.5 rounded-full bg-emerald-400/30 border border-emerald-300/40 text-emerald-100">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-ping inline-block" />
-                                        {tPhone('লাইভ', 'Live')}
-                                      </span>
-                                    </div>
-                                    <p className="text-[10px] text-emerald-100 font-medium leading-tight mt-1">
-                                      {tPhone(
-                                        'ডিপোজিট, উইথড্র বা যেকোনো সমস্যায় সরাসরি WhatsApp ও লাইভ চ্যাটে যোগাযোগ করুন',
-                                        'Instant WhatsApp, Telegram & Live Ticket Support for any query'
-                                      )}
-                                    </p>
-                                  </div>
-                                </div>
-                                <div className="w-8 h-8 rounded-full bg-white/25 flex items-center justify-center text-white flex-shrink-0 shadow-sm ml-2 group-hover:translate-x-0.5 transition-transform">
-                                  <ChevronRight className="w-4 h-4" />
-                                </div>
-                              </div>
-                            </div>
                           </div>
                         </div>
                       )}
@@ -2770,28 +2730,9 @@ export default function MobileAppViewPage(props: any) {
                   )}
                 </div>
 
-                {/* FLOATING 24/7 CUSTOMER SUPPORT BUTTON (ALWAYS VISIBLE & PINNED) */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowSupportModal(true);
-                    pushHistory('support-modal');
-                  }}
-                  className="fixed right-3.5 bottom-20 z-50 flex items-center gap-2 px-3.5 py-2.5 rounded-full bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:brightness-110 active:scale-95 text-white shadow-2xl shadow-emerald-950/50 border-2 border-white/50 transition-all cursor-pointer group pointer-events-auto"
-                  title="24/7 Customer Support"
-                >
-                  <div className="relative flex items-center justify-center">
-                    <Headphones className="w-4 h-4 text-white animate-pulse" />
-                    <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-300 animate-ping" />
-                  </div>
-                  <span className="text-[11px] font-black tracking-wide pr-0.5 text-white">
-                    {tPhone('২৪/৭ সাপোর্ট', '24/7 Support')}
-                  </span>
-                </button>
-
-                {/* 6-ICON BOTTOM NAVIGATION BAR (BILINGUAL SYSTEM) */}
+                {/* 5-ICON BOTTOM NAVIGATION BAR (BILINGUAL SYSTEM) */}
                 <div
-                  className={`sticky bottom-0 h-16 px-1.5 flex items-center justify-around border-t z-40 select-none backdrop-blur-md pb-safe ${
+                  className={`sticky bottom-0 h-16 px-2 flex items-center justify-around border-t z-40 select-none backdrop-blur-md pb-safe ${
                     phoneTheme === 'dark'
                       ? 'bg-[#14141c]/95 border-white/10'
                       : 'bg-white/95 border-slate-200'
@@ -2844,23 +2785,7 @@ export default function MobileAppViewPage(props: any) {
                     <span>{tPhone('ওয়ালেট', 'Wallet')}</span>
                   </button>
 
-                  {/* 5. LIVE SUPPORT (FULL HEADSET ICON & PULSING BADGE) */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowSupportModal(true);
-                      pushHistory('support-modal');
-                    }}
-                    className="flex flex-col items-center gap-0.5 text-[9px] font-bold text-emerald-600 dark:text-emerald-400 active:scale-95 transition-all"
-                  >
-                    <div className="relative flex items-center justify-center">
-                      <Headphones className="w-4 h-4 text-emerald-500 animate-pulse" />
-                      <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                    </div>
-                    <span className="font-black text-emerald-600 dark:text-emerald-400">{tPhone('সাপোর্ট', 'Support')}</span>
-                  </button>
-
-                  {/* 6. PROFILE */}
+                  {/* 5. PROFILE */}
                   <button
                     onClick={() => switchTab('profile')}
                     className={`flex flex-col items-center gap-0.5 text-[9px] font-bold ${

@@ -138,14 +138,6 @@ export default function Navbar() {
           >
             <ArrowDownRight className="w-4 h-4" /> {t('ডিপোজিট ও উইথড্র', 'Deposit & Withdraw')}
           </button>
-
-          {/* 24/7 Support Nav Link */}
-          <button
-            onClick={() => setShowSupportModal(true)}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-white/5 transition-all font-black"
-          >
-            <Headphones className="w-4 h-4 text-emerald-500 animate-pulse" /> {t('২৪/৭ সাপোর্ট', '24/7 Support')}
-          </button>
         </nav>
 
         {/* Right Action Icons & User Balance */}
@@ -161,15 +153,6 @@ export default function Navbar() {
             <span className="hidden xs:inline sm:inline">{t('ডাউনলোড APK', 'Download APK')}</span>
             <span className="inline xs:hidden sm:hidden">APK</span>
           </a>
-
-          {/* Mobile Support Quick Button */}
-          <button
-            onClick={() => setShowSupportModal(true)}
-            className="md:hidden p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 border border-emerald-500/30 flex items-center justify-center shadow-xs active:scale-95"
-            title="24/7 Support"
-          >
-            <Headphones className="w-4 h-4 text-emerald-600 animate-pulse" />
-          </button>
 
           {/* Mobile Deposit Quick Button */}
           <button
