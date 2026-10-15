@@ -505,7 +505,7 @@ export function saveCMSData(input: CMSData): void {
     window.dispatchEvent(new CustomEvent('ff_cms_updated', { detail: data }));
   } catch (e) {}
 
-  // Background server sync so all phones, emulators and browsers stay updated
+  // Server sync so all phones, emulators and browsers stay updated
   try {
     fetch('/api/cms', {
       method: 'POST',
@@ -513,6 +513,29 @@ export function saveCMSData(input: CMSData): void {
       body: JSON.stringify(data),
     }).catch(() => {});
   } catch (e) {}
+}
+
+export async function saveCMSDataAsync(input: CMSData): Promise<boolean> {
+  if (typeof window === 'undefined') return false;
+  const data = normalizeCMSData(input);
+  memoryCMSCache = data;
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch (e) {}
+  try {
+    window.dispatchEvent(new CustomEvent('ff_cms_updated', { detail: data }));
+  } catch (e) {}
+
+  try {
+    const res = await fetch('/api/cms', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return res.ok;
+  } catch (e) {
+    return false;
+  }
 }
 
 export function addMatch(match: Omit<MatchItem, 'id' | 'filledSlots'>): MatchItem {
@@ -601,10 +624,10 @@ export function updateCategory(slug: string, updated: Partial<CategoryItem>): vo
   saveCMSData(data);
 }
 
-export function updateSiteSettings(settings: Partial<SiteSettings>): void {
+export function updateSiteSettings(settings: Partial<SiteSettings>): Promise<boolean> {
   const data = getCMSData();
   data.settings = { ...INITIAL_SETTINGS, ...(data.settings || {}), ...settings };
-  saveCMSData(data);
+  return saveCMSDataAsync(data);
 }
 
 export function updateTopPlayers(players: TopPlayerItem[]): void {
@@ -644,9 +667,9 @@ export function useCMS() {
                 serverData.settings && typeof serverData.settings === 'object' ? serverData.settings : {};
 
               const merged: CMSData = normalizeCMSData({
-                categories: { ...(current?.categories || {}), ...serverCategories },
+                categories: { ...serverCategories, ...(current?.categories || {}) },
                 matches: serverMatches !== null ? serverMatches : current?.matches || [],
-                settings: { ...(current?.settings || {}), ...serverSettings } as SiteSettings,
+                settings: { ...INITIAL_SETTINGS, ...(serverSettings || {}), ...(current?.settings || {}) } as SiteSettings,
                 topPlayers:
                   Array.isArray(serverData.topPlayers) && serverData.topPlayers.length > 0
                     ? serverData.topPlayers

@@ -52,6 +52,7 @@ export interface UserAccount {
   avatar?: string;
   notes?: string;
   matchHistory?: UserMatchRecord[];
+  updatedAt?: string;
 }
 
 export interface BalanceTransaction {
@@ -159,8 +160,21 @@ export async function fetchUsersFromServer(): Promise<UserAccount[]> {
         if (u && u.id) mergedMap.set(u.id, u);
       });
       // Merge with server users
-      serverUsers.forEach((u) => {
-        if (u && u.id) mergedMap.set(u.id, u);
+      serverUsers.forEach((su) => {
+        if (!su || !su.id) return;
+        const lu = mergedMap.get(su.id);
+        if (!lu) {
+          mergedMap.set(su.id, su);
+        } else {
+          const luTime = lu.updatedAt ? new Date(lu.updatedAt).getTime() : 0;
+          const suTime = su.updatedAt ? new Date(su.updatedAt).getTime() : 0;
+          if (suTime > luTime) {
+            mergedMap.set(su.id, { ...lu, ...su });
+          } else {
+            // Keep local updates (including recent balance modifications)
+            mergedMap.set(su.id, { ...su, ...lu });
+          }
+        }
       });
 
       const merged = Array.from(mergedMap.values());
@@ -342,8 +356,22 @@ export function updateUser(id: string, updates: Partial<UserAccount>): UserAccou
   const index = users.findIndex((u) => u.id === id);
   if (index === -1) return null;
 
-  users[index] = { ...users[index], ...updates };
+  const nowIso = new Date().toISOString();
+  users[index] = { ...users[index], ...updates, updatedAt: nowIso };
   saveUsers(users);
+
+  if (typeof window !== 'undefined') {
+    fetch('/api/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'update',
+        userId: id,
+        updates: { ...updates, updatedAt: nowIso },
+      }),
+    }).catch(() => {});
+  }
+
   return users[index];
 }
 
@@ -372,8 +400,22 @@ export function addBalance(
   if (!user) return { success: false, error: 'ইউজার খুঁজে পাওয়া যায়নি' };
 
   const newBalance = Number((user.walletBalance + amount).toFixed(2));
+  const nowIso = new Date().toISOString();
   user.walletBalance = newBalance;
+  user.updatedAt = nowIso;
   saveUsers(users);
+
+  if (typeof window !== 'undefined') {
+    fetch('/api/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'update',
+        userId: user.id,
+        updates: { walletBalance: newBalance, updatedAt: nowIso },
+      }),
+    }).catch(() => {});
+  }
 
   // Record audit transaction
   const tx: BalanceTransaction = {
@@ -500,8 +542,22 @@ export function deductBalance(
   }
 
   const newBalance = Number((user.walletBalance - amount).toFixed(2));
+  const nowIso = new Date().toISOString();
   user.walletBalance = newBalance;
+  user.updatedAt = nowIso;
   saveUsers(users);
+
+  if (typeof window !== 'undefined') {
+    fetch('/api/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'update',
+        userId: user.id,
+        updates: { walletBalance: newBalance, updatedAt: nowIso },
+      }),
+    }).catch(() => {});
+  }
 
   const isMatchReason =
     reason.toLowerCase().includes('ম্যাচ') ||

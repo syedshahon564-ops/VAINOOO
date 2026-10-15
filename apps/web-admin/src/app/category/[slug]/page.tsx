@@ -72,12 +72,11 @@ export default function CategoryDetailPage() {
     [allCategoryMatches]
   );
 
-  const [matchTypeFilter, setMatchTypeFilter] = useState<'ALL' | 'SOLO' | 'DUO' | 'SQUAD'>('ALL');
+  const [matchTypeFilter, setMatchTypeFilter] = useState<'SOLO' | 'DUO' | 'SQUAD'>('SOLO');
   const [activeTab, setActiveTab] = useState<'PLAY' | 'RESULT'>('PLAY');
 
   const filteredCategoryMatches = React.useMemo(() => {
     return categoryMatches.filter((m) => {
-      if (matchTypeFilter === 'ALL') return true;
       const typeStr = (m.type || m.matchType || '').toUpperCase();
       const titleStr = (m.title || '').toUpperCase();
       if (matchTypeFilter === 'SOLO') {
@@ -343,7 +342,6 @@ export default function CategoryDetailPage() {
             {/* Top Match Type Sub-Filter (Solo, Duo, Squad) */}
             <div className="flex items-center justify-center gap-2 max-w-lg mx-auto p-1 rounded-2xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10">
               {[
-                { key: 'ALL', labelBn: 'সব ম্যাচ', labelEn: 'All' },
                 { key: 'SOLO', labelBn: 'সোলো (Solo)', labelEn: 'Solo' },
                 { key: 'DUO', labelBn: 'ডুও (Duo)', labelEn: 'Duo' },
                 { key: 'SQUAD', labelBn: 'স্কোয়াড (Squad)', labelEn: 'Squad' },
@@ -387,9 +385,7 @@ export default function CategoryDetailPage() {
                         {t('বর্তমানে এই ক্যাটাগরিতে কোনো সক্রিয় ম্যাচ নেই', 'No Active Matches in This Category')}
                       </h3>
                       <p className="text-xs text-gray-500 dark:text-gray-400 max-w-md mx-auto">
-                        {matchTypeFilter !== 'ALL'
-                          ? t(`এই ফিল্টারে (${matchTypeFilter}) কোনো সক্রিয় ম্যাচ পাওয়া যায়নি। অন্য ফিল্টার বেছে নিন।`, `No active matches found for this filter (${matchTypeFilter}).`)
-                          : t('নতুন টুর্নামেন্ট খুব শীঘ্রই লাইভ হবে। আপনি চাইলে অ্যাডমিন প্যানেল থেকে যেকোনো সময় নতুন ম্যাচ যোগ করতে পারেন।', 'New tournaments will be live soon.')}
+                        {t(`এই ফিল্টারে (${matchTypeFilter}) কোনো সক্রিয় ম্যাচ পাওয়া যায়নি। অন্য ফিল্টার বেছে নিন।`, `No active matches found for this filter (${matchTypeFilter}).`)}
                       </p>
                     </div>
                     <div className="pt-2">

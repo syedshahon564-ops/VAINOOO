@@ -92,7 +92,7 @@ export default function RoomDetailsModal({ match, onClose, onJoinClick }: RoomDe
           <div className="text-[11px] text-gray-600 dark:text-gray-300 flex items-center gap-1.5 pt-1 border-t border-red-200/60 dark:border-red-900/30">
             <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0" />
             <span>
-              কাস্টম রুম আইডি ও পাসওয়ার্ড ম্যাচ শুরুর ঠিক <strong>৫ মিনিট আগে</strong> স্বয়ংক্রিয়ভাবে প্রকাশ পাবে।
+              কাস্টম রুম আইডি ও পাসওয়ার্ড অ্যাডমিন দেওয়ার পর ম্যাচ শুরুর ঠিক <strong>৫ মিনিট আগে</strong> প্রকাশ পাবে।
             </span>
           </div>
 
@@ -102,15 +102,21 @@ export default function RoomDetailsModal({ match, onClose, onJoinClick }: RoomDe
             const matchDate = parseScheduleTimeToDate(match.time, (match as any)?.startTimeIso);
             const diffMs = matchDate ? matchDate.getTime() - Date.now() : 999999;
             const isWithin5Min = (diffMs <= 5 * 60 * 1000 && diffMs >= -180 * 60 * 1000) || match.status === 'ROOM_OPEN' || match.status === 'LIVE';
-            const showCredentials = Boolean(userJoined && match.roomId && isWithin5Min);
+            const hasValidRoomId = Boolean(match.roomId && match.roomId.trim().length > 0);
+            const showCredentials = Boolean(userJoined && hasValidRoomId && isWithin5Min);
 
             if (showCredentials) {
               return (
-                <div className="pt-1">
+                <div className="pt-1 space-y-2">
                   <div className="p-3 rounded-xl bg-white dark:bg-black/50 border border-emerald-500/40 flex items-center justify-between">
                     <div>
                       <span className="text-[10px] text-gray-500 font-bold block uppercase">Custom Room ID (জয়েনকৃত প্লেয়ার)</span>
                       <span className="font-mono font-black text-emerald-600 text-base">{match.roomId}</span>
+                      {match.roomPass && (
+                        <div className="text-xs font-bold text-gray-700 dark:text-gray-300 mt-1">
+                          পাসওয়ার্ড: <span className="font-mono font-black text-emerald-600">{match.roomPass}</span>
+                        </div>
+                      )}
                     </div>
                     <button
                       onClick={() => handleCopy(match.roomId!, 'id')}
@@ -130,8 +136,10 @@ export default function RoomDetailsModal({ match, onClose, onJoinClick }: RoomDe
                   <span className="text-xs font-black text-emerald-700 dark:text-emerald-400 block flex items-center justify-center gap-1.5">
                     <CheckCircle className="w-3.5 h-3.5" /> আপনি এই ম্যাচে সফলভাবে জয়েন করেছেন!
                   </span>
-                  <span className="text-[10px] text-gray-600 dark:text-gray-400 block">
-                    ম্যাচ শুরু হওয়ার ৫ মিনিট পূর্বে এখানে ও 'My Matches' ট্যাবে স্বয়ংক্রিয়ভাবে রুম আইডি পাবেন।
+                  <span className="text-[11px] font-bold text-amber-700 dark:text-amber-400 block">
+                    {hasValidRoomId
+                      ? 'ম্যাচ শুরু হওয়ার ৫ মিনিট পূর্বে এখানে ও "My Matches" ট্যাবে রুম আইডি পাবেন।'
+                      : '⚠️ রুম আইডি ও পাসওয়ার্ড এখনও দেওয়া হয়নি (অ্যাডমিন দেওয়ার পর এখানে প্রদর্শিত হবে)'}
                   </span>
                 </div>
               );

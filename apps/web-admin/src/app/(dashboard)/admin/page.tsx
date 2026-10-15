@@ -138,9 +138,12 @@ export default function AdminMasterPage() {
     }
   }, [selectedCatSlug, categories]);
 
-  // Synchronize site settings & rules whenever CMS settings loads or updates
+  const hasLoadedSettingsRef = React.useRef(false);
+
+  // Synchronize site settings & rules once on initial CMS load
   useEffect(() => {
-    if (settings) {
+    if (settings && !hasLoadedSettingsRef.current) {
+      hasLoadedSettingsRef.current = true;
       setNoticeText(settings.noticeText || '');
       setDefaultRules(settings.defaultRules || '');
       setHowToJoinGuide(settings.howToJoinGuide || '');
@@ -361,9 +364,9 @@ export default function AdminMasterPage() {
   };
 
   // 6. HANDLE SAVE RULES
-  const handleSaveRules = (e: React.FormEvent) => {
+  const handleSaveRules = async (e: React.FormEvent) => {
     e.preventDefault();
-    updateSiteSettings({
+    await updateSiteSettings({
       noticeText,
       defaultRules,
       howToJoinGuide,
@@ -374,9 +377,9 @@ export default function AdminMasterPage() {
   };
 
   // 7. HANDLE SAVE SITE SETTINGS
-  const handleSaveSettings = (e: React.FormEvent) => {
+  const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
-    updateSiteSettings({
+    await updateSiteSettings({
       siteName,
       tagline,
       logoUrl: siteLogo,

@@ -21,9 +21,12 @@ export default function AdminRulesPage() {
   const [importantNoticeEnabled, setImportantNoticeEnabled] = useState(settings.importantNoticeEnabled ?? true);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  // Synchronize form whenever settings loads or updates from CMS
+  const hasLoadedRef = React.useRef(false);
+
+  // Synchronize form once on initial CMS load
   useEffect(() => {
-    if (settings) {
+    if (settings && !hasLoadedRef.current) {
+      hasLoadedRef.current = true;
       setNoticeText(settings.noticeText || '');
       setDefaultRules(settings.defaultRules || '');
       setCategoryRules(settings.categoryRules || {});
@@ -45,9 +48,9 @@ export default function AdminRulesPage() {
     }));
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    updateSiteSettings({
+    await updateSiteSettings({
       noticeText,
       defaultRules,
       categoryRules,

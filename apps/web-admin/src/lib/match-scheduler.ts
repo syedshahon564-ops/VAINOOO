@@ -685,8 +685,16 @@ export function autoDeliverRoomCredentials(matchId: string, customRoomId?: strin
   if (matchIndex === -1) return null;
 
   const match = cmsData.matches[matchIndex];
-  const roomId = customRoomId?.trim() || match.roomId || generateRandomRoomId();
-  const roomPass = customRoomPass?.trim() || match.roomPass || generateRandomRoomPass();
+  const rawRoomId = customRoomId?.trim() || match.roomId?.trim();
+  const rawRoomPass = customRoomPass?.trim() || match.roomPass?.trim();
+
+  // Strictly do NOT generate random credentials if admin hasn't provided them!
+  if (!rawRoomId) {
+    return null;
+  }
+
+  const roomId = rawRoomId;
+  const roomPass = rawRoomPass || '1234';
 
   // 1. Update Match in CMS store
   cmsData.matches[matchIndex] = {
@@ -750,8 +758,7 @@ export function autoDeliverRoomCredentials(matchId: string, customRoomId?: strin
 }
 
 /**
- * Checks all matches and auto-delivers Room ID & Password if scheduled time is due
- * (or <= 15 minutes before start).
+ * Checks matches and delivers Room ID & Password ONLY if admin has already provided them.
  */
 export function runBotRoomManagerCycle(): number {
   if (typeof window === 'undefined') return 0;
@@ -772,27 +779,24 @@ export function runBotRoomManagerCycle(): number {
       registerMatchWithBot(match);
     }
 
-    // Check if room needs delivery
-    if (!match.roomId || match.status !== 'ROOM_OPEN') {
+    // Only deliver if admin has actually entered a room ID!
+    if (match.roomId && match.roomId.trim().length > 0 && match.status !== 'ROOM_OPEN') {
       const matchDate = parseScheduleTimeToDate(match.time);
       let isDue = false;
 
       if (matchDate) {
-        // Room opens 15 minutes before match start
         const diffMinutes = (matchDate.getTime() - now.getTime()) / 60000;
-        // If within 15 minutes before start or already past start time
         if (diffMinutes <= 15) {
           isDue = true;
         }
       } else {
-        // If time format cannot be parsed, deliver if match has participants or marked ROOM_OPEN
-        if ((match.filledSlots || 0) > 0 || match.status === 'ROOM_OPEN') {
+        if ((match.filledSlots || 0) > 0) {
           isDue = true;
         }
       }
 
       if (isDue) {
-        autoDeliverRoomCredentials(match.id);
+        autoDeliverRoomCredentials(match.id, match.roomId, match.roomPass);
         deliveredCount++;
       }
     }

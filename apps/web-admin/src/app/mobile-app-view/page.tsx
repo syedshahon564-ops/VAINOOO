@@ -2263,10 +2263,10 @@ export default function MobileAppViewPage(props: any) {
                                 </div>
                                 <div className="p-2.5 rounded-lg bg-white/95 border border-amber-200 text-center space-y-1">
                                   <p className="text-xs font-black text-red-600">
-                                    {tPhone('রুম খোলার পাঁচ মিনিট আগে এখানে রুম আইডি ও পাসওয়ার্ড দেওয়া হবে।', 'Room ID and Password will be provided here 5 minutes before the match.')}
+                                    {tPhone('রুম আইডি ও পাসওয়ার্ড এখনও দেওয়া হয়নি (অ্যাডমিন দেওয়ার পর প্রদর্শিত হবে)', 'Room ID and Password will be provided by admin before match.')}
                                   </p>
                                   <p className="text-[10px] text-gray-500">
-                                    {tPhone('ম্যাচ শুরু হওয়ার ৫ মিনিট পূর্বে স্বয়ংক্রিয়ভাবে এখানে আইডি ও পাসওয়ার্ড চলে আসবে।', 'Credentials will appear automatically 5 minutes before match start.')}
+                                    {tPhone('ম্যাচ শুরু হওয়ার ৫ মিনিট পূর্বে অ্যাডমিন রুম আইডি দিলে এখানে প্রদর্শিত হবে।', 'Credentials will appear here once released by admin.')}
                                   </p>
                                 </div>
                               </div>

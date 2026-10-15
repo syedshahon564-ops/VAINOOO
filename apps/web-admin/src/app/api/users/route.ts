@@ -47,30 +47,21 @@ function readUsersFromFile(): any[] {
 }
 
 function writeUsersToFile(users: any[]): boolean {
-  try {
-    const dataFile = getUsersFilePath();
-    ensureDataFile(dataFile);
-    fs.writeFileSync(dataFile, JSON.stringify(users, null, 2), 'utf-8');
+  const possiblePaths = [
+    path.join(process.cwd(), 'apps', 'web-admin', 'data', 'users-db.json'),
+    path.join(process.cwd(), 'data', 'users-db.json'),
+    path.join('/tmp', 'users-db.json'),
+  ];
 
-    // Also write to apps/web-admin/data/users-db.json if running in monorepo
-    const altPath = path.join(process.cwd(), 'apps', 'web-admin', 'data', 'users-db.json');
-    if (altPath !== dataFile) {
-      try {
-        ensureDataFile(altPath);
-        fs.writeFileSync(altPath, JSON.stringify(users, null, 2), 'utf-8');
-      } catch {}
-    }
-    return true;
-  } catch (err) {
-    console.error('Failed writing users file, fallback to /tmp:', err);
+  let anyWritten = false;
+  for (const p of possiblePaths) {
     try {
-      const tmpPath = path.join('/tmp', 'users-db.json');
-      ensureDataFile(tmpPath);
-      fs.writeFileSync(tmpPath, JSON.stringify(users, null, 2), 'utf-8');
-      return true;
-    } catch {}
+      ensureDataFile(p);
+      fs.writeFileSync(p, JSON.stringify(users, null, 2), 'utf-8');
+      anyWritten = true;
+    } catch (err) {}
   }
-  return false;
+  return anyWritten;
 }
 
 export async function GET() {
