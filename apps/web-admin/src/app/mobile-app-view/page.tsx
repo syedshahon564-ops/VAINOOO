@@ -2770,14 +2770,14 @@ export default function MobileAppViewPage(props: any) {
                   )}
                 </div>
 
-                {/* FLOATING 24/7 CUSTOMER SUPPORT BUTTON */}
+                {/* FLOATING 24/7 CUSTOMER SUPPORT BUTTON (ALWAYS VISIBLE & PINNED) */}
                 <button
                   type="button"
                   onClick={() => {
                     setShowSupportModal(true);
                     pushHistory('support-modal');
                   }}
-                  className="absolute right-3.5 bottom-20 z-40 flex items-center gap-2 px-3.5 py-2.5 rounded-full bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:brightness-110 active:scale-95 text-white shadow-xl shadow-emerald-950/40 border-2 border-white/40 transition-all cursor-pointer group"
+                  className="fixed right-3.5 bottom-20 z-50 flex items-center gap-2 px-3.5 py-2.5 rounded-full bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:brightness-110 active:scale-95 text-white shadow-2xl shadow-emerald-950/50 border-2 border-white/50 transition-all cursor-pointer group pointer-events-auto"
                   title="24/7 Customer Support"
                 >
                   <div className="relative flex items-center justify-center">
@@ -2785,13 +2785,13 @@ export default function MobileAppViewPage(props: any) {
                     <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-300 animate-ping" />
                   </div>
                   <span className="text-[11px] font-black tracking-wide pr-0.5 text-white">
-                    {tPhone('সাপোর্ট', 'Support')}
+                    {tPhone('২৪/৭ সাপোর্ট', '24/7 Support')}
                   </span>
                 </button>
 
-                {/* 5-ICON BOTTOM NAVIGATION BAR (BILINGUAL SYSTEM) */}
+                {/* 6-ICON BOTTOM NAVIGATION BAR (BILINGUAL SYSTEM) */}
                 <div
-                  className={`sticky bottom-0 h-16 px-2 flex items-center justify-around border-t z-40 select-none backdrop-blur-md pb-safe ${
+                  className={`sticky bottom-0 h-16 px-1.5 flex items-center justify-around border-t z-40 select-none backdrop-blur-md pb-safe ${
                     phoneTheme === 'dark'
                       ? 'bg-[#14141c]/95 border-white/10'
                       : 'bg-white/95 border-slate-200'
@@ -2844,7 +2844,23 @@ export default function MobileAppViewPage(props: any) {
                     <span>{tPhone('ওয়ালেট', 'Wallet')}</span>
                   </button>
 
-                  {/* 5. PROFILE */}
+                  {/* 5. LIVE SUPPORT (FULL HEADSET ICON & PULSING BADGE) */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowSupportModal(true);
+                      pushHistory('support-modal');
+                    }}
+                    className="flex flex-col items-center gap-0.5 text-[9px] font-bold text-emerald-600 dark:text-emerald-400 active:scale-95 transition-all"
+                  >
+                    <div className="relative flex items-center justify-center">
+                      <Headphones className="w-4 h-4 text-emerald-500 animate-pulse" />
+                      <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                    </div>
+                    <span className="font-black text-emerald-600 dark:text-emerald-400">{tPhone('সাপোর্ট', 'Support')}</span>
+                  </button>
+
+                  {/* 6. PROFILE */}
                   <button
                     onClick={() => switchTab('profile')}
                     className={`flex flex-col items-center gap-0.5 text-[9px] font-bold ${
