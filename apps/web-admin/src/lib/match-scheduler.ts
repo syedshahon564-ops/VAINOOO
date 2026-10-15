@@ -592,6 +592,7 @@ export interface UserBookedMatch {
   time: string;
   roomId?: string;
   roomPass?: string;
+  roomDeliveredAt?: string;
   bookedAt: string;
 }
 
@@ -695,12 +696,15 @@ export function autoDeliverRoomCredentials(matchId: string, customRoomId?: strin
 
   const roomId = rawRoomId;
   const roomPass = rawRoomPass || '1234';
+  const nowIso = new Date().toISOString();
+  const deliveryIso = match.roomDeliveredAt || nowIso;
 
   // 1. Update Match in CMS store
   cmsData.matches[matchIndex] = {
     ...match,
     roomId,
     roomPass,
+    roomDeliveredAt: deliveryIso,
     status: 'ROOM_OPEN',
   };
   saveCMSData(cmsData);
@@ -708,7 +712,6 @@ export function autoDeliverRoomCredentials(matchId: string, customRoomId?: strin
   // 2. Update Bot Monitored match
   const monitored = getBotMonitoredMatches();
   const monIdx = monitored.findIndex((m) => m.id === matchId);
-  const nowIso = new Date().toISOString();
   if (monIdx !== -1) {
     monitored[monIdx] = {
       ...monitored[monIdx],
@@ -716,7 +719,7 @@ export function autoDeliverRoomCredentials(matchId: string, customRoomId?: strin
       roomPass,
       status: 'ROOM_OPEN',
       roomDelivered: true,
-      deliveredAt: nowIso,
+      deliveredAt: monitored[monIdx].deliveredAt || deliveryIso,
     };
   } else {
     monitored.unshift({
@@ -730,7 +733,7 @@ export function autoDeliverRoomCredentials(matchId: string, customRoomId?: strin
       roomId,
       roomPass,
       roomDelivered: true,
-      deliveredAt: nowIso,
+      deliveredAt: deliveryIso,
       registeredAt: nowIso,
       totalSlots: match.totalSlots,
       filledSlots: match.filledSlots || 0,
@@ -739,7 +742,7 @@ export function autoDeliverRoomCredentials(matchId: string, customRoomId?: strin
   saveBotMonitoredMatches(monitored);
 
   // 3. Update User Bookings storage if user has booked this match
-  updateUserBookingsWithRoomCredentials(matchId, roomId, roomPass);
+  updateUserBookingsWithRoomCredentials(matchId, roomId, roomPass, deliveryIso);
 
   // 4. Dispatch notification to all users (both in-app and browser/device push)
   dispatchDevicePushNotification(
@@ -750,7 +753,7 @@ export function autoDeliverRoomCredentials(matchId: string, customRoomId?: strin
 
   window.dispatchEvent(
     new CustomEvent('ff_room_credentials_delivered', {
-      detail: { matchId, roomId, roomPass },
+      detail: { matchId, roomId, roomPass, roomDeliveredAt: deliveryIso },
     })
   );
 
@@ -767,6 +770,7 @@ export function runBotRoomManagerCycle(): number {
 
   const now = new Date();
   let deliveredCount = 0;
+  let cmsDataModified = false;
 
   const monitored = getBotMonitoredMatches();
   const monitoredMap = new Map(monitored.map((m) => [m.id, m]));
@@ -780,7 +784,7 @@ export function runBotRoomManagerCycle(): number {
     }
 
     // Only deliver if admin has actually entered a room ID!
-    if (match.roomId && match.roomId.trim().length > 0 && match.status !== 'ROOM_OPEN') {
+    if (match.roomId && match.roomId.trim().length > 0 && match.status !== 'ROOM_OPEN' && match.status !== 'LIVE') {
       const matchDate = parseScheduleTimeToDate(match.time);
       let isDue = false;
 
@@ -800,7 +804,34 @@ export function runBotRoomManagerCycle(): number {
         deliveredCount++;
       }
     }
+
+    // Check if match was delivered 8+ minutes ago: auto-close credentials & move to LIVE
+    if (match.status === 'ROOM_OPEN') {
+      const deliveryIso = match.roomDeliveredAt || monitoredMap.get(match.id)?.deliveredAt;
+      let deliveryMs: number | null = null;
+      if (deliveryIso) {
+        const parsed = new Date(deliveryIso).getTime();
+        if (!isNaN(parsed)) deliveryMs = parsed;
+      }
+      if (!deliveryMs) {
+        const matchDate = parseScheduleTimeToDate(match.time);
+        if (matchDate) {
+          deliveryMs = matchDate.getTime() - 5 * 60 * 1000;
+        }
+      }
+      if (deliveryMs && now.getTime() - deliveryMs >= 8 * 60 * 1000) {
+        match.status = 'LIVE';
+        cmsDataModified = true;
+      }
+    }
   }
+
+  if (cmsDataModified) {
+    saveCMSData(cmsData);
+  }
+
+  // Also clean up any user bookings whose 8-minute delivery window has elapsed
+  getUserBookedMatches();
 
   return deliveredCount;
 }
@@ -816,13 +847,37 @@ export function getUserBookedMatches(): UserBookedMatch[] {
     if (!raw) return [];
     const list = JSON.parse(raw);
     if (!Array.isArray(list)) return [];
-    // Auto-expire bookings older than 18 hours so yesterday's matches don't lock tomorrow's matches
+
     const now = Date.now();
+    const EIGHT_MINUTES_MS = 8 * 60 * 1000;
+
+    // Auto-expire bookings:
+    // 1. Any match where room password / credentials were delivered 8+ minutes ago ("৮ মিনিট এর পরে অটো চলে যাবে")
+    // 2. Any old bookings older than 18 hours so yesterday's matches don't lock tomorrow's matches
     const active = list.filter((b: any) => {
       if (!b || !b.bookedAt) return false;
+
+      // 1. 8 minutes expiry after room password delivery
+      if (b.roomDeliveredAt) {
+        const deliveredMs = new Date(b.roomDeliveredAt).getTime();
+        if (!isNaN(deliveredMs) && now - deliveredMs >= EIGHT_MINUTES_MS) {
+          return false; // Auto expired after 8 minutes!
+        }
+      }
+
+      // If credentials were provided and match schedule time + 3 minutes has passed
+      if (b.roomId || b.roomPass) {
+        const matchDate = parseScheduleTimeToDate(b.time);
+        if (matchDate && now - matchDate.getTime() >= 3 * 60 * 1000) {
+          return false;
+        }
+      }
+
+      // 2. 18 hours max retention for booked matches
       const hours = (now - new Date(b.bookedAt).getTime()) / (1000 * 60 * 60);
       return hours < 18;
     });
+
     if (active.length !== list.length) {
       saveUserBookedMatches(active);
     }
@@ -855,14 +910,21 @@ export function addUserBooking(booking: Omit<UserBookedMatch, 'id' | 'bookedAt'>
 export function updateUserBookingsWithRoomCredentials(
   matchId: string,
   roomId: string,
-  roomPass: string
+  roomPass: string,
+  roomDeliveredAt?: string
 ): void {
   const current = getUserBookedMatches();
   let modified = false;
+  const deliveryIso = roomDeliveredAt || new Date().toISOString();
   const updated = current.map((b) => {
     if (b.matchId === matchId || b.id === matchId) {
       modified = true;
-      return { ...b, roomId, roomPass };
+      return {
+        ...b,
+        roomId,
+        roomPass,
+        roomDeliveredAt: b.roomDeliveredAt || deliveryIso,
+      };
     }
     return b;
   });

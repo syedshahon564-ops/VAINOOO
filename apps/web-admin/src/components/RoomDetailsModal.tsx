@@ -100,32 +100,95 @@ export default function RoomDetailsModal({ match, onClose, onJoinClick }: RoomDe
             const currentUser = typeof window !== 'undefined' ? getCurrentUser() : null;
             const userJoined = Boolean(currentUser && hasUserJoinedMatch(match.id, currentUser));
             const matchDate = parseScheduleTimeToDate(match.time, (match as any)?.startTimeIso);
-            const diffMs = matchDate ? matchDate.getTime() - Date.now() : 999999;
-            const isWithin5Min = (diffMs <= 5 * 60 * 1000 && diffMs >= -180 * 60 * 1000) || match.status === 'ROOM_OPEN' || match.status === 'LIVE';
+            const now = Date.now();
+            const diffMs = matchDate ? matchDate.getTime() - now : 999999;
+
+            // Check delivery time and 8-minute expiry window
+            const deliveredIso = (match as any)?.roomDeliveredAt || (match as any)?.deliveredAt;
+            let deliveredMs: number | null = null;
+            if (deliveredIso) {
+              const parsed = new Date(deliveredIso).getTime();
+              if (!isNaN(parsed)) deliveredMs = parsed;
+            } else if (matchDate && (match.status === 'ROOM_OPEN' || (match.roomId && diffMs <= 5 * 60 * 1000))) {
+              deliveredMs = Math.min(matchDate.getTime() - 5 * 60 * 1000, now);
+            }
+
+            const EIGHT_MIN_MS = 8 * 60 * 1000;
+            const isExpired8Min = Boolean(deliveredMs && (now - deliveredMs >= EIGHT_MIN_MS));
+            const remainingSeconds = deliveredMs ? Math.max(0, Math.floor((deliveredMs + EIGHT_MIN_MS - now) / 1000)) : null;
+
+            const isWithin5Min = (diffMs <= 5 * 60 * 1000 && diffMs >= -180 * 60 * 1000) || match.status === 'ROOM_OPEN';
             const hasValidRoomId = Boolean(match.roomId && match.roomId.trim().length > 0);
-            const showCredentials = Boolean(userJoined && hasValidRoomId && isWithin5Min);
+            const showCredentials = Boolean(userJoined && hasValidRoomId && isWithin5Min && !isExpired8Min);
+
+            if (isExpired8Min && userJoined) {
+              return (
+                <div className="p-3.5 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-300 dark:border-white/10 text-center space-y-1">
+                  <span className="text-xs font-black text-gray-700 dark:text-gray-300 block flex items-center justify-center gap-1.5">
+                    <Clock className="w-4 h-4 text-gray-500" /> রুম আইডি ও পাসওয়ার্ডের মেয়াদ শেষ
+                  </span>
+                  <p className="text-[11px] text-gray-500">
+                    রুম পাসওয়ার্ড প্রকাশের ৮ মিনিট পার হওয়ায় রুমটি স্বয়ংক্রিয়ভাবে বন্ধ হয়ে গেছে এবং ম্যাচটি শুরু হয়ে গেছে।
+                  </p>
+                </div>
+              );
+            }
 
             if (showCredentials) {
+              const formatRemaining = (sec: number) => {
+                const m = Math.floor(sec / 60);
+                const s = sec % 60;
+                return `${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
+              };
+
               return (
                 <div className="pt-1 space-y-2">
-                  <div className="p-3 rounded-xl bg-white dark:bg-black/50 border border-emerald-500/40 flex items-center justify-between">
-                    <div>
-                      <span className="text-[10px] text-gray-500 font-bold block uppercase">Custom Room ID (জয়েনকৃত প্লেয়ার)</span>
-                      <span className="font-mono font-black text-emerald-600 text-base">{match.roomId}</span>
-                      {match.roomPass && (
-                        <div className="text-xs font-bold text-gray-700 dark:text-gray-300 mt-1">
-                          পাসওয়ার্ড: <span className="font-mono font-black text-emerald-600">{match.roomPass}</span>
-                        </div>
-                      )}
+                  {remainingSeconds !== null && (
+                    <div className="p-2 rounded-xl bg-red-500/10 border border-red-500/30 flex items-center justify-between text-xs font-bold text-red-600">
+                      <span className="flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5 animate-pulse text-red-600" />
+                        পাসওয়ার্ডের মেয়াদ বাকি:
+                      </span>
+                      <span className="font-mono font-black bg-red-100 dark:bg-red-950 px-2 py-0.5 rounded border border-red-300">
+                        ⏱️ {formatRemaining(remainingSeconds)}
+                      </span>
                     </div>
-                    <button
-                      onClick={() => handleCopy(match.roomId!, 'id')}
-                      className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black flex items-center gap-1 shadow-xs transition-colors"
-                    >
-                      {copied === 'id' ? <CheckCircle className="w-4 h-4 text-white" /> : <Copy className="w-4 h-4" />}
-                      <span>{copied === 'id' ? 'কপি হয়েছে' : 'কপি করুন'}</span>
-                    </button>
+                  )}
+
+                  <div className="p-3 rounded-xl bg-white dark:bg-black/50 border border-emerald-500/40 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="text-[10px] text-gray-500 font-bold block uppercase">Custom Room ID</span>
+                        <span className="font-mono font-black text-emerald-600 text-base">{match.roomId}</span>
+                      </div>
+                      <button
+                        onClick={() => handleCopy(match.roomId!, 'id')}
+                        className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black flex items-center gap-1 shadow-xs transition-colors"
+                      >
+                        {copied === 'id' ? <CheckCircle className="w-4 h-4 text-white" /> : <Copy className="w-4 h-4" />}
+                        <span>{copied === 'id' ? 'কপি হয়েছে' : 'কপি করুন'}</span>
+                      </button>
+                    </div>
+
+                    {match.roomPass && (
+                      <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-white/10">
+                        <div>
+                          <span className="text-[10px] text-gray-500 font-bold block uppercase">Room Password</span>
+                          <span className="font-mono font-black text-emerald-600 text-base">{match.roomPass}</span>
+                        </div>
+                        <button
+                          onClick={() => handleCopy(match.roomPass!, 'pass')}
+                          className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black flex items-center gap-1 shadow-xs transition-colors"
+                        >
+                          {copied === 'pass' ? <CheckCircle className="w-4 h-4 text-white" /> : <Copy className="w-4 h-4" />}
+                          <span>{copied === 'pass' ? 'কপি হয়েছে' : 'কপি করুন'}</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
+                  <p className="text-[10px] text-amber-700 dark:text-amber-400 text-center font-medium">
+                    ⚠️ রুম পাসওয়ার্ড দেওয়ার ৮ মিনিট পর রুম ক্লোজ হয়ে যাবে।
+                  </p>
                 </div>
               );
             }

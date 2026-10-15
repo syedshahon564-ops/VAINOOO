@@ -785,6 +785,7 @@ export default function MobileAppViewPage(props: any) {
 
   // Booked matches list (hydrated from persistent storage, starts 0)
   const [bookedMatchesList, setBookedMatchesList] = useState<UserBookedMatch[]>([]);
+  const [currentTickTime, setCurrentTickTime] = useState<number>(() => Date.now());
   const [botToast, setBotToast] = useState<string | null>(null);
 
   const showPhoneToast = (msg: string) => {
@@ -815,12 +816,28 @@ export default function MobileAppViewPage(props: any) {
       runBotRoomManagerCycle();
     }, 4000);
 
+    // 1-second timer for live 8-minute countdown and instant room auto-expiry
+    const secondTimer = setInterval(() => {
+      setCurrentTickTime(Date.now());
+    }, 1000);
+
     return () => {
       window.removeEventListener('ff_user_bookings_updated', handleBookingsUpdated);
       window.removeEventListener('ff_room_credentials_delivered', handleCredentialsDelivered);
       clearInterval(botInterval);
+      clearInterval(secondTimer);
     };
   }, []);
+
+  // Auto-prune and synchronize expired bookings when 8-minute window finishes
+  useEffect(() => {
+    if (bookedMatchesList.length > 0) {
+      const fresh = getUserBookedMatches();
+      if (fresh.length !== bookedMatchesList.length) {
+        setBookedMatchesList(fresh);
+      }
+    }
+  }, [currentTickTime, bookedMatchesList.length]);
 
   // Deposit simulation
   const [depositMethod, setDepositMethod] = useState<'bkash' | 'nagad' | 'rocket'>('bkash');
@@ -984,6 +1001,7 @@ export default function MobileAppViewPage(props: any) {
                 time: bookingModalMatch.time,
                 roomId: bookingModalMatch.status === 'ROOM_OPEN' ? bookingModalMatch.roomId : undefined,
                 roomPass: bookingModalMatch.status === 'ROOM_OPEN' ? bookingModalMatch.roomPass : undefined,
+                roomDeliveredAt: bookingModalMatch.status === 'ROOM_OPEN' ? (bookingModalMatch.roomDeliveredAt || new Date().toISOString()) : undefined,
               })
             )
           : [
@@ -1000,6 +1018,7 @@ export default function MobileAppViewPage(props: any) {
                 time: bookingModalMatch.time,
                 roomId: bookingModalMatch.status === 'ROOM_OPEN' ? bookingModalMatch.roomId : undefined,
                 roomPass: bookingModalMatch.status === 'ROOM_OPEN' ? bookingModalMatch.roomPass : undefined,
+                roomDeliveredAt: bookingModalMatch.status === 'ROOM_OPEN' ? (bookingModalMatch.roomDeliveredAt || new Date().toISOString()) : undefined,
               }),
             ];
 
@@ -2022,192 +2041,284 @@ export default function MobileAppViewPage(props: any) {
                   )}
 
                   {/* TAB 2: MY MATCHES */}
-                  {activeTab === 'my-matches' && (
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-black uppercase tracking-wider text-red-600">
-                          {tPhone(`আপনার বুক করা ম্যাচ (${bookedMatchesList.length})`, `Your Booked Matches (${bookedMatchesList.length})`)}
-                        </span>
-                        <span className="text-[10px] font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full border border-gray-200">
-                          🔒 100% Private Pass
-                        </span>
-                      </div>
+                  {activeTab === 'my-matches' && (() => {
+                    const activeBookedMatches = bookedMatchesList.filter((bm) => {
+                      const liveMatch = matches.find((m) => m.id === bm.matchId || m.title === bm.title);
+                      const matchDate = parseScheduleTimeToDate(liveMatch?.time || bm.time, (liveMatch as any)?.startTimeIso);
+                      const diffMs = matchDate ? matchDate.getTime() - currentTickTime : 999999;
+                      const isWithin5Minutes = diffMs > 0 && diffMs <= 5 * 60 * 1000;
+                      const isRoomOpenStatus = liveMatch?.status === 'ROOM_OPEN' || liveMatch?.status === 'LIVE';
+                      const hasCredentials = Boolean(liveMatch?.roomId || bm.roomId);
+                      const isRoomReady = Boolean(hasCredentials && (isWithin5Minutes || isRoomOpenStatus));
 
-                      {bookedMatchesList.length === 0 ? (
-                        <div className="p-8 text-center text-gray-500 bg-white border border-dashed border-gray-300 rounded-2xl space-y-2">
-                          <Clock className="w-8 h-8 mx-auto text-gray-400" />
-                          <p className="text-xs font-bold text-gray-800">
-                            {tPhone('আপনি এখনও কোনো ম্যাচে জয়েন করেননি', 'You have not joined any match yet')}
-                          </p>
-                          <p className="text-[10px] text-gray-500">
-                            {tPhone(
-                              'হোম পেজ থেকে যেকোনো টুর্নামেন্টে জয়েন করুন। বুকিং কনফার্ম হলে এখানে আপনার গোপন রুম আইডি ও পাসওয়ার্ড দেখতে পাবেন।',
-                              'Join any tournament from Home. Your secret Room ID & Password will appear here once booked.'
-                            )}
-                          </p>
+                      // If credentials are not ready yet, keep the booking waiting
+                      if (!isRoomReady) return true;
+
+                      const deliveredIso = bm.roomDeliveredAt || (liveMatch as any)?.roomDeliveredAt || (liveMatch as any)?.deliveredAt;
+                      let deliveredMs: number | null = null;
+                      if (deliveredIso) {
+                        const parsed = new Date(deliveredIso).getTime();
+                        if (!isNaN(parsed)) deliveredMs = parsed;
+                      } else if (matchDate) {
+                        deliveredMs = Math.min(matchDate.getTime() - 5 * 60 * 1000, currentTickTime);
+                      } else {
+                        deliveredMs = currentTickTime;
+                      }
+
+                      // 8 minutes = 8 * 60 * 1000 = 480,000 ms
+                      const EIGHT_MIN_MS = 8 * 60 * 1000;
+                      if (deliveredMs && currentTickTime - deliveredMs >= EIGHT_MIN_MS) {
+                        return false; // Auto expired after 8 minutes ("৮ মিনিট এর পরে অটো চলে যাবে")
+                      }
+
+                      return true;
+                    });
+
+                    const formatRemainingTime = (totalSec: number) => {
+                      const m = Math.floor(totalSec / 60);
+                      const s = totalSec % 60;
+                      return `${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
+                    };
+
+                    return (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-black uppercase tracking-wider text-red-600">
+                            {tPhone(`আপনার বুক করা ম্যাচ (${activeBookedMatches.length})`, `Your Booked Matches (${activeBookedMatches.length})`)}
+                          </span>
+                          <span className="text-[10px] font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full border border-gray-200">
+                            🔒 100% Private Pass
+                          </span>
                         </div>
-                      ) : (
-                        bookedMatchesList.map((bm) => {
-                          const liveMatch = matches.find((m) => m.id === bm.matchId || m.title === bm.title);
 
-                          // Only reveal Room ID and Password if liveMatch status is ROOM_OPEN/LIVE, OR strictly within 5 minutes before match start
-                          const matchDate = parseScheduleTimeToDate(liveMatch?.time || bm.time, (liveMatch as any)?.startTimeIso);
-                          const diffMs = matchDate ? matchDate.getTime() - Date.now() : 999999;
-                          const isWithin5Minutes = diffMs > 0 && diffMs <= 5 * 60 * 1000;
-                          const isRoomOpenStatus = liveMatch?.status === 'ROOM_OPEN' || liveMatch?.status === 'LIVE';
-                          const isRoomReady = Boolean((liveMatch?.roomId || bm.roomId) && (isWithin5Minutes || isRoomOpenStatus));
-                          const currentRoomId = isRoomReady ? (liveMatch?.roomId || bm.roomId) : null;
-                          const currentRoomPass = isRoomReady ? (liveMatch?.roomPass || bm.roomPass || '1234') : null;
+                        {activeBookedMatches.length === 0 ? (
+                          <div className="p-8 text-center text-gray-500 bg-white border border-dashed border-gray-300 rounded-2xl space-y-2">
+                            <Clock className="w-8 h-8 mx-auto text-gray-400" />
+                            <p className="text-xs font-bold text-gray-800">
+                              {tPhone('আপনি এখনও কোনো ম্যাচে জয়েন করেননি', 'You have not joined any match yet')}
+                            </p>
+                            <p className="text-[10px] text-gray-500">
+                              {tPhone(
+                                'হোম পেজ থেকে যেকোনো টুর্নামেন্টে জয়েন করুন। বুকিং কনফার্ম হলে এখানে আপনার গোপন রুম আইডি ও পাসওয়ার্ড দেখতে পাবেন।',
+                                'Join any tournament from Home. Your secret Room ID & Password will appear here once booked.'
+                              )}
+                            </p>
+                          </div>
+                        ) : (
+                          activeBookedMatches.map((bm) => {
+                            const liveMatch = matches.find((m) => m.id === bm.matchId || m.title === bm.title);
 
-                          return (
-                          <div
-                            key={bm.id}
-                            className="p-4 rounded-2xl border border-gray-200 bg-white space-y-3 shadow-md"
-                          >
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs font-black text-gray-900 truncate max-w-[200px]">
-                                {bm.title}
-                              </span>
-                              <span className="text-[10px] px-2 py-0.5 rounded-full font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
-                                CONFIRMED
-                              </span>
-                            </div>
+                            // Only reveal Room ID and Password if liveMatch status is ROOM_OPEN/LIVE, OR strictly within 5 minutes before match start
+                            const matchDate = parseScheduleTimeToDate(liveMatch?.time || bm.time, (liveMatch as any)?.startTimeIso);
+                            const diffMs = matchDate ? matchDate.getTime() - currentTickTime : 999999;
+                            const isWithin5Minutes = diffMs > 0 && diffMs <= 5 * 60 * 1000;
+                            const isRoomOpenStatus = liveMatch?.status === 'ROOM_OPEN' || liveMatch?.status === 'LIVE';
+                            const hasCredentials = Boolean(liveMatch?.roomId || bm.roomId);
+                            const isRoomReady = Boolean(hasCredentials && (isWithin5Minutes || isRoomOpenStatus));
+                            const currentRoomId = isRoomReady ? (liveMatch?.roomId || bm.roomId) : null;
+                            const currentRoomPass = isRoomReady ? (liveMatch?.roomPass || bm.roomPass || '1234') : null;
 
-                            {/* Player IGN & Slot Info */}
-                            <div
-                              onClick={() =>
-                                setSelectedPlayerForDetails({
-                                  ign: bm.ign,
-                                  uid: bm.uid,
-                                  kills: 142,
-                                  earnings: 8600,
-                                  matchesPlayed: 38,
-                                  booyahs: 12,
-                                  winRate: '42.8%',
-                                  level: 72,
-                                  guild: 'BD_RIVALS_ELITE',
-                                })
-                              }
-                              className="p-2.5 rounded-xl bg-gray-50 hover:bg-gray-100 cursor-pointer border border-gray-200 flex items-center justify-between text-xs transition-all"
-                              title={tPhone('প্লেয়ার ডিটেইলস দেখুন', 'Click to view player details')}
-                            >
-                              <div>
-                                <span className="text-gray-500 block text-[9px] font-bold flex items-center gap-1">
-                                  Verified IGN <Eye className="w-2.5 h-2.5 text-amber-500" />
-                                </span>
-                                <span className="font-extrabold text-gray-900">{bm.ign}</span>
-                              </div>
-                              <div className="text-right">
-                                <span className="text-gray-500 block text-[9px] font-bold">
-                                  {bm.team ? tPhone(`টিম #${bm.team}`, `Team #${bm.team}`) : tPhone('স্লট নম্বর', 'Slot #')}
-                                </span>
-                                <span className="font-black text-emerald-600 text-sm">
-                                  #{bm.slot}
-                                </span>
-                              </div>
-                            </div>
+                            const deliveredIso = bm.roomDeliveredAt || (liveMatch as any)?.roomDeliveredAt || (liveMatch as any)?.deliveredAt;
+                            let deliveredMs: number | null = null;
+                            if (deliveredIso) {
+                              const parsed = new Date(deliveredIso).getTime();
+                              if (!isNaN(parsed)) deliveredMs = parsed;
+                            } else if (isRoomReady && matchDate) {
+                              deliveredMs = Math.min(matchDate.getTime() - 5 * 60 * 1000, currentTickTime);
+                            } else if (isRoomReady) {
+                              deliveredMs = currentTickTime;
+                            }
 
-                            {/* Private Room Credentials Card (Revealed 5 Minutes Before Start) */}
-                            {isRoomReady ? (
-                              <div className="p-3.5 rounded-xl bg-emerald-50/80 border border-emerald-200 space-y-2.5 shadow-xs">
-                                <div className="flex items-center justify-between text-[11px] pb-1 border-b border-emerald-200/60">
-                                  <span className="font-black text-emerald-800 flex items-center gap-1">
-                                    <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                                    🤖 {tPhone('বট রুম আইডি ডেলিভারি সম্পন্ন', 'Bot Room Delivered')}
+                            const EIGHT_MIN_MS = 8 * 60 * 1000;
+                            const remainingSeconds = deliveredMs ? Math.max(0, Math.floor((deliveredMs + EIGHT_MIN_MS - currentTickTime) / 1000)) : null;
+
+                            return (
+                              <div
+                                key={bm.id}
+                                className="p-4 rounded-2xl border border-gray-200 bg-white space-y-3 shadow-md"
+                              >
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs font-black text-gray-900 truncate max-w-[200px]">
+                                    {bm.title}
                                   </span>
-                                  <span className="text-[9px] font-extrabold bg-emerald-600 text-white px-2 py-0.5 rounded-full">
-                                    ROOM OPEN
+                                  <span className="text-[10px] px-2 py-0.5 rounded-full font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                    CONFIRMED
                                   </span>
                                 </div>
 
-                                <div className="flex items-center justify-between text-xs">
-                                  <span className="text-gray-800 flex items-center gap-1.5 font-extrabold text-xs">
-                                    <Key className="w-4 h-4 text-emerald-600" /> {tPhone('রুম আইডি:', 'Room ID:')}
-                                  </span>
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-mono font-black text-gray-950 bg-white px-3 py-1 rounded-lg border border-emerald-300 text-xs shadow-xs">
-                                      {currentRoomId}
+                                {/* Player IGN & Slot Info */}
+                                <div
+                                  onClick={() =>
+                                    setSelectedPlayerForDetails({
+                                      ign: bm.ign,
+                                      uid: bm.uid,
+                                      kills: 142,
+                                      earnings: 8600,
+                                      matchesPlayed: 38,
+                                      booyahs: 12,
+                                      winRate: '42.8%',
+                                      level: 72,
+                                      guild: 'BD_RIVALS_ELITE',
+                                    })
+                                  }
+                                  className="p-2.5 rounded-xl bg-gray-50 hover:bg-gray-100 cursor-pointer border border-gray-200 flex items-center justify-between text-xs transition-all"
+                                  title={tPhone('প্লেয়ার ডিটেইলস দেখুন', 'Click to view player details')}
+                                >
+                                  <div>
+                                    <span className="text-gray-500 block text-[9px] font-bold flex items-center gap-1">
+                                      Verified IGN <Eye className="w-2.5 h-2.5 text-amber-500" />
                                     </span>
-                                    <button
-                                      onClick={() => handleCopy(currentRoomId!, `room-${bm.id}`)}
-                                      className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black flex items-center gap-1 shadow-xs transition-colors"
-                                    >
-                                      {copiedKey === `room-${bm.id}` ? (
-                                        <CheckCircle className="w-3 h-3 text-emerald-200" />
-                                      ) : (
-                                        <Copy className="w-3 h-3" />
-                                      )}
-                                      <span>{copiedKey === `room-${bm.id}` ? 'কপি হয়েছে' : 'কপি'}</span>
-                                    </button>
+                                    <span className="font-extrabold text-gray-900">{bm.ign}</span>
+                                  </div>
+                                  <div className="text-right">
+                                    <span className="text-gray-500 block text-[9px] font-bold">
+                                      {bm.team ? tPhone(`টিম #${bm.team}`, `Team #${bm.team}`) : tPhone('স্লট নম্বর', 'Slot #')}
+                                    </span>
+                                    <span className="font-black text-emerald-600 text-sm">
+                                      #{bm.slot}
+                                    </span>
                                   </div>
                                 </div>
 
-                                 <p className="text-[9px] text-emerald-800 bg-white/70 p-1.5 rounded-lg border border-emerald-200 leading-tight">
-                                   🎮 {tPhone(`ফ্রি ফায়ারে কাস্টম রুমে গিয়ে রুম আইডিতে প্রবেশ করুন এবং আপনার নির্দিষ্ট স্লট #${bm.slot} এ গিয়ে বসুন।`, `Open Free Fire Custom Room, enter Room ID, and sit in Slot #${bm.slot}.`)}
-                                 </p>
-                               </div>
-                            ) : (
-                              <div className="p-3.5 rounded-xl bg-amber-50/90 border border-amber-300 space-y-2 shadow-xs">
-                                <div className="flex items-center justify-between text-[11px]">
-                                  <span className="font-black text-amber-900 flex items-center gap-1">
-                                    <Clock className="w-3.5 h-3.5 text-amber-600" />
-                                    ⏳ {tPhone('রুম আইডি প্রকাশের সময় বাকি', 'Room Release Pending')}
-                                  </span>
-                                  <span className="text-[9px] font-black bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full border border-amber-300">
-                                    ৫ মিনিট আগে
-                                  </span>
-                                </div>
-                                <div className="p-2.5 rounded-lg bg-white/95 border border-amber-200 text-center space-y-1">
-                                  <p className="text-xs font-black text-red-600">
-                                    {tPhone('রুম আইডি ও পাসওয়ার্ড এখনও দেওয়া হয়নি (অ্যাডমিন দেওয়ার পর প্রদর্শিত হবে)', 'Room ID and Password will be provided by admin before match.')}
-                                  </p>
-                                  <p className="text-[10px] text-gray-500">
-                                    {tPhone('ম্যাচ শুরু হওয়ার ৫ মিনিট পূর্বে অ্যাডমিন রুম আইডি দিলে এখানে প্রদর্শিত হবে।', 'Credentials will appear here once released by admin.')}
-                                  </p>
-                                </div>
-                              </div>
-                            )}
+                                {/* Private Room Credentials Card (Revealed 5 Minutes Before Start) */}
+                                {isRoomReady ? (
+                                  <div className="p-3.5 rounded-xl bg-emerald-50/90 border border-emerald-300 space-y-2.5 shadow-xs">
+                                    <div className="flex items-center justify-between text-[11px] pb-1 border-b border-emerald-200">
+                                      <span className="font-black text-emerald-800 flex items-center gap-1">
+                                        <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                                        🤖 {tPhone('রুম আইডি ও পাসওয়ার্ড ডেলিভারি সম্পন্ন', 'Room ID & Password Delivered')}
+                                      </span>
+                                      <span className="text-[9px] font-extrabold bg-emerald-600 text-white px-2 py-0.5 rounded-full">
+                                        ROOM OPEN
+                                      </span>
+                                    </div>
 
-                            <div className="flex justify-between items-center text-[10px] text-gray-500 pt-1 font-semibold">
-                              <span>UID: {bm.uid}</span>
-                              <span className="text-amber-600 font-bold">{bm.time}</span>
-                            </div>
+                                    {/* 8-Minute Auto-Expiry Live Countdown Banner */}
+                                    {remainingSeconds !== null && (
+                                      <div className="p-2 rounded-lg bg-red-50 border border-red-200 flex items-center justify-between text-[11px]">
+                                        <span className="font-black text-red-700 flex items-center gap-1.5">
+                                          <Clock className="w-3.5 h-3.5 text-red-600 animate-pulse" />
+                                          {tPhone('পাসওয়ার্ডের মেয়াদ বাকি:', 'Password Expires In:')}
+                                        </span>
+                                        <span className="font-mono font-black text-red-700 bg-white px-2.5 py-0.5 rounded border border-red-300 shadow-xs">
+                                          ⏱️ {formatRemainingTime(remainingSeconds)}
+                                        </span>
+                                      </div>
+                                    )}
 
-                            {/* Match Result Screenshot Proof Upload */}
-                            <div className="pt-2 border-t border-gray-200 space-y-1.5">
-                              <div className="flex items-center justify-between text-[10px]">
-                                <span className="font-bold text-gray-800 flex items-center gap-1">
-                                  <Camera className="w-3.5 h-3.5 text-red-600" />
-                                  {tPhone('রেজাল্ট স্ক্রিনশট প্রুফ', 'Result Screenshot Proof')}
-                                </span>
-                                {matchScreenshots[bm.id] && (
-                                  <span className="text-emerald-600 font-bold flex items-center gap-0.5">
-                                    <CheckCircle className="w-3.5 h-3.5" /> {tPhone('আপলোড সফল', 'Uploaded')}
-                                  </span>
+                                    {/* Room ID Row */}
+                                    <div className="flex items-center justify-between text-xs">
+                                      <span className="text-gray-800 flex items-center gap-1.5 font-extrabold text-xs">
+                                        <Key className="w-4 h-4 text-emerald-600" /> {tPhone('রুম আইডি:', 'Room ID:')}
+                                      </span>
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-mono font-black text-gray-950 bg-white px-3 py-1 rounded-lg border border-emerald-300 text-xs shadow-xs select-all">
+                                          {currentRoomId}
+                                        </span>
+                                        <button
+                                          onClick={() => handleCopy(currentRoomId!, `room-${bm.id}`)}
+                                          className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black flex items-center gap-1 shadow-xs transition-colors active:scale-95"
+                                        >
+                                          {copiedKey === `room-${bm.id}` ? (
+                                            <CheckCircle className="w-3 h-3 text-emerald-200" />
+                                          ) : (
+                                            <Copy className="w-3 h-3" />
+                                          )}
+                                          <span>{copiedKey === `room-${bm.id}` ? 'কপি হয়েছে' : 'কপি'}</span>
+                                        </button>
+                                      </div>
+                                    </div>
+
+                                    {/* Room Password Row */}
+                                    <div className="flex items-center justify-between text-xs">
+                                      <span className="text-gray-800 flex items-center gap-1.5 font-extrabold text-xs">
+                                        <Lock className="w-4 h-4 text-emerald-600" /> {tPhone('রুম পাসওয়ার্ড:', 'Password:')}
+                                      </span>
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-mono font-black text-gray-950 bg-white px-3 py-1 rounded-lg border border-emerald-300 text-xs shadow-xs select-all">
+                                          {currentRoomPass}
+                                        </span>
+                                        <button
+                                          onClick={() => handleCopy(currentRoomPass!, `pass-${bm.id}`)}
+                                          className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black flex items-center gap-1 shadow-xs transition-colors active:scale-95"
+                                        >
+                                          {copiedKey === `pass-${bm.id}` ? (
+                                            <CheckCircle className="w-3 h-3 text-emerald-200" />
+                                          ) : (
+                                            <Copy className="w-3 h-3" />
+                                          )}
+                                          <span>{copiedKey === `pass-${bm.id}` ? 'কপি হয়েছে' : 'কপি'}</span>
+                                        </button>
+                                      </div>
+                                    </div>
+
+                                    <p className="text-[9px] text-emerald-900 bg-white/80 p-2 rounded-lg border border-emerald-200 leading-tight">
+                                      🎮 {tPhone(`ফ্রি ফায়ারে কাস্টম রুমে গিয়ে রুম আইডি ও পাসওয়ার্ড দিন এবং নির্দিষ্ট স্লট #${bm.slot} এ বসুন। পাসওয়ার্ড দেওয়ার ৮ মিনিট পর রুম স্বয়ংক্রিয়ভাবে বন্ধ হয়ে যাবে এবং ম্যাচটি তালিকা থেকে চলে যাবে।`, `Enter Room ID & Password in Free Fire custom room and take Slot #${bm.slot}. 8 minutes after password release, room closes and automatically disappears.`)}
+                                    </p>
+                                  </div>
+                                ) : (
+                                  <div className="p-3.5 rounded-xl bg-amber-50/90 border border-amber-300 space-y-2 shadow-xs">
+                                    <div className="flex items-center justify-between text-[11px]">
+                                      <span className="font-black text-amber-900 flex items-center gap-1">
+                                        <Clock className="w-3.5 h-3.5 text-amber-600" />
+                                        ⏳ {tPhone('রুম আইডি প্রকাশের সময় বাকি', 'Room Release Pending')}
+                                      </span>
+                                      <span className="text-[9px] font-black bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full border border-amber-300">
+                                        ৫ মিনিট আগে
+                                      </span>
+                                    </div>
+                                    <div className="p-2.5 rounded-lg bg-white/95 border border-amber-200 text-center space-y-1">
+                                      <p className="text-xs font-black text-red-600">
+                                        {tPhone('রুম আইডি ও পাসওয়ার্ড এখনও দেওয়া হয়নি (অ্যাডমিন দেওয়ার পর প্রদর্শিত হবে)', 'Room ID and Password will be provided by admin before match.')}
+                                      </p>
+                                      <p className="text-[10px] text-gray-500">
+                                        {tPhone('ম্যাচ শুরু হওয়ার ৫ মিনিট পূর্বে অ্যাডমিন রুম আইডি দিলে এখানে প্রদর্শিত হবে।', 'Credentials will appear here once released by admin.')}
+                                      </p>
+                                    </div>
+                                  </div>
                                 )}
+
+                                <div className="flex justify-between items-center text-[10px] text-gray-500 pt-1 font-semibold">
+                                  <span>UID: {bm.uid}</span>
+                                  <span className="text-amber-600 font-bold">{bm.time}</span>
+                                </div>
+
+                                {/* Match Result Screenshot Proof Upload */}
+                                <div className="pt-2 border-t border-gray-200 space-y-1.5">
+                                  <div className="flex items-center justify-between text-[10px]">
+                                    <span className="font-bold text-gray-800 flex items-center gap-1">
+                                      <Camera className="w-3.5 h-3.5 text-red-600" />
+                                      {tPhone('রেজাল্ট স্ক্রিনশট প্রুফ', 'Result Screenshot Proof')}
+                                    </span>
+                                    {matchScreenshots[bm.id] && (
+                                      <span className="text-emerald-600 font-bold flex items-center gap-0.5">
+                                        <CheckCircle className="w-3.5 h-3.5" /> {tPhone('আপলোড সফল', 'Uploaded')}
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  <ImageUploadInput
+                                    label={tPhone('ম্যাচ শেষের স্ক্রিনশট আপলোড করুন', 'Upload Result Screenshot')}
+                                    value={matchScreenshots[bm.id] || ''}
+                                    onChange={(url) => setMatchScreenshots((prev) => ({ ...prev, [bm.id]: url }))}
+                                    helperText={tPhone('কাস্টম রেজাল্ট বা র‍্যাঙ্কিং স্ক্রিনশট বেছে নিন', 'Upload match history / ranking screenshot')}
+                                    previewHeight="h-28"
+                                  />
+                                </div>
                               </div>
-
-                              <ImageUploadInput
-                                label={tPhone('ম্যাচ শেষের স্ক্রিনশট আপলোড করুন', 'Upload Result Screenshot')}
-                                value={matchScreenshots[bm.id] || ''}
-                                onChange={(url) => setMatchScreenshots((prev) => ({ ...prev, [bm.id]: url }))}
-                                helperText={tPhone('কাস্টম রেজাল্ট বা র‍্যাঙ্কিং স্ক্রিনশট বেছে নিন', 'Upload match history / ranking screenshot')}
-                                previewHeight="h-28"
-                              />
-                            </div>
-                          </div>
-                        );
-                      })
-                    )}
-
-                      <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-[10px] text-amber-800 leading-relaxed font-bold">
-                        ⚠️ {tPhone(
-                          'সতর্কতা: রুম আইডি ও পাসওয়ার্ড অন্য কাউকে শেয়ার করলে অ্যাকাউন্ট স্থায়ীভাবে ব্যান করা হবে।',
-                          'Warning: Sharing Room ID & Password with outsiders will result in an instant permanent ban.'
+                            );
+                          })
                         )}
+
+                        <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-[10px] text-amber-800 leading-relaxed font-bold">
+                          ⚠️ {tPhone(
+                            'সতর্কতা: রুম আইডি ও পাসওয়ার্ড অন্য কাউকে শেয়ার করলে অ্যাকাউন্ট স্থায়ীভাবে ব্যান করা হবে। পাসওয়ার্ড দেওয়ার ৮ মিনিট পর রুম ক্লোজ হয়ে যাবে।',
+                            'Warning: Sharing Room ID & Password with outsiders will result in an instant permanent ban. Room closes 8 minutes after release.'
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    );
+                  })()}
 
                   {/* TAB 3: TOP PLAYERS (WITH PLAYER DETAILS MODAL) */}
                   {activeTab === 'top-players' && (

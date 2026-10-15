@@ -24,6 +24,7 @@ export interface MatchItem {
   rules?: string;
   roomId?: string;
   roomPass?: string;
+  roomDeliveredAt?: string;
   status?: 'UPCOMING' | 'ROOM_OPEN' | 'LIVE' | 'COMPLETED';
   /** Published after the match ends: who placed where, kills and prize won. */
   results?: Array<{ rank: number; ign: string; kills: number; prize: number }>;
@@ -586,7 +587,12 @@ export function updateMatch(matchId: string, updated: Partial<MatchItem>): void 
   const data = getCMSData();
   const index = data.matches.findIndex((m) => m.id === matchId);
   if (index !== -1) {
-    data.matches[index] = { ...data.matches[index], ...updated };
+    const existing = data.matches[index];
+    let roomDeliveredAt = updated.roomDeliveredAt || existing.roomDeliveredAt;
+    if ((updated.roomId || updated.roomPass) && !roomDeliveredAt) {
+      roomDeliveredAt = new Date().toISOString();
+    }
+    data.matches[index] = { ...existing, ...updated, ...(roomDeliveredAt ? { roomDeliveredAt } : {}) };
     saveCMSData(data);
   }
 }
