@@ -819,11 +819,15 @@ export function useCMS() {
                 deletedCategories: allDeleted,
               });
 
-              memoryCMSCache = merged;
-              setData(merged);
-              try {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
-              } catch (e) {}
+              const newSerialized = JSON.stringify(merged);
+              const currentSerialized = localStorage.getItem(STORAGE_KEY);
+              if (newSerialized !== currentSerialized) {
+                memoryCMSCache = merged;
+                setData(merged);
+                try {
+                  localStorage.setItem(STORAGE_KEY, newSerialized);
+                } catch (e) {}
+              }
             }
           })
           .catch(() => {});
@@ -833,8 +837,8 @@ export function useCMS() {
     // 1. Immediate sync
     syncWithServer();
 
-    // 2. Periodic background poll every 4s for instant admin changes reflection
-    const syncInterval = setInterval(syncWithServer, 4000);
+    // 2. Periodic background poll every 8s for instant admin changes reflection without UI lag
+    const syncInterval = setInterval(syncWithServer, 8000);
 
     // 3. Sync immediately when user refocuses or opens app from background
     const onVisibilityChange = () => {

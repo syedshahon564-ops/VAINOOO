@@ -196,14 +196,20 @@ export default function MatchResultsOCRPage() {
 
   const handleUpdateRow = (index: number, field: keyof ParsedScoreboardRow, value: any) => {
     const updated = [...parsedRows];
-    updated[index] = { ...updated[index], [field]: value };
+    let sanitizedValue = value;
+    if (field === 'kills') {
+      // Strict 7 kills maximum limit rule
+      sanitizedValue = Math.min(7, Math.max(0, Number(value) || 0));
+    }
+    updated[index] = { ...updated[index], [field]: sanitizedValue };
 
     // Recalculate prizes if rank or kills change
     if (field === 'kills' || field === 'rank') {
-      const rank = field === 'rank' ? Number(value) : updated[index].rank;
-      const kills = field === 'kills' ? Number(value) : updated[index].kills;
+      const rank = field === 'rank' ? Number(sanitizedValue) : updated[index].rank;
+      const rawKills = field === 'kills' ? Number(sanitizedValue) : updated[index].kills;
+      const effectiveKills = Math.min(7, Math.max(0, rawKills));
       const perKillRate = selectedMatch.perKill || 0;
-      const killPrize = kills * perKillRate;
+      const killPrize = effectiveKills * perKillRate;
 
       let rankPrize = 0;
       if (rank === 1) rankPrize = selectedMatch.firstPrize || Math.round(selectedMatch.prizePool * 0.5);
@@ -547,9 +553,12 @@ export default function MatchResultsOCRPage() {
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 font-bold border border-emerald-300 dark:border-emerald-800">
                   {parsedRows.length} Detected
                 </span>
+                <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-500 font-bold border border-amber-500/30">
+                  🎯 সর্বোচ্চ ৭ কিল লিমিট (Max 7 Kills Prize Limit)
+                </span>
               </h3>
               <p className="text-[11px] text-gray-500">
-                প্লেয়ারের UID ও IGN মিলিয়ে ব্যালেন্স যোগ করার তালিকা। কোনো মান পরিবর্তন করতে চাইলে সরাসরি এডিট করতে পারবেন।
+                প্লেয়ারের UID ও IGN মিলিয়ে ব্যালেন্স যোগ করার তালিকা। সর্বোচ্চ ৭ কিল পর্যন্ত কিল প্রাইজের টাকা হিসেব করা হবে। কোনো মান পরিবর্তন করতে চাইলে সরাসরি এডিট করতে পারবেন।
               </p>
             </div>
 
@@ -642,13 +651,22 @@ export default function MatchResultsOCRPage() {
                       )}
                     </td>
                     <td className="py-3 px-3">
-                      <input
-                        type="number"
-                        min={0}
-                        value={row.kills}
-                        onChange={(e) => handleUpdateRow(idx, 'kills', e.target.value)}
-                        className="w-14 px-2 py-1 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-black font-bold text-center font-mono"
-                      />
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          type="number"
+                          min={0}
+                          max={7}
+                          value={row.kills}
+                          onChange={(e) => handleUpdateRow(idx, 'kills', e.target.value)}
+                          className="w-14 px-2 py-1 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-black font-bold text-center font-mono focus:border-red-500 focus:outline-none"
+                          title="সর্বোচ্চ ৭ কিল পর্যন্ত প্রাইজ প্রদান করা হবে"
+                        />
+                        {row.kills >= 7 && (
+                          <span className="text-[9px] font-black text-amber-500 bg-amber-500/10 px-1 py-0.5 rounded border border-amber-500/20" title="সর্বোচ্চ ৭ কিল ক্যাপ্ড">
+                            MAX 7
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="py-3 px-3 font-mono text-gray-600 dark:text-gray-300">
                       ৳{row.killPrize}

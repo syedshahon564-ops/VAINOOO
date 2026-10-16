@@ -26,6 +26,9 @@ import {
   X,
   RefreshCw,
   ExternalLink,
+  Scan,
+  Trophy,
+  ArrowRight,
 } from 'lucide-react';
 import {
   getSchedulerConfig,
@@ -449,6 +452,39 @@ export default function BotControlsPage() {
               যাদের যাদের অ্যাপে নোটিফিকেশন অন বা পারমিশন দেওয়া আছে, ম্যাচ পাবলিশ হওয়ার সাথে সাথে তাদের ফোনে সাউন্ডসহ নোটিফিকেশন চলে যাবে।
             </p>
           </div>
+        </div>
+      </div>
+
+      {/* 🏆 ম্যাচ ফলাফল ও স্ক্রিনশট পেআউট (Match Results OCR & 7-Kill Payout) */}
+      <div className="rounded-2xl border-2 border-amber-500/40 bg-gradient-to-r from-amber-950/25 via-[#1a140f] to-amber-950/25 p-6 space-y-4 shadow-xl">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-amber-500 text-black flex items-center justify-center shadow-lg shadow-amber-500/30 flex-shrink-0">
+              <Scan className="w-7 h-7" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-lg font-black text-white">
+                  🏆 ম্যাচ স্ক্রিনশট আপলোড ও ইনস্ট্যান্ট ওয়ালেট পেআউট
+                </h2>
+                <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40">
+                  সর্বোচ্চ ৭ কিল লিমিট
+                </span>
+              </div>
+              <p className="text-xs text-amber-200/80 mt-0.5">
+                ম্যাচ শেষে ফলাফল স্ক্রিনশট আপলোড করলেই বট স্বয়ংক্রিয়ভাবে প্লেয়ারের নাম ও UID মিলিয়ে ওয়ালেটে টাকা যোগ করে দেয় (কিল রিওয়ার্ড সর্বোচ্চ ৭ কিল পর্যন্ত সীমাবদ্ধ)।
+              </p>
+            </div>
+          </div>
+
+          <a
+            href="/admin/match-results"
+            className="px-5 py-3 rounded-xl text-xs font-black bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-black shadow-lg shadow-amber-500/30 active:scale-95 transition-all flex items-center gap-2 flex-shrink-0 font-sans"
+          >
+            <Scan className="w-4 h-4" />
+            📸 স্ক্রিনশট আপলোড ও পেআউট প্যানেলে যান
+            <ArrowRight className="w-4 h-4" />
+          </a>
         </div>
       </div>
 

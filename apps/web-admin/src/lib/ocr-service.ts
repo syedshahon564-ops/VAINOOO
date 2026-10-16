@@ -142,7 +142,9 @@ export function calculatePlayerPrize(
   match: MatchItem
 ): { killPrize: number; rankPrize: number; totalPrize: number } {
   const perKillRate = match.perKill || 0;
-  const killPrize = Math.max(0, kills * perKillRate);
+  // Strict rule: maximum 7 kills reward limit (সর্বোচ্চ ৭ কিল পর্যন্ত প্রাইজ)
+  const effectiveKills = Math.min(7, Math.max(0, kills));
+  const killPrize = Math.max(0, effectiveKills * perKillRate);
 
   let rankPrize = 0;
   if (rank === 1) {
@@ -203,7 +205,7 @@ export function parseScoreboardText(
 
     const killsMatch = line.match(/(\d{1,2})\s*(?:kills?|k|kll)?$/i) || line.match(/\b(\d{1,2})\b$/);
     if (killsMatch) {
-      kills = parseInt(killsMatch[1], 10);
+      kills = Math.min(7, Math.max(0, parseInt(killsMatch[1], 10)));
     }
 
     // Strip rank and kill from line to get IGN
