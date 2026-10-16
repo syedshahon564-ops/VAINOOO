@@ -140,26 +140,76 @@ export default function AdminTournamentsPage() {
     setTitle('');
   };
 
-  const handleSaveRoomPass = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingRoomMatch) return;
+  const handleDirectDeliverRoom = (m: MatchItem) => {
+    if (!m.roomId) {
+      setEditingRoomMatch(m);
+      setRoomId('');
+      setRoomPass('1234');
+      return;
+    }
 
-    updateMatch(editingRoomMatch.id, {
-      roomId,
-      roomPass,
+    const currentPass = m.roomPass || '1234';
+    updateMatch(m.id, {
       status: 'ROOM_OPEN',
+      roomDeliveredAt: new Date().toISOString(),
     });
 
-    autoDeliverRoomCredentials(editingRoomMatch.id, roomId, roomPass);
+    autoDeliverRoomCredentials(m.id, m.roomId, currentPass);
     dispatchDevicePushNotification(
       '🎮 কাস্টম রুম আইডি ও পাসওয়ার্ড ডেলিভারি!',
-      `ম্যাচ: "${editingRoomMatch.title}" | Room ID: ${roomId} | Pass: ${roomPass}। এখনই নির্দিষ্ট স্লটে বসুন!`
+      `ম্যাচ: "${m.title}" | Room ID: ${m.roomId} | Password: ${currentPass}। এখনই নির্দিষ্ট স্লটে বসুন!`
     );
 
-    showNotification('Room ID & Password published & dispatched to all players!');
+    showNotification(`⚡ ম্যাচ "${m.title}"-এর Room ID (${m.roomId}) সফলভাবে সকল প্লেয়ারকে ডেলিভার করা হয়েছে!`);
+  };
+
+  const handleSaveOnlyRoomPass = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingRoomMatch) return;
+    if (!roomId.trim()) {
+      showNotification('রুম আইডি লিখুন', 'error');
+      return;
+    }
+    updateMatch(editingRoomMatch.id, {
+      roomId: roomId.trim(),
+      roomPass: roomPass.trim() || '1234',
+    });
+    showNotification(`ম্যাচ "${editingRoomMatch.title}"-এর Room ID সেভ হয়েছে! প্রয়োজন হলে "⚡ Deliver Room ID" বাটনে ক্লিক করে যেকোনো সময় ডেলিভার করতে পারবেন।`);
     setEditingRoomMatch(null);
     setRoomId('');
     setRoomPass('');
+  };
+
+  const handleSaveAndDeliverRoomPass = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingRoomMatch) return;
+    if (!roomId.trim()) {
+      showNotification('রুম আইডি লিখুন', 'error');
+      return;
+    }
+    const cleanId = roomId.trim();
+    const cleanPass = roomPass.trim() || '1234';
+    updateMatch(editingRoomMatch.id, {
+      roomId: cleanId,
+      roomPass: cleanPass,
+      status: 'ROOM_OPEN',
+      roomDeliveredAt: new Date().toISOString(),
+    });
+
+    autoDeliverRoomCredentials(editingRoomMatch.id, cleanId, cleanPass);
+    dispatchDevicePushNotification(
+      '🎮 কাস্টম রুম আইডি ও পাসওয়ার্ড ডেলিভারি!',
+      `ম্যাচ: "${editingRoomMatch.title}" | Room ID: ${cleanId} | Password: ${cleanPass}। এখনই নির্দিষ্ট স্লটে বসুন!`
+    );
+
+    showNotification(`⚡ Room ID (${cleanId}) সেভ এবং সফলভাবে সকল প্লেয়ারকে ডেলিভার করা হয়েছে!`);
+    setEditingRoomMatch(null);
+    setRoomId('');
+    setRoomPass('');
+  };
+
+  const handleSaveRoomPass = (e: React.FormEvent) => {
+    handleSaveAndDeliverRoomPass(e);
   };
 
   const handleBotRoomDispatch = (e: React.FormEvent) => {
@@ -579,15 +629,34 @@ export default function AdminTournamentsPage() {
                   </td>
                   <td className="p-4">
                     {m.roomId ? (
-                      <span className="px-2 py-1 rounded bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 font-mono font-bold text-[11px] border border-emerald-200 dark:border-emerald-900/40">
-                        {m.roomId} : {m.roomPass}
-                      </span>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 font-mono font-bold text-[11px] border border-emerald-200 dark:border-emerald-900/40 inline-flex items-center gap-1">
+                          ✅ {m.roomId} : {m.roomPass}
+                        </span>
+                        {m.roomDeliveredAt && (
+                          <span className="text-[9px] text-emerald-600 font-bold">ডেলিভার সম্পন্ন</span>
+                        )}
+                      </div>
                     ) : (
-                      <span className="text-gray-400 italic text-[11px]">Not Published</span>
+                      <span className="text-gray-400 italic text-[11px]">সেভ করা হয়নি</span>
                     )}
                   </td>
                   <td className="p-4 text-right">
                     <div className="inline-flex items-center gap-1.5">
+                      {/* ⚡ DIRECT DELIVER ROOM ID BUTTON */}
+                      <button
+                        onClick={() => handleDirectDeliverRoom(m)}
+                        className={`px-3 py-1.5 rounded-lg text-[11px] font-black flex items-center gap-1 transition-all shadow-md active:scale-95 ${
+                          m.roomId
+                            ? 'bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white shadow-red-600/30'
+                            : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black shadow-amber-500/30'
+                        }`}
+                        title={m.roomId ? 'Save & Deliver Room ID to all joined players' : 'Set and Deliver Room ID'}
+                      >
+                        <Zap className="w-3.5 h-3.5" />
+                        <span>{m.roomId ? '⚡ Deliver Room ID' : '⚡ সেট ও ডেলিভার'}</span>
+                      </button>
+
                       <button
                         onClick={() => handleOpenResultModal(m)}
                         className={`px-2.5 py-1.5 rounded-lg font-bold text-[11px] flex items-center gap-1 transition-all ${
@@ -608,21 +677,9 @@ export default function AdminTournamentsPage() {
                           setRoomPass(m.roomPass || '');
                         }}
                         className="px-2.5 py-1.5 rounded-lg bg-gray-100 dark:bg-white/10 hover:bg-gray-200 text-gray-800 dark:text-gray-200 font-bold text-[11px] flex items-center gap-1"
+                        title="Edit Room ID & Password"
                       >
                         <Key className="w-3.5 h-3.5 text-amber-500" /> Room Pass
-                      </button>
-
-                      <button
-                        onClick={() => {
-                          const res = autoDeliverRoomCredentials(m.id);
-                          if (res) {
-                            showNotification(`Bot auto-delivered Room ID (${res.roomId}) & Password (${res.roomPass})!`);
-                          }
-                        }}
-                        className="px-2.5 py-1.5 rounded-lg bg-red-50 dark:bg-red-950/40 hover:bg-red-100 text-red-600 font-bold text-[11px] flex items-center gap-1 transition-all"
-                        title="Automatically generate & dispatch room credentials via Bot"
-                      >
-                        <Bot className="w-3.5 h-3.5 text-red-600" /> Bot Room
                       </button>
 
                       <button
@@ -909,14 +966,16 @@ export default function AdminTournamentsPage() {
           <div className="w-full max-w-md bg-white dark:bg-[#14141c] rounded-2xl p-6 space-y-4 border border-gray-200 dark:border-white/10 shadow-2xl">
             <h3 className="text-base font-black text-gray-900 dark:text-white flex items-center gap-2">
               <Key className="w-5 h-5 text-red-600" />
-              Publish Room Credentials
+              Room ID & Password Manager
             </h3>
-            <p className="text-xs text-gray-500">{editingRoomMatch.title}</p>
+            <p className="text-xs text-gray-500">
+              {editingRoomMatch.title} — সেভ করে রাখতে পারেন অথবা এখনই প্লেয়ারদের পুশ নোটিফিকেশনসহ ডেলিভার করতে পারেন।
+            </p>
 
-            <form onSubmit={handleSaveRoomPass} className="space-y-4">
+            <form onSubmit={handleSaveAndDeliverRoomPass} className="space-y-4">
               <div>
                 <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                  Custom Room ID
+                  Custom Room ID (কাস্টম রুম আইডি)
                 </label>
                 <input
                   type="text"
@@ -930,7 +989,7 @@ export default function AdminTournamentsPage() {
 
               <div>
                 <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                  Room Password
+                  Room Password (রুম পাসওয়ার্ড)
                 </label>
                 <input
                   type="text"
@@ -942,16 +1001,28 @@ export default function AdminTournamentsPage() {
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3">
+              <div className="flex flex-wrap items-center justify-end gap-2 pt-3">
                 <button
                   type="button"
                   onClick={() => setEditingRoomMatch(null)}
-                  className="px-4 py-2 rounded-xl bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-300 text-xs font-bold hover:bg-gray-200"
+                  className="px-3.5 py-2 rounded-xl bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-300 text-xs font-bold hover:bg-gray-200"
                 >
                   Cancel
                 </button>
-                <button type="submit" className="px-5 py-2 rounded-xl btn-red text-xs font-black shadow-md">
-                  Publish Credentials
+                <button
+                  type="button"
+                  onClick={handleSaveOnlyRoomPass}
+                  className="px-4 py-2 rounded-xl bg-gray-200 dark:bg-white/15 text-gray-800 dark:text-white text-xs font-bold hover:bg-gray-300 transition-all"
+                  title="Save Room ID without dispatching push notification right now"
+                >
+                  সেভ করে রাখুন (Save Only)
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-xl btn-red text-xs font-black shadow-md flex items-center gap-1.5"
+                >
+                  <Zap className="w-3.5 h-3.5 text-amber-300" />
+                  <span>⚡ সেভ ও এখনই ডেলিভার</span>
                 </button>
               </div>
             </form>

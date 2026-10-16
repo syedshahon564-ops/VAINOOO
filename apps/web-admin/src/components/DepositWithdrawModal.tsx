@@ -56,12 +56,23 @@ export default function DepositWithdrawModal({
         .then((res) => (res.ok ? res.json() : null))
         .then((data) => {
           if (data?.settings) {
-            setLiveSettings(data.settings);
+            const serverS = data.settings;
+            setLiveSettings({
+              ...serverS,
+              bkashNumber:
+                serverS.bkashNumber && serverS.bkashNumber !== '01712345678'
+                  ? serverS.bkashNumber
+                  : (settings?.bkashNumber || serverS.bkashNumber),
+              nagadNumber:
+                serverS.nagadNumber && serverS.nagadNumber !== '01812345678'
+                  ? serverS.nagadNumber
+                  : (settings?.nagadNumber || serverS.nagadNumber),
+            });
           }
         })
         .catch(() => {});
     }
-  }, [isOpen]);
+  }, [isOpen, settings]);
 
   const activeSettings = liveSettings || settings;
 
@@ -125,6 +136,12 @@ export default function DepositWithdrawModal({
     e.preventDefault();
     setSubmitting(true);
     setMessage(null);
+
+    if (method === 'ROCKET') {
+      setMessage({ type: 'error', text: 'রকেট পেমেন্ট সাময়িক বন্ধ রয়েছে। অনুগ্রহ করে বিকাশ বা নগদ নির্বাচন করুন।' });
+      setSubmitting(false);
+      return;
+    }
 
     if (!amount || amount < 10) {
       setMessage({ type: 'error', text: 'সর্বনিম্ন ডিপোজিট পরিমাণ ১০ টাকা।' });
@@ -209,6 +226,12 @@ export default function DepositWithdrawModal({
     e.preventDefault();
     setSubmitting(true);
     setMessage(null);
+
+    if (method === 'ROCKET') {
+      setMessage({ type: 'error', text: 'রকেট পেমেন্ট সাময়িক বন্ধ রয়েছে। অনুগ্রহ করে বিকাশ বা নগদ নির্বাচন করুন।' });
+      setSubmitting(false);
+      return;
+    }
 
     if (!amount || amount < 50) {
       setMessage({ type: 'error', text: 'সর্বনিম্ন উইথড্র পরিমাণ ৫০ টাকা।' });
@@ -359,6 +382,18 @@ export default function DepositWithdrawModal({
                 </label>
                 <div className="grid grid-cols-3 gap-2">
                   {(['BKASH', 'NAGAD', 'ROCKET'] as const).map((m) => {
+                    if (m === 'ROCKET') {
+                      return (
+                        <div
+                          key={m}
+                          className="py-2.5 px-3 rounded-xl border border-dashed border-gray-300 dark:border-white/10 text-gray-400 dark:text-gray-500 bg-gray-100/60 dark:bg-white/[0.02] opacity-60 cursor-not-allowed flex flex-col items-center gap-0.5 select-none"
+                          title="ডাচ-বাংলা রকেট পেমেন্ট সাময়িক বন্ধ রয়েছে"
+                        >
+                          <span className="line-through font-bold">রকেট</span>
+                          <span className="text-[9px] font-black text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded">সাময়িক বন্ধ</span>
+                        </div>
+                      );
+                    }
                     const isSel = method === m;
                     const colors = {
                       BKASH: 'border-pink-500 text-pink-600 bg-pink-50/50 dark:bg-pink-950/20',
@@ -376,7 +411,7 @@ export default function DepositWithdrawModal({
                             : 'border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-400 hover:border-gray-300'
                         }`}
                       >
-                        <span>{m === 'BKASH' ? 'বিকাশ' : m === 'NAGAD' ? 'নগদ' : 'রকেট'}</span>
+                        <span>{m === 'BKASH' ? 'বিকাশ' : 'নগদ'}</span>
                         <span className="text-[10px] font-normal opacity-80">{m}</span>
                       </button>
                     );
@@ -544,6 +579,18 @@ export default function DepositWithdrawModal({
                 </label>
                 <div className="grid grid-cols-3 gap-2">
                   {(['BKASH', 'NAGAD', 'ROCKET'] as const).map((m) => {
+                    if (m === 'ROCKET') {
+                      return (
+                        <div
+                          key={m}
+                          className="py-2.5 px-3 rounded-xl border border-dashed border-gray-300 dark:border-white/10 text-gray-400 dark:text-gray-500 bg-gray-100/60 dark:bg-white/[0.02] opacity-60 cursor-not-allowed flex flex-col items-center gap-0.5 select-none"
+                          title="ডাচ-বাংলা রকেট পেমেন্ট সাময়িক বন্ধ রয়েছে"
+                        >
+                          <span className="line-through font-bold">রকেট</span>
+                          <span className="text-[9px] font-black text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded">সাময়িক বন্ধ</span>
+                        </div>
+                      );
+                    }
                     const isSel = method === m;
                     const colors = {
                       BKASH: 'border-pink-500 text-pink-600 bg-pink-50/50 dark:bg-pink-950/20',
@@ -561,7 +608,7 @@ export default function DepositWithdrawModal({
                             : 'border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-400 hover:border-gray-300'
                         }`}
                       >
-                        <span>{m === 'BKASH' ? 'বিকাশ' : m === 'NAGAD' ? 'নগদ' : 'রকেট'}</span>
+                        <span>{m === 'BKASH' ? 'বিকাশ' : 'নগদ'}</span>
                         <span className="text-[10px] font-normal opacity-80">{m}</span>
                       </button>
                     );

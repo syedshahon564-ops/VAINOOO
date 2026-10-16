@@ -30,9 +30,9 @@ import {
   Bell,
   Radio,
   Send,
-  PlayCircle,
-  Cpu,
   Clock,
+  Zap,
+  Cpu,
 } from 'lucide-react';
 import { useCMS, MatchItem, BannerSlide } from '@/lib/cms-store';
 import ImageUploadInput from '@/components/ImageUploadInput';
@@ -42,6 +42,8 @@ import {
   saveSchedulerConfig,
   sendBroadcastNotification,
   SchedulerConfig,
+  autoDeliverRoomCredentials,
+  dispatchDevicePushNotification,
 } from '@/lib/match-scheduler';
 
 const DEFAULT_INITIAL_BANNERS: BannerSlide[] = [
@@ -436,17 +438,71 @@ export default function AdminMasterPage() {
     setMatchRules('');
   };
 
-  // 2. HANDLE PUBLISH ROOM ID & PASS
-  const handleSaveRoomPass = (matchId: string) => {
-    updateMatch(matchId, {
-      roomId: roomIdInput,
-      roomPass: roomPassInput,
+  // 2. HANDLE DELIVER & SAVE ROOM ID & PASS
+  const handleDirectDeliverRoom = (m: MatchItem) => {
+    if (!m.roomId) {
+      setEditingRoomMatchId(m.id);
+      setRoomIdInput('');
+      setRoomPassInput('1234');
+      return;
+    }
+    const currentPass = m.roomPass || '1234';
+    updateMatch(m.id, {
       status: 'ROOM_OPEN',
+      roomDeliveredAt: new Date().toISOString(),
+    });
+    autoDeliverRoomCredentials(m.id, m.roomId, currentPass);
+    dispatchDevicePushNotification(
+      '🎮 কাস্টম রুম আইডি ও পাসওয়ার্ড ডেলিভারি!',
+      `ম্যাচ: "${m.title}" | Room ID: ${m.roomId} | Password: ${currentPass}। এখনই নির্দিষ্ট স্লটে বসুন!`
+    );
+    showToast(`⚡ ম্যাচ "${m.title}"-এর Room ID (${m.roomId}) সফলভাবে সকল প্লেয়ারকে ডেলিভার করা হয়েছে!`);
+  };
+
+  const handleSaveOnlyRoomPass = (matchId: string) => {
+    if (!roomIdInput.trim()) {
+      showToast('রুম আইডি লিখুন', 'error');
+      return;
+    }
+    const cleanId = roomIdInput.trim();
+    const cleanPass = roomPassInput.trim() || '1234';
+    updateMatch(matchId, {
+      roomId: cleanId,
+      roomPass: cleanPass,
     });
     setEditingRoomMatchId(null);
     setRoomIdInput('');
     setRoomPassInput('');
-    showToast('Room ID & password published and sent to players!');
+    showToast('Room ID সেভ হয়েছে! আপনি প্রস্তুত হলে "⚡ Deliver Room ID" বাটনে ক্লিক করে যেকোনো সময় ডেলিভার করতে পারবেন।');
+  };
+
+  const handleSaveAndDeliverRoomPass = (matchId: string) => {
+    if (!roomIdInput.trim()) {
+      showToast('রুম আইডি লিখুন', 'error');
+      return;
+    }
+    const targetMatch = matches.find((m) => m.id === matchId);
+    const cleanId = roomIdInput.trim();
+    const cleanPass = roomPassInput.trim() || '1234';
+    updateMatch(matchId, {
+      roomId: cleanId,
+      roomPass: cleanPass,
+      status: 'ROOM_OPEN',
+      roomDeliveredAt: new Date().toISOString(),
+    });
+    autoDeliverRoomCredentials(matchId, cleanId, cleanPass);
+    dispatchDevicePushNotification(
+      '🎮 কাস্টম রুম আইডি ও পাসওয়ার্ড ডেলিভারি!',
+      `ম্যাচ: "${targetMatch?.title || 'Custom Match'}" | Room ID: ${cleanId} | Password: ${cleanPass}। এখনই নির্দিষ্ট স্লটে বসুন!`
+    );
+    setEditingRoomMatchId(null);
+    setRoomIdInput('');
+    setRoomPassInput('');
+    showToast(`⚡ Room ID (${cleanId}) সেভ এবং সফলভাবে সকল প্লেয়ারকে ডেলিভার করা হয়েছে!`);
+  };
+
+  const handleSaveRoomPass = (matchId: string) => {
+    handleSaveAndDeliverRoomPass(matchId);
   };
 
   // 3. HANDLE DELETE MATCH
@@ -1075,6 +1131,20 @@ export default function AdminMasterPage() {
                     </div>
 
                     <div className="flex items-center gap-2 self-end md:self-center">
+                      {/* ⚡ DIRECT DELIVER ROOM ID BUTTON */}
+                      <button
+                        onClick={() => handleDirectDeliverRoom(m)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-black flex items-center gap-1.5 transition-all shadow-md active:scale-95 ${
+                          m.roomId
+                            ? 'bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white shadow-red-600/30'
+                            : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black shadow-amber-500/30'
+                        }`}
+                        title={m.roomId ? 'Save & Deliver Room ID to all joined players' : 'Set and Deliver Room ID'}
+                      >
+                        <Zap className="w-3.5 h-3.5" />
+                        <span>{m.roomId ? '⚡ Deliver Room ID' : '⚡ সেট ও ডেলিভার'}</span>
+                      </button>
+
                       <button
                         onClick={() => {
                           setEditingRoomMatchId(m.id);
@@ -1082,6 +1152,7 @@ export default function AdminMasterPage() {
                           setRoomPassInput(m.roomPass || '');
                         }}
                         className="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-white/10 hover:bg-gray-200 text-gray-800 dark:text-gray-200 text-xs font-bold flex items-center gap-1.5"
+                        title="Edit Room ID & Password without delivering"
                       >
                         <Key className="w-3.5 h-3.5 text-amber-500" /> Room Credentials
                       </button>
@@ -2300,20 +2371,29 @@ export default function AdminMasterPage() {
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-3">
+            <div className="flex flex-wrap items-center justify-end gap-2 pt-3">
               <button
                 type="button"
                 onClick={() => setEditingRoomMatchId(null)}
-                className="px-4 py-2 rounded-xl bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-300 text-xs font-bold hover:bg-gray-200"
+                className="px-3.5 py-2 rounded-xl bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-300 text-xs font-bold hover:bg-gray-200"
               >
                 Cancel
               </button>
               <button
                 type="button"
-                onClick={() => handleSaveRoomPass(editingRoomMatchId)}
-                className="px-5 py-2 rounded-xl text-xs font-black btn-red shadow-md"
+                onClick={() => handleSaveOnlyRoomPass(editingRoomMatchId)}
+                className="px-4 py-2 rounded-xl bg-gray-200 dark:bg-white/10 text-gray-800 dark:text-white text-xs font-bold hover:bg-gray-300 transition-all"
+                title="Save room credentials without delivering right now"
               >
-                Publish Credentials
+                সেভ করে রাখুন (Save Only)
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSaveAndDeliverRoomPass(editingRoomMatchId)}
+                className="px-4 py-2 rounded-xl text-xs font-black btn-red shadow-md flex items-center gap-1.5"
+              >
+                <Zap className="w-3.5 h-3.5 text-amber-300" />
+                <span>⚡ সেভ ও এখনই ডেলিভার</span>
               </button>
             </div>
           </div>

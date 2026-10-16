@@ -81,9 +81,9 @@ export default function Footer() {
                   <span>Nagad: {settings.nagadNumber}</span>
                 </div>
               )}
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-purple-500" />
-                <span>DBBL Rocket (Instant)</span>
+              <div className="flex items-center gap-2 opacity-60">
+                <div className="w-2 h-2 rounded-full bg-gray-400" />
+                <span>DBBL Rocket <span className="text-[10px] text-amber-500 font-bold">(সাময়িক বন্ধ)</span></span>
               </div>
             </div>
           </div>

@@ -2556,7 +2556,7 @@ export default function MobileAppViewPage(props: any) {
                           {[
                             { name: 'bKash', number: settings?.bkashNumber || '01712345678', color: 'border-pink-500/40 text-pink-500' },
                             { name: 'Nagad', number: settings?.nagadNumber || '01812345678', color: 'border-orange-500/40 text-orange-500' },
-                            { name: 'Rocket', number: '01912345678', color: 'border-purple-500/40 text-purple-500' },
+                            { name: 'Rocket', number: 'সাময়িক বন্ধ', color: 'border-gray-300 dark:border-white/10 text-gray-400 opacity-60' },
                           ].map((gw) => (
                             <div
                               key={gw.name}

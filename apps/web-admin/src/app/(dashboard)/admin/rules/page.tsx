@@ -22,22 +22,27 @@ export default function AdminRulesPage() {
   const [toast, setToast] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const hasLoadedRef = React.useRef(false);
+  const lastSettingsUpdatedAtRef = React.useRef(0);
 
-  // Synchronize form once on initial CMS load
+  // Synchronize form once on initial CMS load or when settings are freshly updated
   useEffect(() => {
-    if (settings && !hasLoadedRef.current) {
-      hasLoadedRef.current = true;
-      setNoticeText(settings.noticeText || '');
-      setDefaultRules(settings.defaultRules || '');
-      setCategoryRules(settings.categoryRules || {});
-      setHowToJoinGuide(settings.howToJoinGuide || '');
-      setTelegramUrl(settings.telegramUrl || '');
-      setWhatsappNumber(settings.whatsappNumber || '');
-      setBkashNumber(settings.bkashNumber || '');
-      setNagadNumber(settings.nagadNumber || '');
-      setImportantNoticeTitle(settings.importantNoticeTitle || 'Important Notice');
-      setImportantNoticeBody(settings.importantNoticeBody || '');
-      setImportantNoticeEnabled(settings.importantNoticeEnabled ?? true);
+    if (settings) {
+      const updatedAt = (settings as any).updatedAt || 0;
+      if (!hasLoadedRef.current || updatedAt > lastSettingsUpdatedAtRef.current) {
+        hasLoadedRef.current = true;
+        lastSettingsUpdatedAtRef.current = updatedAt;
+        setNoticeText(settings.noticeText || '');
+        setDefaultRules(settings.defaultRules || '');
+        setCategoryRules(settings.categoryRules || {});
+        setHowToJoinGuide(settings.howToJoinGuide || '');
+        setTelegramUrl(settings.telegramUrl || '');
+        setWhatsappNumber(settings.whatsappNumber || '');
+        setBkashNumber(settings.bkashNumber || '');
+        setNagadNumber(settings.nagadNumber || '');
+        setImportantNoticeTitle(settings.importantNoticeTitle || 'Important Notice');
+        setImportantNoticeBody(settings.importantNoticeBody || '');
+        setImportantNoticeEnabled(settings.importantNoticeEnabled ?? true);
+      }
     }
   }, [settings]);
 
@@ -50,6 +55,8 @@ export default function AdminRulesPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    const saveTime = Date.now() + 10000;
+    lastSettingsUpdatedAtRef.current = saveTime;
     await updateSiteSettings({
       noticeText,
       defaultRules,
@@ -62,6 +69,7 @@ export default function AdminRulesPage() {
       importantNoticeTitle,
       importantNoticeBody,
       importantNoticeEnabled,
+      updatedAt: saveTime,
     });
     setToast({ text: 'Tournament rules, notices, and payment numbers saved successfully!', type: 'success' });
     setTimeout(() => setToast(null), 3000);

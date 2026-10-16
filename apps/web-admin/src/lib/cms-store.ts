@@ -674,7 +674,12 @@ export async function deleteCategory(slug: string): Promise<boolean> {
 
 export function updateSiteSettings(settings: Partial<SiteSettings>): Promise<boolean> {
   const data = getCMSData();
-  data.settings = { ...INITIAL_SETTINGS, ...(data.settings || {}), ...settings, updatedAt: Date.now() };
+  data.settings = {
+    ...INITIAL_SETTINGS,
+    ...(data.settings || {}),
+    ...settings,
+    updatedAt: Date.now() + 5000,
+  };
   saveCMSData(data);
   return saveCMSDataAsync(data);
 }
@@ -767,6 +772,18 @@ export function useCMS() {
                   ...localSettings,
                   ...serverSettings,
                 } as SiteSettings;
+              }
+
+              // Safeguard custom payment numbers from being wiped by stale server defaults:
+              if (localSettings?.bkashNumber && localSettings.bkashNumber.trim() !== '' && localSettings.bkashNumber !== '01712345678') {
+                if (!serverSettings?.bkashNumber || serverSettings.bkashNumber === '01712345678' || localSettingsTime >= serverSettingsTime) {
+                  mergedSettings.bkashNumber = localSettings.bkashNumber;
+                }
+              }
+              if (localSettings?.nagadNumber && localSettings.nagadNumber.trim() !== '' && localSettings.nagadNumber !== '01812345678') {
+                if (!serverSettings?.nagadNumber || serverSettings.nagadNumber === '01812345678' || localSettingsTime >= serverSettingsTime) {
+                  mergedSettings.nagadNumber = localSettings.nagadNumber;
+                }
               }
 
               // Banners synchronization:

@@ -148,19 +148,27 @@ export default function BotControlsPage() {
     };
   }, []);
 
-  // Update payment form when CMS settings change
+  const hasLoadedPaymentRef = React.useRef(false);
+  const lastSettingsUpdatedAtRef = React.useRef(0);
+
+  // Update payment form when CMS settings load or when explicitly saved
   useEffect(() => {
     if (settings) {
-      setPaymentForm({
-        bkashNumber: settings.bkashNumber || '',
-        nagadNumber: settings.nagadNumber || '',
-        rocketNumber: settings.rocketNumber || '',
-        paymentInstructionImage: settings.paymentInstructionImage || '/logo.png',
-        paymentInstructionText:
-          settings.paymentInstructionText ||
-          '1. Send Money to our official bKash/Nagad/Rocket account.\n2. Enter your sender phone number and TrxID below.\n3. The automated system verifies and adds balance instantly.',
-        autoWebhookVerification: settings.autoWebhookVerification !== false,
-      });
+      const updatedAt = (settings as any).updatedAt || 0;
+      if (!hasLoadedPaymentRef.current || updatedAt > lastSettingsUpdatedAtRef.current) {
+        hasLoadedPaymentRef.current = true;
+        lastSettingsUpdatedAtRef.current = updatedAt;
+        setPaymentForm({
+          bkashNumber: settings.bkashNumber || '',
+          nagadNumber: settings.nagadNumber || '',
+          rocketNumber: settings.rocketNumber || '',
+          paymentInstructionImage: settings.paymentInstructionImage || '/logo.png',
+          paymentInstructionText:
+            settings.paymentInstructionText ||
+            '1. Send Money to our official bKash/Nagad account.\n2. Enter your sender phone number and TrxID below.\n3. The automated system verifies and adds balance instantly.',
+          autoWebhookVerification: settings.autoWebhookVerification !== false,
+        });
+      }
     }
   }, [settings]);
 
@@ -186,17 +194,20 @@ export default function BotControlsPage() {
     showToast('Push alert broadcast dispatched to mobile & web clients!', 'success');
   };
 
-  const handleSavePaymentSettings = (e: React.FormEvent) => {
+  const handleSavePaymentSettings = async (e: React.FormEvent) => {
     e.preventDefault();
-    updateSettings({
-      bkashNumber: paymentForm.bkashNumber,
-      nagadNumber: paymentForm.nagadNumber,
-      rocketNumber: paymentForm.rocketNumber,
+    const saveTime = Date.now() + 10000;
+    lastSettingsUpdatedAtRef.current = saveTime;
+    await updateSettings({
+      bkashNumber: paymentForm.bkashNumber.trim(),
+      nagadNumber: paymentForm.nagadNumber.trim(),
+      rocketNumber: paymentForm.rocketNumber.trim(),
       paymentInstructionImage: paymentForm.paymentInstructionImage,
       paymentInstructionText: paymentForm.paymentInstructionText,
       autoWebhookVerification: paymentForm.autoWebhookVerification,
+      updatedAt: saveTime,
     });
-    showToast('Payment gateway and wallet settings saved!', 'success');
+    showToast('✅ Payment numbers & wallet settings saved successfully!', 'success');
   };
 
   const handleCreateScheduledMatch = (e: React.FormEvent) => {
@@ -582,19 +593,20 @@ export default function BotControlsPage() {
             </div>
 
             {/* Rocket */}
-            <div className="p-3.5 rounded-xl border border-purple-500/30 bg-purple-500/5 space-y-1.5">
-              <label className="font-black text-purple-600 dark:text-purple-400 flex items-center gap-1.5">
+            <div className="p-3.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 space-y-1.5 opacity-60">
+              <label className="font-black text-gray-500 dark:text-gray-400 flex items-center justify-between">
                 <span>Rocket Number</span>
+                <span className="text-[10px] text-amber-500 font-bold px-1.5 py-0.5 rounded bg-amber-500/10">সাময়িক বন্ধ</span>
               </label>
               <input
                 type="text"
-                required
-                value={paymentForm.rocketNumber}
+                disabled
+                value={paymentForm.rocketNumber || 'সাময়িক বন্ধ (Unavailable)'}
                 onChange={(e) => setPaymentForm({ ...paymentForm, rocketNumber: e.target.value })}
-                placeholder="019XXXXXXXX-X"
-                className="w-full px-3 py-2 rounded-xl border border-purple-300 dark:border-purple-800 bg-white dark:bg-black font-mono font-bold focus:outline-none focus:border-purple-500"
+                placeholder="সাময়িক বন্ধ (Unavailable)"
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-100 dark:bg-black/50 font-mono font-bold text-gray-400 cursor-not-allowed"
               />
-              <span className="text-[10px] text-gray-500">Players send manual Send Money to this Rocket number.</span>
+              <span className="text-[10px] text-amber-600 dark:text-amber-400">ডাচ-বাংলা রকেট পেমেন্ট সাময়িক বন্ধ রাখা হয়েছে।</span>
             </div>
           </div>
 
@@ -886,137 +898,6 @@ export default function BotControlsPage() {
                       ) : (
                         <span className="text-[10px] text-gray-400">Processed</span>
                       )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-
-      {/* SECTION 5: LIVE MATCHES & ROOM ID DELIVERY CENTER */}
-      <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#12121a] p-6 space-y-4 shadow-sm">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-100 dark:border-white/5">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-950/50 flex items-center justify-center text-red-600">
-              <Bot className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="text-sm font-black text-gray-900 dark:text-white flex items-center gap-2">
-                Bot Room Manager & Credential Dispatch
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold border border-emerald-300">
-                  {monitoredMatches.length} Matches Monitored
-                </span>
-              </h3>
-              <p className="text-[11px] text-gray-500">
-                The bot delivers Custom Room IDs and Passwords to registered players 15 minutes before match start.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                const count = runBotRoomManagerCycle();
-                refreshAllData();
-                showToast(`Bot manager cycle executed (${count} rooms delivered).`);
-              }}
-              className="px-3 py-2 rounded-xl bg-gray-100 dark:bg-white/10 hover:bg-gray-200 text-gray-800 dark:text-white text-xs font-bold flex items-center gap-1.5 transition-all"
-            >
-              <RotateCcw className="w-3.5 h-3.5" /> Refresh Monitor
-            </button>
-
-            {monitoredMatches.length > 0 && (
-              <button
-                type="button"
-                onClick={() => {
-                  let delivered = 0;
-                  monitoredMatches.forEach((m) => {
-                    if (!m.roomId) {
-                      autoDeliverRoomCredentials(m.id);
-                      delivered++;
-                    }
-                  });
-                  refreshAllData();
-                  showToast(`Bot dispatched credentials for ${delivered || monitoredMatches.length} matches!`);
-                }}
-                className="px-3.5 py-2 rounded-xl btn-red text-xs font-black flex items-center gap-1.5 shadow-md shadow-red-600/20 active:scale-95 transition-all"
-              >
-                <Zap className="w-3.5 h-3.5" /> Deliver All Rooms Now
-              </button>
-            )}
-          </div>
-        </div>
-
-        {monitoredMatches.length === 0 ? (
-          <div className="py-12 text-center text-gray-500 space-y-2">
-            <Bot className="w-10 h-10 mx-auto text-gray-400 opacity-60" />
-            <p className="text-xs font-bold text-gray-700 dark:text-gray-300">
-              No live matches currently monitored (0 matches).
-            </p>
-            <p className="text-[11px] text-gray-400">
-              When matches are scheduled or published live, they will appear here automatically.
-            </p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs text-left">
-              <thead>
-                <tr className="border-b border-gray-100 dark:border-white/5 text-[10px] text-gray-500 uppercase">
-                  <th className="py-2.5 px-3">Match Title</th>
-                  <th className="py-2.5 px-3">Category</th>
-                  <th className="py-2.5 px-3">Schedule Time</th>
-                  <th className="py-2.5 px-3">Slots</th>
-                  <th className="py-2.5 px-3">Room Delivery Status</th>
-                  <th className="py-2.5 px-3 text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-white/5">
-                {monitoredMatches.map((m) => (
-                  <tr key={m.id} className="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
-                    <td className="py-3 px-3 font-extrabold text-gray-900 dark:text-white">
-                      {m.title}
-                    </td>
-                    <td className="py-3 px-3">
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-300">
-                        {m.categorySlug}
-                      </span>
-                    </td>
-                    <td className="py-3 px-3 font-mono text-gray-600 dark:text-gray-300">
-                      {m.time}
-                    </td>
-                    <td className="py-3 px-3 font-mono font-bold">
-                      {m.filledSlots}/{m.totalSlots}
-                    </td>
-                    <td className="py-3 px-3">
-                      {m.roomId ? (
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[10px] font-black px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300">
-                            ✅ Delivered: {m.roomId} (Pass: {m.roomPass || '1234'})
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-300">
-                          ⏳ Queued (15m before start)
-                        </span>
-                      )}
-                    </td>
-                    <td className="py-3 px-3 text-right">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const res = autoDeliverRoomCredentials(m.id);
-                          if (res) {
-                            showToast(`Room ID ${res.roomId} delivered for "${m.title}"!`);
-                            refreshAllData();
-                          }
-                        }}
-                        className="px-2.5 py-1 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold text-[10px] transition-colors"
-                      >
-                        ⚡ {m.roomId ? 'Re-deliver' : 'Deliver Room ID'}
-                      </button>
                     </td>
                   </tr>
                 ))}

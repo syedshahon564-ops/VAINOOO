@@ -22,7 +22,7 @@ export default function WalletPage() {
   const paymentNumbers = {
     BKASH: `${settings?.bkashNumber || '01712-345678'} (Personal - Send Money)`,
     NAGAD: `${settings?.nagadNumber || '01812-345678'} (Personal - Send Money)`,
-    ROCKET: '01912-345678-5 (Personal - Send Money)',
+    ROCKET: 'সাময়িক বন্ধ (Unavailable)',
   };
 
   useEffect(() => {
@@ -69,6 +69,12 @@ export default function WalletPage() {
     e.preventDefault();
     setLoading(true);
     setMessage(null);
+
+    if (method === 'ROCKET') {
+      setMessage({ type: 'error', text: 'রকেট পেমেন্ট সাময়িক বন্ধ রয়েছে। অনুগ্রহ করে বিকাশ বা নগদ নির্বাচন করুন।' });
+      setLoading(false);
+      return;
+    }
 
     if (!amount || amount < 10) {
       setMessage({ type: 'error', text: 'সর্বনিম্ন ডিপোজিট পরিমাণ ১০ টাকা।' });
@@ -143,6 +149,12 @@ export default function WalletPage() {
     e.preventDefault();
     setLoading(true);
     setMessage(null);
+
+    if (method === 'ROCKET') {
+      setMessage({ type: 'error', text: 'রকেট পেমেন্ট সাময়িক বন্ধ রয়েছে। অনুগ্রহ করে বিকাশ বা নগদ নির্বাচন করুন।' });
+      setLoading(false);
+      return;
+    }
 
     const user = getCurrentUser();
     const currentBalance = user ? user.walletBalance : 1450;
@@ -245,20 +257,34 @@ export default function WalletPage() {
           <div className="space-y-2">
             <label className="text-xs font-bold text-gray-300 uppercase">Select Payment Provider</label>
             <div className="grid grid-cols-3 gap-3">
-              {(['BKASH', 'NAGAD', 'ROCKET'] as const).map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  onClick={() => setMethod(m)}
-                  className={`py-3 rounded-xl text-xs font-bold border transition-all ${
-                    method === m
-                      ? 'bg-gold/10 border-gold text-gold shadow-md'
-                      : 'bg-white/[0.03] border-white/10 text-gray-400 hover:bg-white/[0.06]'
-                  }`}
-                >
-                  {m === 'BKASH' ? 'bKash' : m === 'NAGAD' ? 'Nagad' : 'Rocket'}
-                </button>
-              ))}
+              {(['BKASH', 'NAGAD', 'ROCKET'] as const).map((m) => {
+                if (m === 'ROCKET') {
+                  return (
+                    <div
+                      key={m}
+                      className="py-3 rounded-xl text-xs font-bold border border-dashed border-white/10 text-gray-500 bg-white/[0.01] opacity-50 cursor-not-allowed flex flex-col items-center justify-center gap-0.5 select-none"
+                      title="ডাচ-বাংলা রকেট পেমেন্ট সাময়িক বন্ধ রয়েছে"
+                    >
+                      <span className="line-through">Rocket</span>
+                      <span className="text-[9px] font-bold text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded">সাময়িক বন্ধ</span>
+                    </div>
+                  );
+                }
+                return (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => setMethod(m)}
+                    className={`py-3 rounded-xl text-xs font-bold border transition-all ${
+                      method === m
+                        ? 'bg-gold/10 border-gold text-gold shadow-md'
+                        : 'bg-white/[0.03] border-white/10 text-gray-400 hover:bg-white/[0.06]'
+                    }`}
+                  >
+                    {m === 'BKASH' ? 'bKash' : 'Nagad'}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
