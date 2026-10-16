@@ -291,6 +291,11 @@ export default function MobileAppViewPage(props: any) {
       const dist = Math.min(75, diff * 0.45);
       setPullDistance(dist);
       setIsPulling(true);
+    } else if (diff < 0) {
+      // User is scrolling down, cancel pull gesture immediately
+      touchStartYRef.current = 0;
+      setIsPulling(false);
+      setPullDistance(0);
     }
   };
 
@@ -1136,7 +1141,7 @@ export default function MobileAppViewPage(props: any) {
     <div
       className={
         isMobileView
-          ? 'w-full min-h-screen transition-colors'
+          ? 'w-full h-screen h-[100dvh] overflow-hidden transition-colors'
           : 'min-h-screen bg-slate-100 dark:bg-[#07070a] py-8 px-4 transition-colors'
       }
     >
@@ -1148,7 +1153,7 @@ export default function MobileAppViewPage(props: any) {
         </div>
       )}
 
-      <div className={isMobileView ? 'w-full min-h-screen' : 'max-w-7xl mx-auto'}>
+      <div className={isMobileView ? 'w-full h-full flex flex-col overflow-hidden' : 'max-w-7xl mx-auto'}>
         {/* Top Breadcrumb & Controls */}
         {!isMobileView && (
           <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-8 bg-white dark:bg-white/5 p-5 rounded-2xl border border-gray-200 dark:border-white/10 shadow-sm">
@@ -1234,7 +1239,7 @@ export default function MobileAppViewPage(props: any) {
         <div
           className={
             isMobileView
-              ? 'w-full min-h-screen'
+              ? 'w-full h-full flex flex-col flex-1 overflow-hidden'
               : 'grid grid-cols-1 lg:grid-cols-12 gap-8 items-start'
           }
         >
@@ -1242,7 +1247,7 @@ export default function MobileAppViewPage(props: any) {
           <div
             className={
               isMobileView
-                ? 'w-full min-h-screen flex flex-col'
+                ? 'w-full h-full flex flex-col flex-1 overflow-hidden'
                 : 'lg:col-span-5 flex justify-center'
             }
           >
@@ -1250,7 +1255,7 @@ export default function MobileAppViewPage(props: any) {
             <div
               className={
                 isMobileView
-                  ? 'w-full min-h-screen flex flex-col p-0 border-0 rounded-none shadow-none bg-transparent'
+                  ? 'w-full h-full flex flex-col flex-1 p-0 border-0 rounded-none shadow-none bg-transparent overflow-hidden'
                   : 'relative w-[370px] sm:w-[390px] h-[780px] bg-slate-900 rounded-[50px] p-3 shadow-2xl ring-1 ring-white/20 shadow-red-500/10 border-4 border-slate-700 flex flex-col'
               }
             >
@@ -1281,7 +1286,7 @@ export default function MobileAppViewPage(props: any) {
                   setEdgeTouchStart(null);
                 }}
                 className={`relative w-full ${
-                  isMobileView ? 'min-h-screen rounded-none' : 'h-full rounded-[40px]'
+                  isMobileView ? 'h-full flex-1 rounded-none' : 'h-full rounded-[40px]'
                 } overflow-hidden flex flex-col font-sans bg-white text-gray-900`}
               >
                 {/* Status Bar */}
@@ -1501,7 +1506,7 @@ export default function MobileAppViewPage(props: any) {
                   onTouchStart={handleTouchStart}
                   onTouchMove={handleTouchMove}
                   onTouchEnd={handleTouchEnd}
-                  className="flex-1 overflow-y-auto p-3 space-y-3 relative overscroll-y-contain [transform:translateZ(0)] [-webkit-overflow-scrolling:touch]"
+                  className="flex-1 overflow-y-auto p-3 space-y-3 relative overscroll-y-contain [-webkit-overflow-scrolling:touch] touch-pan-y"
                 >
                   {/* Pull-to-refresh spinner indicator */}
                   {(isPulling || isRefreshing) && (

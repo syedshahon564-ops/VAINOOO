@@ -24,12 +24,12 @@ body {
   background-color: var(--bg-current);
   color: var(--text-current);
   min-height: 100vh;
+  min-height: 100dvh;
   overflow-x: hidden;
-  touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }
 
-html, button, a, input, select, textarea, [role="button"] {
+button, a, input, select, textarea, [role="button"] {
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }
@@ -161,13 +161,16 @@ html, body {
   text-rendering: optimizeSpeed;
 }
 
-/* Hardware compositing for all scrollable containers */
+/* Native momentum scrolling for all scrollable containers */
 .overflow-y-auto,
-.overflow-x-auto,
 [data-scrollable="true"] {
   -webkit-overflow-scrolling: touch;
-  overscroll-behavior-y: contain;
-  transform: translateZ(0);
+  touch-action: pan-y;
+}
+
+.overflow-x-auto {
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x;
 }
 
 /* Zero-lag mobile backdrop optimization:
@@ -191,10 +194,5 @@ html, body {
 .match-card {
   content-visibility: auto;
   contain-intrinsic-size: 150px 320px;
-}
-
-/* Prevent image layout shifts & optimize GPU memory */
-img {
-  content-visibility: auto;
 }
 
