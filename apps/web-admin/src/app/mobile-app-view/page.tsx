@@ -800,9 +800,7 @@ export default function MobileAppViewPage(props: any) {
   useEffect(() => {
     // Hydrate user booked matches from persistent storage
     const storedBookings = getUserBookedMatches();
-    if (storedBookings.length > 0) {
-      setBookedMatchesList(storedBookings);
-    }
+    setBookedMatchesList(storedBookings);
 
     const handleBookingsUpdated = (e: any) => {
       setBookedMatchesList(e.detail || getUserBookedMatches());
@@ -1009,6 +1007,8 @@ export default function MobileAppViewPage(props: any) {
                 roomId: bookingModalMatch.status === 'ROOM_OPEN' ? bookingModalMatch.roomId : undefined,
                 roomPass: bookingModalMatch.status === 'ROOM_OPEN' ? bookingModalMatch.roomPass : undefined,
                 roomDeliveredAt: bookingModalMatch.status === 'ROOM_OPEN' ? (bookingModalMatch.roomDeliveredAt || new Date().toISOString()) : undefined,
+                userId: current?.id,
+                userPhone: current?.phone,
               })
             )
           : [
@@ -1026,6 +1026,8 @@ export default function MobileAppViewPage(props: any) {
                 roomId: bookingModalMatch.status === 'ROOM_OPEN' ? bookingModalMatch.roomId : undefined,
                 roomPass: bookingModalMatch.status === 'ROOM_OPEN' ? bookingModalMatch.roomPass : undefined,
                 roomDeliveredAt: bookingModalMatch.status === 'ROOM_OPEN' ? (bookingModalMatch.roomDeliveredAt || new Date().toISOString()) : undefined,
+                userId: current?.id,
+                userPhone: current?.phone,
               }),
             ];
 
@@ -2044,25 +2046,41 @@ export default function MobileAppViewPage(props: any) {
                   {/* TAB 2: MY MATCHES */}
                   {activeTab === 'my-matches' && (() => {
                     const activeBookedMatches = bookedMatchesList.filter((bm) => {
+                      // Filter by current user: only show bookings belonging to this user
+                      if (currentUser) {
+                        if (bm.userId && bm.userId !== currentUser.id) return false;
+                        if (bm.userPhone && bm.userPhone !== currentUser.phone) return false;
+                        if (bm.uid && bm.uid !== currentUser.uid && !bm.userId) return false;
+                      }
+
                       const liveMatch = matches.find((m) => m.id === bm.matchId || m.title === bm.title);
+
+                      // If match is finished or completed, auto-expire ("time sesh hoi gele cole jbe")
+                      if (liveMatch && (liveMatch.status === 'COMPLETED' || (liveMatch as any).isFinished || isMatchFinished(liveMatch))) {
+                        return false;
+                      }
+
                       const matchDate = parseScheduleTimeToDate(liveMatch?.time || bm.time, (liveMatch as any)?.startTimeIso);
                       const diffMs = matchDate ? matchDate.getTime() - currentTickTime : 999999;
+
+                      // If match scheduled time has passed by 2 minutes, match has ended -> auto-expire!
+                      if (matchDate && currentTickTime - matchDate.getTime() >= 2 * 60 * 1000) {
+                        return false;
+                      }
+
                       const isWithin5Minutes = diffMs > 0 && diffMs <= 5 * 60 * 1000;
                       const isRoomOpenStatus = liveMatch?.status === 'ROOM_OPEN' || liveMatch?.status === 'LIVE';
                       const hasCredentials = Boolean(liveMatch?.roomId || bm.roomId);
                       const isRoomReady = Boolean(hasCredentials && (isWithin5Minutes || isRoomOpenStatus));
-
-                      // If credentials are not ready yet, keep the booking waiting
-                      if (!isRoomReady) return true;
 
                       const deliveredIso = bm.roomDeliveredAt || (liveMatch as any)?.roomDeliveredAt || (liveMatch as any)?.deliveredAt;
                       let deliveredMs: number | null = null;
                       if (deliveredIso) {
                         const parsed = new Date(deliveredIso).getTime();
                         if (!isNaN(parsed)) deliveredMs = parsed;
-                      } else if (matchDate) {
+                      } else if (isRoomReady && matchDate) {
                         deliveredMs = Math.min(matchDate.getTime() - 5 * 60 * 1000, currentTickTime);
-                      } else {
+                      } else if (isRoomReady) {
                         deliveredMs = currentTickTime;
                       }
 

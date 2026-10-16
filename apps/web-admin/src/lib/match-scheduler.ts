@@ -594,6 +594,8 @@ export interface UserBookedMatch {
   roomPass?: string;
   roomDeliveredAt?: string;
   bookedAt: string;
+  userId?: string;
+  userPhone?: string;
 }
 
 const BOT_MONITORED_STORAGE_KEY = 'ff_bot_monitored_matches_v2';
@@ -853,7 +855,8 @@ export function getUserBookedMatches(): UserBookedMatch[] {
 
     // Auto-expire bookings:
     // 1. Any match where room password / credentials were delivered 8+ minutes ago ("৮ মিনিট এর পরে অটো চলে যাবে")
-    // 2. Any old bookings older than 18 hours so yesterday's matches don't lock tomorrow's matches
+    // 2. Any match whose scheduled time has ended/passed ("match er time sesh hoi gele cole jbe")
+    // 3. Stale bookings older than 12 hours
     const active = list.filter((b: any) => {
       if (!b || !b.bookedAt) return false;
 
@@ -865,17 +868,26 @@ export function getUserBookedMatches(): UserBookedMatch[] {
         }
       }
 
-      // If credentials were provided and match schedule time + 3 minutes has passed
+      // 2. Match scheduled time has passed/ended ("time sesh hoi gele cole jbe")
+      const matchDate = parseScheduleTimeToDate(b.time);
+      if (matchDate) {
+        const elapsedSinceMatch = now - matchDate.getTime();
+        // If match schedule start time + 2 minutes has passed, match has ended -> auto-expire!
+        if (elapsedSinceMatch >= 2 * 60 * 1000) {
+          return false;
+        }
+      }
+
+      // If credentials were provided and 3 minutes passed after match time
       if (b.roomId || b.roomPass) {
-        const matchDate = parseScheduleTimeToDate(b.time);
         if (matchDate && now - matchDate.getTime() >= 3 * 60 * 1000) {
           return false;
         }
       }
 
-      // 2. 18 hours max retention for booked matches
+      // 3. 12 hours max retention for booked matches
       const hours = (now - new Date(b.bookedAt).getTime()) / (1000 * 60 * 60);
-      return hours < 18;
+      return hours < 12;
     });
 
     if (active.length !== list.length) {
