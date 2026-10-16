@@ -205,12 +205,12 @@ export default function MobileAppViewPage(props: any) {
   }, [settings?.banners, phoneLang]);
 
   useEffect(() => {
-    if (bannerSlides.length <= 1) return;
+    if (activeTab !== 'home' || bannerSlides.length <= 1) return;
     const interval = setInterval(() => {
       setCurrentSlideIndex((prev) => (prev + 1) % bannerSlides.length);
-    }, 4000);
+    }, 4500);
     return () => clearInterval(interval);
-  }, [bannerSlides.length]);
+  }, [activeTab, bannerSlides.length]);
 
   // Copying & Feedback
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
@@ -813,30 +813,33 @@ export default function MobileAppViewPage(props: any) {
     runBotRoomManagerCycle();
     const botInterval = setInterval(() => {
       runBotRoomManagerCycle();
-    }, 4000);
-
-    // 1-second timer for live 8-minute countdown and instant room auto-expiry
-    const secondTimer = setInterval(() => {
-      setCurrentTickTime(Date.now());
-    }, 1000);
+    }, 20000);
 
     return () => {
       window.removeEventListener('ff_user_bookings_updated', handleBookingsUpdated);
       window.removeEventListener('ff_room_credentials_delivered', handleCredentialsDelivered);
       clearInterval(botInterval);
-      clearInterval(secondTimer);
     };
   }, []);
 
-  // Auto-prune and synchronize expired bookings when 8-minute window finishes
+  // 1-second countdown timer: ONLY runs when activeTab === 'my-matches' to eliminate 60fps frame drops on Home and other screens
   useEffect(() => {
-    if (bookedMatchesList.length > 0) {
-      const fresh = getUserBookedMatches();
-      if (fresh.length !== bookedMatchesList.length) {
-        setBookedMatchesList(fresh);
-      }
+    if (activeTab !== 'my-matches') return;
+    setCurrentTickTime(Date.now());
+    const secondTimer = setInterval(() => {
+      setCurrentTickTime(Date.now());
+    }, 1000);
+    return () => clearInterval(secondTimer);
+  }, [activeTab]);
+
+  // Auto-prune and synchronize expired bookings when 8-minute window finishes (only runs when on my-matches tab)
+  useEffect(() => {
+    if (activeTab !== 'my-matches' || bookedMatchesList.length === 0) return;
+    const fresh = getUserBookedMatches();
+    if (fresh.length !== bookedMatchesList.length) {
+      setBookedMatchesList(fresh);
     }
-  }, [currentTickTime, bookedMatchesList.length]);
+  }, [activeTab, currentTickTime, bookedMatchesList.length]);
 
   // Deposit simulation
   const [depositMethod, setDepositMethod] = useState<'bkash' | 'nagad' | 'rocket'>('bkash');
@@ -1498,7 +1501,7 @@ export default function MobileAppViewPage(props: any) {
                   onTouchStart={handleTouchStart}
                   onTouchMove={handleTouchMove}
                   onTouchEnd={handleTouchEnd}
-                  className="flex-1 overflow-y-auto p-3 space-y-3 relative"
+                  className="flex-1 overflow-y-auto p-3 space-y-3 relative overscroll-y-contain [transform:translateZ(0)] [-webkit-overflow-scrolling:touch]"
                 >
                   {/* Pull-to-refresh spinner indicator */}
                   {(isPulling || isRefreshing) && (
