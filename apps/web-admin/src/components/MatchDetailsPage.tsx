@@ -43,7 +43,7 @@ export default function MatchDetailsPage({
   language = 'bn',
   isPhoneView = false,
 }: MatchDetailsPageProps) {
-  const { settings } = useCMS();
+  const { settings, categories } = useCMS();
   const [showVideoModal, setShowVideoModal] = useState(false);
 
   const activeParticipants = React.useMemo(() => {
@@ -203,17 +203,28 @@ export default function MatchDetailsPage({
       {/* 8. Full Detailed Rules List (Exact Bengali Text from Screenshots 1, 2, 3, 4) - PURE WHITE */}
       <div className="p-4 rounded-2xl bg-gray-50/70 border border-gray-200 text-xs space-y-3.5 leading-relaxed text-gray-800 font-medium">
         {/* Category Specific Rules (from Admin CMS) */}
-        {settings.categoryRules?.[match.categorySlug] && (
-          <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 space-y-2 mb-3">
-            <h5 className="text-xs font-black text-amber-800 flex items-center gap-2">
-              <ShieldAlert className="w-4 h-4 text-amber-600" />
-              এই ক্যাটাগরির বিশেষ টুর্নামেন্ট রুলস:
-            </h5>
-            <div className="text-xs whitespace-pre-line text-gray-800 font-mono leading-relaxed">
-              {settings.categoryRules[match.categorySlug]}
+        {(() => {
+          const currentCategory = categories[match.categorySlug];
+          const categoryRule =
+            currentCategory?.customRules ||
+            settings.categoryRules?.[match.categorySlug] ||
+            (match.categorySlug === 'classic-match' ? settings.categoryRules?.['regular-match'] : '') ||
+            match.rules;
+
+          if (!categoryRule || categoryRule.trim() === '') return null;
+
+          return (
+            <div className="p-4 rounded-2xl bg-amber-500/10 border-2 border-amber-500/30 space-y-2 mb-3">
+              <h5 className="text-xs font-black text-amber-900 flex items-center gap-2">
+                <ShieldAlert className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                <span>🏆 {currentCategory?.name || match.categorySlug} ক্যাটাগরির নির্ধারিত টুর্নামেন্ট রুলস:</span>
+              </h5>
+              <div className="text-xs whitespace-pre-line text-gray-900 font-mono leading-relaxed bg-white/80 p-3.5 rounded-xl border border-amber-200">
+                {categoryRule}
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         <p className="font-black text-amber-700 text-xs flex items-center gap-1.5">
           <span>⚠️</span>

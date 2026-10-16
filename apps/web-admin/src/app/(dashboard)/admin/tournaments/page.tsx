@@ -32,7 +32,7 @@ import {
 } from '@/lib/match-scheduler';
 
 export default function AdminTournamentsPage() {
-  const { categories, matches, addMatch, updateMatch, deleteMatch, clearAllMatches } = useCMS();
+  const { categories, matches, settings, addMatch, updateMatch, deleteMatch, clearAllMatches } = useCMS();
 
   const [filterCategory, setFilterCategory] = useState<string>('ALL');
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -99,16 +99,24 @@ export default function AdminTournamentsPage() {
     }
   }, []);
 
-  // Auto-inherit category banner when create modal opens or category changes
+  // Auto-inherit category banner & rules when create modal opens or category changes
   React.useEffect(() => {
-    if (showCreateModal && categories[categorySlug]) {
+    if (categories[categorySlug]) {
       const cat = categories[categorySlug];
       const catImg = cat?.bannerImage || cat?.avatarImage || '';
       if (!bannerImage || bannerImage === '/logo.png') {
         setBannerImage(catImg);
       }
+      const catRule =
+        cat?.customRules ||
+        settings?.categoryRules?.[categorySlug] ||
+        (categorySlug === 'classic-match' ? settings?.categoryRules?.['regular-match'] : '') ||
+        '';
+      if (catRule) {
+        setRules(catRule);
+      }
     }
-  }, [showCreateModal, categorySlug, categories]);
+  }, [showCreateModal, categorySlug, categories, settings]);
 
   const showNotification = (text: string, type: 'success' | 'error' = 'success') => {
     setToast({ text, type });
@@ -1098,6 +1106,25 @@ export default function AdminTournamentsPage() {
                 onChange={setBannerImage}
                 helperText="Select or drop match banner image file (স্বয়ংক্রিয়ভাবে ক্যাটাগরির ব্যানার সেট হবে)"
               />
+
+              {/* Match Rules Field */}
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-gray-700 dark:text-gray-300">
+                    Match Rules ({categories[categorySlug]?.name || categorySlug} ক্যাটাগরির রুলস):
+                  </label>
+                  <span className="text-[10px] text-amber-500 font-bold">
+                    ক্যাটাগরির রুল স্বয়ংক্রিয়ভাবে লোড হয়েছে
+                  </span>
+                </div>
+                <textarea
+                  rows={3}
+                  value={rules}
+                  onChange={(e) => setRules(e.target.value)}
+                  placeholder="ক্যাটাগরির নির্ধারিত নিয়মাবলী..."
+                  className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/40 text-xs font-medium focus:outline-none focus:border-red-500 font-mono"
+                />
+              </div>
 
               <div className="flex flex-wrap items-center justify-end gap-2.5 pt-4 border-t border-gray-100 dark:border-white/10">
                 <button

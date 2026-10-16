@@ -1147,11 +1147,18 @@ export default function BotControlsPage() {
                         defSlots = 2;
                         defType = 'Solo';
                       }
+                      const cat = categories[slug];
+                      const catRule =
+                        cat?.customRules ||
+                        settings?.categoryRules?.[slug] ||
+                        (slug === 'classic-match' ? settings?.categoryRules?.['regular-match'] : '') ||
+                        '';
                       setNewMatchForm({
                         ...newMatchForm,
                         categorySlug: slug,
                         totalSlots: defSlots,
                         type: defType,
+                        rules: catRule || newMatchForm.rules,
                       });
                     }}
                     className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black font-bold focus:outline-none focus:border-red-500"

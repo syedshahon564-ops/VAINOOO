@@ -68,11 +68,27 @@ export async function POST(req: Request) {
     const body = await req.json();
     inMemoryServerCache = body;
 
-    for (const p of getCandidatePaths()) {
+    const payload = JSON.stringify(body);
+    const candidatePaths = getCandidatePaths();
+
+    // Persist to primary candidate synchronously for crash safety
+    if (candidatePaths.length > 0) {
       try {
-        ensureDataFile(p);
-        fs.writeFileSync(p, JSON.stringify(body, null, 2), 'utf-8');
-      } catch (err) {}
+        ensureDataFile(candidatePaths[0]);
+        fs.writeFileSync(candidatePaths[0], payload, 'utf-8');
+      } catch (e) {}
+    }
+
+    // Persist other paths asynchronously without blocking response
+    if (candidatePaths.length > 1) {
+      Promise.resolve().then(() => {
+        for (let i = 1; i < candidatePaths.length; i++) {
+          try {
+            ensureDataFile(candidatePaths[i]);
+            fs.writeFileSync(candidatePaths[i], payload, 'utf-8');
+          } catch (err) {}
+        }
+      }).catch(() => {});
     }
 
     return NextResponse.json({ ok: true, timestamp: Date.now() });

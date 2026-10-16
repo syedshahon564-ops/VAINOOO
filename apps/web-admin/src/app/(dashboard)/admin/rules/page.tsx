@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { FileText, Check, AlertCircle, Info, ShieldAlert, Send } from 'lucide-react';
-import { useCMS } from '@/lib/cms-store';
+import { useCMS, getCMSData, saveCMSData } from '@/lib/cms-store';
 
 export default function AdminRulesPage() {
   const { settings, categories, updateSiteSettings } = useCMS();
@@ -57,7 +57,23 @@ export default function AdminRulesPage() {
     e.preventDefault();
     const saveTime = Date.now() + 10000;
     lastSettingsUpdatedAtRef.current = saveTime;
-    await updateSiteSettings({
+
+    // Propagate categoryRules to categories and all matches of each category
+    const cms = getCMSData();
+    for (const [slug, ruleText] of Object.entries(categoryRules)) {
+      if (cms.categories[slug]) {
+        cms.categories[slug].customRules = ruleText;
+      }
+      cms.matches = cms.matches.map((m) => {
+        if (m.categorySlug === slug) {
+          return { ...m, rules: ruleText };
+        }
+        return m;
+      });
+    }
+
+    cms.settings = {
+      ...cms.settings,
       noticeText,
       defaultRules,
       categoryRules,
@@ -70,8 +86,10 @@ export default function AdminRulesPage() {
       importantNoticeBody,
       importantNoticeEnabled,
       updatedAt: saveTime,
-    });
-    setToast({ text: 'Tournament rules, notices, and payment numbers saved successfully!', type: 'success' });
+    };
+
+    saveCMSData(cms);
+    setToast({ text: 'Tournament rules, notices, and payment numbers saved successfully! (সকল ম্যাচে রুল আপডেট হয়েছে)', type: 'success' });
     setTimeout(() => setToast(null), 3000);
   };
 

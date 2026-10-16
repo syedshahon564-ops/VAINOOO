@@ -331,6 +331,17 @@ survival match এ বেশিরভাগ ম্যাচে সবাই এ�
 ✔️ যেকোন সমস্যা বা সহযোগিতার ক্ষেত্রে আমাদের SUPPORT এ যোগাযোগ করতে হবে।
 FF RIVAL TOUR BD এর সিদ্ধান্ত চূড়ান্ত সিদ্ধান্ত 👌`,
   categoryRules: {
+    'classic-match': `⚔️ Classic Match (BR Battle Royale) নিয়মাবলী:
+1. ম্যাপ: Bermuda / Purgatory / Kalahari (ম্যাচ শিডিউল অনুযায়ী)।
+2. টিমমেট কিলিং বা গ্রিফিং করলে কোনো রিফান্ড নেই।
+3. সঠিক স্লটে না বসলে কাস্টম হোস্ট কিক করে দিবে।
+4. কাস্টম রুমে ঢুকে স্ক্রিনশট এবং ম্যাচ শেষে রেজাল্টের স্ক্রিনশট রাখা বাধ্যতামূলক।
+5. প্রতি কিল ও বুইয়াহ প্রাইজ স্বয়ংক্রিয়ভাবে ওয়ালেটে যুক্ত হবে।`,
+    'regular-match': `⚔️ Classic Battle Royale (BR) নিয়মাবলী:
+1. ম্যাপ: Bermuda / Purgatory / Kalahari (ম্যাচ শিডিউল অনুযায়ী)।
+2. টিমমেট কিলিং বা গ্রিফিং করলে কোনো রিফান্ড নেই।
+3. সঠিক স্লটে না বসলে কাস্টম হোস্ট কিক করে দিবে।
+4. প্রতি কিল ও বুইয়াহ প্রাইজ স্বয়ংক্রিয়ভাবে ওয়ালেটে যুক্ত হবে।`,
     'clash-squad': `🔥 Clash Squad (CS 4v4) বিশেষ নিয়মাবলী:
 1. লিমিটেড এমো (Limited Ammo): Yes / No (ম্যাচ ডিটেইলস অনুযায়ী)।
 2. গ্রেনেড ও স্মোক নিষিদ্ধ (No Grenade & Flashbang)।
@@ -338,20 +349,24 @@ FF RIVAL TOUR BD এর সিদ্ধান্ত চূড়ান্ত সি
 4. গান প্রোপার্টি (Gun Attributes): No।
 5. এমুলেটর প্লেয়ার সম্পূর্ণ নিষিদ্ধ (Mobile Only)।
 6. রুম শুরুর ৫ মিনিট পূর্বে আইডি ও পাসওয়ার্ড প্রদান করা হবে।`,
+    'cs-only-headshot': `🎯 CS Only Headshot বিশেষ নিয়মাবলী:
+1. শুধুমাত্র হেডশট শট গণনা করা হবে (Only Headshot Mode)।
+2. বডি শটে নক বা কিল করলে অযোগ্য ঘোষিত হবেন।
+3. এমুলেটর, স্ক্রিপ্ট বা কনফিগ ব্যবহার সম্পূর্ণ নিষিদ্ধ।
+4. লেভেল সর্বনিম্ন ৪০+ হতে হবে।`,
+    'lone-wolf': `🎯 Lone Wolf / 1v1 Custom Duel নিয়মাবলী:
+1. শুধুমাত্র ডেজার্ট ঈগল / উডপিকার / শটগান দিয়ে ওয়ান ট্যাপ ফাইট।
+2. গ্লু ওয়াল আনলিমিটেড।
+3. হ্যাক বা ম্যাক্রো সম্পূর্ণ নিষিদ্ধ।`,
+    'lost-to-win': `💰 Lost To Win (1 vs 1) বিশেষ নিয়মাবলী:
+1. ১v১ চ্যালেঞ্জ লড়াই। হারলেও অথবা জিতলেও ক্যাশ রিটার্ন অফার প্রযোজ্য।
+2. কাস্টম রুমে নিজের স্লটে উপস্থিত থাকতে হবে।
+3. ফেক আইডি বা এমুলেটর নিষিদ্ধ।`,
     'special-match': `⭐ Special Match & Headshot Only নিয়মাবলী:
 1. শুধুমাত্র হেডশট শট গণনা করা হবে (Only Headshot Mode)।
 2. হ্যাক, স্ক্রিপ্ট বা কনফিগ ব্যবহার করলে অ্যাকাউন্ট আজীবনের জন্য ব্যান।
 3. ম্যাচ শেষে উইনিং রেজাল্টের ফুল স্ক্রিনশট নেওয়া বাধ্যতামূলক।
 4. লেভেল সর্বনিম্ন ৫০+ হতে হবে।`,
-    'regular-match': `⚔️ Classic Battle Royale (BR) নিয়মাবলী:
-1. ম্যাপ: Bermuda / Purgatory / Kalahari (ম্যাচ শিডিউল অনুযায়ী)।
-2. টিমমেট কিলিং বা গ্রিফিং করলে কোনো রিফান্ড নেই।
-3. সঠিক স্লটে না বসলে কাস্টম হোস্ট কিক করে দিবে।
-4. প্রতি কিল ও বুইয়াহ প্রাইজ স্বয়ংক্রিয়ভাবে ওয়ালেটে যুক্ত হবে।`,
-    'lone-wolf': `🎯 Lone Wolf / 1v1 Custom Duel নিয়মাবলী:
-1. শুধুমাত্র ডেজার্ট ঈগল / উডপিকার / শটগান দিয়ে ওয়ান ট্যাপ ফাইট।
-2. গ্লু ওয়াল আনলিমিটেড।
-3. হ্যাক বা ম্যাক্রো সম্পূর্ণ নিষিদ্ধ।`,
   },
   howToJoinGuide: `১. আপনার পছন্দের ক্যাটাগরি বেছে নিন এবং সক্রিয় টুর্নামেন্টে ক্লিক করুন।
 ২. খালি স্লট থেকে আপনার পছন্দের স্লট সিলেক্ট করে 'স্লট বুক করুন' বাটনে ক্লিক করুন।
@@ -366,6 +381,38 @@ export const INITIAL_CMS_DATA: CMSData = {
   settings: INITIAL_SETTINGS,
   topPlayers: INITIAL_TOP_PLAYERS,
 };
+
+export function getEffectiveCategoryRule(
+  categorySlug: string,
+  categories?: Record<string, CategoryItem>,
+  settings?: SiteSettings
+): string {
+  const cat = categories?.[categorySlug];
+  if (cat?.customRules && cat.customRules.trim() !== '') {
+    return cat.customRules;
+  }
+  if (settings?.categoryRules?.[categorySlug] && settings.categoryRules[categorySlug].trim() !== '') {
+    return settings.categoryRules[categorySlug];
+  }
+  if (categorySlug === 'classic-match' && settings?.categoryRules?.['regular-match']) {
+    return settings.categoryRules['regular-match'];
+  }
+  if (categorySlug === 'regular-match' && settings?.categoryRules?.['classic-match']) {
+    return settings.categoryRules['classic-match'];
+  }
+  return '';
+}
+
+export function getEffectiveMatchRules(
+  match: MatchItem,
+  categories?: Record<string, CategoryItem>,
+  settings?: SiteSettings
+): string {
+  const catRule = getEffectiveCategoryRule(match.categorySlug, categories, settings);
+  if (catRule) return catRule;
+  if (match.rules && match.rules.trim() !== '') return match.rules;
+  return settings?.defaultRules || '';
+}
 
 let memoryCMSCache: CMSData | null = null;
 
@@ -583,6 +630,7 @@ export function addMatch(match: Omit<MatchItem, 'id' | 'filledSlots'>): MatchIte
   }
 
   const cat = data.categories[match.categorySlug];
+  const catRule = getEffectiveCategoryRule(match.categorySlug, data.categories, data.settings);
   const finalBanner =
     match.bannerImage && match.bannerImage.trim() !== '' && match.bannerImage !== '/logo.png'
       ? match.bannerImage
@@ -590,6 +638,7 @@ export function addMatch(match: Omit<MatchItem, 'id' | 'filledSlots'>): MatchIte
 
   const newMatch: MatchItem = {
     ...match,
+    rules: match.rules && match.rules.trim() !== '' ? match.rules : catRule,
     bannerImage: finalBanner,
     totalSlots,
     perKill,
@@ -668,8 +717,26 @@ export async function updateCategory(slug: string, updated: Partial<CategoryItem
   };
 
   data.categories[slug] = updatedCategory;
+
+  // Auto-propagate category rules to settings and all matches belonging to this category:
+  if (updated.customRules !== undefined) {
+    if (!data.settings.categoryRules) {
+      data.settings.categoryRules = {};
+    }
+    data.settings.categoryRules[slug] = updated.customRules;
+    data.settings.updatedAt = Date.now();
+
+    // Propagate rule to all existing matches in this category!
+    data.matches = data.matches.map((m) => {
+      if (m.categorySlug === slug) {
+        return { ...m, rules: updated.customRules };
+      }
+      return m;
+    });
+  }
+
   saveCMSData(data);
-  return await saveCMSDataAsync(data);
+  return true;
 }
 
 export async function deleteCategory(slug: string): Promise<boolean> {
@@ -682,7 +749,7 @@ export async function deleteCategory(slug: string): Promise<boolean> {
   }
   delete data.categories[slug];
   saveCMSData(data);
-  return await saveCMSDataAsync(data);
+  return true;
 }
 
 export function updateSiteSettings(settings: Partial<SiteSettings>): Promise<boolean> {
@@ -694,7 +761,7 @@ export function updateSiteSettings(settings: Partial<SiteSettings>): Promise<boo
     updatedAt: Date.now() + 5000,
   };
   saveCMSData(data);
-  return saveCMSDataAsync(data);
+  return Promise.resolve(true);
 }
 
 export function updateTopPlayers(players: TopPlayerItem[]): void {
@@ -808,9 +875,27 @@ export function useCMS() {
                 mergedSettings.banners = localSettings.banners;
               }
 
+              // Smart merge matches:
+              // Preserve any newly-created local matches that may not yet have reached server!
+              let mergedMatches: MatchItem[] = current?.matches || [];
+              if (serverMatches !== null) {
+                const serverIdSet = new Set(serverMatches.map((m: MatchItem) => m.id));
+                const localPending = (current?.matches || []).filter((m: MatchItem) => !serverIdSet.has(m.id));
+                mergedMatches = [...localPending, ...serverMatches];
+              }
+
+              // Also propagate category rules to all matches of that category:
+              mergedMatches = mergedMatches.map((m) => {
+                const catRule = getEffectiveCategoryRule(m.categorySlug, mergedCategories, mergedSettings);
+                if (catRule && (!m.rules || m.rules.trim() === '')) {
+                  return { ...m, rules: catRule };
+                }
+                return m;
+              });
+
               const merged: CMSData = normalizeCMSData({
                 categories: mergedCategories,
-                matches: serverMatches !== null ? serverMatches : current?.matches || [],
+                matches: mergedMatches,
                 settings: mergedSettings,
                 topPlayers:
                   Array.isArray(serverData.topPlayers) && serverData.topPlayers.length > 0

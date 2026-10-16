@@ -15,7 +15,7 @@ import {
   Flame,
   Lock,
 } from 'lucide-react';
-import { MatchItem } from '@/lib/cms-store';
+import { MatchItem, useCMS } from '@/lib/cms-store';
 import { parseScheduleTimeToDate } from '@/components/LiveMatchCountdown';
 import { getCurrentUser, hasUserJoinedMatch } from '@/lib/user-store';
 
@@ -26,6 +26,7 @@ interface RoomDetailsModalProps {
 }
 
 export default function RoomDetailsModal({ match, onClose, onJoinClick }: RoomDetailsModalProps) {
+  const { categories, settings } = useCMS();
   const [copied, setCopied] = React.useState<string | null>(null);
 
   const handleCopy = (text: string, label: string) => {
@@ -222,20 +223,31 @@ export default function RoomDetailsModal({ match, onClose, onJoinClick }: RoomDe
         </div>
 
         {/* Specific Rules for this match */}
-        <div className="space-y-3">
-          <div className="flex items-center gap-2 text-xs font-black uppercase text-gray-900 dark:text-white">
-            <ShieldAlert className="w-4 h-4 text-red-600" />
-            এই রুমের নির্দিষ্ট নিয়ম ও বিধিনিষেধ (Room Rules)
-          </div>
-
-          <div className="p-4 rounded-2xl bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-white/5 text-xs text-gray-700 dark:text-gray-300 space-y-2 whitespace-pre-line leading-relaxed font-medium">
-            {match.rules ||
-              `১. গান প্রোপার্টি অফ, ক্যারেক্টার স্কিল অন, লিমিটেড অ্যামো ইয়েস।
+        {(() => {
+          const currentCategory = categories[match.categorySlug];
+          const effectiveRule =
+            currentCategory?.customRules ||
+            settings?.categoryRules?.[match.categorySlug] ||
+            (match.categorySlug === 'classic-match' ? settings?.categoryRules?.['regular-match'] : '') ||
+            match.rules ||
+            `১. গান প্রোপার্টি অফ, ক্যারেক্টার স্কিল অন, লিমিটেড অ্যামো ইয়েস।
 ২. আপনার বুক করা নির্দিষ্ট স্লটেই বসতে হবে, অন্য স্লটে বসলে কিক করা হবে।
 ৩. কোনো প্রকার হ্যাক, কনফিগ বা স্ক্রিপ্ট ব্যবহার সম্পূর্ণ নিষিদ্ধ।
-৪. টিম-আপ (Friendly Teaming) করলে কোনো প্রাইজমানি দেওয়া হবে না।`}
-          </div>
-        </div>
+৪. টিম-আপ (Friendly Teaming) করলে কোনো প্রাইজমানি দেওয়া হবে না।`;
+
+          return (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-xs font-black uppercase text-gray-900 dark:text-white">
+                <ShieldAlert className="w-4 h-4 text-red-600" />
+                {currentCategory?.name || match.categorySlug} ক্যাটাগরি ও রুমের নিয়মাবলী (Category Rules)
+              </div>
+
+              <div className="p-4 rounded-2xl bg-amber-50/50 dark:bg-black/30 border border-amber-200 dark:border-white/5 text-xs text-gray-800 dark:text-gray-200 space-y-2 whitespace-pre-line leading-relaxed font-medium">
+                {effectiveRule}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Prize Breakdown */}
         <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-between text-xs">
