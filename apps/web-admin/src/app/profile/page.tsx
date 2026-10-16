@@ -15,6 +15,7 @@ import {
   Award,
   Camera,
   Mail,
+  Bell,
 } from 'lucide-react';
 
 import { getCurrentUser, updateUser } from '@/lib/user-store';
@@ -23,6 +24,38 @@ import DepositWithdrawModal from '@/components/DepositWithdrawModal';
 export default function ProfilePage() {
   const [showFinanceModal, setShowFinanceModal] = useState(false);
   const [financeModalTab, setFinanceModalTab] = useState<'DEPOSIT' | 'WITHDRAW'>('DEPOSIT');
+  const [notifEnabled, setNotifEnabled] = useState(true);
+
+  useEffect(() => {
+    try {
+      const state = localStorage.getItem('ff_notif_permission_state');
+      if (state === 'denied') {
+        setNotifEnabled(false);
+      } else if (state === 'granted') {
+        setNotifEnabled(true);
+      }
+    } catch {}
+  }, []);
+
+  const handleToggleNotifications = async () => {
+    const nextState = !notifEnabled;
+    setNotifEnabled(nextState);
+    if (nextState) {
+      try {
+        if (typeof Notification !== 'undefined' && typeof Notification.requestPermission === 'function') {
+          await Notification.requestPermission();
+        }
+        if (typeof window !== 'undefined' && (window as any).AndroidBridge?.requestNotificationPermission) {
+          (window as any).AndroidBridge.requestNotificationPermission();
+        }
+        localStorage.setItem('ff_notif_permission_state', 'granted');
+      } catch {}
+    } else {
+      try {
+        localStorage.setItem('ff_notif_permission_state', 'denied');
+      } catch {}
+    }
+  };
   const [user, setUser] = useState<any>({
     ign: 'BDX_STRIKER',
     uid: '192837465',
@@ -223,6 +256,42 @@ export default function ProfilePage() {
           <div className="text-xs text-gray-500 font-semibold uppercase">Win Rate</div>
           <div className="text-2xl font-black text-emerald-600">{user.winRate || '35.2%'}</div>
         </div>
+      </div>
+
+      {/* Device Notification Preference Card */}
+      <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-dark-card p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center border border-blue-500/20">
+            <Bell className="w-5 h-5" />
+          </div>
+          <div>
+            <h4 className="text-sm font-black text-gray-900 dark:text-white flex items-center gap-2">
+              ডিভাইস নোটিফিকেশন (Push Notifications)
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                notifEnabled
+                  ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800'
+                  : 'bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-400'
+              }`}>
+                {notifEnabled ? 'চালু (ON)' : 'বন্ধ (OFF)'}
+              </span>
+            </h4>
+            <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+              রুম আইডি, পাসওয়ার্ড ও প্রাইজ মানি উইথড্রলের তাৎক্ষণিক নোটিফিকেশন অ্যালার্ট।
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={handleToggleNotifications}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            notifEnabled
+              ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/20'
+              : 'bg-gray-200 dark:bg-white/10 hover:bg-gray-300 dark:hover:bg-white/20 text-gray-700 dark:text-gray-300'
+          }`}
+        >
+          {notifEnabled ? 'নোটিফিকেশন বন্ধ করুন' : 'নোটিফিকেশন চালু করুন'}
+        </button>
       </div>
 
       {/* Recent Tournaments History */}

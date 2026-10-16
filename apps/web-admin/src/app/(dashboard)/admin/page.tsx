@@ -85,6 +85,7 @@ export default function AdminMasterPage() {
     deleteMatch,
     clearAllMatches,
     updateCategory,
+    deleteCategory,
     updateSiteSettings,
     resetCMS,
   } = useCMS();
@@ -483,6 +484,29 @@ export default function AdminMasterPage() {
       showToast(`Category "${catName}" updated successfully!`);
     } catch {
       showToast('Failed to save category', 'error');
+    }
+  };
+
+  const [isDeletingCat, setIsDeletingCat] = useState(false);
+  const handleDeleteCategory = async () => {
+    if (!selectedCatSlug) return;
+    const confirmDelete = window.confirm(
+      `আপনি কি নিশ্চিত যে "${catName || selectedCatSlug}" ক্যাটাগরি ডিলিট করতে চান?\nAre you sure you want to delete this category? This action cannot be undone.`
+    );
+    if (!confirmDelete) return;
+
+    setIsDeletingCat(true);
+    try {
+      await deleteCategory(selectedCatSlug);
+      showToast(`Category "${catName || selectedCatSlug}" deleted successfully!`);
+      const remaining = Object.keys(categories).filter((s) => s !== selectedCatSlug);
+      if (remaining.length > 0) {
+        handleSelectCategoryToEdit(remaining[0]);
+      }
+    } catch {
+      showToast('Failed to delete category', 'error');
+    } finally {
+      setIsDeletingCat(false);
     }
   };
 
@@ -1189,10 +1213,21 @@ export default function AdminMasterPage() {
               />
             </div>
 
-            <div className="flex justify-end pt-2">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
+              <button
+                type="button"
+                onClick={handleDeleteCategory}
+                disabled={isDeletingCat}
+                className="w-full sm:w-auto px-5 py-3 rounded-xl text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-900/60 border border-red-200 dark:border-red-900/40 transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>{isDeletingCat ? 'Deleting Category...' : 'Delete Category (ক্যাটাগরি ডিলিট)'}</span>
+              </button>
+
               <button
                 type="submit"
-                className="px-6 py-3 rounded-xl text-xs font-black btn-red shadow-md shadow-red-600/20"
+                disabled={isDeletingCat}
+                className="w-full sm:w-auto px-6 py-3 rounded-xl text-xs font-black btn-red shadow-md shadow-red-600/20 flex items-center justify-center gap-2"
               >
                 Save Category Changes
               </button>

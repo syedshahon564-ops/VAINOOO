@@ -104,6 +104,7 @@ export interface CMSData {
   matches: MatchItem[];
   settings: SiteSettings;
   topPlayers: TopPlayerItem[];
+  deletedCategories?: string[];
 }
 
 const STORAGE_KEY = 'ff_esports_cms_data_v6';
@@ -406,10 +407,11 @@ export function getCMSData(): CMSData {
     }
 
     const merged: CMSData = normalizeCMSData({
-      categories: { ...INITIAL_CATEGORIES, ...(parsed?.categories || {}) },
+      categories: parsed?.categories ? parsed.categories : INITIAL_CATEGORIES,
       matches,
       settings: { ...INITIAL_SETTINGS, ...(parsed?.settings || {}) },
       topPlayers: Array.isArray(parsed?.topPlayers) ? parsed.topPlayers : INITIAL_TOP_PLAYERS,
+      deletedCategories: Array.isArray(parsed?.deletedCategories) ? parsed.deletedCategories : [],
     });
     memoryCMSCache = merged;
     return merged;
@@ -421,15 +423,19 @@ export function getCMSData(): CMSData {
 /** Ensure every CMS field has a safe shape (arrays are arrays, objects are objects). */
 export function normalizeCMSData(input: Partial<CMSData> | null | undefined): CMSData {
   const src: any = input && typeof input === 'object' ? input : {};
-  
+  const deletedCategories: string[] = Array.isArray(src.deletedCategories)
+    ? src.deletedCategories
+    : [];
+
   const rawCategories =
     src.categories && typeof src.categories === 'object' && !Array.isArray(src.categories)
       ? src.categories
       : INITIAL_CATEGORIES;
 
   // Auto-heal any legacy broken paths or /uploads/ 404 paths
-  const healedCategories: Record<string, CategoryItem> = { ...INITIAL_CATEGORIES };
+  const healedCategories: Record<string, CategoryItem> = {};
   for (const [slug, cat] of Object.entries(rawCategories)) {
+    if (deletedCategories.includes(slug)) continue;
     if (cat && typeof cat === 'object') {
       const item = cat as CategoryItem;
       const fallbackBanner =
@@ -495,6 +501,7 @@ export function normalizeCMSData(input: Partial<CMSData> | null | undefined): CM
     topPlayers: Array.isArray(src.topPlayers)
       ? src.topPlayers.filter((p: any) => p && typeof p === 'object')
       : INITIAL_TOP_PLAYERS,
+    deletedCategories,
   };
 }
 
@@ -652,6 +659,19 @@ export async function updateCategory(slug: string, updated: Partial<CategoryItem
   return await saveCMSDataAsync(data);
 }
 
+export async function deleteCategory(slug: string): Promise<boolean> {
+  const data = getCMSData();
+  if (!data.deletedCategories) {
+    data.deletedCategories = [];
+  }
+  if (!data.deletedCategories.includes(slug)) {
+    data.deletedCategories.push(slug);
+  }
+  delete data.categories[slug];
+  saveCMSData(data);
+  return await saveCMSDataAsync(data);
+}
+
 export function updateSiteSettings(settings: Partial<SiteSettings>): Promise<boolean> {
   const data = getCMSData();
   data.settings = { ...INITIAL_SETTINGS, ...(data.settings || {}), ...settings, updatedAt: Date.now() };
@@ -695,10 +715,22 @@ export function useCMS() {
               const serverSettings =
                 serverData.settings && typeof serverData.settings === 'object' ? serverData.settings : {};
 
+              const serverDeleted: string[] = Array.isArray(serverData.deletedCategories)
+                ? serverData.deletedCategories
+                : [];
+              const localDeleted: string[] = Array.isArray(current?.deletedCategories)
+                ? current.deletedCategories
+                : [];
+              const allDeleted = Array.from(new Set([...localDeleted, ...serverDeleted]));
+
               // Smart merge categories:
               // If local edit is strictly newer, preserve local pending edit; otherwise server takes precedence!
               const mergedCategories: Record<string, CategoryItem> = { ...(current?.categories || {}) };
               for (const [slug, serverCat] of Object.entries(serverCategories)) {
+                if (allDeleted.includes(slug)) {
+                  delete mergedCategories[slug];
+                  continue;
+                }
                 const localCat = mergedCategories[slug];
                 if (!localCat) {
                   mergedCategories[slug] = serverCat as CategoryItem;
@@ -711,6 +743,10 @@ export function useCMS() {
                     mergedCategories[slug] = { ...localCat, ...(serverCat as CategoryItem) };
                   }
                 }
+              }
+
+              for (const del of allDeleted) {
+                delete mergedCategories[del];
               }
 
               // Smart merge settings:
@@ -750,6 +786,7 @@ export function useCMS() {
                   Array.isArray(serverData.topPlayers) && serverData.topPlayers.length > 0
                     ? serverData.topPlayers
                     : current?.topPlayers,
+                deletedCategories: allDeleted,
               });
 
               memoryCMSCache = merged;
@@ -818,6 +855,7 @@ export function useCMS() {
     deleteMatch,
     clearAllMatches,
     updateCategory,
+    deleteCategory,
     updateSiteSettings,
     updateTopPlayers,
     resetCMS,

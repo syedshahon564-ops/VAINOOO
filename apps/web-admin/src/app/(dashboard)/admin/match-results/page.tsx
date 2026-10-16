@@ -17,6 +17,9 @@ import {
   ChevronRight,
   ExternalLink,
   Zap,
+  Flame,
+  ArrowRight,
+  RefreshCw,
 } from 'lucide-react';
 import { useCMS, MatchItem } from '@/lib/cms-store';
 import {
@@ -26,20 +29,23 @@ import {
   ParsedScoreboardRow,
   OcrAuditLog,
 } from '@/lib/ocr-service';
-import { processMatchPrizePayout, getUsers } from '@/lib/user-store';
+import { processMatchPrizePayout, getUsers, UserAccount } from '@/lib/user-store';
 
 export default function MatchResultsOCRPage() {
-  const { matches, updateMatch } = useCMS();
+  const { matches, updateMatch, categories } = useCMS();
   const [selectedMatchId, setSelectedMatchId] = useState<string>('');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [rawOcrText, setRawOcrText] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [parsedRows, setParsedRows] = useState<ParsedScoreboardRow[]>([]);
+  const [parsedRows, setParsedRows] = useState<(ParsedScoreboardRow & { userPhone?: string })[]>([]);
   const [auditLogs, setAuditLogs] = useState<OcrAuditLog[]>([]);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [payoutDone, setPayoutDone] = useState(false);
+  const [lastPayoutSummary, setLastPayoutSummary] = useState<{ total: number; count: number } | null>(null);
 
   const selectedMatch = matches.find((m) => m.id === selectedMatchId) || matches[0];
+  const selectedCategory = selectedMatch ? categories[selectedMatch.categorySlug] : null;
+  const categoryDisplayName = selectedCategory?.name || selectedMatch?.categorySlug || 'Free Fire Tournament';
 
   useEffect(() => {
     if (matches.length > 0 && !selectedMatchId) {
@@ -53,38 +59,42 @@ export default function MatchResultsOCRPage() {
     setTimeout(() => setToast(null), 3500);
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      setImagePreview(reader.result as string);
-      setPayoutDone(false);
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleRunOCR = async () => {
+  const handleRunOCR = async (overrideImage?: string) => {
     if (!selectedMatch) {
       showToast('Please select a tournament match first', 'error');
       return;
     }
 
+    const activeImage = overrideImage || imagePreview;
     setIsProcessing(true);
     setPayoutDone(false);
 
     try {
       const registered = selectedMatch.participants || [];
+      const allUsers = getUsers().filter((u) => u.role === 'PLAYER');
 
-      // If registered players are empty, check user accounts for sample registered players
-      let effectiveParticipants = registered;
+      // Match joined players with user accounts by IGN or UID
+      let effectiveParticipants = registered.map((p) => {
+        const u = allUsers.find(
+          (usr) =>
+            (usr.uid && usr.uid === p.uid) ||
+            (usr.ign && usr.ign.toUpperCase().trim() === p.ign.toUpperCase().trim())
+        );
+        return {
+          ...p,
+          id: u?.id || (p as any).id,
+          userPhone: u?.phone,
+        };
+      });
+
+      // If registered players are empty, check user accounts for participants
       if (effectiveParticipants.length === 0) {
-        const allUsers = getUsers().filter((u) => u.role === 'PLAYER');
         effectiveParticipants = allUsers.slice(0, Math.min(8, selectedMatch.totalSlots || 8)).map((u, i) => ({
           ign: u.ign,
           uid: u.uid,
           slot: i + 1,
+          id: u.id,
+          userPhone: u.phone,
         }));
       }
 
@@ -93,44 +103,95 @@ export default function MatchResultsOCRPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          imageBase64: imagePreview,
+          imageBase64: activeImage,
           rawText: rawOcrText,
           match: selectedMatch,
           registeredPlayers: effectiveParticipants,
         }),
       });
 
-      if (!response.ok) {
-        throw new Error('OCR API failed');
+      let results: ParsedScoreboardRow[] = [];
+      let extracted = '';
+
+      if (response.ok) {
+        const data = await response.json();
+        results = data.results || [];
+        extracted = data.extractedText || '';
+      } else {
+        throw new Error('OCR API fallback');
       }
 
-      const data = await response.json();
-      setParsedRows(data.results || []);
-      if (data.extractedText && !rawOcrText) {
-        setRawOcrText(data.extractedText);
+      // Enhance parsed rows with matched user account details
+      const enrichedRows = results.map((row) => {
+        const targetUser = allUsers.find(
+          (u) =>
+            (row.matchedUserId && u.id === row.matchedUserId) ||
+            (row.matchedPlayerUid && u.uid === row.matchedPlayerUid) ||
+            (row.matchedPlayerIgn && u.ign.toUpperCase().trim() === row.matchedPlayerIgn.toUpperCase().trim()) ||
+            (row.rawIgn && u.ign.toUpperCase().trim() === row.rawIgn.toUpperCase().trim())
+        );
+
+        return {
+          ...row,
+          matchedUserId: targetUser?.id || row.matchedUserId,
+          matchedPlayerUid: targetUser?.uid || row.matchedPlayerUid,
+          matchedPlayerIgn: targetUser?.ign || row.matchedPlayerIgn || row.rawIgn,
+          userPhone: targetUser?.phone,
+          isMatched: Boolean(targetUser) || row.isMatched,
+        };
+      });
+
+      setParsedRows(enrichedRows);
+      if (extracted && !rawOcrText) {
+        setRawOcrText(extracted);
       }
 
       showToast(
-        `OCR succeeded! ${data.matchedCount || data.results?.length} player(s) fuzzy matched.`,
+        `OCR succeeded! ${enrichedRows.filter((r) => r.isMatched).length} player(s) verified with UID & accounts.`,
         'success'
       );
     } catch (err) {
-      // Local fallback parsing
+      // Local fallback parser
+      const allUsers = getUsers().filter((u) => u.role === 'PLAYER');
       const fallbackRegistered = selectedMatch.participants?.length
         ? selectedMatch.participants
-        : [
-            { ign: 'BDX_STRIKER', uid: '192837465', slot: 1 },
-            { ign: 'OP_NINJA_99', uid: '283746192', slot: 2 },
-            { ign: 'VIPER_ROYAL', uid: '394857261', slot: 3 },
-            { ign: 'HEADSHOT_KING', uid: '485726193', slot: 4 },
-          ];
+        : allUsers.slice(0, 4).map((u, i) => ({ ign: u.ign, uid: u.uid, slot: i + 1, id: u.id, userPhone: u.phone }));
 
       const localResult = parseScoreboardText(rawOcrText, selectedMatch, fallbackRegistered);
-      setParsedRows(localResult);
-      showToast('Scoreboard processed using local fuzzy parser engine!', 'success');
+      const enriched = localResult.map((r) => {
+        const targetUser = allUsers.find(
+          (u) =>
+            (r.matchedPlayerUid && u.uid === r.matchedPlayerUid) ||
+            (r.matchedPlayerIgn && u.ign.toUpperCase().trim() === r.matchedPlayerIgn.toUpperCase().trim())
+        );
+        return {
+          ...r,
+          matchedUserId: targetUser?.id || r.matchedUserId,
+          matchedPlayerUid: targetUser?.uid || r.matchedPlayerUid,
+          userPhone: targetUser?.phone,
+        };
+      });
+
+      setParsedRows(enriched);
+      showToast('Scoreboard processed using local fuzzy matching engine!', 'success');
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      setImagePreview(dataUrl);
+      setPayoutDone(false);
+      // As requested: As soon as the image is provided, auto-trigger OCR and matching immediately!
+      handleRunOCR(dataUrl);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleUpdateRow = (index: number, field: keyof ParsedScoreboardRow, value: any) => {
@@ -163,16 +224,27 @@ export default function MatchResultsOCRPage() {
       return;
     }
 
-    const winners = parsedRows.map((r) => ({
-      userId: r.matchedUserId,
-      ign: r.matchedPlayerIgn || r.rawIgn,
-      uid: r.matchedPlayerUid,
-      rank: r.rank,
-      kills: r.kills,
-      prize: r.totalPrize,
-    }));
+    const allUsers = getUsers();
+    const winners = parsedRows.map((r) => {
+      const matchedUser = allUsers.find(
+        (u) =>
+          (r.matchedUserId && u.id === r.matchedUserId) ||
+          (r.matchedPlayerUid && u.uid === r.matchedPlayerUid) ||
+          (r.matchedPlayerIgn && u.ign.toUpperCase().trim() === r.matchedPlayerIgn.toUpperCase().trim()) ||
+          (r.rawIgn && u.ign.toUpperCase().trim() === r.rawIgn.toUpperCase().trim())
+      );
 
-    // Execute transactional wallet payouts
+      return {
+        userId: matchedUser?.id || r.matchedUserId,
+        ign: matchedUser?.ign || r.matchedPlayerIgn || r.rawIgn,
+        uid: matchedUser?.uid || r.matchedPlayerUid,
+        rank: r.rank,
+        kills: r.kills,
+        prize: r.totalPrize,
+      };
+    });
+
+    // Execute transactional wallet payouts (credits balance on both website and mobile app via /api/users)
     const payoutResult = processMatchPrizePayout(selectedMatch.id, selectedMatch.title, winners);
 
     // Update match status to COMPLETED and save results in CMS
@@ -189,7 +261,7 @@ export default function MatchResultsOCRPage() {
     // Save audit log
     saveOcrAuditLog({
       matchId: selectedMatch.id,
-      matchTitle: selectedMatch.title,
+      matchTitle: `${categoryDisplayName}: ${selectedMatch.title}`,
       processedBy: 'Admin (Master Owner)',
       imageUrl: imagePreview || undefined,
       totalParticipantsMatched: parsedRows.length,
@@ -199,6 +271,7 @@ export default function MatchResultsOCRPage() {
 
     setAuditLogs(getOcrAuditLogs());
     setPayoutDone(true);
+    setLastPayoutSummary({ total: payoutResult.totalDistributed, count: payoutResult.payoutsCount });
     showToast(
       `🎉 Successful Payout! ৳${payoutResult.totalDistributed} BDT credited to winners' wallets!`,
       'success'
@@ -229,7 +302,7 @@ export default function MatchResultsOCRPage() {
             Match Scoreboard OCR & Instant Wallet Payout
           </h1>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            Upload match result screenshots, auto-extract player kills and rank positions, and distribute prize pools.
+            ম্যাচের স্ক্রিনশট আপলোড করার সাথে সাথে OCR স্বয়ংক্রিয়ভাবে প্লেয়ারদের নাম, UID ও কিল সনাক্ত করে ওয়ালেটে টাকা যোগ করে দেয়।
           </p>
         </div>
 
@@ -244,10 +317,10 @@ export default function MatchResultsOCRPage() {
 
       {/* Match Selector & Screenshot Upload */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Match Selection */}
+        {/* Match Selection & Category Details */}
         <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#12121a] p-5 space-y-4 shadow-sm">
           <label className="text-xs font-black text-gray-900 dark:text-white block">
-            1. Select Match:
+            1. Select Match (ম্যাচ নির্বাচন করুন):
           </label>
           <select
             value={selectedMatchId}
@@ -255,45 +328,106 @@ export default function MatchResultsOCRPage() {
               setSelectedMatchId(e.target.value);
               setParsedRows([]);
               setPayoutDone(false);
+              setLastPayoutSummary(null);
             }}
             className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black font-bold text-xs focus:outline-none focus:border-red-500"
           >
-            {matches.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.title} ({m.type}) - {m.time}
-              </option>
-            ))}
+            {matches.map((m) => {
+              const cat = categories[m.categorySlug];
+              return (
+                <option key={m.id} value={m.id}>
+                  {cat?.name || m.categorySlug}: {m.title} ({m.type}) - {m.time}
+                </option>
+              );
+            })}
           </select>
 
+          {/* Selected Match & Category Card */}
           {selectedMatch && (
-            <div className="p-3.5 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 space-y-2 text-xs">
-              <div className="flex justify-between">
-                <span className="text-gray-500">Category:</span>
-                <span className="font-bold">{selectedMatch.categorySlug}</span>
+            <div className="p-4 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 space-y-3 text-xs">
+              {/* Category Badge & Thumbnail */}
+              <div className="flex items-center gap-2.5 pb-2.5 border-b border-gray-200 dark:border-white/10">
+                <div className="w-10 h-10 rounded-xl overflow-hidden border border-red-500/30 bg-slate-900 flex-shrink-0">
+                  <img
+                    src={selectedCategory?.avatarImage || selectedCategory?.bannerImage || '/logo.png'}
+                    alt={categoryDisplayName}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="min-w-0">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-red-500 block truncate">
+                    {selectedCategory?.section || 'FREE FIRE TOURNAMENT'}
+                  </span>
+                  <h4 className="text-xs font-black text-gray-900 dark:text-white truncate">
+                    {categoryDisplayName}
+                  </h4>
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">1st Prize:</span>
-                <span className="font-bold text-emerald-500">৳{selectedMatch.firstPrize}</span>
+
+              {/* Match Specs */}
+              <div className="space-y-1.5 text-[11px]">
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Match Title:</span>
+                  <span className="font-bold text-gray-900 dark:text-white truncate max-w-[170px]">{selectedMatch.title}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Schedule Time:</span>
+                  <span className="font-bold text-gray-900 dark:text-white">{selectedMatch.time}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Map / Mode:</span>
+                  <span className="font-bold">{selectedMatch.map} ({selectedMatch.type})</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">1st Prize (Booyah):</span>
+                  <span className="font-bold text-emerald-500">৳{selectedMatch.firstPrize || selectedMatch.prizePool}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Per Kill Rate:</span>
+                  <span className="font-bold text-amber-500">৳{selectedMatch.perKill}</span>
+                </div>
+                <div className="flex justify-between items-center pt-1">
+                  <span className="text-gray-500">Status:</span>
+                  <span className={`font-bold px-2 py-0.5 rounded text-[10px] ${
+                    selectedMatch.status === 'COMPLETED'
+                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400'
+                      : 'bg-red-100 dark:bg-red-950/60 text-red-600'
+                  }`}>
+                    {selectedMatch.status || 'UPCOMING'}
+                  </span>
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Per Kill:</span>
-                <span className="font-bold text-amber-500">৳{selectedMatch.perKill}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Status:</span>
-                <span className="font-bold px-2 py-0.5 rounded bg-red-100 dark:bg-red-950/60 text-red-600 text-[10px]">
-                  {selectedMatch.status || 'UPCOMING'}
+
+              {/* Joined / Registered Participants preview */}
+              <div className="pt-2 border-t border-gray-200 dark:border-white/10">
+                <span className="text-[10px] font-black uppercase text-gray-400 block mb-1">
+                  Registered Participants ({selectedMatch.participants?.length || 0} Slots):
                 </span>
+                {selectedMatch.participants && selectedMatch.participants.length > 0 ? (
+                  <div className="max-h-24 overflow-y-auto space-y-1 pr-1">
+                    {selectedMatch.participants.map((p, idx) => (
+                      <div key={idx} className="flex items-center justify-between text-[10px] bg-white dark:bg-black/40 p-1.5 rounded-lg border border-gray-200 dark:border-white/5">
+                        <span className="font-bold text-amber-500">#{p.slot || idx + 1}</span>
+                        <span className="font-bold text-gray-800 dark:text-gray-200 truncate">{p.ign}</span>
+                        <span className="font-mono text-gray-400 text-[9px]">{p.uid || 'No UID'}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <span className="text-[10px] text-gray-400 italic">
+                    All player accounts in database will be cross-matched.
+                  </span>
+                )}
               </div>
             </div>
           )}
         </div>
 
-        {/* Screenshot Upload */}
+        {/* Screenshot Upload with Instant OCR Auto-Trigger */}
         <div className="lg:col-span-2 rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#12121a] p-5 space-y-4 shadow-sm">
           <div className="flex items-center justify-between">
             <label className="text-xs font-black text-gray-900 dark:text-white block">
-              2. Upload Scoreboard Screenshot (JPEG/PNG):
+              2. Upload Scoreboard Screenshot (ইমেজ দিন - সাথে সাথে স্ক্যান হবে):
             </label>
             <button
               type="button"
@@ -301,38 +435,46 @@ export default function MatchResultsOCRPage() {
                 setRawOcrText(`#1 BDX_STRIKER 7 Kills\n#2 OP_NINJA_99 4 Kills\n#3 VIPER_ROYAL 2 Kills\n#4 HEADSHOT_KING 1 Kills`);
                 showToast('Sample scoreboard test data loaded');
               }}
-              className="text-[11px] font-bold text-red-600 hover:underline"
+              className="text-[11px] font-bold text-red-600 hover:underline cursor-pointer"
             >
               + Load Sample Data
             </button>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="border-2 border-dashed border-gray-200 dark:border-white/10 hover:border-red-500/50 rounded-2xl p-4 text-center flex flex-col items-center justify-center min-h-[140px] cursor-pointer relative bg-gray-50 dark:bg-black/20">
+            <div className="border-2 border-dashed border-gray-200 dark:border-white/10 hover:border-red-500/50 rounded-2xl p-4 text-center flex flex-col items-center justify-center min-h-[150px] cursor-pointer relative bg-gray-50 dark:bg-black/20 transition-all">
               <input
                 type="file"
                 accept="image/*"
                 onChange={handleImageUpload}
-                className="absolute inset-0 opacity-0 cursor-pointer"
+                className="absolute inset-0 opacity-0 cursor-pointer z-10"
               />
               <Upload className="w-8 h-8 text-red-500 mb-2" />
               <span className="text-xs font-bold text-gray-800 dark:text-gray-200">
-                Click to browse image
+                Click or Drop Scoreboard Image
               </span>
-              <span className="text-[10px] text-gray-400 mt-1">Free Fire end-match scoreboard screenshot</span>
+              <span className="text-[10px] text-gray-400 mt-1">
+                ছবি দেওয়ার সাথে সাথে AI দিয়ে নাম ও UID স্ক্যান শুরু হবে
+              </span>
             </div>
 
             {imagePreview ? (
-              <div className="relative rounded-2xl overflow-hidden border border-gray-200 dark:border-white/10 h-[140px] bg-black">
+              <div className="relative rounded-2xl overflow-hidden border border-gray-200 dark:border-white/10 h-[150px] bg-black group">
                 <img
                   src={imagePreview}
                   alt="Scoreboard"
                   className="w-full h-full object-contain"
                 />
+                {isProcessing && (
+                  <div className="absolute inset-0 bg-black/70 backdrop-blur-xs flex flex-col items-center justify-center gap-2 text-white text-xs font-bold">
+                    <RefreshCw className="w-6 h-6 animate-spin text-amber-400" />
+                    <span>Auto-Scanning Scoreboard...</span>
+                  </div>
+                )}
               </div>
             ) : (
-              <div className="flex items-center justify-center rounded-2xl border border-gray-200 dark:border-white/10 h-[140px] bg-gray-50 dark:bg-white/5 text-gray-400 text-xs font-bold">
-                No image selected
+              <div className="flex items-center justify-center rounded-2xl border border-gray-200 dark:border-white/10 h-[150px] bg-gray-50 dark:bg-white/5 text-gray-400 text-xs font-bold">
+                No image uploaded yet
               </div>
             )}
           </div>
@@ -340,7 +482,7 @@ export default function MatchResultsOCRPage() {
           {/* Raw Text Input */}
           <div className="space-y-1">
             <label className="text-[11px] font-bold text-gray-500">
-              OCR Text (Extracted or Paste directly):
+              OCR Text (Extracted or Edit directly):
             </label>
             <textarea
               rows={2}
@@ -353,15 +495,46 @@ export default function MatchResultsOCRPage() {
 
           <button
             type="button"
-            onClick={handleRunOCR}
+            onClick={() => handleRunOCR()}
             disabled={isProcessing}
-            className="w-full py-3 rounded-xl btn-red text-xs font-black flex items-center justify-center gap-2 shadow-lg shadow-red-600/20 active:scale-95 transition-all disabled:opacity-50"
+            className="w-full py-3 rounded-xl btn-red text-xs font-black flex items-center justify-center gap-2 shadow-lg shadow-red-600/20 active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
           >
-            <Scan className="w-4 h-4" />
-            <span>{isProcessing ? 'Processing OCR & Fuzzy Matching...' : '🤖 Run OCR Engine (Parse & Match)'}</span>
+            {isProcessing ? (
+              <>
+                <RefreshCw className="w-4 h-4 animate-spin" />
+                <span>Processing AI OCR & UID Matching...</span>
+              </>
+            ) : (
+              <>
+                <Scan className="w-4 h-4" />
+                <span>🤖 Re-Run OCR Engine (ম্যাচিং রি-স্ক্যান করুন)</span>
+              </>
+            )}
           </button>
         </div>
       </div>
+
+      {/* Payout Completion Celebratory Banner */}
+      {payoutDone && lastPayoutSummary && (
+        <div className="p-5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-fadeIn">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-500 text-white flex items-center justify-center shadow-lg shadow-emerald-500/30">
+              <CheckCircle2 className="w-7 h-7" />
+            </div>
+            <div>
+              <h3 className="text-base font-black">
+                🎉 ওয়ালেটে সফলভাবে টাকা যোগ হয়েছে! (Payout Complete)
+              </h3>
+              <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-0.5">
+                মোট ৳{lastPayoutSummary.total} BDT সফলভাবে {lastPayoutSummary.count} জন প্লেয়ারের একাউন্টে যুক্ত হয়েছে। ওয়েবসাইট ও অ্যাপ উভয়েই ব্যালেন্স আপডেট হয়ে গেছে।
+              </p>
+            </div>
+          </div>
+          <span className="text-lg font-black font-mono text-emerald-600 dark:text-emerald-400">
+            ৳ {lastPayoutSummary.total} BDT
+          </span>
+        </div>
+      )}
 
       {/* OCR Results & Payout Section */}
       {parsedRows.length > 0 && (
@@ -370,13 +543,13 @@ export default function MatchResultsOCRPage() {
             <div>
               <h3 className="text-base font-black text-gray-900 dark:text-white flex items-center gap-2">
                 <Trophy className="w-5 h-5 text-amber-500" />
-                Parsed Players & Prize Calculation
+                Parsed Players & Prize Calculation ({categoryDisplayName})
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 font-bold border border-emerald-300 dark:border-emerald-800">
                   {parsedRows.length} Detected
                 </span>
               </h3>
               <p className="text-[11px] text-gray-500">
-                Review verified players, kills, and ranks. You can manually adjust any field before executing payouts.
+                প্লেয়ারের UID ও IGN মিলিয়ে ব্যালেন্স যোগ করার তালিকা। কোনো মান পরিবর্তন করতে চাইলে সরাসরি এডিট করতে পারবেন।
               </p>
             </div>
 
@@ -392,7 +565,7 @@ export default function MatchResultsOCRPage() {
                 type="button"
                 onClick={handleProcessInstantPayout}
                 disabled={payoutDone}
-                className={`px-5 py-2.5 rounded-xl text-xs font-black flex items-center gap-2 shadow-lg transition-all active:scale-95 ${
+                className={`px-5 py-2.5 rounded-xl text-xs font-black flex items-center gap-2 shadow-lg transition-all active:scale-95 cursor-pointer ${
                   payoutDone
                     ? 'bg-emerald-600 text-white cursor-default'
                     : 'btn-red shadow-red-600/30'
@@ -400,11 +573,11 @@ export default function MatchResultsOCRPage() {
               >
                 {payoutDone ? (
                   <>
-                    <CheckCircle2 className="w-4 h-4" /> Payout Completed
+                    <CheckCircle2 className="w-4 h-4" /> Payout Distributed
                   </>
                 ) : (
                   <>
-                    <Zap className="w-4 h-4" /> 💰 Execute Instant Wallet Payout
+                    <Zap className="w-4 h-4" /> 💰 Distribute Money to Accounts (টাকা যোগ করুন)
                   </>
                 )}
               </button>
@@ -416,8 +589,9 @@ export default function MatchResultsOCRPage() {
               <thead>
                 <tr className="border-b border-gray-100 dark:border-white/5 text-[10px] text-gray-500 uppercase">
                   <th className="py-2.5 px-3">Rank</th>
-                  <th className="py-2.5 px-3">OCR Name</th>
-                  <th className="py-2.5 px-3">Matched Player (IGN)</th>
+                  <th className="py-2.5 px-3">OCR Scanned</th>
+                  <th className="py-2.5 px-3">Matched Player & UID (আইডি ও নাম)</th>
+                  <th className="py-2.5 px-3">Account Status</th>
                   <th className="py-2.5 px-3">Kills</th>
                   <th className="py-2.5 px-3">Kill Prize</th>
                   <th className="py-2.5 px-3">Rank Prize</th>
@@ -438,20 +612,34 @@ export default function MatchResultsOCRPage() {
                     </td>
                     <td className="py-3 px-3 font-mono text-gray-500">{row.rawIgn}</td>
                     <td className="py-3 px-3">
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-extrabold text-gray-900 dark:text-white">
+                      <div>
+                        <span className="font-extrabold text-gray-900 dark:text-white block">
                           {row.matchedPlayerIgn}
                         </span>
-                        {row.isMatched ? (
-                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 font-bold">
-                            {(row.confidence * 100).toFixed(0)}% Match
-                          </span>
-                        ) : (
-                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 font-bold">
-                            Manual
+                        {row.matchedPlayerUid && (
+                          <span className="text-[10px] font-mono text-gray-500">
+                            UID: <span className="font-bold text-amber-500">{row.matchedPlayerUid}</span>
                           </span>
                         )}
                       </div>
+                    </td>
+                    <td className="py-3 px-3">
+                      {row.isMatched ? (
+                        <div className="space-y-0.5">
+                          <span className="inline-flex items-center gap-1 text-[9px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 font-bold border border-emerald-300 dark:border-emerald-800">
+                            <Check className="w-3 h-3" /> Account Verified
+                          </span>
+                          {row.userPhone && (
+                            <span className="block text-[9px] font-mono text-gray-400">
+                              {row.userPhone}
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-[9px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 font-bold">
+                          Manual / Guest
+                        </span>
+                      )}
                     </td>
                     <td className="py-3 px-3">
                       <input
@@ -518,10 +706,14 @@ export default function MatchResultsOCRPage() {
                     <td className="py-2.5 px-3 text-gray-500">
                       {new Date(log.processedAt).toLocaleString('en-US')}
                     </td>
-                    <td className="py-2.5 px-3">{log.processedBy}</td>
-                    <td className="py-2.5 px-3 font-mono">{log.totalParticipantsMatched}</td>
-                    <td className="py-2.5 px-3 text-right font-mono font-bold text-emerald-500">
-                      ৳ {log.totalPrizeDistributed}
+                    <td className="py-2.5 px-3 text-gray-600 dark:text-gray-300">
+                      {log.processedBy}
+                    </td>
+                    <td className="py-2.5 px-3 font-mono font-bold text-amber-500">
+                      {log.totalParticipantsMatched} Players
+                    </td>
+                    <td className="py-2.5 px-3 text-right font-mono font-black text-emerald-500">
+                      ৳{log.totalPrizeDistributed}
                     </td>
                   </tr>
                 ))}

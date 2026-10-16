@@ -2,12 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { FolderEdit, Check, AlertCircle, Image as ImageIcon, ArrowLeft } from 'lucide-react';
+import { FolderEdit, Check, AlertCircle, Image as ImageIcon, ArrowLeft, Trash2 } from 'lucide-react';
 import { useCMS } from '@/lib/cms-store';
 import ImageUploadInput from '@/components/ImageUploadInput';
 
 export default function AdminCategoriesPage() {
-  const { categories, updateCategory, loaded } = useCMS();
+  const { categories, updateCategory, deleteCategory, loaded } = useCMS();
   const categoriesList = Object.values(categories);
 
   const [selectedSlug, setSelectedSlug] = useState('classic-match');
@@ -66,6 +66,31 @@ export default function AdminCategoriesPage() {
     } finally {
       setIsSaving(false);
       setTimeout(() => setToast(null), 3000);
+    }
+  };
+
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    if (!selectedSlug) return;
+    const confirmDelete = window.confirm(
+      `আপনি কি নিশ্চিত যে "${name || selectedSlug}" ক্যাটাগরি ডিলিট করতে চান?\nAre you sure you want to delete this category? This action cannot be undone.`
+    );
+    if (!confirmDelete) return;
+
+    setIsDeleting(true);
+    try {
+      await deleteCategory(selectedSlug);
+      setToast({ text: `Category "${name || selectedSlug}" deleted successfully!`, type: 'success' });
+      const remainingSlugs = Object.keys(categories).filter((s) => s !== selectedSlug);
+      if (remainingSlugs.length > 0) {
+        handleSelectCategory(remainingSlugs[0]);
+      }
+    } catch {
+      setToast({ text: 'Failed to delete category', type: 'error' });
+    } finally {
+      setIsDeleting(false);
+      setTimeout(() => setToast(null), 3500);
     }
   };
 
@@ -233,11 +258,21 @@ export default function AdminCategoriesPage() {
             />
           </div>
 
-          <div className="flex justify-end pt-2">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={isDeleting || isSaving}
+              className="w-full sm:w-auto px-5 py-3 rounded-xl text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-900/60 border border-red-200 dark:border-red-900/40 transition-all flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span>{isDeleting ? 'Deleting Category...' : 'Delete Category (ক্যাটাগরি ডিলিট)'}</span>
+            </button>
+
             <button
               type="submit"
-              disabled={isSaving}
-              className="px-6 py-3 rounded-xl text-xs font-black btn-red shadow-md shadow-red-600/30 disabled:opacity-50 flex items-center gap-2"
+              disabled={isSaving || isDeleting}
+              className="w-full sm:w-auto px-6 py-3 rounded-xl text-xs font-black btn-red shadow-md shadow-red-600/30 disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {isSaving ? 'Saving Category...' : 'Save Category Information'}
             </button>

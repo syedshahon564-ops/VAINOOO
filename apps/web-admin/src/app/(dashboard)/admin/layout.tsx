@@ -235,7 +235,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   // Navigation Links for Authenticated Owner
   const links = [
     { label: '📊 Dashboard', href: '/admin', icon: LayoutDashboard },
-    { label: '🖼️ Slider Banners', href: '/admin?tab=banners', icon: ImageIcon },
+    { label: '🖼️ Slider Banners', href: '/admin/banners', icon: ImageIcon },
     { label: '🎮 Match Management', href: '/admin/tournaments', icon: Trophy },
     { label: '🏆 Match OCR Payout', href: '/admin/match-results', icon: Scan },
     { label: '🔔 Push Notifications', href: '/admin/notifications', icon: Bell },
