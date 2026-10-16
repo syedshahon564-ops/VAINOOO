@@ -196,3 +196,9 @@ html, body {
   contain-intrinsic-size: 150px 320px;
 }
 
+/* Safe area inset support for mobile gesture bars */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+

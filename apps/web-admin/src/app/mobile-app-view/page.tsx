@@ -1141,7 +1141,7 @@ export default function MobileAppViewPage(props: any) {
     <div
       className={
         isMobileView
-          ? 'w-full h-screen h-[100dvh] overflow-hidden transition-colors'
+          ? 'fixed inset-0 w-full h-full h-[100dvh] max-h-[100dvh] overflow-hidden flex flex-col transition-colors bg-white'
           : 'min-h-screen bg-slate-100 dark:bg-[#07070a] py-8 px-4 transition-colors'
       }
     >
@@ -1153,7 +1153,7 @@ export default function MobileAppViewPage(props: any) {
         </div>
       )}
 
-      <div className={isMobileView ? 'w-full h-full flex flex-col overflow-hidden' : 'max-w-7xl mx-auto'}>
+      <div className={isMobileView ? 'w-full h-full flex flex-col flex-1 min-h-0 overflow-hidden' : 'max-w-7xl mx-auto'}>
         {/* Top Breadcrumb & Controls */}
         {!isMobileView && (
           <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-8 bg-white dark:bg-white/5 p-5 rounded-2xl border border-gray-200 dark:border-white/10 shadow-sm">
@@ -1239,7 +1239,7 @@ export default function MobileAppViewPage(props: any) {
         <div
           className={
             isMobileView
-              ? 'w-full h-full flex flex-col flex-1 overflow-hidden'
+              ? 'w-full h-full flex flex-col flex-1 min-h-0 overflow-hidden'
               : 'grid grid-cols-1 lg:grid-cols-12 gap-8 items-start'
           }
         >
@@ -1247,7 +1247,7 @@ export default function MobileAppViewPage(props: any) {
           <div
             className={
               isMobileView
-                ? 'w-full h-full flex flex-col flex-1 overflow-hidden'
+                ? 'w-full h-full flex flex-col flex-1 min-h-0 overflow-hidden'
                 : 'lg:col-span-5 flex justify-center'
             }
           >
@@ -1255,7 +1255,7 @@ export default function MobileAppViewPage(props: any) {
             <div
               className={
                 isMobileView
-                  ? 'w-full h-full flex flex-col flex-1 p-0 border-0 rounded-none shadow-none bg-transparent overflow-hidden'
+                  ? 'w-full h-full flex flex-col flex-1 min-h-0 p-0 border-0 rounded-none shadow-none bg-transparent overflow-hidden'
                   : 'relative w-[370px] sm:w-[390px] h-[780px] bg-slate-900 rounded-[50px] p-3 shadow-2xl ring-1 ring-white/20 shadow-red-500/10 border-4 border-slate-700 flex flex-col'
               }
             >
@@ -1271,7 +1271,7 @@ export default function MobileAppViewPage(props: any) {
               <div
                 onTouchStart={(e) => {
                   const t = e.touches[0];
-                  if (t.clientX < 80) {
+                  if (t.clientX < 28) {
                     setEdgeTouchStart({ x: t.clientX, y: t.clientY });
                   }
                 }}
@@ -1286,12 +1286,12 @@ export default function MobileAppViewPage(props: any) {
                   setEdgeTouchStart(null);
                 }}
                 className={`relative w-full ${
-                  isMobileView ? 'h-full flex-1 rounded-none' : 'h-full rounded-[40px]'
-                } overflow-hidden flex flex-col font-sans bg-white text-gray-900`}
+                  isMobileView ? 'h-full flex-1 min-h-0 rounded-none' : 'h-full rounded-[40px]'
+                } overflow-hidden flex flex-col min-h-0 font-sans bg-white text-gray-900`}
               >
                 {/* Status Bar */}
                 {!isMobileView && (
-                  <div className="pt-3 px-6 pb-2 flex justify-between items-center text-[11px] font-bold tracking-tight opacity-75 z-40 select-none">
+                  <div className="flex-shrink-0 pt-3 px-6 pb-2 flex justify-between items-center text-[11px] font-bold tracking-tight opacity-75 z-40 select-none">
                     <span>3:41</span>
                     <div className="flex items-center gap-1.5">
                       <span>5G</span>
@@ -1302,7 +1302,7 @@ export default function MobileAppViewPage(props: any) {
 
                 {/* Guest Notice Bar if not logged in */}
                 {!currentUser && (
-                  <div className="bg-gradient-to-r from-red-600 via-rose-600 to-amber-600 px-3.5 py-2 text-white flex items-center justify-between text-xs font-bold select-none z-40 shadow-sm">
+                  <div className="flex-shrink-0 bg-gradient-to-r from-red-600 via-rose-600 to-amber-600 px-3.5 py-2 text-white flex items-center justify-between text-xs font-bold select-none z-40 shadow-sm">
                     <div className="flex items-center gap-1.5 truncate">
                       <Sparkles className="w-4 h-4 text-amber-300 flex-shrink-0 animate-pulse" />
                       <span className="truncate text-[11px] font-bold">
@@ -1334,7 +1334,7 @@ export default function MobileAppViewPage(props: any) {
 
                 {/* Mobile App Header (Matching Image 1 when in category: < Solo Full Map) */}
                 <div
-                  className="px-4 py-3 flex items-center justify-between border-b border-gray-200 bg-white relative z-30 shadow-sm"
+                  className="flex-shrink-0 px-4 py-3 flex items-center justify-between border-b border-gray-200 bg-white relative z-30 shadow-sm"
                 >
                   {selectedCategory && currentCategoryData ? (
                     /* EXACT IMAGE 1 TOP HEADER: < Solo Full Map */
@@ -1495,7 +1495,7 @@ export default function MobileAppViewPage(props: any) {
 
                 {/* Success Banner */}
                 {joinedSuccess && (
-                  <div className="bg-emerald-600 text-white text-xs px-3 py-2 text-center font-bold flex items-center justify-center gap-1.5 animate-pulse">
+                  <div className="flex-shrink-0 bg-emerald-600 text-white text-xs px-3 py-2 text-center font-bold flex items-center justify-center gap-1.5 animate-pulse">
                     <CheckCircle className="w-4 h-4" /> {tPhone('ম্যাচ স্লট বুকিং সফল হয়েছে!', 'Match slot booking confirmed!')}
                   </div>
                 )}
@@ -1506,7 +1506,7 @@ export default function MobileAppViewPage(props: any) {
                   onTouchStart={handleTouchStart}
                   onTouchMove={handleTouchMove}
                   onTouchEnd={handleTouchEnd}
-                  className="flex-1 overflow-y-auto p-3 space-y-3 relative overscroll-y-contain [-webkit-overflow-scrolling:touch] touch-pan-y"
+                  className="flex-1 min-h-0 overflow-y-auto p-3 space-y-3 relative overscroll-y-contain [-webkit-overflow-scrolling:touch] touch-pan-y pb-24"
                 >
                   {/* Pull-to-refresh spinner indicator */}
                   {(isPulling || isRefreshing) && (
@@ -2866,11 +2866,12 @@ export default function MobileAppViewPage(props: any) {
 
                 {/* 5-ICON BOTTOM NAVIGATION BAR (BILINGUAL SYSTEM) */}
                 <div
-                  className={`sticky bottom-0 h-16 px-2 flex items-center justify-around border-t z-40 select-none backdrop-blur-md pb-safe ${
+                  className={`flex-shrink-0 h-16 w-full px-2 flex items-center justify-around border-t z-40 select-none pb-safe shadow-[0_-4px_12px_rgba(0,0,0,0.06)] ${
                     phoneTheme === 'dark'
-                      ? 'bg-[#14141c]/95 border-white/10'
-                      : 'bg-white/95 border-slate-200'
+                      ? 'bg-[#14141c] border-white/10'
+                      : 'bg-white border-slate-200'
                   }`}
+                  style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
                 >
                   {/* 1. MATCH */}
                   <button

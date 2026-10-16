@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { ShieldCheck, Heart, Zap, Trophy } from 'lucide-react';
 import { useCMS } from '@/lib/cms-store';
 import { useViewMode } from '@/lib/view-mode';
@@ -9,8 +10,9 @@ import { useViewMode } from '@/lib/view-mode';
 export default function Footer() {
   const { settings } = useCMS();
   const { isApp } = useViewMode();
+  const pathname = usePathname();
 
-  if (isApp) return null;
+  if (isApp || pathname === '/mobile-app-view') return null;
 
   return (
     <footer className="border-t border-gray-200 dark:border-white/[0.08] bg-white dark:bg-[#07070a] pt-16 pb-12 mt-20 transition-colors">
