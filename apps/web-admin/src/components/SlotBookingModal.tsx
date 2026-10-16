@@ -56,6 +56,11 @@ export default function SlotBookingModal({
   const isDuo = matchTypeLower.includes('duo');
   const isSolo = !isSquad && !isDuo;
 
+  const isClassicMatch =
+    (match.categorySlug || '').toLowerCase().includes('classic') ||
+    (match.title || '').toLowerCase().includes('classic') ||
+    ((match as any).category || '').toLowerCase().includes('classic');
+
   const isClashSquad =
     (match.categorySlug || '').toLowerCase().includes('clash') ||
     (match.categorySlug || '').toLowerCase().includes('cs') ||
@@ -63,12 +68,18 @@ export default function SlotBookingModal({
     (match.title || '').toLowerCase().includes('clash') ||
     (match.title || '').toLowerCase().includes('cs ');
 
-  // SQUAD ONLY starts at 'SELECT_SLOT'. Solo & Duo go directly to 'PLAYER_DETAILS'
+  // Slot system is enabled for Squad matches, AND exclusively for Classic Solo and Classic Duo matches
+  // "ar solo duo 2 tai tey slot system kore daw khli classic match tar baki onno kno match a nh"
+  const hasSlotSelection = isSquad || (isClassicMatch && (isSolo || isDuo));
+
+  const totalSlotCount = isSquad ? 12 : isDuo ? 24 : 48;
+
+  // Starts at 'SELECT_SLOT' if slot system is enabled, otherwise directly goes to 'PLAYER_DETAILS'
   const [currentStep, setCurrentStep] = useState<'SELECT_SLOT' | 'PLAYER_DETAILS'>(
-    isSquad ? 'SELECT_SLOT' : 'PLAYER_DETAILS'
+    hasSlotSelection ? 'SELECT_SLOT' : 'PLAYER_DETAILS'
   );
 
-  // Selected slot for Squad
+  // Selected slot
   const [selectedSlotNumber, setSelectedSlotNumber] = useState<number | null>(null);
 
   // Player state: 4 for Squad, 2 for Duo, 1 for Solo
@@ -321,16 +332,17 @@ export default function SlotBookingModal({
     }
   };
 
-  const handleSelectSquadSlot = (slotNum: number) => {
+  const handleSelectSlot = (slotNum: number) => {
     if (bookedSlotsMap[slotNum]) return;
     setSelectedSlotNumber(slotNum);
     setErrorMessage(null);
   };
+  const handleSelectSquadSlot = handleSelectSlot;
 
-  // Move from Step 1 to Step 2 (Squad only)
+  // Move from Step 1 to Step 2 (for Squad, and Classic Solo & Duo)
   const handleProceedToPlayerDetails = () => {
-    if (isSquad && !selectedSlotNumber) {
-      setErrorMessage('Please select an available slot first (e.g. Slot #1).');
+    if (hasSlotSelection && !selectedSlotNumber) {
+      setErrorMessage('দয়া করে প্রথমে একটি ফাঁকা স্লট নির্বাচন করুন (যেমন Slot #1)।');
       return;
     }
     setErrorMessage(null);
@@ -431,6 +443,12 @@ export default function SlotBookingModal({
 
     // 2. DUO MODE (Leader required, Player 2 optional)
     if (isDuo) {
+      if (hasSlotSelection && !selectedSlotNumber) {
+        setErrorMessage('দয়া করে আপনার ডুয়ো স্লট নির্বাচন করুন।');
+        setCurrentStep('SELECT_SLOT');
+        return;
+      }
+
       const p1 = duoPlayers[0];
       const p1Name = p1.ign?.trim();
       const p1Uid = cleanUid(p1.uid);
@@ -452,7 +470,7 @@ export default function SlotBookingModal({
         })
         .filter((p, idx) => idx === 0 || Boolean(duoPlayers[idx].ign?.trim() || cleanUid(duoPlayers[idx].uid)));
 
-      const assignedSlot = getNextAvailableSlot();
+      const assignedSlot = (hasSlotSelection && selectedSlotNumber) ? selectedSlotNumber : getNextAvailableSlot();
       const leaderIgn = validDuoPlayers[0]?.ign || p1Name || 'Leader';
       const leaderUid = validDuoPlayers[0]?.uid || p1Uid || '---';
 
@@ -481,7 +499,13 @@ export default function SlotBookingModal({
       return;
     }
 
-    // 3. SOLO MODE (No slot grid - direct registration for 1 player)
+    // 3. SOLO MODE (Single player)
+    if (hasSlotSelection && !selectedSlotNumber) {
+      setErrorMessage('দয়া করে আপনার সোলো স্লট নির্বাচন করুন।');
+      setCurrentStep('SELECT_SLOT');
+      return;
+    }
+
     const soloName = soloPlayer.ign?.trim();
     const soloUid = cleanUid(soloPlayer.uid);
 
@@ -493,7 +517,7 @@ export default function SlotBookingModal({
     const finalSoloName = soloName || (soloUid ? `FF_${soloUid.slice(-4)}` : 'Player');
     const finalSoloUid = soloUid || '---';
 
-    const assignedSlot = getNextAvailableSlot();
+    const assignedSlot = (hasSlotSelection && selectedSlotNumber) ? selectedSlotNumber : getNextAvailableSlot();
 
     setBookedSlotsMap((prev) => ({
       ...prev,
@@ -541,8 +565,12 @@ export default function SlotBookingModal({
               </span>
             </div>
             <h3 className="text-lg font-black text-gray-900">
-              {isSquad && currentStep === 'SELECT_SLOT'
-                ? 'Select Slot'
+              {currentStep === 'SELECT_SLOT'
+                ? isSquad
+                  ? 'Select Squad Slot'
+                  : isDuo
+                  ? 'Select Classic Duo Slot'
+                  : 'Select Classic Solo Slot'
                 : isSquad
                 ? 'Enter Squad Player Details'
                 : isDuo
@@ -558,8 +586,8 @@ export default function SlotBookingModal({
           </button>
         </div>
 
-        {/* STEP 1: SELECT SQUAD SLOT (ONLY FOR SQUAD MATCHES) */}
-        {isSquad && currentStep === 'SELECT_SLOT' && (
+        {/* STEP 1: SELECT SLOT (FOR SQUAD, AND EXCLUSIVELY FOR CLASSIC SOLO & CLASSIC DUO) */}
+        {hasSlotSelection && currentStep === 'SELECT_SLOT' && (
           <>
             {/* Legend */}
             <div className="flex items-center justify-between text-xs font-bold text-gray-700 px-3 py-2 bg-gray-50 border border-gray-100 rounded-xl">
@@ -577,15 +605,17 @@ export default function SlotBookingModal({
               </div>
             </div>
 
-            {/* Scrollable Squad Slots Grid: 12 SLOTS (NO "Team" word, just "Slot #1", "Slot #2"...) */}
-            <div className="flex-1 overflow-y-auto py-2 space-y-3 pr-1">
+            {/* Scrollable Slots Grid */}
+            <div className="flex-1 overflow-y-auto py-2 space-y-3 pr-1 max-h-[50vh]">
               <div className="text-xs font-bold text-gray-600 flex items-center justify-between">
-                <span>Choose your Squad Slot:</span>
-                <span className="text-red-600 font-black">12 Slots (48 Players)</span>
+                <span>{isSquad ? 'Choose your Squad Slot:' : isDuo ? 'Choose your Duo Slot:' : 'Choose your Solo Slot:'}</span>
+                <span className="text-red-600 font-black">
+                  {isSquad ? '12 Slots (48 Players)' : isDuo ? '24 Slots (48 Players)' : '48 Slots (48 Players)'}
+                </span>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                {Array.from({ length: 12 }, (_, tIndex) => {
+              <div className={`grid ${totalSlotCount > 24 ? 'grid-cols-3 sm:grid-cols-6' : 'grid-cols-2 sm:grid-cols-4'} gap-2`}>
+                {Array.from({ length: totalSlotCount }, (_, tIndex) => {
                   const slotNum = tIndex + 1;
                   const booked = bookedSlotsMap[slotNum];
                   const isSelected = selectedSlotNumber === slotNum;
@@ -595,8 +625,10 @@ export default function SlotBookingModal({
                       key={slotNum}
                       type="button"
                       disabled={!!booked}
-                      onClick={() => handleSelectSquadSlot(slotNum)}
-                      className={`p-3 rounded-2xl border text-center transition-all flex flex-col justify-between h-20 ${
+                      onClick={() => handleSelectSlot(slotNum)}
+                      className={`p-2.5 rounded-xl border text-center transition-all flex flex-col justify-between ${
+                        totalSlotCount > 24 ? 'h-16' : 'h-20'
+                      } ${
                         booked
                           ? 'bg-red-50 border-red-200 text-red-600 cursor-not-allowed opacity-75'
                           : isSelected
@@ -606,12 +638,12 @@ export default function SlotBookingModal({
                     >
                       <div className="flex items-center justify-between text-[11px] font-bold">
                         <span className="flex items-center gap-1">
-                          <Users className="w-3 h-3" />
+                          {isSolo ? <User className="w-3 h-3" /> : <Users className="w-3 h-3" />}
                           Slot #{slotNum}
                         </span>
-                        <span className="text-[9px] opacity-75">4P</span>
+                        <span className="text-[9px] opacity-75">{isSquad ? '4P' : isDuo ? '2P' : '1P'}</span>
                       </div>
-                      <div className="text-xs font-black truncate">
+                      <div className="text-[11px] font-black truncate">
                         {booked
                           ? `${booked.ign} (Booked)`
                           : isSelected
@@ -658,12 +690,12 @@ export default function SlotBookingModal({
           </>
         )}
 
-        {/* STEP 2: PLAYER DETAILS (Squad Step 2, OR Direct Registration for Solo & Duo) */}
+        {/* STEP 2: PLAYER DETAILS (For Squad / Classic Slot matches, or Direct Registration) */}
         {currentStep === 'PLAYER_DETAILS' && (
           <>
             {/* Top Info Banner */}
             <div className="flex items-center justify-between bg-gray-50 p-3 rounded-xl border border-gray-200">
-              {isSquad ? (
+              {hasSlotSelection && selectedSlotNumber ? (
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
