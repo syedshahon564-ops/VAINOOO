@@ -68,7 +68,7 @@ const DEFAULT_INITIAL_BANNERS: BannerSlide[] = [
     badge: '100% SAFE & AUTOMATED',
     title: 'ADVANCED ANTI-CHEAT & INSTANT WITHDRAW',
     subtitle: 'সম্পূর্ণ ফেয়ার টুর্নামেন্ট সিকিউরিটি ও ২৪/৭ লাইভ কাস্টমার সাপোর্ট। আইডি লেভেল ৫৫+ বাধ্যতামূলক।',
-    image: '/logo.png',
+    image: 'https://images.unsplash.com/photo-1538481199705-c710c4e965fc?q=80&w=1400',
     actionText: 'Telegram Support',
     actionUrl: 'https://t.me/ffrivaltourbd',
   },
@@ -183,7 +183,7 @@ export default function AdminMasterPage() {
     }
   }, []);
 
-  // Synchronize category form fields whenever selectedCatSlug or categories updates
+  // Synchronize category form fields ONLY when user switches category
   useEffect(() => {
     const cat = categories[selectedCatSlug];
     if (cat) {
@@ -194,7 +194,7 @@ export default function AdminMasterPage() {
       setCatDescription(cat.description || '');
       setCatCustomRules(cat.customRules || '');
     }
-  }, [selectedCatSlug, categories]);
+  }, [selectedCatSlug]);
 
   const hasLoadedSettingsRef = React.useRef(false);
 
@@ -463,17 +463,21 @@ export default function AdminMasterPage() {
   };
 
   // 5. HANDLE SAVE CATEGORY
-  const handleSaveCategory = (e: React.FormEvent) => {
+  const handleSaveCategory = async (e: React.FormEvent) => {
     e.preventDefault();
-    updateCategory(selectedCatSlug, {
-      name: catName,
-      section: catSection,
-      bannerImage: catBannerImage,
-      avatarImage: catAvatarImage,
-      description: catDescription,
-      customRules: catCustomRules,
-    });
-    showToast(`Category "${catName}" updated successfully!`);
+    try {
+      await updateCategory(selectedCatSlug, {
+        name: catName,
+        section: catSection,
+        bannerImage: catBannerImage,
+        avatarImage: catAvatarImage,
+        description: catDescription,
+        customRules: catCustomRules,
+      });
+      showToast(`Category "${catName}" updated successfully!`);
+    } catch {
+      showToast('Failed to save category', 'error');
+    }
   };
 
   // 6. HANDLE SAVE RULES

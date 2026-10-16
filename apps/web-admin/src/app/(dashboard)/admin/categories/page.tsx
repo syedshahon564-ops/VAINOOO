@@ -19,9 +19,10 @@ export default function AdminCategoriesPage() {
   const [avatarImage, setAvatarImage] = useState(activeCategory?.avatarImage || '');
   const [description, setDescription] = useState(activeCategory?.description || '');
   const [customRules, setCustomRules] = useState(activeCategory?.customRules || '');
+  const [isSaving, setIsSaving] = useState(false);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  // Synchronize form fields whenever selectedSlug or categories updates from CMS
+  // Synchronize form fields ONLY when user switches category
   useEffect(() => {
     const cat = categories[selectedSlug];
     if (cat) {
@@ -32,7 +33,7 @@ export default function AdminCategoriesPage() {
       setDescription(cat.description || '');
       setCustomRules(cat.customRules || '');
     }
-  }, [selectedSlug, categories]);
+  }, [selectedSlug]);
 
   const handleSelectCategory = (slug: string) => {
     setSelectedSlug(slug);
@@ -47,18 +48,25 @@ export default function AdminCategoriesPage() {
     }
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    updateCategory(selectedSlug, {
-      name,
-      section,
-      bannerImage,
-      avatarImage,
-      description,
-      customRules,
-    });
-    setToast({ text: `Category "${name}" updated successfully!`, type: 'success' });
-    setTimeout(() => setToast(null), 3000);
+    setIsSaving(true);
+    try {
+      await updateCategory(selectedSlug, {
+        name,
+        section,
+        bannerImage,
+        avatarImage,
+        description,
+        customRules,
+      });
+      setToast({ text: `Category "${name}" updated successfully!`, type: 'success' });
+    } catch {
+      setToast({ text: `Failed to update category`, type: 'error' });
+    } finally {
+      setIsSaving(false);
+      setTimeout(() => setToast(null), 3000);
+    }
   };
 
   return (
@@ -211,9 +219,10 @@ export default function AdminCategoriesPage() {
           <div className="flex justify-end pt-2">
             <button
               type="submit"
-              className="px-6 py-3 rounded-xl text-xs font-black btn-red shadow-md shadow-red-600/30"
+              disabled={isSaving}
+              className="px-6 py-3 rounded-xl text-xs font-black btn-red shadow-md shadow-red-600/30 disabled:opacity-50 flex items-center gap-2"
             >
-              Save Category Information
+              {isSaving ? 'Saving Category...' : 'Save Category Information'}
             </button>
           </div>
         </form>

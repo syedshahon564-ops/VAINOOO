@@ -41,9 +41,9 @@ export default function WalletPage() {
 
   function loadHistory() {
     const user = getCurrentUser();
-    const userId = user?.id || 'u-1';
+    const userId = user?.id;
     const allTxs = getTransactions();
-    const txs = allTxs.filter((t) => !userId || t.userId === userId);
+    const txs = userId ? allTxs.filter((t) => t.userId === userId) : [];
     if (txs.length > 0) {
       setHistory(
         txs.map((t) => ({
@@ -61,17 +61,7 @@ export default function WalletPage() {
         }))
       );
     } else {
-      setHistory([
-        {
-          id: 'demo-tx-1',
-          type: 'DEPOSIT',
-          method: 'BKASH',
-          amount: 200,
-          trxId: 'BKA8941729',
-          status: 'APPROVED',
-          createdAt: new Date().toISOString(),
-        },
-      ]);
+      setHistory([]);
     }
   }
 

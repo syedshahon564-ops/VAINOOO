@@ -2572,12 +2572,20 @@ export default function MobileAppViewPage(props: any) {
                           {tPhone('সাম্প্রতিক লেনদেন হিস্ট্রি', 'Recent Transactions')}
                         </span>
                         <div className="space-y-1.5">
-                          {getTransactions().length === 0 ? (
-                            <div className="p-4 rounded-xl border border-dashed border-gray-200 bg-gray-50 text-center text-[11px] text-gray-500 font-semibold">
-                              {tPhone('কোনো সাম্প্রতিক লেনদেন নেই', 'No recent transactions found')}
-                            </div>
-                          ) : (
-                            getTransactions().slice(0, 4).map((tx) => (
+                          {(() => {
+                            const userTxs = currentUser
+                              ? getTransactions().filter((tx) => tx.userId === currentUser.id)
+                              : [];
+
+                            if (userTxs.length === 0) {
+                              return (
+                                <div className="p-4 rounded-xl border border-dashed border-gray-200 bg-gray-50 text-center text-[11px] text-gray-500 font-semibold">
+                                  {tPhone('কোনো সাম্প্রতিক লেনদেন নেই', 'No recent transactions found')}
+                                </div>
+                              );
+                            }
+
+                            return userTxs.slice(0, 5).map((tx) => (
                               <div
                                 key={tx.id}
                                 className="p-2.5 rounded-xl border border-gray-200 bg-white flex items-center justify-between text-xs shadow-xs"
@@ -2608,8 +2616,8 @@ export default function MobileAppViewPage(props: any) {
                                   {tx.type === 'CREDIT' ? '+' : '-'}৳{tx.amount.toFixed(2)}
                                 </span>
                               </div>
-                            ))
-                          )}
+                            ));
+                          })()}
                         </div>
                       </div>
                     </div>

@@ -105,7 +105,10 @@ async function compressImageToDataUrl(
     try {
       // Direct client-side canvas compression: generates portable self-contained data URL
       // This bypasses server 404s and localStorage QuotaExceededError completely
-      const compressedDataUrl = await compressImageToDataUrl(file);
+      const targetW = isCircular ? 200 : 720;
+      const targetH = isCircular ? 200 : 380;
+      const targetQ = isCircular ? 0.75 : 0.68;
+      const compressedDataUrl = await compressImageToDataUrl(file, targetW, targetH, targetQ);
 
       if (compressedDataUrl) {
         onChange(compressedDataUrl);

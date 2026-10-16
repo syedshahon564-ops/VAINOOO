@@ -278,7 +278,7 @@ export const INITIAL_SETTINGS: SiteSettings = {
       badge: 'CHAMPIONSHIP 2026',
       title: 'JOIN DAILY FREE FIRE TOURNAMENTS & WIN REAL BDT',
       subtitle: 'ব্যাটল রয়্যাল, ক্ল্যাশ স্কোয়াড ৪v৪, লোন উলফ এবং ১v১ হেডশট লড়াই। স্বয়ংক্রিয় স্লট বুকিং ও দ্রুত বিকাশ/নগদে প্রাইজ উইথড্র।',
-      image: '/logo.png',
+      image: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1400',
       actionText: 'Telegram Community',
       actionUrl: 'https://t.me/ffrivaltourbd',
     },
@@ -287,7 +287,7 @@ export const INITIAL_SETTINGS: SiteSettings = {
       badge: 'MEGA PRIZE POOL',
       title: 'SPECIAL BR SURVIVAL & CLASH SQUAD 4V4',
       subtitle: 'প্রতিটি বুইয়াহ এবং কিলে নিশ্চিত ক্যাশ রিওয়ার্ড। সরাসরি বিকাশ ও নগদে সুপার ফাস্ট পেমেন্ট উইথড্রল!',
-      image: '/logo.png',
+      image: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?q=80&w=1400',
       actionText: 'Join Community',
       actionUrl: 'https://t.me/ffrivaltourbd',
     },
@@ -296,7 +296,7 @@ export const INITIAL_SETTINGS: SiteSettings = {
       badge: '100% SAFE & AUTOMATED',
       title: 'ADVANCED ANTI-CHEAT & INSTANT WITHDRAW',
       subtitle: 'সম্পূর্ণ ফেয়ার টুর্নামেন্ট সিকিউরিটি ও ২৪/৭ লাইভ কাস্টমার সাপোর্ট।',
-      image: '/logo.png',
+      image: 'https://images.unsplash.com/photo-1538481199705-c710c4e965fc?q=80&w=1400',
       actionText: 'Telegram Support',
       actionUrl: 'https://t.me/ffrivaltourbd',
     },
@@ -615,7 +615,7 @@ export function clearAllMatches(): void {
   }
 }
 
-export function updateCategory(slug: string, updated: Partial<CategoryItem>): void {
+export async function updateCategory(slug: string, updated: Partial<CategoryItem>): Promise<boolean> {
   const data = getCMSData();
   const existing = data.categories[slug] || INITIAL_CATEGORIES[slug] || {
     slug,
@@ -628,6 +628,7 @@ export function updateCategory(slug: string, updated: Partial<CategoryItem>): vo
   };
   data.categories[slug] = { ...existing, ...updated };
   saveCMSData(data);
+  return await saveCMSDataAsync(data);
 }
 
 export function updateSiteSettings(settings: Partial<SiteSettings>): Promise<boolean> {
