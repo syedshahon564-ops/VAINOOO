@@ -23,7 +23,6 @@ import { useLanguage } from '@/components/LanguageProvider';
 import { useCMS } from '@/lib/cms-store';
 import { getCurrentUser, logoutUser } from '@/lib/user-store';
 import DepositWithdrawModal from '@/components/DepositWithdrawModal';
-import SupportTicketModal from '@/components/SupportTicketModal';
 import { useViewMode } from '@/lib/view-mode';
 
 export default function Navbar() {
@@ -31,7 +30,6 @@ export default function Navbar() {
   const { isApp, setViewMode } = useViewMode();
   const [user, setUser] = useState<any>(null);
   const [showDepositModal, setShowDepositModal] = useState(false);
-  const [showSupportModal, setShowSupportModal] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const { language, toggleLanguage, t } = useLanguage();
   const { settings } = useCMS();
@@ -199,7 +197,7 @@ export default function Navbar() {
           {/* 24/7 Support Icon Button */}
           <button
             type="button"
-            onClick={() => setShowSupportModal(true)}
+            onClick={() => router.push('/support')}
             className="p-2 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center justify-center shadow-xs active:scale-95 transition-all hover:bg-emerald-100"
             title={t('২৪/৭ লাইভ সাপোর্ট', '24/7 Live Support')}
           >
@@ -258,13 +256,6 @@ export default function Navbar() {
       <DepositWithdrawModal
         isOpen={showDepositModal}
         onClose={() => setShowDepositModal(false)}
-      />
-
-      {/* Support Interactive Modal */}
-      <SupportTicketModal
-        isOpen={showSupportModal}
-        onClose={() => setShowSupportModal(false)}
-        lang={language as any}
       />
     </header>
   );

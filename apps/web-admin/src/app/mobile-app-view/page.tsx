@@ -70,9 +70,8 @@ import LiveMatchCountdown, {
   isMatchFinished,
 } from '@/components/LiveMatchCountdown';
 import DepositWithdrawModal from '@/components/DepositWithdrawModal';
-import SupportTicketModal from '@/components/SupportTicketModal';
 import SupportChatScreen from '@/components/SupportChatScreen';
-import { SupportTicket } from '@/lib/support-store';
+import { SupportTicket, getOrCreateUserConversation } from '@/lib/support-store';
 import { useLanguage } from '@/components/LanguageProvider';
 import { readClipboardText, toEnDigits } from '@/lib/clipboard';
 import {
@@ -342,7 +341,6 @@ export default function MobileAppViewPage(props: any) {
   const [notificationsList, setNotificationsList] = useState<AppNotification[]>([]);
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
   const [showPushBanner, setShowPushBanner] = useState(false);
-  const [showSupportModal, setShowSupportModal] = useState(false);
   const [activeChatTicket, setActiveChatTicket] = useState<SupportTicket | null>(null);
   const [edgeTouchStart, setEdgeTouchStart] = useState<{ x: number; y: number } | null>(null);
 
@@ -392,6 +390,13 @@ export default function MobileAppViewPage(props: any) {
     pushHash('tab-' + tab);
   };
 
+  const handleOpenSupport = () => {
+    const cur = getCurrentUser();
+    const conv = getOrCreateUserConversation(cur);
+    setActiveChatTicket(conv);
+    pushHistory('support-chat');
+  };
+
   const lastBackPressTimeRef = useRef<number>(0);
 
   const handleInAppBack = (): boolean => {
@@ -433,10 +438,6 @@ export default function MobileAppViewPage(props: any) {
     // 1. Modals & sub-screens (close top-most first)
     if (activeChatTicket) {
       setActiveChatTicket(null);
-      return true;
-    }
-    if (showSupportModal) {
-      setShowSupportModal(false);
       return true;
     }
     if (showFinanceModal) {
@@ -537,7 +538,6 @@ export default function MobileAppViewPage(props: any) {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     if (activeChatTicket) pushHash('chat-' + activeChatTicket.id);
-    else if (showSupportModal) pushHash('modal-support');
     else if (showFinanceModal) pushHash('modal-finance');
     else if (bookingModalMatch) pushHash('modal-booking-' + bookingModalMatch.id);
     else if (roomDetailsMatch) pushHash('modal-room-' + roomDetailsMatch.id);
@@ -553,7 +553,6 @@ export default function MobileAppViewPage(props: any) {
     else if (selectedCategory) pushHash('cat-' + selectedCategory);
   }, [
     activeChatTicket,
-    showSupportModal,
     showFinanceModal,
     bookingModalMatch,
     roomDetailsMatch,
@@ -1370,10 +1369,7 @@ export default function MobileAppViewPage(props: any) {
                         {/* Support Icon */}
                         <button
                           type="button"
-                          onClick={() => {
-                            setShowSupportModal(true);
-                            pushHistory('support-modal');
-                          }}
+                          onClick={handleOpenSupport}
                           title={tPhone('২৪/৭ লাইভ সাপোর্ট', '24/7 Live Support')}
                           className="p-1.5 rounded-full relative transition-all bg-emerald-50 hover:bg-emerald-100 text-emerald-600 border border-emerald-500/30 flex items-center justify-center active:scale-95 shadow-xs"
                         >
@@ -1474,10 +1470,7 @@ export default function MobileAppViewPage(props: any) {
 
                         <button
                           type="button"
-                          onClick={() => {
-                            setShowSupportModal(true);
-                            pushHistory('support-modal');
-                          }}
+                          onClick={handleOpenSupport}
                           title={tPhone('২৪/৭ লাইভ সাপোর্ট', '24/7 Live Support')}
                           className={`p-1.5 rounded-full relative transition-all flex items-center justify-center active:scale-95 shadow-xs ${
                             phoneTheme === 'dark'
@@ -2765,10 +2758,7 @@ export default function MobileAppViewPage(props: any) {
 
                             {/* 3. Report Bug */}
                             <div
-                              onClick={() => {
-                                setShowSupportModal(true);
-                                pushHistory('support-modal');
-                              }}
+                              onClick={handleOpenSupport}
                               className="bg-white rounded-2xl border border-slate-200/80 p-3 flex items-center justify-between shadow-xs hover:border-slate-300 transition-all cursor-pointer active:scale-[0.99]"
                             >
                               <div className="flex items-center gap-3">
@@ -2796,10 +2786,7 @@ export default function MobileAppViewPage(props: any) {
 
                             {/* 5. Support */}
                             <div
-                              onClick={() => {
-                                setShowSupportModal(true);
-                                pushHistory('support-modal');
-                              }}
+                              onClick={handleOpenSupport}
                               className="bg-white rounded-2xl border border-slate-200/80 p-3 flex items-center justify-between shadow-xs hover:border-slate-300 transition-all cursor-pointer active:scale-[0.99]"
                             >
                               <div className="flex items-center gap-3">
@@ -3922,17 +3909,6 @@ export default function MobileAppViewPage(props: any) {
           </div>
         </div>
       )}
-
-      {/* Support Ticket Modal */}
-      <SupportTicketModal
-        isOpen={showSupportModal}
-        onClose={() => setShowSupportModal(false)}
-        lang={phoneLang}
-        onOpenChat={(tkt) => {
-          setActiveChatTicket(tkt);
-          pushHistory('support-chat');
-        }}
-      />
 
       {/* Dedicated Fresh Full-Screen Support Chat Screen */}
       {activeChatTicket && (

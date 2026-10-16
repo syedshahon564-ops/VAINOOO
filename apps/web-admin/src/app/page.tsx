@@ -20,14 +20,12 @@ import {
 import { useCMS, isMatchFinished } from '@/lib/cms-store';
 import { useLanguage } from '@/components/LanguageProvider';
 import AppDownloadModal from '@/components/AppDownloadModal';
-import SupportTicketModal from '@/components/SupportTicketModal';
 import MobileAppViewPage from './mobile-app-view/page';
 import { useViewMode } from '@/lib/view-mode';
 
 export default function HomePage() {
   const [showNotice, setShowNotice] = useState(true);
   const [showDownloadModal, setShowDownloadModal] = useState(false);
-  const [showSupportModal, setShowSupportModal] = useState(false);
   const { categories, matches, settings } = useCMS();
   const { t, language } = useLanguage();
   const { isApp, setViewMode } = useViewMode();

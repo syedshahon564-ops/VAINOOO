@@ -734,3 +734,72 @@ export async function deleteSupportTicket(ticketId: string): Promise<boolean> {
   saveSupportTickets(all);
   return true;
 }
+
+/**
+ * Retrieves the persistent, continuous live support chat conversation for the user,
+ * preserving all previous chat history across sessions and initializing with a warm AI greeting.
+ */
+export function getOrCreateUserConversation(user?: { id?: string; phone?: string; ign?: string } | null): SupportTicket {
+  const all = getSupportTickets();
+  const userId = user?.id || 'u-guest';
+  const userPhone = user?.phone || '01700000000';
+  const userIgn = user?.ign || 'Player';
+
+  // 1. Look for existing conversation for this user
+  let conv = all.find(
+    (t) => t.userId === userId || (userPhone && userPhone !== '01700000000' && t.userPhone === userPhone)
+  );
+
+  // 2. If guest and any ticket exists, use the latest one
+  if (!conv && userId === 'u-guest' && all.length > 0) {
+    conv = all[0];
+  }
+
+  // 3. If none exists, create the initial persistent conversation
+  if (!conv) {
+    const now = new Date().toISOString();
+    const cleanId = 'chat-' + (userId.replace(/[^a-zA-Z0-9]/g, '') || 'player') + '-' + Date.now().toString().slice(-4);
+    conv = {
+      id: cleanId,
+      userId,
+      userPhone,
+      userIgn,
+      subject: '24/7 Live Support Chat',
+      category: 'OTHER',
+      status: 'OPEN',
+      priority: 'MEDIUM',
+      createdAt: now,
+      updatedAt: now,
+      messages: [
+        {
+          id: 'msg-welcome-' + Date.now(),
+          senderRole: 'AI_BOT',
+          senderName: 'AI Support',
+          isAi: true,
+          message: `🤖 হ্যালো ${userIgn}! FF RIVAL TOUR BD-এর অফিসিয়াল ২৪/৭ লাইভ সাপোর্ট চ্যাটে স্বাগতম।\n\nটুর্নামেন্ট, ম্যাচ রুম আইডি ও পাসওয়ার্ড (৮ মিনিট নিয়ম), ক্লাসিক সোলো/ডুয়ো স্লট বুকিং, বিকাশ/নগদ ডিপোজিট বা উইথড্র—যেকোনো প্রশ্ন করুন, আমি সাথে সাথে সমাধান দিচ্ছি!`,
+          timestamp: now,
+        },
+      ],
+    };
+    all.unshift(conv);
+    saveSupportTickets(all);
+
+    // Sync initial ticket to server API in background
+    fetch('/api/support/tickets', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: cleanId,
+        userId,
+        userPhone,
+        userIgn,
+        subject: conv.subject,
+        category: conv.category,
+        message: conv.messages[0].message,
+      }),
+    }).catch(() => {});
+  }
+
+  return conv;
+}
+

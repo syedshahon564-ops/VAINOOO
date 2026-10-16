@@ -250,43 +250,40 @@ export default function SupportChatScreen({
             type="button"
             onClick={onBack}
             className="p-2 -ml-1 rounded-full hover:bg-gray-100 active:scale-90 text-gray-700 transition-all flex items-center gap-1 font-bold text-xs"
-            title={t('স্লাইড ব্যাক', 'Slide Back')}
+            title={t('ফিরে যান', 'Back')}
           >
             <ArrowLeft className="w-5 h-5 text-gray-800" />
             <span className="hidden sm:inline">{t('ফিরে যান', 'Back')}</span>
           </button>
 
-          <div className="leading-tight">
-            <div className="flex items-center gap-2">
-              <span className="font-mono text-[10px] font-black text-red-600 bg-red-50 px-1.5 py-0.5 rounded border border-red-200">
-                #{ticket.id}
-              </span>
-              <span
-                className={`text-[9px] font-black px-2 py-0.5 rounded-full ${
-                  ticket.status === 'OPEN'
-                    ? 'bg-rose-100 text-rose-700'
-                    : ticket.status === 'IN_PROGRESS'
-                    ? 'bg-blue-100 text-blue-700'
-                    : 'bg-emerald-100 text-emerald-700'
-                }`}
-              >
-                {ticket.status === 'OPEN'
-                  ? t('খোলা আছে', 'OPEN')
-                  : ticket.status === 'IN_PROGRESS'
-                  ? t('চলমান', 'IN PROGRESS')
-                  : t('সমাধান হয়েছে', 'RESOLVED')}
-              </span>
+          {/* Live Support Agent Profile */}
+          <div className="flex items-center gap-2.5">
+            <div className="relative">
+              <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-red-600 to-amber-500 flex items-center justify-center text-white shadow-sm">
+                <Bot className="w-5 h-5 text-white" />
+              </div>
+              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white ring-1 ring-emerald-400/40 animate-pulse"></span>
             </div>
-            <h3 className="text-xs font-black text-gray-900 truncate max-w-[200px] sm:max-w-[320px] mt-0.5">
-              {ticket.subject}
-            </h3>
+            <div className="leading-tight">
+              <div className="flex items-center gap-1.5">
+                <h3 className="text-xs font-black text-gray-900 tracking-wide">
+                  {t('২৪/৭ লাইভ সাপোর্ট', '24/7 Live Support')}
+                </h3>
+                <span className="inline-flex items-center px-1.5 py-0.2 rounded-full bg-emerald-100 text-emerald-800 font-black text-[9px]">
+                  Online
+                </span>
+              </div>
+              <p className="text-[10px] text-gray-500 font-medium">
+                {t('অটোমেটিক এআই ও অ্যাডমিন হেল্প', 'AI & Admin Instant Help')}
+              </p>
+            </div>
           </div>
         </div>
 
         <div className="flex items-center gap-1.5">
           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-black shadow-xs">
-            <Bot className="w-3.5 h-3.5 text-emerald-600" />
-            <span>AI Support</span>
+            <Sparkles className="w-3 h-3 text-emerald-600" />
+            <span>24/7 Active</span>
           </span>
         </div>
       </div>
