@@ -887,12 +887,14 @@ export default function MobileAppViewPage(props: any) {
     };
     onUserUpdate();
     window.addEventListener('ff_users_updated', onUserUpdate);
+    window.addEventListener('ff_user_profile_updated', onUserUpdate);
     window.addEventListener('storage', onUserUpdate);
 
     return () => {
       window.removeEventListener('ff_notification_received', onNotif);
       window.removeEventListener('ff_notifications_read', onNotif);
       window.removeEventListener('ff_users_updated', onUserUpdate);
+      window.removeEventListener('ff_user_profile_updated', onUserUpdate);
       window.removeEventListener('storage', onUserUpdate);
     };
   }, [phoneLang]);
@@ -1051,9 +1053,10 @@ export default function MobileAppViewPage(props: any) {
     [selectedCategory, matches]
   );
 
-  const [subTypeFilter, setSubTypeFilter] = useState<'SOLO' | 'DUO' | 'SQUAD'>('SOLO');
+  const [subTypeFilter, setSubTypeFilter] = useState<'ALL' | 'SOLO' | 'DUO' | 'SQUAD'>('ALL');
   const filteredCurrentMatches = React.useMemo(() => {
     return currentCategoryMatches.filter((m) => {
+      if (subTypeFilter === 'ALL') return true;
       const typeStr = (m.type || m.matchType || '').toUpperCase();
       const titleStr = (m.title || '').toUpperCase();
       if (subTypeFilter === 'SOLO') {
@@ -1079,6 +1082,11 @@ export default function MobileAppViewPage(props: any) {
       return true;
     });
   }, [currentCategoryMatches, subTypeFilter]);
+
+  // Reset filter to ALL whenever selected category changes
+  useEffect(() => {
+    setSubTypeFilter('ALL');
+  }, [selectedCategory]);
 
   return (
     <div
@@ -1529,6 +1537,7 @@ export default function MobileAppViewPage(props: any) {
                           {/* Match Sub-Type Switcher (Solo, Duo, Squad) */}
                           <div className="flex items-center gap-1 p-1 rounded-xl border border-gray-200 bg-white shadow-xs">
                             {[
+                              { key: 'ALL', labelBn: 'সকল (All)', labelEn: 'All' },
                               { key: 'SOLO', labelBn: 'সোলো (Solo)', labelEn: 'Solo' },
                               { key: 'DUO', labelBn: 'ডুও (Duo)', labelEn: 'Duo' },
                               { key: 'SQUAD', labelBn: 'স্কোয়াড (Squad)', labelEn: 'Squad' },

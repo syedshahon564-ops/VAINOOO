@@ -109,6 +109,10 @@ export function isMatchFinished(match: {
   results?: any[];
   time?: string;
   startTimeIso?: string;
+  roomId?: string;
+  roomDeliveredAt?: string;
+  deliveredAt?: string;
+  categorySlug?: string;
 }): boolean {
   if (!match) return false;
   const s = String(match.status || '').toUpperCase();
@@ -124,6 +128,21 @@ export function isMatchFinished(match: {
   if (Array.isArray(match.results) && match.results.length > 0) {
     return true;
   }
+
+  // Exactly 6 minutes after Room ID & password delivery, match auto-finishes & leaves active lobbies
+  const deliveredIso = (match as any)?.roomDeliveredAt || (match as any)?.deliveredAt;
+  if (deliveredIso) {
+    try {
+      const deliveredTime = new Date(deliveredIso).getTime();
+      if (!isNaN(deliveredTime)) {
+        const elapsedMins = (Date.now() - deliveredTime) / (60 * 1000);
+        if (elapsedMins >= 6) {
+          return true;
+        }
+      }
+    } catch (e) {}
+  }
+
   if (match.time) {
     try {
       const d = parseScheduleTimeToDate(match.time, match.startTimeIso);

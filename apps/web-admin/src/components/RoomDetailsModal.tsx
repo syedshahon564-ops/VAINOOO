@@ -114,22 +114,22 @@ export default function RoomDetailsModal({ match, onClose, onJoinClick }: RoomDe
               deliveredMs = Math.min(matchDate.getTime() - 5 * 60 * 1000, now);
             }
 
-            const EIGHT_MIN_MS = 8 * 60 * 1000;
-            const isExpired8Min = Boolean(deliveredMs && (now - deliveredMs >= EIGHT_MIN_MS));
-            const remainingSeconds = deliveredMs ? Math.max(0, Math.floor((deliveredMs + EIGHT_MIN_MS - now) / 1000)) : null;
+            const SIX_MIN_MS = 6 * 60 * 1000;
+            const isExpired6Min = Boolean(deliveredMs && (now - deliveredMs >= SIX_MIN_MS));
+            const remainingSeconds = deliveredMs ? Math.max(0, Math.floor((deliveredMs + SIX_MIN_MS - now) / 1000)) : null;
 
             const isWithin5Min = (diffMs <= 5 * 60 * 1000 && diffMs >= -180 * 60 * 1000) || match.status === 'ROOM_OPEN';
             const hasValidRoomId = Boolean(match.roomId && match.roomId.trim().length > 0);
-            const showCredentials = Boolean(userJoined && hasValidRoomId && isWithin5Min && !isExpired8Min);
+            const showCredentials = Boolean(userJoined && hasValidRoomId && isWithin5Min && !isExpired6Min);
 
-            if (isExpired8Min && userJoined) {
+            if (isExpired6Min && userJoined) {
               return (
                 <div className="p-3.5 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-300 dark:border-white/10 text-center space-y-1">
                   <span className="text-xs font-black text-gray-700 dark:text-gray-300 block flex items-center justify-center gap-1.5">
                     <Clock className="w-4 h-4 text-gray-500" /> রুম আইডি ও পাসওয়ার্ডের মেয়াদ শেষ
                   </span>
                   <p className="text-[11px] text-gray-500">
-                    রুম পাসওয়ার্ড প্রকাশের ৮ মিনিট পার হওয়ায় রুমটি স্বয়ংক্রিয়ভাবে বন্ধ হয়ে গেছে এবং ম্যাচটি শুরু হয়ে গেছে।
+                    রুম পাসওয়ার্ড প্রকাশের ৬ মিনিট পার হওয়ায় রুমটি স্বয়ংক্রিয়ভাবে বন্ধ হয়ে গেছে এবং ম্যাচটি শুরু হয়ে গেছে।
                   </p>
                 </div>
               );

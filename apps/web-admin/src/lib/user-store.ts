@@ -284,16 +284,21 @@ export function saveUsers(users: UserAccount[]): void {
   if (typeof window === 'undefined') return;
   try {
     localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
-    notifyUsersChange(users);
-
-    // If currently logged-in user was updated, update ff_user and session
+    // If currently logged-in user was updated, update ff_user and session first
+    let updatedLoggedInUser: UserAccount | null = null;
     const currentLoggedStr = localStorage.getItem('ff_user') || getCookieUser();
     if (currentLoggedStr) {
       const current = typeof currentLoggedStr === 'string' ? JSON.parse(currentLoggedStr) : currentLoggedStr;
-      const updatedCurrent = users.find((u) => u.id === current.id || u.phone === current.phone);
-      if (updatedCurrent) {
-        saveSession(updatedCurrent);
+      const found = users.find((u) => u.id === current.id || (u.phone && current.phone && u.phone === current.phone));
+      if (found) {
+        updatedLoggedInUser = found;
+        saveSession(found);
       }
+    }
+
+    notifyUsersChange(users);
+    if (updatedLoggedInUser) {
+      window.dispatchEvent(new CustomEvent('ff_user_profile_updated', { detail: updatedLoggedInUser }));
     }
 
     // Sync to server database in background

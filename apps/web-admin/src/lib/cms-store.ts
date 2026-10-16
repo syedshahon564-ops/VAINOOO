@@ -29,6 +29,8 @@ export interface MatchItem {
   /** Published after the match ends: who placed where, kills and prize won. */
   results?: Array<{ rank: number; ign: string; kills: number; prize: number }>;
   participants?: Array<{ ign: string; uid?: string; slot?: number; team?: number }>;
+  createdAt?: number;
+  updatedAt?: number;
 }
 
 export interface MatchParticipant {
@@ -105,6 +107,8 @@ export interface CMSData {
   settings: SiteSettings;
   topPlayers: TopPlayerItem[];
   deletedCategories?: string[];
+  matchesClearedAt?: number;
+  matchesUpdatedAt?: number;
 }
 
 const STORAGE_KEY = 'ff_esports_cms_data_v6';
@@ -555,6 +559,8 @@ export function normalizeCMSData(input: Partial<CMSData> | null | undefined): CM
       ? src.topPlayers.filter((p: any) => p && typeof p === 'object')
       : INITIAL_TOP_PLAYERS,
     deletedCategories,
+    matchesClearedAt: typeof src.matchesClearedAt === 'number' ? src.matchesClearedAt : undefined,
+    matchesUpdatedAt: typeof src.matchesUpdatedAt === 'number' ? src.matchesUpdatedAt : undefined,
   };
 }
 
@@ -636,6 +642,7 @@ export function addMatch(match: Omit<MatchItem, 'id' | 'filledSlots'>): MatchIte
       ? match.bannerImage
       : cat?.bannerImage || cat?.avatarImage || '/logo.png';
 
+  const now = Date.now();
   const newMatch: MatchItem = {
     ...match,
     rules: match.rules && match.rules.trim() !== '' ? match.rules : catRule,
@@ -645,10 +652,13 @@ export function addMatch(match: Omit<MatchItem, 'id' | 'filledSlots'>): MatchIte
     firstPrize,
     secondPrize,
     thirdPrize,
-    id: 'm-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+    id: 'm-' + now + '-' + Math.floor(Math.random() * 1000),
     filledSlots: 0,
     status: match.status || 'UPCOMING',
+    createdAt: now,
+    updatedAt: now,
   };
+  data.matchesUpdatedAt = now;
   data.matches.unshift(newMatch);
   saveCMSData(data);
   if (typeof window !== 'undefined') {
@@ -666,7 +676,9 @@ export function updateMatch(matchId: string, updated: Partial<MatchItem>): void 
     if ((updated.roomId || updated.roomPass) && !roomDeliveredAt) {
       roomDeliveredAt = new Date().toISOString();
     }
-    data.matches[index] = { ...existing, ...updated, ...(roomDeliveredAt ? { roomDeliveredAt } : {}) };
+    const now = Date.now();
+    data.matches[index] = { ...existing, ...updated, ...(roomDeliveredAt ? { roomDeliveredAt } : {}), updatedAt: now };
+    data.matchesUpdatedAt = now;
     saveCMSData(data);
   }
 }
@@ -674,6 +686,7 @@ export function updateMatch(matchId: string, updated: Partial<MatchItem>): void 
 export function deleteMatch(matchId: string): void {
   const data = getCMSData();
   data.matches = data.matches.filter((m) => m.id !== matchId);
+  data.matchesUpdatedAt = Date.now();
   saveCMSData(data);
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('ff_match_deleted', { detail: { matchId } }));
@@ -682,7 +695,10 @@ export function deleteMatch(matchId: string): void {
 
 export function clearAllMatches(): void {
   const data = getCMSData();
+  const now = Date.now();
   data.matches = [];
+  data.matchesClearedAt = now;
+  data.matchesUpdatedAt = now;
   saveCMSData(data);
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('ff_matches_cleared'));
@@ -774,169 +790,197 @@ export function resetCMS(): void {
   saveCMSData(INITIAL_CMS_DATA);
 }
 
+let globalSyncInitialized = false;
+let isSyncInProgress = false;
+
+export function syncCMSWithServer(): void {
+  if (typeof window === 'undefined' || isSyncInProgress) return;
+  isSyncInProgress = true;
+
+  fetch(`/api/cms?t=${Date.now()}`, { cache: 'no-store' })
+    .then((res) => (res.ok ? res.json() : null))
+    .then((serverData) => {
+      isSyncInProgress = false;
+      if (serverData && typeof serverData === 'object' && !serverData.error) {
+        const current = getCMSData();
+        const serverMatches = Array.isArray(serverData.matches) ? serverData.matches : null;
+        const serverCategories =
+          serverData.categories && typeof serverData.categories === 'object' && !Array.isArray(serverData.categories)
+            ? serverData.categories
+            : {};
+        const serverSettings =
+          serverData.settings && typeof serverData.settings === 'object' ? serverData.settings : {};
+
+        const serverDeleted: string[] = Array.isArray(serverData.deletedCategories)
+          ? serverData.deletedCategories
+          : [];
+        const localDeleted: string[] = Array.isArray(current?.deletedCategories)
+          ? current.deletedCategories
+          : [];
+        const allDeleted = Array.from(new Set([...localDeleted, ...serverDeleted]));
+
+        // Smart merge categories:
+        const mergedCategories: Record<string, CategoryItem> = { ...(current?.categories || {}) };
+        for (const [slug, serverCat] of Object.entries(serverCategories)) {
+          if (allDeleted.includes(slug)) {
+            delete mergedCategories[slug];
+            continue;
+          }
+          const localCat = mergedCategories[slug];
+          if (!localCat) {
+            mergedCategories[slug] = serverCat as CategoryItem;
+          } else {
+            const localTime = (localCat as any)?.updatedAt || 0;
+            const serverTime = (serverCat as any)?.updatedAt || 0;
+            if (localTime > serverTime) {
+              mergedCategories[slug] = { ...(serverCat as CategoryItem), ...localCat };
+            } else {
+              mergedCategories[slug] = { ...localCat, ...(serverCat as CategoryItem) };
+            }
+          }
+        }
+
+        for (const del of allDeleted) {
+          delete mergedCategories[del];
+        }
+
+        // Smart merge settings:
+        const localSettings = current?.settings || ({} as any);
+        const localSettingsTime = (localSettings as any)?.updatedAt || 0;
+        const serverSettingsTime = (serverSettings as any)?.updatedAt || 0;
+
+        let mergedSettings: SiteSettings;
+        if (localSettingsTime > serverSettingsTime) {
+          mergedSettings = {
+            ...INITIAL_SETTINGS,
+            ...serverSettings,
+            ...localSettings,
+          } as SiteSettings;
+        } else {
+          mergedSettings = {
+            ...INITIAL_SETTINGS,
+            ...localSettings,
+            ...serverSettings,
+          } as SiteSettings;
+        }
+
+        // Safeguard payment numbers:
+        if (localSettings?.bkashNumber && localSettings.bkashNumber.trim() !== '' && localSettings.bkashNumber !== '01712345678') {
+          if (!serverSettings?.bkashNumber || serverSettings.bkashNumber === '01712345678' || localSettingsTime >= serverSettingsTime) {
+            mergedSettings.bkashNumber = localSettings.bkashNumber;
+          }
+        }
+        if (localSettings?.nagadNumber && localSettings.nagadNumber.trim() !== '' && localSettings.nagadNumber !== '01812345678') {
+          if (!serverSettings?.nagadNumber || serverSettings.nagadNumber === '01812345678' || localSettingsTime >= serverSettingsTime) {
+            mergedSettings.nagadNumber = localSettings.nagadNumber;
+          }
+        }
+
+        if (Array.isArray(serverSettings.banners) && serverSettings.banners.length > 0) {
+          if (serverSettingsTime >= localSettingsTime) {
+            mergedSettings.banners = serverSettings.banners;
+          }
+        } else if (Array.isArray(localSettings.banners) && localSettings.banners.length > 0) {
+          mergedSettings.banners = localSettings.banners;
+        }
+
+        // Smart merge matches with Clear All Matches protection:
+        const serverClearedAt = typeof serverData?.matchesClearedAt === 'number' ? serverData.matchesClearedAt : 0;
+        const localClearedAt = typeof current?.matchesClearedAt === 'number' ? current.matchesClearedAt : 0;
+        const effectiveClearedAt = Math.max(serverClearedAt, localClearedAt);
+
+        const getMatchTime = (m: any): number => {
+          if (typeof m?.createdAt === 'number') return m.createdAt;
+          if (typeof m?.updatedAt === 'number') return m.updatedAt;
+          const matchIdMatch = String(m?.id || '').match(/^m-(\d+)/);
+          if (matchIdMatch) {
+            const t = parseInt(matchIdMatch[1], 10);
+            if (!isNaN(t)) return t;
+          }
+          return 0;
+        };
+
+        let mergedMatches: MatchItem[] = [];
+        if (Array.isArray(serverMatches)) {
+          const validServerMatches = serverMatches.filter((m: MatchItem) => getMatchTime(m) > effectiveClearedAt);
+          const serverIdSet = new Set(validServerMatches.map((m: MatchItem) => m.id));
+          const now = Date.now();
+          const localPending = (current?.matches || []).filter(
+            (m: MatchItem) =>
+              !serverIdSet.has(m.id) &&
+              getMatchTime(m) > effectiveClearedAt &&
+              now - getMatchTime(m) < 60000
+          );
+          mergedMatches = [...localPending, ...validServerMatches];
+        } else {
+          mergedMatches = (current?.matches || []).filter((m: MatchItem) => getMatchTime(m) > effectiveClearedAt);
+        }
+
+        mergedMatches = mergedMatches.map((m) => {
+          const catRule = getEffectiveCategoryRule(m.categorySlug, mergedCategories, mergedSettings);
+          if (catRule && (!m.rules || m.rules.trim() === '')) {
+            return { ...m, rules: catRule };
+          }
+          return m;
+        });
+
+        const merged: CMSData = normalizeCMSData({
+          categories: mergedCategories,
+          matches: mergedMatches,
+          settings: mergedSettings,
+          topPlayers:
+            Array.isArray(serverData.topPlayers) && serverData.topPlayers.length > 0
+              ? serverData.topPlayers
+              : current?.topPlayers,
+          deletedCategories: allDeleted,
+          matchesClearedAt: effectiveClearedAt > 0 ? effectiveClearedAt : undefined,
+          matchesUpdatedAt: Math.max(serverData.matchesUpdatedAt || 0, current.matchesUpdatedAt || 0),
+        });
+
+        const newSerialized = JSON.stringify(merged);
+        const currentSerialized = localStorage.getItem(STORAGE_KEY);
+        if (newSerialized !== currentSerialized) {
+          memoryCMSCache = merged;
+          try {
+            localStorage.setItem(STORAGE_KEY, newSerialized);
+          } catch (e) {}
+          window.dispatchEvent(new CustomEvent('ff_cms_updated', { detail: merged }));
+        }
+      }
+    })
+    .catch(() => {
+      isSyncInProgress = false;
+    });
+}
+
+function initGlobalCmsSync(): void {
+  if (typeof window === 'undefined' || globalSyncInitialized) return;
+  globalSyncInitialized = true;
+
+  syncCMSWithServer();
+  setInterval(syncCMSWithServer, 10000);
+
+  const onVisibilityChange = () => {
+    if (document.visibilityState === 'visible') {
+      syncCMSWithServer();
+    }
+  };
+  window.addEventListener('visibilitychange', onVisibilityChange);
+  window.addEventListener('focus', syncCMSWithServer);
+  window.addEventListener('online', syncCMSWithServer);
+}
+
 // React Hook for Reactive CMS Sync across pages
 export function useCMS() {
-  const [data, setData] = useState<CMSData>(INITIAL_CMS_DATA);
+  const [data, setData] = useState<CMSData>(() => memoryCMSCache || getCMSData());
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    let active = true;
-    setData(getCMSData());
+    initGlobalCmsSync();
+    setData(memoryCMSCache || getCMSData());
     setLoaded(true);
 
-    const syncWithServer = () => {
-      try {
-        fetch(`/api/cms?t=${Date.now()}`, { cache: 'no-store' })
-          .then((res) => (res.ok ? res.json() : null))
-          .then((serverData) => {
-            if (!active) return;
-            if (serverData && typeof serverData === 'object' && !serverData.error) {
-              const current = getCMSData();
-              const serverMatches = Array.isArray(serverData.matches) ? serverData.matches : null;
-              const serverCategories =
-                serverData.categories && typeof serverData.categories === 'object' && !Array.isArray(serverData.categories)
-                  ? serverData.categories
-                  : {};
-              const serverSettings =
-                serverData.settings && typeof serverData.settings === 'object' ? serverData.settings : {};
-
-              const serverDeleted: string[] = Array.isArray(serverData.deletedCategories)
-                ? serverData.deletedCategories
-                : [];
-              const localDeleted: string[] = Array.isArray(current?.deletedCategories)
-                ? current.deletedCategories
-                : [];
-              const allDeleted = Array.from(new Set([...localDeleted, ...serverDeleted]));
-
-              // Smart merge categories:
-              // If local edit is strictly newer, preserve local pending edit; otherwise server takes precedence!
-              const mergedCategories: Record<string, CategoryItem> = { ...(current?.categories || {}) };
-              for (const [slug, serverCat] of Object.entries(serverCategories)) {
-                if (allDeleted.includes(slug)) {
-                  delete mergedCategories[slug];
-                  continue;
-                }
-                const localCat = mergedCategories[slug];
-                if (!localCat) {
-                  mergedCategories[slug] = serverCat as CategoryItem;
-                } else {
-                  const localTime = (localCat as any)?.updatedAt || 0;
-                  const serverTime = (serverCat as any)?.updatedAt || 0;
-                  if (localTime > serverTime) {
-                    mergedCategories[slug] = { ...(serverCat as CategoryItem), ...localCat };
-                  } else {
-                    mergedCategories[slug] = { ...localCat, ...(serverCat as CategoryItem) };
-                  }
-                }
-              }
-
-              for (const del of allDeleted) {
-                delete mergedCategories[del];
-              }
-
-              // Smart merge settings:
-              const localSettings = current?.settings || ({} as any);
-              const localSettingsTime = (localSettings as any)?.updatedAt || 0;
-              const serverSettingsTime = (serverSettings as any)?.updatedAt || 0;
-
-              let mergedSettings: SiteSettings;
-              if (localSettingsTime > serverSettingsTime) {
-                mergedSettings = {
-                  ...INITIAL_SETTINGS,
-                  ...serverSettings,
-                  ...localSettings,
-                } as SiteSettings;
-              } else {
-                mergedSettings = {
-                  ...INITIAL_SETTINGS,
-                  ...localSettings,
-                  ...serverSettings,
-                } as SiteSettings;
-              }
-
-              // Safeguard custom payment numbers from being wiped by stale server defaults:
-              if (localSettings?.bkashNumber && localSettings.bkashNumber.trim() !== '' && localSettings.bkashNumber !== '01712345678') {
-                if (!serverSettings?.bkashNumber || serverSettings.bkashNumber === '01712345678' || localSettingsTime >= serverSettingsTime) {
-                  mergedSettings.bkashNumber = localSettings.bkashNumber;
-                }
-              }
-              if (localSettings?.nagadNumber && localSettings.nagadNumber.trim() !== '' && localSettings.nagadNumber !== '01812345678') {
-                if (!serverSettings?.nagadNumber || serverSettings.nagadNumber === '01812345678' || localSettingsTime >= serverSettingsTime) {
-                  mergedSettings.nagadNumber = localSettings.nagadNumber;
-                }
-              }
-
-              // Banners synchronization:
-              if (Array.isArray(serverSettings.banners) && serverSettings.banners.length > 0) {
-                if (serverSettingsTime >= localSettingsTime) {
-                  mergedSettings.banners = serverSettings.banners;
-                }
-              } else if (Array.isArray(localSettings.banners) && localSettings.banners.length > 0) {
-                mergedSettings.banners = localSettings.banners;
-              }
-
-              // Smart merge matches:
-              // Preserve any newly-created local matches that may not yet have reached server!
-              let mergedMatches: MatchItem[] = current?.matches || [];
-              if (serverMatches !== null) {
-                const serverIdSet = new Set(serverMatches.map((m: MatchItem) => m.id));
-                const localPending = (current?.matches || []).filter((m: MatchItem) => !serverIdSet.has(m.id));
-                mergedMatches = [...localPending, ...serverMatches];
-              }
-
-              // Also propagate category rules to all matches of that category:
-              mergedMatches = mergedMatches.map((m) => {
-                const catRule = getEffectiveCategoryRule(m.categorySlug, mergedCategories, mergedSettings);
-                if (catRule && (!m.rules || m.rules.trim() === '')) {
-                  return { ...m, rules: catRule };
-                }
-                return m;
-              });
-
-              const merged: CMSData = normalizeCMSData({
-                categories: mergedCategories,
-                matches: mergedMatches,
-                settings: mergedSettings,
-                topPlayers:
-                  Array.isArray(serverData.topPlayers) && serverData.topPlayers.length > 0
-                    ? serverData.topPlayers
-                    : current?.topPlayers,
-                deletedCategories: allDeleted,
-              });
-
-              const newSerialized = JSON.stringify(merged);
-              const currentSerialized = localStorage.getItem(STORAGE_KEY);
-              if (newSerialized !== currentSerialized) {
-                memoryCMSCache = merged;
-                setData(merged);
-                try {
-                  localStorage.setItem(STORAGE_KEY, newSerialized);
-                } catch (e) {}
-              }
-            }
-          })
-          .catch(() => {});
-      } catch (e) {}
-    };
-
-    // 1. Immediate sync
-    syncWithServer();
-
-    // 2. Periodic background poll every 8s for instant admin changes reflection without UI lag
-    const syncInterval = setInterval(syncWithServer, 8000);
-
-    // 3. Sync immediately when user refocuses or opens app from background
-    const onVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        syncWithServer();
-      }
-    };
-    window.addEventListener('visibilitychange', onVisibilityChange);
-    window.addEventListener('focus', syncWithServer);
-    window.addEventListener('online', syncWithServer);
-
     const handleUpdate = (e: any) => {
-      if (!active) return;
       if (e?.detail && typeof e.detail === 'object') {
         const next = normalizeCMSData(e.detail);
         memoryCMSCache = next;
@@ -949,12 +993,12 @@ export function useCMS() {
 
     window.addEventListener('ff_cms_updated', handleUpdate);
     window.addEventListener('storage', handleUpdate);
+    window.addEventListener('ff_matches_cleared', () => {
+      memoryCMSCache = null;
+      setData(getCMSData());
+    });
+
     return () => {
-      active = false;
-      clearInterval(syncInterval);
-      window.removeEventListener('visibilitychange', onVisibilityChange);
-      window.removeEventListener('focus', syncWithServer);
-      window.removeEventListener('online', syncWithServer);
       window.removeEventListener('ff_cms_updated', handleUpdate);
       window.removeEventListener('storage', handleUpdate);
     };

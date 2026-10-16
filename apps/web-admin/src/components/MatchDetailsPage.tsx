@@ -200,149 +200,29 @@ export default function MatchDetailsPage({
         </button>
       </div>
 
-      {/* 8. Full Detailed Rules List (Exact Bengali Text from Screenshots 1, 2, 3, 4) - PURE WHITE */}
-      <div className="p-4 rounded-2xl bg-gray-50/70 border border-gray-200 text-xs space-y-3.5 leading-relaxed text-gray-800 font-medium">
-        {/* Category Specific Rules (from Admin CMS) */}
-        {(() => {
-          const currentCategory = categories[match.categorySlug];
-          const categoryRule =
-            currentCategory?.customRules ||
-            settings.categoryRules?.[match.categorySlug] ||
-            (match.categorySlug === 'classic-match' ? settings.categoryRules?.['regular-match'] : '') ||
-            match.rules;
+      {/* 8. Category & Match Specific Dynamic Rules (from Admin CMS) */}
+      {(() => {
+        const currentCategory = categories[match.categorySlug];
+        const categoryRule =
+          currentCategory?.customRules ||
+          settings.categoryRules?.[match.categorySlug] ||
+          (match.categorySlug === 'classic-match' ? settings.categoryRules?.['regular-match'] : '') ||
+          match.rules;
 
-          if (!categoryRule || categoryRule.trim() === '') return null;
+        if (!categoryRule || categoryRule.trim() === '') return null;
 
-          return (
-            <div className="p-4 rounded-2xl bg-amber-500/10 border-2 border-amber-500/30 space-y-2 mb-3">
-              <h5 className="text-xs font-black text-amber-900 flex items-center gap-2">
-                <ShieldAlert className="w-4 h-4 text-amber-600 flex-shrink-0" />
-                <span>🏆 {currentCategory?.name || match.categorySlug} ক্যাটাগরির নির্ধারিত টুর্নামেন্ট রুলস:</span>
-              </h5>
-              <div className="text-xs whitespace-pre-line text-gray-900 font-mono leading-relaxed bg-white/80 p-3.5 rounded-xl border border-amber-200">
-                {categoryRule}
-              </div>
+        return (
+          <div className="p-4 rounded-2xl bg-amber-500/10 border-2 border-amber-500/30 space-y-2 mb-3">
+            <h5 className="text-xs font-black text-amber-900 flex items-center gap-2">
+              <ShieldAlert className="w-4 h-4 text-amber-600 flex-shrink-0" />
+              <span>🏆 {currentCategory?.name || match.categorySlug} ক্যাটাগরির নির্ধারিত টুর্নামেন্ট রুলস:</span>
+            </h5>
+            <div className="text-xs whitespace-pre-line text-gray-900 font-mono leading-relaxed bg-white/80 p-3.5 rounded-xl border border-amber-200">
+              {categoryRule}
             </div>
-          );
-        })()}
-
-        <p className="font-black text-amber-700 text-xs flex items-center gap-1.5">
-          <span>⚠️</span>
-          <span>&quot;{settings.siteName || 'FF RIVAL TOUR BD'}&quot; এর সার্বজনীন নিয়মাবলী এবং শর্তসমূহ:-</span>
-        </p>
-
-        <p className="flex items-start gap-2">
-          <span className="text-emerald-600 font-bold flex-shrink-0">✅</span>
-          <span>
-            ম্যাচের কাস্টমে ঢুকে একটি স্ক্রিনশট নিবেন, এবং আপনি মরে যাওয়ার পর একটি স্ক্রিনশট নিবেন রেজাল্টের, যেখানে আপনি কত নাম্বার হয়েছেন এবং সময় দেখায় ম্যাচটির হিস্ট্রিতে, এগুলো আমাদের এডমিন চাইলে দিতে হবে বাধ্যতামূলক! যদি না দিতে পারেন উইনিং প্রাইজ বাতিল পাবেন না!
-          </span>
-        </p>
-
-        <p className="flex items-start gap-2">
-          <span className="text-rose-600 font-bold flex-shrink-0">🚫</span>
-          <span>
-            কাস্টমের আইডি পাসওয়ার্ড পাওয়ার পরে গেমের ভিতরে গিয়ে সর্বপ্রথম আপনার গেমের ইনভাইট জয়েন এর নোটিফিকেশন রিজেক্ট/বন্ধ করে নিতে হবে, বাধ্যতামূলক, না করলে অ্যাপস থেকে পার্মানেন্ট ব্যান করা হবে!
-          </span>
-        </p>
-
-        <p className="flex items-start gap-2">
-          <span className="text-rose-600 font-bold flex-shrink-0">🚫</span>
-          <span>
-            অ্যাপসের মধ্যে ম্যাচ কেনার পর ম্যাচের মধ্যে ক্লিক করে একদম নিচের দিকে এসে আপনার নামের পাশে কত নাম্বার সেটা আপনাকে দেখে নিতে হবে, কাস্টমের পাসওয়ার্ড পাওয়ার পর কাস্টমে সোজা জয়েন করা যাবে না প্রথমে অবজারভে জয়েন করবে, অবজারভ থেকে তারপরে নিজের জায়গায় বসবে, সোজা জয়েন করলে তাকে কিক করে দেওয়া হবে, এক্সে ম্যাচ আপনার নামের পাশে যত নাম্বার লেখা থাকবে (২/৪/১০/৪৫/৪৮) কাস্টম রুমে ঢুকে আপনি সে স্থানে গিয়ে বসতে হবে, যদি আপনার জায়গায় অন্য কেউ বসে থাকে তাহলে আপনি অবজারভে গিয়ে বসবেন, যদি আপনি অবজারভে না গিয়ে অন্যের জায়গায় বসে থাকেন তাহলে আপনি কিক খাবেন (রিফান্ড পাবেন না) আর আপনি অবজারভে গিয়ে বসার পর আপনার জায়গায় যে রয়েছে তাকে ম্যাচ শুরু করার আগে কিক আউট করে দেওয়া হবে, তখন সঙ্গে সঙ্গে আপনি আপনার জায়গায় বসে পড়বেন। অথবা আপনি অবজারভে থাকবেন নিয়ম অনুযায়ী এরপরে ম্যাচ শুরু করার আগে আপনাকে যে কোন জায়গায় আমাদের হোস্ট নামিয়ে দিবে তবে আপনি অ্যালার্ট থাকবেন আপনার জায়গায় ফাঁকা হলে সেখানে আপনি নেমে পড়বেন ভুলে অন্য জায়গায় নামবেন না অন্যের জায়গায় বসলে কিক খাবেন এবং এর পরে ম্যাচটি শুরু করা হবে এবং তখন নিয়ম অনুযায়ী আপনি আপনার উইনিং প্রাইজ পাবেন।
-          </span>
-        </p>
-
-        <p className="flex items-start gap-2">
-          <span className="text-rose-600 font-bold flex-shrink-0">🚫</span>
-          <span>
-            স্থান থেকে অবজারভে না গিয়ে অন্য জায়গায় গিয়ে বসে থাকলে আপনাকে কিক আউট করা হবে এবং সে ম্যাচের রিফান্ড পাবেন না। এক্ষেত্রে কেউ যদি জায়গায় বসার জন্য ৫ দুই ম্যাচ কাস্টম থেকে কিক খায় তাহলে তাকে পার্মানেন্টলি আমাদের এপ্স থেকে ব্যান করা হবে, তার একাউন্টে টাকা থাকলে সেটা তাকে উইথড্র করে দেওয়া হবে তবে সে পার্মানেন্ট ব্যান হবে, আর একবার {settings.siteName || 'FF RIVAL TOUR BD'} apps এ ব্যান হলে সে আর কখনো {settings.siteName || 'FF RIVAL TOUR BD'} apps এ খেলতে পারবে না!
-          </span>
-        </p>
-
-        <p className="flex items-start gap-2">
-          <span className="text-rose-600 font-bold flex-shrink-0">🚫</span>
-          <span>
-            ম্যাচ শুরু হওয়ার সময়ের দুই থেকে চার মিনিট আগে কাস্টমের আইডি পাসওয়ার্ড পাবেন রুম ডিটেলস বাটনে হওয়ার পর আরো দুই মিনিট অপেক্ষা করা হবে প্লেয়ারদের জন্য, দুই মিনিট হয়ে যাওয়ার সঙ্গে সঙ্গে কাস্টমের আইডি পাসওয়ার্ড পরিবর্তন করে দেওয়া হবে, এরপরে আরো পাঁচ মিনিট সময় নিয়ে কাস্টমের হোস্টিং প্লেয়ারদের পর্যবেক্ষণ করবে এরপরে ম্যাচটি স্টার্ট করবে!
-          </span>
-        </p>
-
-        <p className="flex items-start gap-2">
-          <span className="text-rose-600 font-bold flex-shrink-0">🚫</span>
-          <span>
-            কোন কারণ ছাড়া রুম থেকে কিক করা হয়না এবং কোনদিন হবেও না, তবে আপনি যদি দাবি করেন কোন কারণ ছাড়া আপনাকে কিক আউট করা হয়েছে সে ক্ষেত্রে আপনাকে সেটা প্রমাণ দিতে হবে ভিডিওর মাধ্যমে Recording ছাড়া টাকা রিফান্ড পাবেন না। কিক মারার পরে ভিডিও করলে চলবে না। অ্যাপ থেকে কাস্টম আইডি পাসওয়ার্ড নেওয়া থেকেই ভিডিও চালু রাখতে হবে।
-          </span>
-        </p>
-
-        <p className="flex items-start gap-2">
-          <span className="text-rose-600 font-bold flex-shrink-0">🚫</span>
-          <span>
-            Survival match এর কাস্টমে precise aim No থাকবে⛔ মানে auto aim off ⛔ Full Control ✅
-          </span>
-        </p>
-
-        <p className="flex items-start gap-2">
-          <span className="text-rose-600 font-bold flex-shrink-0">🚫</span>
-          <span>
-            Survival match এর কাস্টমে Headshot ON থাকবে⛔ ONLY Headshot Mode
-          </span>
-        </p>
-
-        <p className="flex items-start gap-2">
-          <span className="text-rose-600 font-bold flex-shrink-0">🚫</span>
-          <span>
-            BR SURVIVAL MATCH খেলতে আইডির লেভেল ৪০+ থাকতে হবে!
-          </span>
-        </p>
-
-        <p className="flex items-start gap-2">
-          <span className="text-emerald-600 font-bold flex-shrink-0">✅</span>
-          <span>
-            ম্যাচের মধ্যে সমস্ত গাড়ি সমস্ত গান ব্যবহার করতে পারবেন Survival match এ
-          </span>
-        </p>
-
-        {/* Bullet feature checklist (Screenshot 1) */}
-        <div className="space-y-1.5 pl-6 font-bold text-gray-900">
-          <div className="flex items-center gap-2">
-            <span className="text-emerald-500">✅</span> Character skill on
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-emerald-500">✅</span> load out on
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-emerald-500">✅</span> hp 500
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-emerald-500">✅</span> all gun allow
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-emerald-500">✅</span> all car allow
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-emerald-500">✅</span> kill allow
-          </div>
-          <div className="flex items-center gap-2 text-rose-600">
-            <span>⚠️</span> zone damage high 🔥
-          </div>
-        </div>
-
-        <p className="text-gray-700">
-          survival match এ বেশিরভাগ ম্যাচে সবাই একসাথে মরে যাওয়ায় রেজাল্ট পাওয়া যায় না মাঝে মাঝে, তাই ম্যাচ শেষ হওয়ার ৩০ মিনিটের মধ্যে উইনিং প্রাইজ না পেলে আমাদের হোয়াটসঅ্যাপ চ্যানেলে দেওয়া ফেসবুক পেইজে সময় সহকারে হিস্ট্রি থেকে স্ক্রিনশট পাঠাবেন ⚠️
-        </p>
-
-        <p className="text-gray-700">
-          👀 ম্যাচের উইনিং প্রাইজ ম্যাচ শেষ হওয়ার ৩০ মিনিটের মধ্যে পাবেন, না পেলে ম্যাচ হিস্ট্রির সময় সহকারে দেখা যায় এরকম screenshot, আমাদের হোয়াটসঅ্যাপ চ্যানেলে দেওয়া ফেসবুক পেইজে পাঠাতে হবে ১০ ঘণ্টার মধ্যে, মেসেজ করে রাখলে হবে আপনি উইনিং না পেলে আপনাকে উইনিং দিয়ে দেওয়া হবে যেকোনো সময় আপনার মেসেজ দেখার পরেই ✅
-        </p>
-
-        <p className="flex items-center gap-2 font-bold text-gray-900">
-          <span className="text-emerald-600">✔️</span>
-          যেকোন সমস্যা বা সহযোগিতার ক্ষেত্রে আমাদের SUPPORT এ যোগাযোগ করতে হবে।
-        </p>
-
-        <p className="font-black text-amber-600 text-sm">
-          {settings.siteName || 'FF RIVAL TOUR BD'} এর সিদ্ধান্ত চূড়ান্ত সিদ্ধান্ত 👌
-        </p>
-      </div>
+        );
+      })()}
 
       {/* 9. ROOM RULES & REGISTERED PARTICIPANTS (Pure White Container) */}
       <div className="rounded-2xl border border-gray-200 bg-white p-5 space-y-4 shadow-xs">
@@ -353,19 +233,6 @@ export default function MatchDetailsPage({
           </h4>
         </div>
 
-        {/* Rules note */}
-        <div className="text-xs text-gray-700 space-y-2 leading-relaxed font-medium bg-gray-50 p-3.5 rounded-xl border border-gray-200">
-          <p>
-            ফেসবুক পেইজে পাঠাতে হবে ১০ ঘণ্টার মধ্যে, মেসেজ করে রাখলে হবে আপনি উইনিং না পেলে আপনাকে উইনিং দিয়ে দেওয়া হবে যেকোনো সময় আপনার মেসেজ দেখার পরেই✅
-          </p>
-          <p className="flex items-center gap-1.5 font-bold text-gray-900">
-            <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-            যেকোন সমস্যা বা সহযোগিতার ক্ষেত্রে আমাদের SUPPORT এ যোগাযোগ করতে হবে।
-          </p>
-          <p className="font-black text-amber-600">
-            {settings.siteName || 'FF RIVAL TOUR BD'} এর সিদ্ধান্ত চূড়ান্ত সিদ্ধান্ত 👌
-          </p>
-        </div>
 
         {/* Separator */}
         <div className="border-t border-dashed border-gray-200 pt-3 text-center">

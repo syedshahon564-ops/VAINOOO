@@ -32,13 +32,19 @@ function ensureDataFile(targetPath: string) {
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
+let inMemoryUsersCache: any[] | null = null;
+
 function readUsersFromFile(): any[] {
+  if (inMemoryUsersCache) return inMemoryUsersCache;
   try {
     const dataFile = getUsersFilePath();
     if (fs.existsSync(dataFile)) {
       const content = fs.readFileSync(dataFile, 'utf-8');
       const parsed = JSON.parse(content);
-      if (Array.isArray(parsed)) return parsed;
+      if (Array.isArray(parsed)) {
+        inMemoryUsersCache = parsed;
+        return parsed;
+      }
     }
   } catch (err) {
     console.error('Failed reading users file:', err);
@@ -47,6 +53,7 @@ function readUsersFromFile(): any[] {
 }
 
 function writeUsersToFile(users: any[]): boolean {
+  inMemoryUsersCache = users;
   const possiblePaths = [
     path.join(process.cwd(), 'apps', 'web-admin', 'data', 'users-db.json'),
     path.join(process.cwd(), 'data', 'users-db.json'),
@@ -54,12 +61,25 @@ function writeUsersToFile(users: any[]): boolean {
   ];
 
   let anyWritten = false;
-  for (const p of possiblePaths) {
+  // Write first candidate synchronously
+  if (possiblePaths.length > 0) {
     try {
-      ensureDataFile(p);
-      fs.writeFileSync(p, JSON.stringify(users, null, 2), 'utf-8');
+      ensureDataFile(possiblePaths[0]);
+      fs.writeFileSync(possiblePaths[0], JSON.stringify(users, null, 2), 'utf-8');
       anyWritten = true;
-    } catch (err) {}
+    } catch (e) {}
+  }
+
+  // Write remaining asynchronously
+  if (possiblePaths.length > 1) {
+    Promise.resolve().then(() => {
+      for (let i = 1; i < possiblePaths.length; i++) {
+        try {
+          ensureDataFile(possiblePaths[i]);
+          fs.writeFileSync(possiblePaths[i], JSON.stringify(users, null, 2), 'utf-8');
+        } catch (err) {}
+      }
+    }).catch(() => {});
   }
   return anyWritten;
 }
@@ -127,15 +147,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true, count: merged.length });
     }
 
-    // 3. Update Action
+    // 3. Update Action (Upsert)
     if (body.action === 'update' && body.userId && body.updates) {
       const idx = currentUsers.findIndex((u: any) => u.id === body.userId);
       if (idx !== -1) {
         currentUsers[idx] = { ...currentUsers[idx], ...body.updates };
         writeUsersToFile(currentUsers);
         return NextResponse.json({ ok: true, user: currentUsers[idx] });
+      } else {
+        const restoredUser = { id: body.userId, ...body.updates };
+        currentUsers.unshift(restoredUser);
+        writeUsersToFile(currentUsers);
+        return NextResponse.json({ ok: true, user: restoredUser });
       }
-      return NextResponse.json({ ok: false, error: 'User not found' }, { status: 404 });
     }
 
     // 4. Purge Non-Owners Action (keeps only owner accounts, deleting all player IDs)
