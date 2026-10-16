@@ -47,6 +47,7 @@ export interface CategoryItem {
   avatarImage: string;
   description: string;
   customRules?: string;
+  updatedAt?: number;
 }
 
 export interface TopPlayerItem {
@@ -70,6 +71,7 @@ export interface BannerSlide {
   image?: string;
   actionText?: string;
   actionUrl?: string;
+  updatedAt?: number;
 }
 
 export interface SiteSettings {
@@ -93,6 +95,8 @@ export interface SiteSettings {
   importantNoticeTitle?: string;
   importantNoticeBody?: string;
   importantNoticeEnabled?: boolean;
+  updatedAt?: number;
+  bannersUpdatedAt?: number;
 }
 
 export interface CMSData {
@@ -443,6 +447,7 @@ export function normalizeCMSData(input: Partial<CMSData> | null | undefined): CM
         ...item,
         bannerImage,
         avatarImage,
+        updatedAt: item.updatedAt || INITIAL_CATEGORIES[slug]?.updatedAt || 0,
       };
     }
   }
@@ -626,14 +631,31 @@ export async function updateCategory(slug: string, updated: Partial<CategoryItem
     avatarImage: '',
     description: '',
   };
-  data.categories[slug] = { ...existing, ...updated };
+
+  const bannerImg = updated.bannerImage !== undefined ? updated.bannerImage : existing.bannerImage;
+  const avatarImg = updated.avatarImage !== undefined ? updated.avatarImage : existing.avatarImage;
+
+  // Auto-fill pair if one is set
+  const finalBanner = bannerImg || avatarImg || existing.bannerImage || '';
+  const finalAvatar = avatarImg || bannerImg || existing.avatarImage || '';
+
+  const updatedCategory: CategoryItem = {
+    ...existing,
+    ...updated,
+    bannerImage: finalBanner,
+    avatarImage: finalAvatar,
+    updatedAt: Date.now(),
+  };
+
+  data.categories[slug] = updatedCategory;
   saveCMSData(data);
   return await saveCMSDataAsync(data);
 }
 
 export function updateSiteSettings(settings: Partial<SiteSettings>): Promise<boolean> {
   const data = getCMSData();
-  data.settings = { ...INITIAL_SETTINGS, ...(data.settings || {}), ...settings };
+  data.settings = { ...INITIAL_SETTINGS, ...(data.settings || {}), ...settings, updatedAt: Date.now() };
+  saveCMSData(data);
   return saveCMSDataAsync(data);
 }
 
@@ -673,10 +695,57 @@ export function useCMS() {
               const serverSettings =
                 serverData.settings && typeof serverData.settings === 'object' ? serverData.settings : {};
 
+              // Smart merge categories:
+              // If local edit is strictly newer, preserve local pending edit; otherwise server takes precedence!
+              const mergedCategories: Record<string, CategoryItem> = { ...(current?.categories || {}) };
+              for (const [slug, serverCat] of Object.entries(serverCategories)) {
+                const localCat = mergedCategories[slug];
+                if (!localCat) {
+                  mergedCategories[slug] = serverCat as CategoryItem;
+                } else {
+                  const localTime = (localCat as any)?.updatedAt || 0;
+                  const serverTime = (serverCat as any)?.updatedAt || 0;
+                  if (localTime > serverTime) {
+                    mergedCategories[slug] = { ...(serverCat as CategoryItem), ...localCat };
+                  } else {
+                    mergedCategories[slug] = { ...localCat, ...(serverCat as CategoryItem) };
+                  }
+                }
+              }
+
+              // Smart merge settings:
+              const localSettings = current?.settings || ({} as any);
+              const localSettingsTime = (localSettings as any)?.updatedAt || 0;
+              const serverSettingsTime = (serverSettings as any)?.updatedAt || 0;
+
+              let mergedSettings: SiteSettings;
+              if (localSettingsTime > serverSettingsTime) {
+                mergedSettings = {
+                  ...INITIAL_SETTINGS,
+                  ...serverSettings,
+                  ...localSettings,
+                } as SiteSettings;
+              } else {
+                mergedSettings = {
+                  ...INITIAL_SETTINGS,
+                  ...localSettings,
+                  ...serverSettings,
+                } as SiteSettings;
+              }
+
+              // Banners synchronization:
+              if (Array.isArray(serverSettings.banners) && serverSettings.banners.length > 0) {
+                if (serverSettingsTime >= localSettingsTime) {
+                  mergedSettings.banners = serverSettings.banners;
+                }
+              } else if (Array.isArray(localSettings.banners) && localSettings.banners.length > 0) {
+                mergedSettings.banners = localSettings.banners;
+              }
+
               const merged: CMSData = normalizeCMSData({
-                categories: { ...(current?.categories || {}), ...serverCategories },
+                categories: mergedCategories,
                 matches: serverMatches !== null ? serverMatches : current?.matches || [],
-                settings: { ...INITIAL_SETTINGS, ...(current?.settings || {}), ...(serverSettings || {}) } as SiteSettings,
+                settings: mergedSettings,
                 topPlayers:
                   Array.isArray(serverData.topPlayers) && serverData.topPlayers.length > 0
                     ? serverData.topPlayers

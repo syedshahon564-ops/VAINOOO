@@ -1,48 +1,48 @@
 import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
-
-function getDataFilePath(): string {
-  const possiblePaths = [
-    path.join(process.cwd(), 'apps', 'web-admin', 'data', 'cms-data.json'),
-    path.join(process.cwd(), 'data', 'cms-data.json'),
-    path.join('/tmp', 'cms-data.json'),
-  ];
-
-  for (const p of possiblePaths) {
-    if (fs.existsSync(p)) return p;
-  }
-
-  // If in Vercel serverless environment, fallback to tmp
-  if (process.env.VERCEL) {
-    return path.join('/tmp', 'cms-data.json');
-  }
-
-  // Default path
-  return path.join(process.cwd(), 'data', 'cms-data.json');
-}
-
-function ensureDataFile(targetPath: string) {
-  const dir = path.dirname(targetPath);
-  if (!fs.existsSync(dir)) {
-    try {
-      fs.mkdirSync(dir, { recursive: true });
-    } catch {
-      // ignore
-    }
-  }
-}
+import os from 'os';
 
 let inMemoryServerCache: any = null;
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
+function getCandidatePaths(): string[] {
+  const list = [
+    path.join(os.tmpdir(), 'cms-data.json'),
+    path.join('/tmp', 'cms-data.json'),
+    path.join(process.cwd(), 'apps', 'web-admin', 'data', 'cms-data.json'),
+    path.join(process.cwd(), 'data', 'cms-data.json'),
+  ];
+  return Array.from(new Set(list));
+}
+
+function getDataFilePath(): string | null {
+  for (const p of getCandidatePaths()) {
+    try {
+      if (fs.existsSync(p)) {
+        return p;
+      }
+    } catch {}
+  }
+  return null;
+}
+
+function ensureDataFile(targetPath: string) {
+  try {
+    const dir = path.dirname(targetPath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+  } catch {}
+}
+
 export async function GET() {
   try {
     const dataFile = getDataFilePath();
     let fileData: any = null;
-    if (fs.existsSync(dataFile)) {
+    if (dataFile && fs.existsSync(dataFile)) {
       try {
         const content = fs.readFileSync(dataFile, 'utf-8');
         fileData = JSON.parse(content);
@@ -68,13 +68,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     inMemoryServerCache = body;
 
-    const possiblePaths = [
-      path.join(process.cwd(), 'apps', 'web-admin', 'data', 'cms-data.json'),
-      path.join(process.cwd(), 'data', 'cms-data.json'),
-      path.join('/tmp', 'cms-data.json'),
-    ];
-
-    for (const p of possiblePaths) {
+    for (const p of getCandidatePaths()) {
       try {
         ensureDataFile(p);
         fs.writeFileSync(p, JSON.stringify(body, null, 2), 'utf-8');

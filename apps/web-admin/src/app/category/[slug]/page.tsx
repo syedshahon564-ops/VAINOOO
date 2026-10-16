@@ -277,8 +277,11 @@ export default function CategoryDetailPage() {
           <div className="flex items-center gap-4">
             <div className="w-20 h-20 rounded-2xl overflow-hidden bg-red-600 flex-shrink-0 shadow-md">
               <img
-                src={category.bannerImage}
+                src={category.bannerImage || category.avatarImage || '/logo.png'}
                 alt={category.name}
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = '/logo.png';
+                }}
                 className="w-full h-full object-cover"
               />
             </div>

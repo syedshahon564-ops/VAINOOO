@@ -79,6 +79,7 @@ export default function AdminMasterPage() {
     categories,
     matches,
     settings,
+    loaded,
     addMatch,
     updateMatch,
     deleteMatch,
@@ -183,45 +184,50 @@ export default function AdminMasterPage() {
     }
   }, []);
 
-  // Synchronize category form fields ONLY when user switches category
+  // Synchronize category form fields when user switches category OR when CMS finishes loading
+  const currentActiveCategory = categories[selectedCatSlug];
   useEffect(() => {
-    const cat = categories[selectedCatSlug];
-    if (cat) {
-      setCatName(cat.name || '');
-      setCatSection(cat.section || '');
-      setCatBannerImage(cat.bannerImage || '');
-      setCatAvatarImage(cat.avatarImage || '');
-      setCatDescription(cat.description || '');
-      setCatCustomRules(cat.customRules || '');
+    if (currentActiveCategory) {
+      setCatName(currentActiveCategory.name || '');
+      setCatSection(currentActiveCategory.section || '');
+      setCatBannerImage(currentActiveCategory.bannerImage || '');
+      setCatAvatarImage(currentActiveCategory.avatarImage || '');
+      setCatDescription(currentActiveCategory.description || '');
+      setCatCustomRules(currentActiveCategory.customRules || '');
     }
-  }, [selectedCatSlug]);
+  }, [selectedCatSlug, loaded, currentActiveCategory?.updatedAt]);
 
   const hasLoadedSettingsRef = React.useRef(false);
+  const lastSettingsUpdatedAtRef = React.useRef(0);
 
-  // Synchronize site settings & rules once on initial CMS load
+  // Synchronize site settings & rules once CMS loads or when updated from server/local
   useEffect(() => {
-    if (settings && !hasLoadedSettingsRef.current) {
-      hasLoadedSettingsRef.current = true;
-      setNoticeText(settings.noticeText || '');
-      setDefaultRules(settings.defaultRules || '');
-      setHowToJoinGuide(settings.howToJoinGuide || '');
-      setTelegramUrl(settings.telegramUrl || '');
-      setWhatsappNumber(settings.whatsappNumber || '');
-      setSiteName(settings.siteName || '');
-      setTagline(settings.tagline || '');
-      setSiteLogo(settings.logoUrl || '/logo.png');
-      setBkashNumber(settings.bkashNumber || '');
-      setNagadNumber(settings.nagadNumber || '');
-      setApkDownloadUrl(settings.apkDownloadUrl || '');
-      if (settings.banners && settings.banners.length > 0) {
-        setBannerSlidesList(settings.banners);
-      } else {
-        setBannerSlidesList(DEFAULT_INITIAL_BANNERS);
+    if (loaded && settings) {
+      const updatedAt = (settings as any).updatedAt || 0;
+      if (!hasLoadedSettingsRef.current || updatedAt > lastSettingsUpdatedAtRef.current) {
+        hasLoadedSettingsRef.current = true;
+        lastSettingsUpdatedAtRef.current = updatedAt;
+        setNoticeText(settings.noticeText || '');
+        setDefaultRules(settings.defaultRules || '');
+        setHowToJoinGuide(settings.howToJoinGuide || '');
+        setTelegramUrl(settings.telegramUrl || '');
+        setWhatsappNumber(settings.whatsappNumber || '');
+        setSiteName(settings.siteName || '');
+        setTagline(settings.tagline || '');
+        setSiteLogo(settings.logoUrl || '/logo.png');
+        setBkashNumber(settings.bkashNumber || '');
+        setNagadNumber(settings.nagadNumber || '');
+        setApkDownloadUrl(settings.apkDownloadUrl || '');
+        if (settings.banners && settings.banners.length > 0) {
+          setBannerSlidesList(settings.banners);
+        } else {
+          setBannerSlidesList(DEFAULT_INITIAL_BANNERS);
+        }
+        const savedPin = localStorage.getItem('ff_admin_custom_pin_v1') || '7860';
+        setCustomPin(savedPin);
       }
-      const savedPin = localStorage.getItem('ff_admin_custom_pin_v1') || '7860';
-      setCustomPin(savedPin);
     }
-  }, [settings]);
+  }, [loaded, settings]);
 
   const showToast = (text: string, type: 'success' | 'error' = 'success') => {
     setToast({ text, type });
@@ -1100,7 +1106,7 @@ export default function AdminMasterPage() {
                 }`}
               >
                 <div className="w-10 h-10 rounded-full mx-auto overflow-hidden mb-1.5 border border-white/20">
-                  <img src={cat.avatarImage} alt={cat.name} className="w-full h-full object-cover" />
+                  <img src={cat.avatarImage || cat.bannerImage || '/logo.png'} alt={cat.name} className="w-full h-full object-cover" />
                 </div>
                 <span className="text-[11px] font-black block truncate text-gray-900 dark:text-white">
                   {cat.name}
@@ -1144,7 +1150,12 @@ export default function AdminMasterPage() {
               <ImageUploadInput
                 label="Main Banner Image"
                 value={catBannerImage}
-                onChange={setCatBannerImage}
+                onChange={(url) => {
+                  setCatBannerImage(url);
+                  if (!catAvatarImage || catAvatarImage === catBannerImage || catAvatarImage.includes('unsplash')) {
+                    setCatAvatarImage(url);
+                  }
+                }}
                 helperText="Upload category page high-resolution banner image"
                 previewHeight="h-32"
               />
@@ -1153,7 +1164,12 @@ export default function AdminMasterPage() {
               <ImageUploadInput
                 label="Thumbnail Icon (Circular)"
                 value={catAvatarImage}
-                onChange={setCatAvatarImage}
+                onChange={(url) => {
+                  setCatAvatarImage(url);
+                  if (!catBannerImage || catBannerImage === catAvatarImage || catBannerImage.includes('unsplash')) {
+                    setCatBannerImage(url);
+                  }
+                }}
                 helperText="Circular thumbnail icon shown on home screen"
                 isCircular={true}
               />

@@ -2037,14 +2037,17 @@ export default function MobileAppViewPage(props: any) {
                                     role="button"
                                     tabIndex={0}
                                     onClick={() => setSelectedCategory(cat.slug)}
-                                    className="group cursor-pointer rounded-xl overflow-hidden relative border border-white/10 shadow hover:border-red-500 active:scale-[0.97] transition-transform duration-75 h-28 flex flex-col justify-end p-2 bg-slate-800 touch-manipulation"
+                                    className="group cursor-pointer rounded-xl overflow-hidden relative border border-white/10 shadow hover:border-red-500 active:scale-[0.97] transition-transform duration-75 h-28 flex flex-col justify-end p-2 bg-slate-900 touch-manipulation"
                                   >
                                     <img
-                                      src={cat.bannerImage}
+                                      src={cat.bannerImage || cat.avatarImage || '/logo.png'}
                                       alt={cat.name}
-                                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform opacity-75"
+                                      onError={(e) => {
+                                        (e.target as HTMLImageElement).src = '/logo.png';
+                                      }}
+                                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform opacity-90"
                                     />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-red-950 via-black/50 to-transparent"></div>
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent"></div>
                                     <div className="relative z-10">
                                       <span className="text-[9px] px-1.5 py-0.2 rounded-full font-bold bg-red-600 text-white inline-block mb-0.5">
                                         {count} {tPhone('ম্যাচ', 'Matches')}

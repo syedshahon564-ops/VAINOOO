@@ -115,8 +115,9 @@ export default function HomePage() {
   const catLoneWolf = categories['lone-wolf'];
   const catLostToWin = categories['lost-to-win'];
   const catHeadshot = categories['cs-only-headshot'];
+  const catBR = categories['br-survival'];
 
-  const freeFireMatches = [catSpecial, catClassic, catClash, catLoneWolf].filter(Boolean);
+  const freeFireMatches = [catSpecial, catClassic, catClash, catLoneWolf, catBR].filter(Boolean);
   const match1vs1 = [catLostToWin].filter(Boolean);
   const onlyHeadshot = [catHeadshot].filter(Boolean);
 
@@ -265,8 +266,11 @@ export default function HomePage() {
                   <div className="flex items-center gap-4 z-10">
                     <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-white/30 bg-black/40 shadow-xl flex-shrink-0">
                       <img
-                        src={cat.avatarImage}
+                        src={cat.avatarImage || cat.bannerImage || '/logo.png'}
                         alt={cat.name}
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = '/logo.png';
+                        }}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                       />
                     </div>
@@ -285,10 +289,14 @@ export default function HomePage() {
                     <ArrowRight className="w-5 h-5" />
                   </div>
 
-                  {/* Subtle character overlay backdrop */}
+                  {/* Character overlay backdrop */}
                   <div
-                    className="absolute right-0 top-0 bottom-0 w-1/2 bg-cover bg-right opacity-30 mix-blend-overlay pointer-events-none"
-                    style={{ backgroundImage: `url(${cat.bannerImage})` }}
+                    className="absolute right-0 top-0 bottom-0 w-1/2 sm:w-2/3 bg-cover bg-center opacity-70 group-hover:opacity-90 transition-opacity pointer-events-none"
+                    style={{
+                      backgroundImage: `url(${cat.bannerImage || cat.avatarImage || '/logo.png'})`,
+                      maskImage: 'linear-gradient(to left, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 100%)',
+                      WebkitMaskImage: 'linear-gradient(to left, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 100%)',
+                    }}
                   />
                 </Link>
               );
@@ -319,8 +327,11 @@ export default function HomePage() {
                   <div className="flex items-center gap-4 z-10">
                     <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-white/30 bg-black/40 shadow-xl flex-shrink-0">
                       <img
-                        src={cat.avatarImage}
+                        src={cat.avatarImage || cat.bannerImage || '/logo.png'}
                         alt={cat.name}
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = '/logo.png';
+                        }}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                       />
                     </div>
@@ -339,8 +350,12 @@ export default function HomePage() {
                   </div>
 
                   <div
-                    className="absolute right-0 top-0 bottom-0 w-1/2 bg-cover bg-right opacity-30 mix-blend-overlay pointer-events-none"
-                    style={{ backgroundImage: `url(${cat.bannerImage})` }}
+                    className="absolute right-0 top-0 bottom-0 w-1/2 sm:w-2/3 bg-cover bg-center opacity-70 group-hover:opacity-90 transition-opacity pointer-events-none"
+                    style={{
+                      backgroundImage: `url(${cat.bannerImage || cat.avatarImage || '/logo.png'})`,
+                      maskImage: 'linear-gradient(to left, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 100%)',
+                      WebkitMaskImage: 'linear-gradient(to left, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 100%)',
+                    }}
                   />
                 </Link>
               );
@@ -371,8 +386,11 @@ export default function HomePage() {
                   <div className="flex items-center gap-4 z-10">
                     <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-white/30 bg-black/40 shadow-xl flex-shrink-0">
                       <img
-                        src={cat.avatarImage}
+                        src={cat.avatarImage || cat.bannerImage || '/logo.png'}
                         alt={cat.name}
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = '/logo.png';
+                        }}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                       />
                     </div>
@@ -391,8 +409,12 @@ export default function HomePage() {
                   </div>
 
                   <div
-                    className="absolute right-0 top-0 bottom-0 w-1/2 bg-cover bg-right opacity-30 mix-blend-overlay pointer-events-none"
-                    style={{ backgroundImage: `url(${cat.bannerImage})` }}
+                    className="absolute right-0 top-0 bottom-0 w-1/2 sm:w-2/3 bg-cover bg-center opacity-70 group-hover:opacity-90 transition-opacity pointer-events-none"
+                    style={{
+                      backgroundImage: `url(${cat.bannerImage || cat.avatarImage || '/logo.png'})`,
+                      maskImage: 'linear-gradient(to left, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 100%)',
+                      WebkitMaskImage: 'linear-gradient(to left, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 100%)',
+                    }}
                   />
                 </Link>
               );

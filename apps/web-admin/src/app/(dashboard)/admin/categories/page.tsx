@@ -7,7 +7,7 @@ import { useCMS } from '@/lib/cms-store';
 import ImageUploadInput from '@/components/ImageUploadInput';
 
 export default function AdminCategoriesPage() {
-  const { categories, updateCategory } = useCMS();
+  const { categories, updateCategory, loaded } = useCMS();
   const categoriesList = Object.values(categories);
 
   const [selectedSlug, setSelectedSlug] = useState('classic-match');
@@ -22,18 +22,18 @@ export default function AdminCategoriesPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  // Synchronize form fields ONLY when user switches category
+  // Synchronize form fields when user switches category OR when CMS finishes loading
+  const currentCat = categories[selectedSlug];
   useEffect(() => {
-    const cat = categories[selectedSlug];
-    if (cat) {
-      setName(cat.name || '');
-      setSection(cat.section || '');
-      setBannerImage(cat.bannerImage || '');
-      setAvatarImage(cat.avatarImage || '');
-      setDescription(cat.description || '');
-      setCustomRules(cat.customRules || '');
+    if (currentCat) {
+      setName(currentCat.name || '');
+      setSection(currentCat.section || '');
+      setBannerImage(currentCat.bannerImage || '');
+      setAvatarImage(currentCat.avatarImage || '');
+      setDescription(currentCat.description || '');
+      setCustomRules(currentCat.customRules || '');
     }
-  }, [selectedSlug]);
+  }, [selectedSlug, loaded, currentCat?.updatedAt]);
 
   const handleSelectCategory = (slug: string) => {
     setSelectedSlug(slug);
@@ -107,7 +107,7 @@ export default function AdminCategoriesPage() {
             }`}
           >
             <div className="w-10 h-10 rounded-full mx-auto overflow-hidden mb-1.5 border border-white/20 bg-slate-800">
-              <img src={cat.avatarImage} alt={cat.name} className="w-full h-full object-cover" />
+              <img src={cat.avatarImage || cat.bannerImage || '/logo.png'} alt={cat.name} className="w-full h-full object-cover" />
             </div>
             <span className="text-[11px] font-black block truncate text-gray-900 dark:text-white">
               {cat.name}
@@ -155,7 +155,11 @@ export default function AdminCategoriesPage() {
                 <span className="text-[11px] font-bold text-gray-500">Banner Artwork</span>
                 <button
                   type="button"
-                  onClick={() => setBannerImage('https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=640')}
+                  onClick={() => {
+                    const def = 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=640';
+                    setBannerImage(def);
+                    setAvatarImage(def);
+                  }}
                   className="text-[10px] font-bold text-red-600 hover:underline"
                 >
                   Restore Default
@@ -164,7 +168,12 @@ export default function AdminCategoriesPage() {
               <ImageUploadInput
                 label="Category Banner (Main Photo)"
                 value={bannerImage}
-                onChange={setBannerImage}
+                onChange={(url) => {
+                  setBannerImage(url);
+                  if (!avatarImage || avatarImage === bannerImage || avatarImage.includes('unsplash')) {
+                    setAvatarImage(url);
+                  }
+                }}
                 helperText="Upload image from device or drag-and-drop file"
               />
             </div>
@@ -175,7 +184,10 @@ export default function AdminCategoriesPage() {
                 <span className="text-[11px] font-bold text-gray-500">Icon Thumbnail</span>
                 <button
                   type="button"
-                  onClick={() => setAvatarImage('https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=120')}
+                  onClick={() => {
+                    const def = 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=120';
+                    setAvatarImage(def);
+                  }}
                   className="text-[10px] font-bold text-red-600 hover:underline"
                 >
                   Restore Default
@@ -184,7 +196,12 @@ export default function AdminCategoriesPage() {
               <ImageUploadInput
                 label="Circular Thumbnail / Avatar"
                 value={avatarImage}
-                onChange={setAvatarImage}
+                onChange={(url) => {
+                  setAvatarImage(url);
+                  if (!bannerImage || bannerImage === avatarImage || bannerImage.includes('unsplash')) {
+                    setBannerImage(url);
+                  }
+                }}
                 isCircular={true}
                 helperText="Upload circular avatar icon for category list"
               />
