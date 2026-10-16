@@ -968,7 +968,7 @@ export interface ScheduledBotMatch {
   title: string;
   categorySlug: string;
   map: string;
-  type: 'Solo' | 'Duo' | 'Squad';
+  type: string;
   version: string;
   entryFee: number;
   prizePool: number;
@@ -980,15 +980,23 @@ export interface ScheduledBotMatch {
   publishAt: string; // ISO or local date-time string e.g. "2026-10-09T22:00"
   matchPlayTime: string; // e.g. "আজ রাত ১০:০০ PM" or schedule string
   rules?: string;
+  bannerImage?: string;
   createdAt: string;
   status: 'SCHEDULED' | 'PUBLISHED';
 }
 
 const SCHEDULED_MATCHES_STORAGE_KEY = 'ff_scheduled_matches_queue_v1';
+const BOT_FRESH_RESET_KEY = 'ff_bot_fresh_reset_v1';
 
 export function getScheduledBotMatches(): ScheduledBotMatch[] {
   if (typeof window === 'undefined') return [];
   try {
+    // One-time fresh reset to clear old mock bot matches as requested by user
+    if (!localStorage.getItem(BOT_FRESH_RESET_KEY)) {
+      localStorage.setItem(BOT_FRESH_RESET_KEY, '1');
+      localStorage.removeItem(SCHEDULED_MATCHES_STORAGE_KEY);
+      return [];
+    }
     const raw = localStorage.getItem(SCHEDULED_MATCHES_STORAGE_KEY);
     return raw ? JSON.parse(raw) : [];
   } catch (e) {
@@ -1025,6 +1033,10 @@ export function deleteScheduledBotMatch(id: string): void {
   saveScheduledBotMatches(updated);
 }
 
+export function clearAllScheduledBotMatches(): void {
+  saveScheduledBotMatches([]);
+}
+
 export function publishScheduledBotMatch(id: string): boolean {
   if (typeof window === 'undefined') return false;
   const current = getScheduledBotMatches();
@@ -1032,6 +1044,10 @@ export function publishScheduledBotMatch(id: string): boolean {
   if (!target) return false;
 
   const cmsData = getCMSData();
+  const cat = cmsData.categories[target.categorySlug];
+  const catImg = cat?.bannerImage || cat?.avatarImage || '/logo.png';
+  const finalBanner = target.bannerImage && target.bannerImage !== '/logo.png' ? target.bannerImage : catImg;
+
   const newMatchItem: MatchItem = {
     id: 'm-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
     categorySlug: target.categorySlug,
@@ -1050,7 +1066,7 @@ export function publishScheduledBotMatch(id: string): boolean {
     filledSlots: 0,
     status: 'UPCOMING',
     rules: target.rules || 'সব নিয়ম মেনে খেলুন। কোনো হ্যাকিং বা ইললিগ্যাল কার্যকলাপ নিষিদ্ধ।',
-    bannerImage: '/logo.png',
+    bannerImage: finalBanner,
   };
 
   // Add to CMS data matches
@@ -1066,12 +1082,26 @@ export function publishScheduledBotMatch(id: string): boolean {
 
   // Notify players with device push notification
   dispatchDevicePushNotification(
-    '🔥 নতুন ম্যাচ লাইভ পাবলিশ হয়েছে!',
-    `"${newMatchItem.title}" (${newMatchItem.type}) টুর্নামেন্ট শুরু হতে যাচ্ছে। এখনই আপনার পছন্দের স্লট বুক করুন!`,
+    '🎮 নতুন ম্যাচ লাইভ পাবলিশ হয়েছে!',
+    `ম্যাচ: "${newMatchItem.title}" (${newMatchItem.type})। এখনই আপনার পছন্দের স্লট বুক করুন!`,
     newMatchItem.categorySlug
   );
 
   return true;
+}
+
+export function publishAllScheduledBotMatches(): number {
+  if (typeof window === 'undefined') return 0;
+  const current = getScheduledBotMatches();
+  if (current.length === 0) return 0;
+
+  let published = 0;
+  for (const item of [...current]) {
+    if (publishScheduledBotMatch(item.id)) {
+      published++;
+    }
+  }
+  return published;
 }
 
 export function runScheduledBotPublishCycle(): number {
@@ -1083,9 +1113,20 @@ export function runScheduledBotPublishCycle(): number {
   let publishedCount = 0;
 
   for (const item of scheduled) {
-    if (item.status === 'SCHEDULED' && item.publishAt) {
-      const pubTime = new Date(item.publishAt).getTime();
-      if (!isNaN(pubTime) && pubTime <= now) {
+    if (item.status === 'SCHEDULED') {
+      let isDue = false;
+      if (item.publishAt) {
+        const pubTime = new Date(item.publishAt).getTime();
+        if (!isNaN(pubTime)) {
+          isDue = pubTime <= now;
+        } else {
+          const parsed = parseScheduleTimeToDate(item.publishAt);
+          if (parsed) {
+            isDue = parsed.getTime() <= now;
+          }
+        }
+      }
+      if (isDue) {
         if (publishScheduledBotMatch(item.id)) {
           publishedCount++;
         }

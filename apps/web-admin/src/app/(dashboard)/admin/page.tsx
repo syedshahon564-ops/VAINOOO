@@ -44,6 +44,13 @@ import {
   SchedulerConfig,
   autoDeliverRoomCredentials,
   dispatchDevicePushNotification,
+  getScheduledBotMatches,
+  addScheduledBotMatch,
+  publishScheduledBotMatch,
+  publishAllScheduledBotMatches,
+  deleteScheduledBotMatch,
+  clearAllScheduledBotMatches,
+  ScheduledBotMatch,
 } from '@/lib/match-scheduler';
 
 const DEFAULT_INITIAL_BANNERS: BannerSlide[] = [
@@ -434,6 +441,53 @@ export default function AdminMasterPage() {
     });
 
     showToast(`New match "${matchTitle}" created successfully!`);
+    setMatchTitle('');
+    setMatchRules('');
+  };
+
+  const handleSaveMatchForBot = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!matchTitle.trim()) {
+      showToast('Please provide a match name or title', 'error');
+      return;
+    }
+
+    const isSingle = matchCategory === 'lone-wolf' || matchCategory === 'clash-squad' || matchCategory === 'cs-only-headshot';
+    const finalPerKill = isSingle ? 0 : Number(matchPerKill);
+    const finalFirstPrize = isSingle ? Number(matchPrizePool) : Number(matchFirstPrize);
+    const finalSecondPrize = isSingle ? 0 : Number(matchSecondPrize);
+    const finalThirdPrize = isSingle ? 0 : Number(matchThirdPrize);
+    let finalSlots = Number(matchTotalSlots);
+    if (matchCategory === 'lone-wolf') {
+      finalSlots = matchType === '2 vs 2' ? 4 : 2;
+    } else if (matchCategory === 'clash-squad' || matchCategory === 'cs-only-headshot') {
+      finalSlots = matchType === '1 vs 1' ? 2 : matchType === '2 vs 2' ? 4 : 8;
+    }
+
+    const cat = categories[matchCategory];
+    const catImg = cat?.bannerImage || cat?.avatarImage || '/logo.png';
+    const finalBanner = matchBannerImage && matchBannerImage.trim() !== '' && matchBannerImage !== '/logo.png' ? matchBannerImage : catImg;
+
+    addScheduledBotMatch({
+      categorySlug: matchCategory,
+      title: matchTitle.trim(),
+      map: matchMap,
+      type: matchType,
+      version: 'MOBILE',
+      entryFee: Number(matchEntryFee),
+      prizePool: Number(matchPrizePool),
+      firstPrize: finalFirstPrize,
+      secondPrize: finalSecondPrize,
+      thirdPrize: finalThirdPrize,
+      perKill: finalPerKill,
+      totalSlots: finalSlots,
+      matchPlayTime: matchTime,
+      publishAt: matchTime,
+      rules: matchRules || 'সব নিয়ম মেনে খেলুন। কোনো হ্যাকিং বা ইললিগ্যাল কার্যকলাপ নিষিদ্ধ।',
+      bannerImage: finalBanner,
+    });
+
+    showToast(`🤖 ম্যাচ "${matchTitle}" বটের কাছে সেভ করা হয়েছে! নির্ধারিত সময়ে বট স্বয়ংক্রিয়ভাবে ক্যাটাগরিতে লাইভ করবে।`);
     setMatchTitle('');
     setMatchRules('');
   };
@@ -1053,8 +1107,15 @@ export default function AdminMasterPage() {
                 previewHeight="h-40"
               />
 
-              {/* Submit Button */}
-              <div className="flex justify-end pt-2">
+              {/* Submit Buttons */}
+              <div className="flex flex-wrap items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={handleSaveMatchForBot}
+                  className="px-5 py-3 rounded-xl text-xs font-black bg-purple-600 hover:bg-purple-700 text-white shadow-lg shadow-purple-600/30 flex items-center gap-2 transition-all"
+                >
+                  <Bot className="w-4 h-4" /> 🤖 বটের কাছে সেভ করুন
+                </button>
                 <button
                   type="submit"
                   className="px-6 py-3 rounded-xl text-xs font-black btn-red shadow-lg shadow-red-600/30 flex items-center gap-2"

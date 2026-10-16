@@ -464,9 +464,16 @@ export function normalizeCMSData(input: Partial<CMSData> | null | undefined): CM
         .map((m: any) => {
           const isLoneWolf = m.categorySlug === 'lone-wolf';
           const isClashSquad = m.categorySlug === 'clash-squad' || m.categorySlug === 'cs-only-headshot';
+          const cat = healedCategories[m.categorySlug];
+          const bannerImage =
+            m.bannerImage && m.bannerImage.trim() !== '' && m.bannerImage !== '/logo.png'
+              ? m.bannerImage
+              : cat?.bannerImage || cat?.avatarImage || '/logo.png';
+
           if (isLoneWolf) {
             return {
               ...m,
+              bannerImage,
               perKill: 0,
               secondPrize: 0,
               thirdPrize: 0,
@@ -477,6 +484,7 @@ export function normalizeCMSData(input: Partial<CMSData> | null | undefined): CM
           if (isClashSquad) {
             return {
               ...m,
+              bannerImage,
               perKill: 0,
               secondPrize: 0,
               thirdPrize: 0,
@@ -484,7 +492,10 @@ export function normalizeCMSData(input: Partial<CMSData> | null | undefined): CM
               totalSlots: m.type === '1 vs 1' ? 2 : m.type === '2 vs 2' ? 4 : 8,
             };
           }
-          return m;
+          return {
+            ...m,
+            bannerImage,
+          };
         })
     : [];
 
@@ -576,8 +587,15 @@ export function addMatch(match: Omit<MatchItem, 'id' | 'filledSlots'>): MatchIte
     totalSlots = match.type === '1 vs 1' ? 2 : match.type === '2 vs 2' ? 4 : 8;
   }
 
+  const cat = data.categories[match.categorySlug];
+  const finalBanner =
+    match.bannerImage && match.bannerImage.trim() !== '' && match.bannerImage !== '/logo.png'
+      ? match.bannerImage
+      : cat?.bannerImage || cat?.avatarImage || '/logo.png';
+
   const newMatch: MatchItem = {
     ...match,
+    bannerImage: finalBanner,
     totalSlots,
     perKill,
     firstPrize,

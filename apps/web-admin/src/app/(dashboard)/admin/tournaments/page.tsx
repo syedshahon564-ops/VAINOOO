@@ -19,7 +19,17 @@ import {
 } from 'lucide-react';
 import { useCMS, MatchItem } from '@/lib/cms-store';
 import ImageUploadInput from '@/components/ImageUploadInput';
-import { autoDeliverRoomCredentials, dispatchDevicePushNotification } from '@/lib/match-scheduler';
+import {
+  autoDeliverRoomCredentials,
+  dispatchDevicePushNotification,
+  getScheduledBotMatches,
+  addScheduledBotMatch,
+  publishScheduledBotMatch,
+  publishAllScheduledBotMatches,
+  deleteScheduledBotMatch,
+  clearAllScheduledBotMatches,
+  ScheduledBotMatch,
+} from '@/lib/match-scheduler';
 
 export default function AdminTournamentsPage() {
   const { categories, matches, addMatch, updateMatch, deleteMatch, clearAllMatches } = useCMS();
@@ -30,6 +40,11 @@ export default function AdminTournamentsPage() {
   const [roomId, setRoomId] = useState('');
   const [roomPass, setRoomPass] = useState('');
   const [toast, setToast] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Scheduled Bot Matches State
+  const [scheduledBotMatches, setScheduledBotMatches] = useState<ScheduledBotMatch[]>([]);
+  const [showBotScheduleManagerModal, setShowBotScheduleManagerModal] = useState(false);
+  const [botPublishAt, setBotPublishAt] = useState('');
 
   // Quick Bot Room Dispatcher Form
   const [botCatSlug, setBotCatSlug] = useState('classic-match');
@@ -62,6 +77,38 @@ export default function AdminTournamentsPage() {
     'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=640'
   );
   const [rules, setRules] = useState('');
+
+  const refreshScheduledQueue = () => {
+    if (typeof window !== 'undefined') {
+      setScheduledBotMatches(getScheduledBotMatches());
+    }
+  };
+
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setScheduledBotMatches(getScheduledBotMatches());
+      const handleUpdate = () => {
+        setScheduledBotMatches(getScheduledBotMatches());
+      };
+      window.addEventListener('ff_scheduled_matches_updated', handleUpdate);
+      window.addEventListener('ff_match_added', handleUpdate);
+      return () => {
+        window.removeEventListener('ff_scheduled_matches_updated', handleUpdate);
+        window.removeEventListener('ff_match_added', handleUpdate);
+      };
+    }
+  }, []);
+
+  // Auto-inherit category banner when create modal opens or category changes
+  React.useEffect(() => {
+    if (showCreateModal && categories[categorySlug]) {
+      const cat = categories[categorySlug];
+      const catImg = cat?.bannerImage || cat?.avatarImage || '';
+      if (!bannerImage || bannerImage === '/logo.png') {
+        setBannerImage(catImg);
+      }
+    }
+  }, [showCreateModal, categorySlug, categories]);
 
   const showNotification = (text: string, type: 'success' | 'error' = 'success') => {
     setToast({ text, type });
@@ -136,6 +183,54 @@ export default function AdminTournamentsPage() {
     });
 
     showNotification(`Match "${title}" created successfully!`);
+    setShowCreateModal(false);
+    setTitle('');
+  };
+
+  const handleSaveMatchForBot = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!title.trim()) {
+      showNotification('অনুগ্রহ করে একটি ম্যাচ নাম (Title) লিখুন', 'error');
+      return;
+    }
+
+    const isSingle = categorySlug === 'lone-wolf' || categorySlug === 'clash-squad' || categorySlug === 'cs-only-headshot';
+    const finalPerKill = isSingle ? 0 : Number(perKill);
+    const finalFirstPrize = isSingle ? Number(prizePool) : Number(firstPrize);
+    const finalSecondPrize = isSingle ? 0 : Number(secondPrize);
+    const finalThirdPrize = isSingle ? 0 : Number(thirdPrize);
+    let finalSlots = Number(totalSlots);
+    if (categorySlug === 'lone-wolf') {
+      finalSlots = type === '2 vs 2' ? 4 : 2;
+    } else if (categorySlug === 'clash-squad' || categorySlug === 'cs-only-headshot') {
+      finalSlots = type === '1 vs 1' ? 2 : type === '2 vs 2' ? 4 : 8;
+    }
+
+    const cat = categories[categorySlug];
+    const catImg = cat?.bannerImage || cat?.avatarImage || '/logo.png';
+    const finalBanner = bannerImage && bannerImage.trim() !== '' && bannerImage !== '/logo.png' ? bannerImage : catImg;
+
+    addScheduledBotMatch({
+      categorySlug,
+      title: title.trim(),
+      map: mapType,
+      type,
+      version: 'MOBILE',
+      entryFee: Number(entryFee),
+      prizePool: Number(prizePool),
+      firstPrize: finalFirstPrize,
+      secondPrize: finalSecondPrize,
+      thirdPrize: finalThirdPrize,
+      perKill: finalPerKill,
+      totalSlots: finalSlots,
+      matchPlayTime: time,
+      publishAt: botPublishAt.trim() || time,
+      rules: rules || 'সব নিয়ম মেনে খেলুন। কোনো হ্যাকিং বা ইললিগ্যাল কার্যকলাপ নিষিদ্ধ।',
+      bannerImage: finalBanner,
+    });
+
+    refreshScheduledQueue();
+    showNotification(`🤖 ম্যাচ "${title}" সফলভাবে বটের কাছে সেভ করা হয়েছে! নির্ধারিত সময়ে বট স্বয়ংক্রিয়ভাবে ক্যাটাগরিতে লাইভ পাবলিশ করে দিবে।`);
     setShowCreateModal(false);
     setTitle('');
   };
@@ -404,7 +499,7 @@ export default function AdminTournamentsPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {matches.length > 0 && (
             <button
               onClick={handleClearAll}
@@ -413,6 +508,17 @@ export default function AdminTournamentsPage() {
               <Trash2 className="w-3.5 h-3.5" /> Clear All ({matches.length})
             </button>
           )}
+
+          <button
+            onClick={() => {
+              refreshScheduledQueue();
+              setShowBotScheduleManagerModal(true);
+            }}
+            className="px-3.5 py-2.5 rounded-xl bg-purple-600/10 hover:bg-purple-600/20 text-purple-400 border border-purple-500/30 text-xs font-black flex items-center gap-1.5 transition-all shadow-sm"
+          >
+            <Bot className="w-4 h-4 text-purple-400 animate-pulse" />
+            বটের সেভ ম্যাচ ({scheduledBotMatches.length})
+          </button>
 
           <button
             onClick={() => setShowCreateModal(true)}
@@ -936,23 +1042,85 @@ export default function AdminTournamentsPage() {
                 </div>
               </div>
 
+              {/* Bot Schedule Timing Section */}
+              <div className="p-3.5 rounded-xl bg-purple-950/20 border border-purple-500/30 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-black text-purple-300 flex items-center gap-1.5">
+                    <Bot className="w-4 h-4 text-purple-400" />
+                    বট শিডিউল পাবলিশ সময় (Save for Bot Release)
+                  </label>
+                  <span className="text-[10px] text-purple-400 font-semibold">ঐচ্ছিক • নির্দিষ্ট সময়ে বট ম্যাচটি লাইভ করবে</span>
+                </div>
+                <input
+                  type="text"
+                  value={botPublishAt}
+                  onChange={(e) => setBotPublishAt(e.target.value)}
+                  placeholder={time ? `যেমন: ${time} অথবা কাস্টম শিডিউল সময়` : 'Today 08:00 PM'}
+                  className="w-full px-3 py-2 rounded-xl border border-purple-500/30 bg-black/40 text-xs font-bold text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
+                />
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    { label: 'ম্যাচ টাইমে', val: time },
+                    { label: 'এখনই লাইভ', val: 'NOW' },
+                    { label: '+১ ঘণ্টা', offset: 1 },
+                    { label: '+২ ঘণ্টা', offset: 2 },
+                  ].map((p, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => {
+                        if (p.val === 'NOW') {
+                          setBotPublishAt(new Date().toISOString());
+                        } else if (p.val) {
+                          setBotPublishAt(p.val);
+                        } else if (p.offset) {
+                          const d = new Date(Date.now() + p.offset * 3600000);
+                          const h = d.getHours();
+                          const m = d.getMinutes();
+                          const period = h >= 12 ? 'PM' : 'AM';
+                          const h12 = h % 12 === 0 ? 12 : h % 12;
+                          const padM = m < 10 ? `0${m}` : `${m}`;
+                          const padH = h12 < 10 ? `0${h12}` : `${h12}`;
+                          setBotPublishAt(`Today ${padH}:${padM} ${period}`);
+                        }
+                      }}
+                      className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-500/20 text-purple-300 hover:bg-purple-500 hover:text-white transition-colors border border-purple-500/30"
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <ImageUploadInput
                 label="Match Banner Image"
                 value={bannerImage}
                 onChange={setBannerImage}
-                helperText="Select or drop match banner image file"
+                helperText="Select or drop match banner image file (স্বয়ংক্রিয়ভাবে ক্যাটাগরির ব্যানার সেট হবে)"
               />
 
-              <div className="flex items-center justify-end gap-3 pt-4">
+              <div className="flex flex-wrap items-center justify-end gap-2.5 pt-4 border-t border-gray-100 dark:border-white/10">
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
-                  className="px-4 py-2 rounded-xl bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-300 text-xs font-bold hover:bg-gray-200"
+                  className="px-4 py-2.5 rounded-xl bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-300 text-xs font-bold hover:bg-gray-200 transition-all"
                 >
                   Cancel
                 </button>
-                <button type="submit" className="px-6 py-2.5 rounded-xl btn-red text-xs font-black shadow-md">
-                  Create Match
+                <button
+                  type="button"
+                  onClick={handleSaveMatchForBot}
+                  className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-black flex items-center gap-1.5 shadow-md shadow-purple-600/30 transition-all"
+                >
+                  <Bot className="w-4 h-4" />
+                  🤖 বটের কাছে সেভ করুন
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 rounded-xl btn-red text-xs font-black flex items-center gap-1.5 shadow-md shadow-red-600/30 transition-all"
+                >
+                  <Zap className="w-4 h-4" />
+                  🚀 সরাসরি লাইভ পাবলিশ
                 </button>
               </div>
             </form>
@@ -1142,6 +1310,188 @@ export default function AdminTournamentsPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* BOT SAVED MATCHES MANAGER MODAL */}
+      {showBotScheduleManagerModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="w-full max-w-2xl bg-white dark:bg-[#14141c] rounded-2xl p-6 sm:p-8 space-y-4 border border-purple-500/30 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-gray-200 dark:border-white/10">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-purple-600 text-white flex items-center justify-center shadow-md shadow-purple-600/30">
+                  <Bot className="w-5 h-5 animate-pulse" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-gray-900 dark:text-white flex items-center gap-2">
+                    🤖 বটের সেভকৃত ম্যাচ ম্যানেজার (Bot Schedule Queue)
+                    <span className="text-[11px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-400 font-bold border border-purple-500/30">
+                      {scheduledBotMatches.length} টি ম্যাচ সংরক্ষিত
+                    </span>
+                  </h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    ম্যাচ সেভ করে রাখলে নির্দিষ্ট শিডিউল সময়ে বট স্বয়ংক্রিয়ভাবে পুশ নোটিফিকেশনসহ সব ক্যাটাগরিতে পাবলিশ করে দেবে।
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowBotScheduleManagerModal(false)}
+                className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 text-gray-500 dark:text-gray-300 flex items-center justify-center font-bold text-sm transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Quick Actions Bar */}
+            {scheduledBotMatches.length > 0 && (
+              <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-xl bg-purple-950/20 border border-purple-500/30">
+                <div className="text-xs text-purple-300 font-semibold flex items-center gap-1.5">
+                  <Clock className="w-4 h-4 text-purple-400" />
+                  <span>বট ব্যাকগ্রাউন্ডে সক্রিয় রয়েছে — শিডিউল পূর্ণ হলেই অটো পাবলিশ হবে</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (confirm('বটের কাছে সংরক্ষিত সকল ম্যাচ কি মুছে ফেলতে চান?')) {
+                        clearAllScheduledBotMatches();
+                        refreshScheduledQueue();
+                        showNotification('বটের সকল ম্যাচ মুছে ফেলা হয়েছে (বট একদম ফ্রেশ)!');
+                      }
+                    }}
+                    className="px-3 py-1.5 rounded-lg text-xs font-bold text-red-400 hover:bg-red-500/10 border border-red-500/30 transition-all flex items-center gap-1"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    সব ক্লিয়ার
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const count = publishAllScheduledBotMatches();
+                      refreshScheduledQueue();
+                      showNotification(`⚡ সফলভাবে ${count}টি ম্যাচ সব ক্যাটাগরিতে একযোগে লাইভ পাবলিশ করা হয়েছে!`);
+                    }}
+                    className="px-3.5 py-1.5 rounded-lg text-xs font-black bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white shadow-md shadow-purple-600/30 transition-all flex items-center gap-1.5"
+                  >
+                    <Zap className="w-3.5 h-3.5 text-amber-300" />
+                    সবগুলো একসাথে পাবলিশ করুন
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Scheduled Matches List */}
+            {scheduledBotMatches.length === 0 ? (
+              <div className="p-8 text-center rounded-2xl border border-dashed border-gray-300 dark:border-white/10 text-gray-400 space-y-3">
+                <Bot className="w-12 h-12 mx-auto text-purple-400 opacity-60" />
+                <div>
+                  <p className="text-sm font-bold text-gray-700 dark:text-gray-200">
+                    বটের কাছে কোনো সেভ করা ম্যাচ নেই (বট একদম ফ্রেশ!)
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    ম্যাচ তৈরির সময়ে &quot;🤖 বটের কাছে সেভ করুন&quot; বাটনে ক্লিক করলে ম্যাচটি এখানে সেভ থাকবে এবং নির্ধারিত সময়ে বট সব ক্যাটাগরিতে পোস্ট করে দেবে।
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowBotScheduleManagerModal(false);
+                    setShowCreateModal(true);
+                  }}
+                  className="px-4 py-2 rounded-xl btn-red text-xs font-black inline-flex items-center gap-1.5 shadow-md shadow-red-600/30"
+                >
+                  <Plus className="w-4 h-4" /> নতুন ম্যাচ তৈরি ও সেভ করুন
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {scheduledBotMatches.map((item) => {
+                  const cat = categories[item.categorySlug];
+                  const displayBanner = item.bannerImage || cat?.bannerImage || cat?.avatarImage || '/logo.png';
+                  return (
+                    <div
+                      key={item.id}
+                      className="p-4 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-white/[0.02] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 hover:border-purple-500/40 transition-all"
+                    >
+                      <div className="flex items-center gap-3.5 min-w-0">
+                        <img
+                          src={displayBanner}
+                          alt={item.title}
+                          className="w-16 h-12 rounded-lg object-cover bg-black/40 border border-white/10 flex-shrink-0"
+                          onError={(e) => {
+                            (e.target as HTMLElement).style.display = 'none';
+                          }}
+                        />
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-1.5 mb-1">
+                            <span className="text-[10px] px-2 py-0.5 rounded font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30 uppercase">
+                              {cat?.name || item.categorySlug}
+                            </span>
+                            <span className="text-[10px] px-2 py-0.5 rounded font-bold bg-white/10 text-gray-300">
+                              {item.type}
+                            </span>
+                            <span className="text-[10px] px-2 py-0.5 rounded font-bold bg-emerald-500/20 text-emerald-400">
+                              ফি: ৳{item.entryFee} • প্রাইজ: ৳{item.prizePool}
+                            </span>
+                          </div>
+                          <h4 className="text-sm font-black text-gray-900 dark:text-white truncate">
+                            {item.title}
+                          </h4>
+                          <div className="flex flex-wrap items-center gap-3 text-[11px] text-gray-500 mt-0.5">
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-3 h-3 text-purple-400" />
+                              খেলার সময়: <strong className="text-gray-700 dark:text-gray-300">{item.matchPlayTime}</strong>
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Bot className="w-3 h-3 text-indigo-400" />
+                              বট শিডিউল: <strong className="text-purple-400">{item.publishAt || item.matchPlayTime}</strong>
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 self-end sm:self-center flex-shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            deleteScheduledBotMatch(item.id);
+                            refreshScheduledQueue();
+                            showNotification(`ম্যাচ "${item.title}" বটের তালিকা থেকে মুছে ফেলা হয়েছে।`);
+                          }}
+                          className="p-2 rounded-lg text-red-500 hover:bg-red-500/10 border border-red-500/20 transition-all"
+                          title="Delete from bot queue"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const ok = publishScheduledBotMatch(item.id);
+                            if (ok) {
+                              refreshScheduledQueue();
+                              showNotification(`🚀 ম্যাচ "${item.title}" অবিলম্বে ${cat?.name || item.categorySlug} ক্যাটাগরিতে লাইভ পাবলিশ করা হয়েছে!`);
+                            }
+                          }}
+                          className="px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-emerald-600/30 transition-all"
+                        >
+                          <Zap className="w-3.5 h-3.5" />
+                          এখনই লাইভ
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            <div className="flex justify-end pt-3 border-t border-gray-100 dark:border-white/10">
+              <button
+                type="button"
+                onClick={() => setShowBotScheduleManagerModal(false)}
+                className="px-5 py-2 rounded-xl bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 text-xs font-bold hover:bg-gray-200 transition-all"
+              >
+                বন্ধ করুন (Close)
+              </button>
+            </div>
           </div>
         </div>
       )}
