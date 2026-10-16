@@ -166,15 +166,6 @@ export const INITIAL_CATEGORIES: Record<string, CategoryItem> = {
     avatarImage: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=120',
     description: 'Clash Squad with Headshot only enabled. Body damage is nullified.',
   },
-  'br-survival': {
-    slug: 'br-survival',
-    id: 88,
-    name: 'BR SURVIVAL',
-    section: 'FREE FIRE MATCHES',
-    bannerImage: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=640',
-    avatarImage: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=120',
-    description: 'Battle Royale Survival with HP 500, High Zone Damage & Full Control.',
-  },
 };
 
 export const INITIAL_TOP_PLAYERS: TopPlayerItem[] = [
@@ -426,6 +417,9 @@ export function normalizeCMSData(input: Partial<CMSData> | null | undefined): CM
   const deletedCategories: string[] = Array.isArray(src.deletedCategories)
     ? src.deletedCategories
     : [];
+  if (!deletedCategories.includes('br-survival')) {
+    deletedCategories.push('br-survival');
+  }
 
   const rawCategories =
     src.categories && typeof src.categories === 'object' && !Array.isArray(src.categories)
@@ -435,7 +429,7 @@ export function normalizeCMSData(input: Partial<CMSData> | null | undefined): CM
   // Auto-heal any legacy broken paths or /uploads/ 404 paths
   const healedCategories: Record<string, CategoryItem> = {};
   for (const [slug, cat] of Object.entries(rawCategories)) {
-    if (deletedCategories.includes(slug)) continue;
+    if (slug === 'br-survival' || deletedCategories.includes(slug)) continue;
     if (cat && typeof cat === 'object') {
       const item = cat as CategoryItem;
       const fallbackBanner =
@@ -457,10 +451,11 @@ export function normalizeCMSData(input: Partial<CMSData> | null | undefined): CM
       };
     }
   }
+  delete healedCategories['br-survival'];
 
   const cleanMatches: MatchItem[] = Array.isArray(src.matches)
     ? src.matches
-        .filter((m: any) => m && typeof m === 'object')
+        .filter((m: any) => m && typeof m === 'object' && m.categorySlug !== 'br-survival')
         .map((m: any) => {
           const isLoneWolf = m.categorySlug === 'lone-wolf';
           const isClashSquad = m.categorySlug === 'clash-squad' || m.categorySlug === 'cs-only-headshot';

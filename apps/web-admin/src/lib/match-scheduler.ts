@@ -1037,6 +1037,16 @@ export function clearAllScheduledBotMatches(): void {
   saveScheduledBotMatches([]);
 }
 
+export function updateAllScheduledBotMatchesTime(newTime: string): void {
+  const current = getScheduledBotMatches();
+  const updated = current.map((m) => ({
+    ...m,
+    publishAt: newTime,
+    matchPlayTime: m.matchPlayTime || newTime,
+  }));
+  saveScheduledBotMatches(updated);
+}
+
 export function publishScheduledBotMatch(id: string): boolean {
   if (typeof window === 'undefined') return false;
   const current = getScheduledBotMatches();

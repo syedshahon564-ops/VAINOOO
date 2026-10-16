@@ -41,6 +41,9 @@ import {
   addScheduledBotMatch,
   deleteScheduledBotMatch,
   publishScheduledBotMatch,
+  publishAllScheduledBotMatches,
+  clearAllScheduledBotMatches,
+  updateAllScheduledBotMatchesTime,
   ScheduledBotMatch,
 } from '@/lib/match-scheduler';
 import { useCMS, INITIAL_CATEGORIES } from '@/lib/cms-store';
@@ -60,6 +63,9 @@ export default function BotControlsPage() {
   const [scheduledMatches, setScheduledMatches] = useState<ScheduledBotMatch[]>([]);
   const [paymentRequests, setPaymentRequests] = useState<PaymentRequest[]>([]);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // All Matches Schedule System State
+  const [allMatchScheduleTime, setAllMatchScheduleTime] = useState('Today 08:30 PM');
 
   // Modals & Forms
   const [showScheduleModal, setShowScheduleModal] = useState(false);
@@ -256,6 +262,30 @@ export default function BotControlsPage() {
     showToast('Scheduled match removed from queue', 'success');
   };
 
+  const handleSetAllMatchesSchedule = () => {
+    if (!allMatchScheduleTime.trim()) {
+      showToast('অনুগ্রহ করে শিডিউল সময় লিখুন', 'error');
+      return;
+    }
+    updateAllScheduledBotMatchesTime(allMatchScheduleTime.trim());
+    refreshAllData();
+    showToast(`⏰ সকল সংরক্ষিত ম্যাচের জন্য শিডিউল সময় "${allMatchScheduleTime.trim()}" সেট করা হয়েছে!`, 'success');
+  };
+
+  const handleInstantPublishAll = () => {
+    if (scheduledMatches.length === 0) {
+      showToast('বটের কাছে কোনো সেভ করা ম্যাচ নেই!', 'error');
+      return;
+    }
+    const count = publishAllScheduledBotMatches();
+    refreshAllData();
+    dispatchDevicePushNotification(
+      '🎮 সকল ক্যাটাগরিতে নতুন ম্যাচ লাইভ পাবলিশ হয়েছে!',
+      `বট একযোগে ${count}টি ম্যাচ সব ক্যাটাগরিতে পাবলিশ করেছে। এখনই আপনার পছন্দের স্লট বুক করুন!`
+    );
+    showToast(`⚡ ভাম করে সকল ক্যাটাগরিতে একযোগে ${count}টি ম্যাচ লাইভ পাবলিশ করা হয়েছে এবং নোটিফিকেশন পাঠানো হয়েছে!`, 'success');
+  };
+
   // Filter payment requests
   const filteredRequests = paymentRequests.filter((r) => {
     if (paymentFilter === 'PENDING_WITHDRAW') return r.type === 'WITHDRAW' && r.status === 'PENDING';
@@ -301,6 +331,124 @@ export default function BotControlsPage() {
             <Plus className="w-4 h-4" />
             Schedule New Match
           </button>
+        </div>
+      </div>
+
+      {/* 🤖 অল ম্যাচ শিডিউল সিস্টেম (All Matches Schedule System) */}
+      <div className="rounded-2xl border-2 border-purple-500/40 bg-gradient-to-r from-purple-950/30 via-[#161226] to-purple-950/30 p-6 space-y-5 shadow-xl">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-purple-500/20">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-purple-600 text-white flex items-center justify-center shadow-lg shadow-purple-600/40">
+              <Bot className="w-7 h-7 animate-pulse" />
+            </div>
+            <div>
+              <h2 className="text-lg font-black text-white flex items-center gap-2">
+                🤖 অল ম্যাচ শিডিউল সিস্টেম (All Matches Schedule System)
+                <span className="text-xs px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 font-bold border border-purple-500/40">
+                  {scheduledMatches.length} টি ম্যাচ সংরক্ষিত
+                </span>
+              </h2>
+              <p className="text-xs text-purple-200/80 mt-0.5">
+                বটের কাছে সংরক্ষিত সকল ম্যাচ একযোগে শিডিউল করুন। নির্দিষ্ট সময়ে বট স্বয়ংক্রিয়ভাবে নোটিফিকেশনসহ সব ক্যাটাগরিতে ম্যাচ ছেড়ে দেবে, অথবা এখনই এক ক্লিকে লাইভ করুন।
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {scheduledMatches.length > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (confirm('বটের কাছে সংরক্ষিত সকল ম্যাচ কি মুছে ফেলতে চান?')) {
+                    clearAllScheduledBotMatches();
+                    refreshAllData();
+                    showToast('বটের সকল ম্যাচ মুছে ফেলা হয়েছে (বট ফ্রেশ)!', 'success');
+                  }
+                }}
+                className="px-3.5 py-2 rounded-xl text-xs font-bold text-red-400 hover:bg-red-500/10 border border-red-500/30 transition-all flex items-center gap-1.5"
+              >
+                <Trash2 className="w-4 h-4" />
+                সব ক্লিয়ার
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={handleInstantPublishAll}
+              className="px-5 py-2.5 rounded-xl text-xs font-black bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white shadow-lg shadow-emerald-500/30 active:scale-95 transition-all flex items-center gap-2"
+            >
+              <Zap className="w-4 h-4 text-amber-300 animate-bounce" />
+              ⚡ ভাম করে সব ক্যাটাগরিতে এখনই পাবলিশ করুন
+            </button>
+          </div>
+        </div>
+
+        {/* Schedule Time Form */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end bg-black/40 p-4 rounded-xl border border-purple-500/20">
+          <div className="md:col-span-2 space-y-2">
+            <label className="text-xs font-black text-purple-300 flex items-center justify-between">
+              <span>📅 অল ম্যাচ শিডিউল পাবলিশ সময় (Set Schedule Time for All Matches):</span>
+              <span className="text-[10px] text-gray-400 font-normal">বট এই সময়ে স্বয়ংক্রিয়ভাবে ক্যাটাগরিতে লাইভ করবে</span>
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={allMatchScheduleTime}
+                onChange={(e) => setAllMatchScheduleTime(e.target.value)}
+                placeholder="যেমন: Today 08:30 PM বা Tonight 10:00 PM"
+                className="flex-1 px-3.5 py-2.5 rounded-xl border border-purple-500/30 bg-[#0e0c18] text-white text-xs font-bold focus:outline-none focus:border-purple-400"
+              />
+              <button
+                type="button"
+                onClick={handleSetAllMatchesSchedule}
+                className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-black shadow-md shadow-purple-600/30 transition-all flex items-center gap-1.5 flex-shrink-0"
+              >
+                <Clock className="w-4 h-4" />
+                শিডিউল সেট করুন
+              </button>
+            </div>
+            {/* Quick Presets */}
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              {[
+                { label: 'আজ রাত ০৮:০০ টা', fixed: 'Today 08:00 PM' },
+                { label: 'আজ রাত ১০:০০ টা', fixed: 'Today 10:00 PM' },
+                { label: 'আগামীকাল সকাল ১০:০০ টা', fixed: 'Tomorrow 10:00 AM' },
+                { label: '+১ ঘণ্টা পর', offset: 1 },
+                { label: '+২ ঘণ্টা পর', offset: 2 },
+              ].map((p, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => {
+                    if (p.fixed) {
+                      setAllMatchScheduleTime(p.fixed);
+                    } else if (p.offset) {
+                      const d = new Date(Date.now() + p.offset * 3600000);
+                      const h = d.getHours();
+                      const m = d.getMinutes();
+                      const period = h >= 12 ? 'PM' : 'AM';
+                      const h12 = h % 12 === 0 ? 12 : h % 12;
+                      const padM = m < 10 ? `0${m}` : `${m}`;
+                      const padH = h12 < 10 ? `0${h12}` : `${h12}`;
+                      setAllMatchScheduleTime(`Today ${padH}:${padM} ${period}`);
+                    }
+                  }}
+                  className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-purple-500/20 text-purple-200 hover:bg-purple-500 hover:text-white transition-colors border border-purple-500/30"
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="p-3 rounded-xl bg-purple-900/30 border border-purple-500/20 text-[11px] text-purple-200 space-y-1">
+            <div className="font-bold text-amber-300 flex items-center gap-1">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>মোবাইল পুশ নোটিফিকেশন</span>
+            </div>
+            <p className="leading-relaxed">
+              যাদের যাদের অ্যাপে নোটিফিকেশন অন বা পারমিশন দেওয়া আছে, ম্যাচ পাবলিশ হওয়ার সাথে সাথে তাদের ফোনে সাউন্ডসহ নোটিফিকেশন চলে যাবে।
+            </p>
+          </div>
         </div>
       </div>
 

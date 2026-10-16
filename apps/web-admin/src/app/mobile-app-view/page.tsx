@@ -153,32 +153,10 @@ export default function MobileAppViewPage(props: any) {
   const [phoneTheme, setPhoneTheme] = useState<'dark' | 'light'>('light');
   const [phoneLang, setPhoneLang] = useState<'bn' | 'en'>(globalLang || 'bn');
 
-  // Esports Splash Loading State
-  const [appLoading, setAppLoading] = useState(true);
-  const [loadingProgress, setLoadingProgress] = useState(25);
-  const [loadingStatusText, setLoadingStatusText] = useState('টুর্নামেন্ট সার্ভারের সাথে কানেক্ট হচ্ছে...');
-
-  useEffect(() => {
-    const t1 = setTimeout(() => {
-      setLoadingProgress(65);
-      setLoadingStatusText('অ্যান্টি-চিট সিকিউরিটি ও টুর্নামেন্ট ভেরিফাই হচ্ছে...');
-    }, 450);
-
-    const t2 = setTimeout(() => {
-      setLoadingProgress(100);
-      setLoadingStatusText('স্বাগতম! অ্যাপ প্রস্তুত...');
-    }, 950);
-
-    const t3 = setTimeout(() => {
-      setAppLoading(false);
-    }, 1350);
-
-    return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-      clearTimeout(t3);
-    };
-  }, []);
+  // Esports Splash Loading State (Disabled for instant app opening)
+  const [appLoading, setAppLoading] = useState(false);
+  const [loadingProgress, setLoadingProgress] = useState(100);
+  const [loadingStatusText, setLoadingStatusText] = useState('');
 
   // Interactive Carousel Banner State
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
@@ -1101,59 +1079,6 @@ export default function MobileAppViewPage(props: any) {
       return true;
     });
   }, [currentCategoryMatches, subTypeFilter]);
-
-  if (appLoading) {
-    return (
-      <div className="fixed inset-0 z-[100] bg-[#07070d] flex flex-col items-center justify-center p-6 text-center select-none overflow-hidden animate-fadeIn">
-        {/* Ambient background glow */}
-        <div className="absolute top-1/4 w-72 h-72 bg-red-600/20 rounded-full blur-3xl pointer-events-none animate-pulse" />
-        <div className="absolute bottom-1/4 w-60 h-60 bg-amber-500/15 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="relative z-10 flex flex-col items-center space-y-6 max-w-xs w-full">
-          {/* Logo with esports pulsing aura */}
-          <div className="relative">
-            <div className="w-24 h-24 rounded-3xl bg-gradient-to-tr from-red-600 via-rose-700 to-amber-500 p-1 shadow-2xl shadow-red-600/40 animate-pulse">
-              <div className="w-full h-full rounded-[22px] bg-black/90 p-2.5 flex items-center justify-center backdrop-blur-md">
-                <img
-                  src="/logo.png"
-                  alt="FF Rivals Tour BD"
-                  className="w-full h-full object-contain filter drop-shadow-md"
-                />
-              </div>
-            </div>
-            <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full bg-red-600 text-white text-[9px] font-black tracking-widest uppercase border border-red-400 shadow-md">
-              LIVE ARENA
-            </span>
-          </div>
-
-          <div className="space-y-1.5 pt-1">
-            <h1 className="text-xl sm:text-2xl font-black text-white tracking-wider uppercase">
-              FF RIVAL <span className="text-red-500">TOUR BD</span>
-            </h1>
-            <p className="text-gray-400 text-xs font-bold tracking-wide">
-              {loadingStatusText}
-            </p>
-          </div>
-
-          {/* Progress Bar & Counter */}
-          <div className="w-full space-y-2 pt-2">
-            <div className="w-full h-2.5 rounded-full bg-white/10 overflow-hidden border border-white/10 p-0.5">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-red-600 via-amber-500 to-emerald-400 transition-all duration-300 ease-out shadow-lg shadow-red-500/50"
-                style={{ width: `${loadingProgress}%` }}
-              />
-            </div>
-            <div className="flex justify-between items-center text-[10px] text-gray-400 font-mono font-bold px-1">
-              <span className="text-emerald-400 flex items-center gap-1">
-                <Shield className="w-3 h-3" /> Anti-Cheat Active
-              </span>
-              <span className="text-amber-400">{loadingProgress}%</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div

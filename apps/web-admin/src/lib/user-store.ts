@@ -734,7 +734,7 @@ export async function registerUser(data: {
     await fetchUsersFromServer();
   } catch (e) {}
 
-  // Device Check: Enforce maximum 3 accounts registered per device
+  // Device Registration Record (Audit tracking without blocking new players)
   if (typeof window !== 'undefined') {
     try {
       const regRaw = localStorage.getItem('ff_device_registered_accounts');
@@ -746,16 +746,6 @@ export async function registerUser(data: {
         } catch {
           registeredList = [regRaw];
         }
-      } else {
-        const legacy = localStorage.getItem('ff_device_registered_account');
-        if (legacy) registeredList = [legacy];
-      }
-
-      if (registeredList.length >= 3) {
-        return {
-          success: false,
-          error: 'ডিভাইস লিমিট পূর্ণ হয়েছে! একটি ডিভাইসে সর্বোচ্চ ৩টি অ্যাকাউন্ট খোলা যাবে (Maximum 3 accounts allowed per device).',
-        };
       }
     } catch {}
   }
