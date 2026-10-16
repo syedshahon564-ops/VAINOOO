@@ -201,6 +201,13 @@ export default function MobileAppViewPage(props: any) {
         subtitle: phoneLang === 'en' ? 'Fast Automatic Room Pass in My Matches' : 'ম্যাচ শুরুর আগে মাই ম্যাচেসে দ্রুত রুম আইডি ও পাসওয়ার্ড',
         image: '/logo.png',
       },
+      {
+        id: 'slide-3',
+        badge: '100% SAFE & AUTOMATED',
+        title: phoneLang === 'en' ? 'ADVANCED ANTI-CHEAT & INSTANT WITHDRAW' : 'অ্যাডভান্সড অ্যান্টি-চিট সিকিউরিটি ও ২৪/৭ লাইভ সাপোর্ট',
+        subtitle: phoneLang === 'en' ? 'Fair Play Security & 24/7 Live Support' : 'সম্পূর্ণ ফেয়ার টুর্নামেন্ট সিকিউরিটি ও ২৪/৭ লাইভ কাস্টমার সাপোর্ট।',
+        image: '/logo.png',
+      },
     ];
   }, [settings?.banners, phoneLang]);
 
@@ -1940,10 +1947,10 @@ export default function MobileAppViewPage(props: any) {
                                   <img
                                     src={slide.image}
                                     alt={slide.title}
-                                    className="absolute inset-0 w-full h-full object-cover opacity-50"
+                                    className="absolute inset-0 w-full h-full object-cover opacity-80"
                                   />
                                 )}
-                                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
                                 <div className="relative z-10 space-y-1">
                                   <span className="text-[9px] font-black uppercase tracking-wider text-amber-400 bg-black/60 px-2 py-0.5 rounded border border-amber-500/30 inline-block shadow-xs">
                                     {slide.badge || 'FF RIVAL TOUR BD'}

@@ -8,6 +8,7 @@ import {
   ShieldAlert,
   CreditCard,
   Bot,
+  ArrowLeft,
   ArrowRight,
   Plus,
   Trash2,
@@ -18,6 +19,11 @@ import {
   FileText,
   Settings,
   Image,
+  Image as ImageIcon,
+  ArrowUp,
+  ArrowDown,
+  Save,
+  CheckCircle2,
   Sparkles,
   RefreshCw,
   ExternalLink,
@@ -38,6 +44,36 @@ import {
   SchedulerConfig,
 } from '@/lib/match-scheduler';
 
+const DEFAULT_INITIAL_BANNERS: BannerSlide[] = [
+  {
+    id: 'slide-1',
+    badge: 'CHAMPIONSHIP 2026',
+    title: 'দৈনিক ফ্রি ফায়ার টুর্নামেন্ট লাইভ!',
+    subtitle: 'ব্যাটল রয়্যাল, ক্ল্যাশ স্কোয়াড ৪v৪, লোন উলফ এবং ১v১ হেডশট লড়াই। বিকাশ/নগদে প্রাইজ উইথড্র।',
+    image: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1400',
+    actionText: 'Join Now',
+    actionUrl: '/matches',
+  },
+  {
+    id: 'slide-2',
+    badge: 'MEGA CASH PRIZE',
+    title: 'স্কোয়াড ও সোলো মেগা প্রাইজ টুর্নামেন্ট',
+    subtitle: 'প্রতিটি বুইয়াহ ও কিলে নিশ্চিত ক্যাশ রিওয়ার্ড। সরাসরি বিকাশ ও নগদে সুপার ফাস্ট পেমেন্ট উইথড্রল!',
+    image: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?q=80&w=1400',
+    actionText: 'Join Now',
+    actionUrl: '/matches',
+  },
+  {
+    id: 'slide-3',
+    badge: '100% SAFE & AUTOMATED',
+    title: 'ADVANCED ANTI-CHEAT & INSTANT WITHDRAW',
+    subtitle: 'সম্পূর্ণ ফেয়ার টুর্নামেন্ট সিকিউরিটি ও ২৪/৭ লাইভ কাস্টমার সাপোর্ট। আইডি লেভেল ৫৫+ বাধ্যতামূলক।',
+    image: '/logo.png',
+    actionText: 'Telegram Support',
+    actionUrl: 'https://t.me/ffrivaltourbd',
+  },
+];
+
 export default function AdminMasterPage() {
   const {
     categories,
@@ -52,7 +88,7 @@ export default function AdminMasterPage() {
     resetCMS,
   } = useCMS();
 
-  const [activeTab, setActiveTab] = useState<'matches' | 'categories' | 'rules' | 'settings' | 'scheduler'>('matches');
+  const [activeTab, setActiveTab] = useState<'matches' | 'categories' | 'banners' | 'rules' | 'settings' | 'scheduler'>('matches');
   const [toast, setToast] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // BOT & SCHEDULER STATE
@@ -123,7 +159,29 @@ export default function AdminMasterPage() {
   const [nagadNumber, setNagadNumber] = useState(settings.nagadNumber);
   const [apkDownloadUrl, setApkDownloadUrl] = useState(settings.apkDownloadUrl || '');
   const [customPin, setCustomPin] = useState('7860');
-  const [bannerSlidesList, setBannerSlidesList] = useState<BannerSlide[]>(settings.banners || []);
+  const [bannerSlidesList, setBannerSlidesList] = useState<BannerSlide[]>(
+    settings.banners && settings.banners.length > 0 ? settings.banners : DEFAULT_INITIAL_BANNERS
+  );
+  const [isSavingBanners, setIsSavingBanners] = useState(false);
+  const [previewSlideIdx, setPreviewSlideIdx] = useState(0);
+
+  // Sync tab from URL query param (?tab=banners)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const tab = params.get('tab');
+      if (
+        tab === 'banners' ||
+        tab === 'matches' ||
+        tab === 'categories' ||
+        tab === 'rules' ||
+        tab === 'settings' ||
+        tab === 'scheduler'
+      ) {
+        setActiveTab(tab as any);
+      }
+    }
+  }, []);
 
   // Synchronize category form fields whenever selectedCatSlug or categories updates
   useEffect(() => {
@@ -157,6 +215,8 @@ export default function AdminMasterPage() {
       setApkDownloadUrl(settings.apkDownloadUrl || '');
       if (settings.banners && settings.banners.length > 0) {
         setBannerSlidesList(settings.banners);
+      } else {
+        setBannerSlidesList(DEFAULT_INITIAL_BANNERS);
       }
       const savedPin = localStorage.getItem('ff_admin_custom_pin_v1') || '7860';
       setCustomPin(savedPin);
@@ -166,6 +226,59 @@ export default function AdminMasterPage() {
   const showToast = (text: string, type: 'success' | 'error' = 'success') => {
     setToast({ text, type });
     setTimeout(() => setToast(null), 3000);
+  };
+
+  // BANNER SLIDER ACTION HANDLERS
+  const handleAddNewSlide = () => {
+    const newSlide: BannerSlide = {
+      id: `slide-${Date.now()}`,
+      badge: 'NEW TOURNAMENT',
+      title: 'নতুন মেগা টুর্নামেন্ট লাইভ!',
+      subtitle: 'স্বল্প এন্ট্রি ফি • দ্রুত বিকাশ ও নগদে প্রাইজ উইথড্র। এখনই বুক করুন!',
+      image: '/logo.png',
+      actionText: 'Join Now',
+      actionUrl: '/matches',
+    };
+    setBannerSlidesList((prev) => [...prev, newSlide]);
+    setPreviewSlideIdx(bannerSlidesList.length);
+    showToast('নতুন স্লাইড যোগ করা হয়েছে! ছবি ও লেখা পরিবর্তন করে সেভ করুন।');
+  };
+
+  const handleRemoveSlide = (indexToRemove: number) => {
+    if (bannerSlidesList.length <= 1) {
+      showToast('কমপক্ষে ১টি ব্যানার স্লাইড থাকা বাধ্যতামূলক!', 'error');
+      return;
+    }
+    if (confirm(`স্লাইড #${indexToRemove + 1} মুছে ফেলতে চান?`)) {
+      setBannerSlidesList((prev) => prev.filter((_, i) => i !== indexToRemove));
+      setPreviewSlideIdx((prev) => Math.max(0, Math.min(prev, bannerSlidesList.length - 2)));
+      showToast(`স্লাইড #${indexToRemove + 1} মুছে ফেলা হয়েছে।`);
+    }
+  };
+
+  const handleMoveSlide = (fromIndex: number, toIndex: number) => {
+    if (toIndex < 0 || toIndex >= bannerSlidesList.length) return;
+    setBannerSlidesList((prev) => {
+      const copy = [...prev];
+      const item = copy.splice(fromIndex, 1)[0];
+      copy.splice(toIndex, 0, item);
+      return copy;
+    });
+    setPreviewSlideIdx(toIndex);
+  };
+
+  const handleSaveBannersDirectly = async () => {
+    setIsSavingBanners(true);
+    try {
+      await updateSiteSettings({
+        banners: bannerSlidesList,
+      });
+      showToast('✅ ব্যানার স্লাইডার ও ছবি সফলভাবে সেভ হয়েছে! (Banners saved successfully!)');
+    } catch (e) {
+      showToast('ব্যানার সেভ করতে সমস্যা হয়েছে, আবার চেষ্টা করুন।', 'error');
+    } finally {
+      setIsSavingBanners(false);
+    }
   };
 
   // BOT BATCH GENERATOR HANDLER
@@ -492,6 +605,17 @@ export default function AdminMasterPage() {
           }`}
         >
           <FolderEdit className="w-4 h-4" /> 📁 Category & Image Editor
+        </button>
+
+        <button
+          onClick={() => setActiveTab('banners')}
+          className={`px-4 py-3 text-xs font-black flex items-center gap-2 border-b-2 transition-all whitespace-nowrap ${
+            activeTab === 'banners'
+              ? 'border-red-600 text-red-600'
+              : 'border-transparent text-gray-500 hover:text-gray-900 dark:hover:text-white'
+          }`}
+        >
+          <ImageIcon className="w-4 h-4 text-amber-500" /> 🖼️ Slider Banners ({bannerSlidesList.length})
         </button>
 
         <button
@@ -1058,6 +1182,435 @@ export default function AdminMasterPage() {
       )}
 
       {/* ============================================================== */}
+      {/* TAB: BANNER SLIDES MANAGER (UPLOAD IMAGES, ADD, DELETE, REORDER) */}
+      {/* ============================================================== */}
+      {activeTab === 'banners' && (
+        <div className="space-y-6">
+          {/* Header & Quick Action Card */}
+          <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#12121a] p-6 space-y-4 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h3 className="text-base font-black text-gray-900 dark:text-white flex items-center gap-2">
+                  <ImageIcon className="w-5 h-5 text-amber-500" />
+                  Home Banner Carousel & Slide Manager (হোম পেজ ব্যানার স্লাইডার)
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  স্লাইডের ছবি পরিবর্তন করুন (কম্পিউটার/মোবাইল থেকে আপলোড অথবা ছবির লিঙ্ক দিন), নতুন স্লাইড যোগ করুন, সাজান এবং সরাসরি সেভ করুন।
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2.5">
+                <button
+                  type="button"
+                  onClick={handleAddNewSlide}
+                  className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-black text-xs font-black flex items-center gap-1.5 shadow-sm transition-all"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>+ Add New Slide</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleSaveBannersDirectly}
+                  disabled={isSavingBanners}
+                  className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white text-xs font-black flex items-center gap-1.5 shadow-md shadow-red-600/30 transition-all"
+                >
+                  {isSavingBanners ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" />
+                      <span>Save Banners</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Live Interactive Carousel Preview */}
+            <div className="pt-2">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[11px] font-black uppercase tracking-wider text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-500" /> Live App / Web Carousel Simulation (Slide {previewSlideIdx + 1} of {bannerSlidesList.length})
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setPreviewSlideIdx((prev) =>
+                        prev > 0 ? prev - 1 : bannerSlidesList.length - 1
+                      )
+                    }
+                    className="p-1.5 rounded-lg bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 text-gray-700 dark:text-gray-200"
+                    title="Previous Slide"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setPreviewSlideIdx((prev) =>
+                        prev < bannerSlidesList.length - 1 ? prev + 1 : 0
+                      )
+                    }
+                    className="p-1.5 rounded-lg bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 text-gray-700 dark:text-gray-200"
+                    title="Next Slide"
+                  >
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+
+              {bannerSlidesList[previewSlideIdx] && (
+                <div className="relative rounded-2xl overflow-hidden min-h-[170px] sm:min-h-[200px] border border-amber-500/30 shadow-xl bg-slate-950 flex flex-col justify-end p-5 sm:p-6 group">
+                  {/* Background Image with Dark Overlay */}
+                  <div
+                    className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
+                    style={{
+                      backgroundImage: `url(${bannerSlidesList[previewSlideIdx].image || '/logo.png'})`,
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-black/30" />
+
+                  {/* Foreground Content */}
+                  <div className="relative z-10 space-y-2 max-w-xl">
+                    <span className="inline-block px-2.5 py-1 rounded-md bg-amber-500 text-black font-black text-[10px] tracking-wider uppercase shadow-md">
+                      {bannerSlidesList[previewSlideIdx].badge || 'SPECIAL EVENT'}
+                    </span>
+                    <h4 className="text-lg sm:text-2xl font-black text-white leading-tight drop-shadow-md">
+                      {bannerSlidesList[previewSlideIdx].title || 'Banner Title'}
+                    </h4>
+                    <p className="text-xs sm:text-sm text-gray-300 font-medium line-clamp-2 drop-shadow">
+                      {bannerSlidesList[previewSlideIdx].subtitle || 'Banner description text'}
+                    </p>
+                    <div className="pt-1 flex items-center gap-3">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-600 text-white text-xs font-black shadow-lg">
+                        {bannerSlidesList[previewSlideIdx].actionText || 'Join Now'}
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </span>
+                      <span className="text-[11px] font-mono text-gray-400">
+                        Target: {bannerSlidesList[previewSlideIdx].actionUrl || '/matches'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Dots indicator */}
+                  <div className="absolute bottom-4 right-4 z-10 flex items-center gap-1.5">
+                    {bannerSlidesList.map((_, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => setPreviewSlideIdx(i)}
+                        className={`h-2 rounded-full transition-all ${
+                          i === previewSlideIdx
+                            ? 'w-6 bg-amber-400'
+                            : 'w-2 bg-white/40 hover:bg-white/70'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* List of Slide Cards for Editing */}
+          <div className="space-y-5">
+            {bannerSlidesList.map((slide, idx) => (
+              <div
+                key={slide.id || idx}
+                className="rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#12121a] p-5 sm:p-6 space-y-5 shadow-sm hover:border-amber-500/40 transition-all"
+              >
+                {/* Slide Card Header */}
+                <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-gray-100 dark:border-white/10">
+                  <div className="flex items-center gap-3">
+                    <span className="px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-xs font-black">
+                      Slide #{idx + 1}
+                    </span>
+                    <span className="text-xs font-bold text-gray-500 dark:text-gray-400">
+                      {slide.badge || 'No Badge'}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      disabled={idx === 0}
+                      onClick={() => handleMoveSlide(idx, idx - 1)}
+                      className="p-2 rounded-lg bg-gray-100 dark:bg-white/5 disabled:opacity-30 hover:bg-gray-200 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300 text-xs font-bold flex items-center gap-1"
+                      title="Move Up in order"
+                    >
+                      <ArrowUp className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">Up</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={idx === bannerSlidesList.length - 1}
+                      onClick={() => handleMoveSlide(idx, idx + 1)}
+                      className="p-2 rounded-lg bg-gray-100 dark:bg-white/5 disabled:opacity-30 hover:bg-gray-200 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300 text-xs font-bold flex items-center gap-1"
+                      title="Move Down in order"
+                    >
+                      <ArrowDown className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">Down</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setPreviewSlideIdx(idx)}
+                      className="p-2 rounded-lg bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 text-blue-600 dark:text-blue-400 text-xs font-bold flex items-center gap-1"
+                      title="Preview this slide above"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">Preview</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveSlide(idx)}
+                      className="p-2 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 text-red-600 dark:text-red-400 text-xs font-bold flex items-center gap-1 hover:bg-red-100"
+                      title="Delete this slide"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">Remove</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Image Changer - File Upload & URL */}
+                <div className="space-y-2">
+                  <ImageUploadInput
+                    label={`Slide #${idx + 1} Image (ডিভাইস থেকে আপলোড বা ছবির লিঙ্ক)`}
+                    value={slide.image || '/logo.png'}
+                    onChange={(newUrl) => {
+                      setBannerSlidesList((prev) =>
+                        prev.map((s, i) => (i === idx ? { ...s, image: newUrl } : s))
+                      );
+                    }}
+                    helperText="Upload any landscape banner (JPG, PNG, WEBP) from your device or paste an image URL"
+                    previewHeight="h-36 sm:h-44"
+                  />
+
+                  {/* Preset Free Fire Banner Picks */}
+                  <div className="pt-1">
+                    <span className="text-[11px] font-bold text-gray-500 dark:text-gray-400 block mb-1.5">
+                      ⚡ Quick Preset Wallpapers (1-ক্লিক ব্যাকগ্রাউন্ড সিলেক্ট):
+                    </span>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setBannerSlidesList((prev) =>
+                            prev.map((s, i) =>
+                              i === idx
+                                ? {
+                                    ...s,
+                                    image:
+                                      'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1400',
+                                  }
+                                : s
+                            )
+                          )
+                        }
+                        className="px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-white/5 hover:bg-amber-500/20 hover:text-amber-400 text-gray-700 dark:text-gray-300 text-[11px] font-medium border border-gray-200 dark:border-white/10 transition-all"
+                      >
+                        🔥 Classic Fire Battle
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setBannerSlidesList((prev) =>
+                            prev.map((s, i) =>
+                              i === idx
+                                ? {
+                                    ...s,
+                                    image:
+                                      'https://images.unsplash.com/photo-1511512578047-dfb367046420?q=80&w=1400',
+                                  }
+                                : s
+                            )
+                          )
+                        }
+                        className="px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-white/5 hover:bg-amber-500/20 hover:text-amber-400 text-gray-700 dark:text-gray-300 text-[11px] font-medium border border-gray-200 dark:border-white/10 transition-all"
+                      >
+                        🏆 Esports Championship
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setBannerSlidesList((prev) =>
+                            prev.map((s, i) =>
+                              i === idx
+                                ? {
+                                    ...s,
+                                    image:
+                                      'https://images.unsplash.com/photo-1538481199705-c710c4e965fc?q=80&w=1400',
+                                  }
+                                : s
+                            )
+                          )
+                        }
+                        className="px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-white/5 hover:bg-amber-500/20 hover:text-amber-400 text-gray-700 dark:text-gray-300 text-[11px] font-medium border border-gray-200 dark:border-white/10 transition-all"
+                      >
+                        🛡️ Anti-Cheat & Security
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setBannerSlidesList((prev) =>
+                            prev.map((s, i) => (i === idx ? { ...s, image: '/logo.png' } : s))
+                          )
+                        }
+                        className="px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-white/5 hover:bg-amber-500/20 hover:text-amber-400 text-gray-700 dark:text-gray-300 text-[11px] font-medium border border-gray-200 dark:border-white/10 transition-all"
+                      >
+                        ⚡ Official Logo
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Text Content Fields */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
+                  <div>
+                    <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
+                      Badge Text (ছোট টপ ট্যাগ)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. 100% SAFE & AUTOMATED"
+                      value={slide.badge}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setBannerSlidesList((prev) =>
+                          prev.map((s, i) => (i === idx ? { ...s, badge: val } : s))
+                        );
+                      }}
+                      className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/30 text-xs font-bold focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
+                      Title (প্রধান শিরোনাম)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. ADVANCED ANTI-CHEAT & INSTANT WITHDRAW"
+                      value={slide.title}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setBannerSlidesList((prev) =>
+                          prev.map((s, i) => (i === idx ? { ...s, title: val } : s))
+                        );
+                      }}
+                      className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/30 text-xs font-bold focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
+                    Subtitle / Description (বিস্তারিত বিবরণ)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. সম্পূর্ণ ফেয়ার টুর্নামেন্ট সিকিউরিটি ও ২৪/৭ লাইভ কাস্টমার সাপোর্ট।"
+                    value={slide.subtitle}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setBannerSlidesList((prev) =>
+                        prev.map((s, i) => (i === idx ? { ...s, subtitle: val } : s))
+                      );
+                    }}
+                    className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/30 text-xs font-medium focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
+                      Action Button Text (বাটন টেক্সট)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Join Now or Telegram Support"
+                      value={slide.actionText || 'Join Now'}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setBannerSlidesList((prev) =>
+                          prev.map((s, i) => (i === idx ? { ...s, actionText: val } : s))
+                        );
+                      }}
+                      className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/30 text-xs font-bold focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
+                      Action URL (ক্লিক করলে যেখানে যাবে)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. /matches or https://t.me/..."
+                      value={slide.actionUrl || '/matches'}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setBannerSlidesList((prev) =>
+                          prev.map((s, i) => (i === idx ? { ...s, actionUrl: val } : s))
+                        );
+                      }}
+                      className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/30 text-xs font-mono focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Bottom Action Footer */}
+          <div className="sticky bottom-4 z-20 rounded-2xl border border-gray-200 dark:border-white/10 bg-white/95 dark:bg-[#12121a]/95 backdrop-blur-md p-4 shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-2 text-xs font-bold text-gray-600 dark:text-gray-300">
+              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+              <span>Total Active Slides: <strong className="text-amber-500">{bannerSlidesList.length}</strong></span>
+            </div>
+
+            <div className="flex items-center gap-3 w-full sm:w-auto">
+              <button
+                type="button"
+                onClick={handleAddNewSlide}
+                className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 text-gray-800 dark:text-gray-200 text-xs font-black flex items-center justify-center gap-1.5 transition-all"
+              >
+                <Plus className="w-4 h-4" />
+                <span>+ Add Slide</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleSaveBannersDirectly}
+                disabled={isSavingBanners}
+                className="flex-1 sm:flex-none px-6 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white text-xs font-black flex items-center justify-center gap-2 shadow-lg shadow-red-600/30 transition-all"
+              >
+                {isSavingBanners ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>Saving Banners...</span>
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4" />
+                    <span>Save All Banner Slides</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================== */}
       {/* TAB 3: RULES & NOTICE MANAGER                                  */}
       {/* ============================================================== */}
       {activeTab === 'rules' && (
@@ -1295,10 +1848,10 @@ export default function AdminMasterPage() {
 
             {/* Banner Carousel Slider Management */}
             <div className="pt-4 border-t border-gray-200 dark:border-white/10 space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <h4 className="text-sm font-black text-gray-900 dark:text-white flex items-center gap-2">
-                    <Image className="w-4 h-4 text-amber-500" />
+                    <ImageIcon className="w-4 h-4 text-amber-500" />
                     Home Banner Carousel Manager
                   </h4>
                   <p className="text-[11px] text-gray-500">
@@ -1306,25 +1859,25 @@ export default function AdminMasterPage() {
                   </p>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    const newSlide: BannerSlide = {
-                      id: `slide-${Date.now()}`,
-                      badge: 'NEW EVENT',
-                      title: 'New Mega Tournament Live!',
-                      subtitle: 'Withdraw winnings directly via bKash & Nagad.',
-                      image: '/logo.png',
-                      actionText: 'Join Now',
-                      actionUrl: telegramUrl || 'https://t.me/ffrivaltourbd',
-                    };
-                    setBannerSlidesList((prev) => [...prev, newSlide]);
-                  }}
-                  className="px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-black flex items-center gap-1 shadow-sm"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Add Slide</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('banners')}
+                    className="px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 text-xs font-bold border border-amber-500/30 flex items-center gap-1 shadow-sm"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>Open Full Banner Studio</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleAddNewSlide}
+                    className="px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-black flex items-center gap-1 shadow-sm"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add Slide</span>
+                  </button>
+                </div>
               </div>
 
               <div className="space-y-4">
@@ -1340,9 +1893,7 @@ export default function AdminMasterPage() {
                       {bannerSlidesList.length > 1 && (
                         <button
                           type="button"
-                          onClick={() => {
-                            setBannerSlidesList((prev) => prev.filter((_, i) => i !== idx));
-                          }}
+                          onClick={() => handleRemoveSlide(idx)}
                           className="text-red-500 hover:text-red-400 text-xs flex items-center gap-1 font-bold"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
