@@ -162,83 +162,46 @@ export default function HomePage() {
       )}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
-        {/* Hero Interactive Auto-sliding Carousel */}
+        {/* Hero Interactive Auto-sliding Carousel (Pure Full-Bleed Banner Images) */}
         <div
-          className="relative rounded-3xl overflow-hidden shadow-2xl border border-gray-200 dark:border-white/10 group min-h-[360px] sm:min-h-[400px] flex items-center bg-black"
+          className="relative rounded-3xl overflow-hidden shadow-2xl border border-gray-200 dark:border-white/10 group h-[220px] sm:h-[320px] md:h-[380px] lg:h-[420px] w-full bg-black select-none"
           onMouseEnter={() => setIsPaused(true)}
           onMouseLeave={() => setIsPaused(false)}
         >
-          {/* Background Images with Smooth Crossfade */}
-          {bannerSlides.map((slide, idx) => (
-            <div
-              key={slide.id || idx}
-              className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
-                idx === currentSlide ? 'opacity-100 z-0' : 'opacity-0 pointer-events-none'
-              }`}
-            >
-              <img
-                src={slide.image || '/logo.png'}
-                alt={slide.title}
-                className="w-full h-full object-cover object-center filter brightness-45 scale-105 transition-transform duration-1000"
-              />
-              <div className="absolute inset-0 bg-gradient-to-r from-black/95 via-red-950/80 to-black/70" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/40" />
-            </div>
-          ))}
-
-          {/* Slide Content */}
-          <div className="relative z-10 w-full p-6 sm:p-10 lg:p-12 text-white flex flex-col md:flex-row items-center justify-between gap-8">
-            <div className="space-y-4 max-w-2xl text-center md:text-left">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-red-600/30 border border-red-500/50 text-amber-300 text-xs font-black uppercase tracking-wider backdrop-blur-md">
-                <Flame className="w-4 h-4 text-amber-400 fill-amber-400 animate-pulse" />
-                <span>{activeSlide.badge || `${settings.siteName} Championship 2026`}</span>
-              </div>
-              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black tracking-tight leading-tight uppercase text-white drop-shadow-md">
-                {activeSlide.title}
-              </h1>
-              <p className="text-xs sm:text-sm md:text-base text-gray-200 leading-relaxed max-w-xl drop-shadow">
-                {activeSlide.subtitle}
-              </p>
-              {activeSlide.actionUrl && (
-                <div className="pt-2 flex justify-center md:justify-start">
-                  <a
-                    href={activeSlide.actionUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-black text-xs shadow-xl shadow-red-600/30 transition-all border border-red-400/40"
-                  >
-                    <Send className="w-4 h-4" />
-                    <span>{activeSlide.actionText || 'Telegram Community'}</span>
-                  </a>
-                </div>
-              )}
-            </div>
-
-            {/* Right side Logo Showcase Box */}
-            <div className="w-full md:w-auto p-5 rounded-2xl bg-black/60 backdrop-blur-md border border-white/15 text-center flex flex-col items-center space-y-3 shadow-2xl flex-shrink-0">
-              <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden border-2 border-amber-400/50 shadow-2xl bg-black/80 p-2 flex items-center justify-center">
+          {/* Pure Full-Bleed Banner Images with Smooth Crossfade */}
+          {bannerSlides.map((slide, idx) => {
+            const isCurrent = idx === currentSlide;
+            const content = (
+              <div
+                key={slide.id || idx}
+                className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
+                  isCurrent ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
+                }`}
+              >
                 <img
-                  src={settings?.logoUrl || '/logo.png'}
-                  alt={settings?.siteName || 'FF RIVAL TOUR BD'}
-                  className="w-full h-full object-contain"
+                  src={slide.image || '/logo.png'}
+                  alt={slide.title || 'Tournament Banner'}
+                  className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-[1.02]"
                 />
               </div>
-              <div className="text-sm font-black text-amber-300 tracking-wider">
-                {settings?.siteName || 'FF RIVALS TOUR BD'}
-              </div>
-              <p className="text-xs text-gray-300 max-w-xs">
-                {t('যেকোনো সহায়তার জন্য টেলিগ্রামে মেসেজ দিন', 'Need immediate help with room password or withdrawal?')}
-              </p>
-              <a
-                href={settings.telegramUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#229ED9] text-white text-xs font-bold shadow hover:brightness-110"
-              >
-                <Send className="w-4 h-4" /> Telegram Community
-              </a>
-            </div>
-          </div>
+            );
+
+            if (slide.actionUrl) {
+              return (
+                <a
+                  key={slide.id || idx}
+                  href={slide.actionUrl}
+                  target={slide.actionUrl.startsWith('http') ? '_blank' : '_self'}
+                  rel="noreferrer"
+                  className="cursor-pointer"
+                  title={slide.title || 'Tournament Banner'}
+                >
+                  {content}
+                </a>
+              );
+            }
+            return content;
+          })}
 
           {/* Navigation Arrows (Prev / Next) */}
           {bannerSlides.length > 1 && (

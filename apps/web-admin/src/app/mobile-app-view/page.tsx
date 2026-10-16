@@ -311,6 +311,15 @@ export default function MobileAppViewPage(props: any) {
       setIsRefreshing(true);
       setPullDistance(45);
       if (typeof window !== 'undefined') {
+        try {
+          const res = await fetch(`/api/cms?t=${Date.now()}`, { cache: 'no-store' });
+          if (res.ok) {
+            const serverData = await res.json();
+            if (serverData && !serverData.error) {
+              window.dispatchEvent(new CustomEvent('ff_cms_updated', { detail: serverData }));
+            }
+          }
+        } catch (e) {}
         window.dispatchEvent(new CustomEvent('ff_cms_updated'));
       }
       const cur = getCurrentUser();
@@ -1934,36 +1943,40 @@ export default function MobileAppViewPage(props: any) {
                             </div>
                           </div>
 
-                          {/* 2. Interactive Image Carousel Slider (Admin Controlled) */}
-                          <div className="relative rounded-2xl overflow-hidden h-36 bg-gradient-to-tr from-slate-900 via-red-950 to-slate-900 border border-gray-200 shadow-md">
-                            {bannerSlides.map((slide, idx) => (
-                              <div
-                                key={slide.id || idx}
-                                className={`absolute inset-0 transition-opacity duration-700 ease-in-out p-3.5 flex flex-col justify-end text-white ${
-                                  idx === currentSlideIndex ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
-                                }`}
-                              >
-                                {slide.image && (
+                          {/* 2. Interactive Image Carousel Slider (Admin Controlled - Pure Banner Graphic) */}
+                          <div className="relative rounded-2xl overflow-hidden h-36 sm:h-44 bg-slate-950 border border-gray-200 shadow-md select-none">
+                            {bannerSlides.map((slide, idx) => {
+                              const isCurrent = idx === currentSlideIndex;
+                              const slideContent = (
+                                <div
+                                  key={slide.id || idx}
+                                  className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
+                                    isCurrent ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
+                                  }`}
+                                >
                                   <img
-                                    src={slide.image}
-                                    alt={slide.title}
-                                    className="absolute inset-0 w-full h-full object-cover opacity-80"
+                                    src={slide.image || '/logo.png'}
+                                    alt={slide.title || 'Banner'}
+                                    className="w-full h-full object-cover object-center"
                                   />
-                                )}
-                                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
-                                <div className="relative z-10 space-y-1">
-                                  <span className="text-[9px] font-black uppercase tracking-wider text-amber-400 bg-black/60 px-2 py-0.5 rounded border border-amber-500/30 inline-block shadow-xs">
-                                    {slide.badge || 'FF RIVAL TOUR BD'}
-                                  </span>
-                                  <h3 className="text-xs sm:text-sm font-black leading-tight text-white drop-shadow">
-                                    {slide.title}
-                                  </h3>
-                                  <p className="text-[9px] text-gray-200 line-clamp-1 leading-snug">
-                                    {slide.subtitle}
-                                  </p>
                                 </div>
-                              </div>
-                            ))}
+                              );
+
+                              if (slide.actionUrl) {
+                                return (
+                                  <a
+                                    key={slide.id || idx}
+                                    href={slide.actionUrl}
+                                    target={slide.actionUrl.startsWith('http') ? '_blank' : '_self'}
+                                    rel="noreferrer"
+                                    className="cursor-pointer"
+                                  >
+                                    {slideContent}
+                                  </a>
+                                );
+                              }
+                              return slideContent;
+                            })}
 
                             {/* Slider Prev / Next Controls */}
                             {bannerSlides.length > 1 && (

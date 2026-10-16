@@ -1265,36 +1265,23 @@ export default function AdminMasterPage() {
               </div>
 
               {bannerSlidesList[previewSlideIdx] && (
-                <div className="relative rounded-2xl overflow-hidden min-h-[170px] sm:min-h-[200px] border border-amber-500/30 shadow-xl bg-slate-950 flex flex-col justify-end p-5 sm:p-6 group">
-                  {/* Background Image with Dark Overlay */}
-                  <div
-                    className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
-                    style={{
-                      backgroundImage: `url(${bannerSlidesList[previewSlideIdx].image || '/logo.png'})`,
-                    }}
+                <div className="relative rounded-2xl overflow-hidden h-[190px] sm:h-[240px] border border-amber-500/30 shadow-xl bg-slate-950 flex flex-col justify-end group">
+                  {/* Pure Banner Graphic Display */}
+                  <img
+                    src={bannerSlidesList[previewSlideIdx].image || '/logo.png'}
+                    alt={bannerSlidesList[previewSlideIdx].title || 'Slide'}
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-black/30" />
-
-                  {/* Foreground Content */}
-                  <div className="relative z-10 space-y-2 max-w-xl">
-                    <span className="inline-block px-2.5 py-1 rounded-md bg-amber-500 text-black font-black text-[10px] tracking-wider uppercase shadow-md">
-                      {bannerSlidesList[previewSlideIdx].badge || 'SPECIAL EVENT'}
+                  {/* Subtle Bottom Target URL Pill */}
+                  <div className="relative z-10 p-3 bg-gradient-to-t from-black/80 via-black/40 to-transparent flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-amber-400 bg-black/60 px-2 py-0.5 rounded border border-amber-500/30">
+                      Slide #{previewSlideIdx + 1}: {bannerSlidesList[previewSlideIdx].title || 'Banner'}
                     </span>
-                    <h4 className="text-lg sm:text-2xl font-black text-white leading-tight drop-shadow-md">
-                      {bannerSlidesList[previewSlideIdx].title || 'Banner Title'}
-                    </h4>
-                    <p className="text-xs sm:text-sm text-gray-300 font-medium line-clamp-2 drop-shadow">
-                      {bannerSlidesList[previewSlideIdx].subtitle || 'Banner description text'}
-                    </p>
-                    <div className="pt-1 flex items-center gap-3">
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-600 text-white text-xs font-black shadow-lg">
-                        {bannerSlidesList[previewSlideIdx].actionText || 'Join Now'}
-                        <ArrowRight className="w-3.5 h-3.5" />
+                    {bannerSlidesList[previewSlideIdx].actionUrl && (
+                      <span className="text-[10px] font-mono text-gray-300 bg-black/60 px-2 py-0.5 rounded">
+                        Target: {bannerSlidesList[previewSlideIdx].actionUrl}
                       </span>
-                      <span className="text-[11px] font-mono text-gray-400">
-                        Target: {bannerSlidesList[previewSlideIdx].actionUrl || '/matches'}
-                      </span>
-                    </div>
+                    )}
                   </div>
 
                   {/* Dots indicator */}

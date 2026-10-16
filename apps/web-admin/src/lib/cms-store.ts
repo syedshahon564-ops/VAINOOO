@@ -673,9 +673,9 @@ export function useCMS() {
                 serverData.settings && typeof serverData.settings === 'object' ? serverData.settings : {};
 
               const merged: CMSData = normalizeCMSData({
-                categories: { ...serverCategories, ...(current?.categories || {}) },
+                categories: { ...(current?.categories || {}), ...serverCategories },
                 matches: serverMatches !== null ? serverMatches : current?.matches || [],
-                settings: { ...INITIAL_SETTINGS, ...(serverSettings || {}), ...(current?.settings || {}) } as SiteSettings,
+                settings: { ...INITIAL_SETTINGS, ...(current?.settings || {}), ...(serverSettings || {}) } as SiteSettings,
                 topPlayers:
                   Array.isArray(serverData.topPlayers) && serverData.topPlayers.length > 0
                     ? serverData.topPlayers
@@ -696,8 +696,8 @@ export function useCMS() {
     // 1. Immediate sync
     syncWithServer();
 
-    // 2. Periodic background poll every 10s for real-time live match updates
-    const syncInterval = setInterval(syncWithServer, 10000);
+    // 2. Periodic background poll every 4s for instant admin changes reflection
+    const syncInterval = setInterval(syncWithServer, 4000);
 
     // 3. Sync immediately when user refocuses or opens app from background
     const onVisibilityChange = () => {

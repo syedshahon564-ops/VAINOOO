@@ -33,26 +33,29 @@ function ensureDataFile(targetPath: string) {
   }
 }
 
+let inMemoryServerCache: any = null;
+
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export async function GET() {
   try {
     const dataFile = getDataFilePath();
+    let fileData: any = null;
     if (fs.existsSync(dataFile)) {
-      const content = fs.readFileSync(dataFile, 'utf-8');
-      const data = JSON.parse(content);
-      return NextResponse.json(data, {
-        headers: {
-          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
-          'Pragma': 'no-cache',
-          'Expires': '0',
-        },
-      });
+      try {
+        const content = fs.readFileSync(dataFile, 'utf-8');
+        fileData = JSON.parse(content);
+      } catch (e) {}
     }
-    return NextResponse.json({ ok: true, data: null }, {
+
+    const result = inMemoryServerCache || fileData || { ok: true, data: null };
+
+    return NextResponse.json(result, {
       headers: {
         'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+        'Pragma': 'no-cache',
+        'Expires': '0',
       },
     });
   } catch (error: any) {
@@ -63,6 +66,8 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
+    inMemoryServerCache = body;
+
     const possiblePaths = [
       path.join(process.cwd(), 'apps', 'web-admin', 'data', 'cms-data.json'),
       path.join(process.cwd(), 'data', 'cms-data.json'),
