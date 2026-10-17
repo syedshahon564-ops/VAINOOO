@@ -55,6 +55,7 @@ import {
   Mail,
   Home,
   Clipboard,
+  ShieldCheck,
 } from 'lucide-react';
 import { useCMS, MatchItem, TopPlayerItem } from '@/lib/cms-store';
 import { checkFreeFireUID } from '@/lib/ff-uid-checker';
@@ -125,24 +126,33 @@ export default function MobileAppViewPage(props: any) {
   };
 
   const [mounted, setMounted] = useState(false);
-  const [isMobileScreen, setIsMobileScreen] = useState(false);
-  const [forceFullscreen, setForceFullscreen] = useState(false);
+  const isMobileView = true;
+
+  // Premium Animated Splash Loading Screen State
+  const [splashVisible, setSplashVisible] = useState(true);
+  const [splashFading, setSplashFading] = useState(false);
+  const [splashProgress, setSplashProgress] = useState(15);
 
   useEffect(() => {
     setMounted(true);
-    const checkMobile = () => {
-      const isMobileUA =
-        typeof navigator !== 'undefined' &&
-        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      const isSmall = typeof window !== 'undefined' && window.innerWidth < 768;
-      setIsMobileScreen(Boolean(standalone || isSmall || isMobileUA));
-    };
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, [standalone]);
 
-  const isMobileView = standalone || (mounted && (isMobileScreen || forceFullscreen));
+    // Fast, responsive esports splash loading sequence
+    const t1 = setTimeout(() => setSplashProgress(45), 100);
+    const t2 = setTimeout(() => setSplashProgress(75), 240);
+    const t3 = setTimeout(() => setSplashProgress(92), 420);
+    const t4 = setTimeout(() => setSplashProgress(100), 620);
+    const t5 = setTimeout(() => setSplashFading(true), 780);
+    const t6 = setTimeout(() => setSplashVisible(false), 1080);
+
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+      clearTimeout(t4);
+      clearTimeout(t5);
+      clearTimeout(t6);
+    };
+  }, []);
 
   // Active Tab & Screen Navigation
   const [activeTab, setActiveTab] = useState<'home' | 'my-matches' | 'top-players' | 'wallet' | 'profile'>('home');
@@ -152,11 +162,6 @@ export default function MobileAppViewPage(props: any) {
   // Phone Theme & Language (Light White Mode permanent)
   const [phoneTheme, setPhoneTheme] = useState<'dark' | 'light'>('light');
   const [phoneLang, setPhoneLang] = useState<'bn' | 'en'>(globalLang || 'bn');
-
-  // Esports Splash Loading State (Disabled for instant app opening)
-  const [appLoading, setAppLoading] = useState(false);
-  const [loadingProgress, setLoadingProgress] = useState(100);
-  const [loadingStatusText, setLoadingStatusText] = useState('');
 
   // Interactive Carousel Banner State
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
@@ -1089,13 +1094,67 @@ export default function MobileAppViewPage(props: any) {
   }, [selectedCategory]);
 
   return (
-    <div
-      className={
-        isMobileView
-          ? 'fixed inset-0 w-full h-full h-[100dvh] max-h-[100dvh] overflow-hidden flex flex-col transition-colors bg-white'
-          : 'min-h-screen bg-slate-100 dark:bg-[#07070a] py-8 px-4 transition-colors'
-      }
-    >
+    <div className="fixed inset-0 w-full h-full h-[100dvh] max-h-[100dvh] overflow-hidden flex flex-col transition-colors bg-white select-none">
+      {/* Premium Animated Esports Splash Loading Screen */}
+      {splashVisible && (
+        <div
+          className={`fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#07070a] select-none transition-opacity duration-300 ease-out ${
+            splashFading ? 'opacity-0 pointer-events-none' : 'opacity-100'
+          }`}
+          style={{ willChange: 'opacity' }}
+        >
+          {/* Ambient Esports Glow Background */}
+          <div className="absolute w-80 h-80 rounded-full bg-red-600/20 blur-3xl -translate-y-8 pointer-events-none" />
+          <div className="absolute w-60 h-60 rounded-full bg-amber-500/15 blur-2xl translate-y-16 pointer-events-none" />
+
+          {/* Logo with pulsing glow aura */}
+          <div className="relative mb-6 flex items-center justify-center">
+            <div className="absolute -inset-3 rounded-3xl bg-gradient-to-tr from-red-600 via-rose-500 to-amber-500 opacity-40 blur-lg animate-pulse" />
+            <div className="relative w-24 h-24 rounded-2xl bg-gradient-to-b from-slate-900 to-black p-2.5 border border-red-500/40 shadow-2xl shadow-red-600/30 flex items-center justify-center">
+              <img
+                src="/logo.png"
+                alt="FF RIVAL TOUR BD"
+                className="w-full h-full object-contain filter drop-shadow-[0_0_12px_rgba(239,68,68,0.7)]"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = '/logo.png';
+                }}
+              />
+            </div>
+          </div>
+
+          {/* App Title & Tagline */}
+          <div className="text-center space-y-1 z-10 px-4">
+            <h1 className="text-2xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-gray-300 uppercase">
+              FF RIVAL <span className="text-red-500 font-black">TOUR BD</span>
+            </h1>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-950/60 border border-red-500/30 text-[10px] font-black tracking-widest text-amber-400 uppercase shadow-inner">
+              <Sparkles className="w-3 h-3 text-amber-400 animate-pulse" />
+              <span>{tPhone('গেমিং প্ল্যাটফর্মে স্বাগতম', 'BANGLADESH ESPORTS TOURNAMENT')}</span>
+            </div>
+          </div>
+
+          {/* Sleek Progress Bar */}
+          <div className="w-56 mt-8 flex flex-col items-center gap-2 z-10">
+            <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden border border-white/5 relative p-0.5">
+              <div
+                className="h-full bg-gradient-to-r from-red-600 via-rose-500 to-amber-400 rounded-full transition-all duration-200 ease-out shadow-[0_0_12px_rgba(239,68,68,0.8)]"
+                style={{ width: `${splashProgress}%` }}
+              />
+            </div>
+            <div className="flex items-center justify-between w-full text-[10px] font-bold text-gray-400 px-0.5">
+              <span>{splashProgress < 100 ? tPhone('লোড হচ্ছে...', 'Loading...') : tPhone('প্রস্তুত!', 'Ready!')}</span>
+              <span className="font-mono text-amber-400 font-black">{splashProgress}%</span>
+            </div>
+          </div>
+
+          {/* Verified Gaming Tag */}
+          <div className="absolute bottom-7 flex items-center gap-1.5 text-[10px] text-gray-500 font-bold z-10">
+            <Shield className="w-3.5 h-3.5 text-emerald-500" />
+            <span>100% Safe & Instant Match Payouts</span>
+          </div>
+        </div>
+      )}
+
       {/* Bot Action Toast */}
       {botToast && (
         <div className="fixed top-12 left-1/2 -translate-x-1/2 z-[110] bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-black shadow-2xl animate-bounce flex items-center gap-2 border border-emerald-400">
@@ -1104,152 +1163,27 @@ export default function MobileAppViewPage(props: any) {
         </div>
       )}
 
-      <div className={isMobileView ? 'w-full h-full flex flex-col flex-1 min-h-0 overflow-hidden' : 'max-w-7xl mx-auto'}>
-        {/* Top Breadcrumb & Controls */}
-        {!isMobileView && (
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-8 bg-white dark:bg-white/5 p-5 rounded-2xl border border-gray-200 dark:border-white/10 shadow-sm">
-            <div>
-              <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-1">
-                <Link href="/" className="hover:text-red-600 transition-colors">
-                  {tPhone('হোম', 'Home')}
-                </Link>
-                <span>/</span>
-                <span className="text-red-600 font-bold">
-                  FF RIVAL TOUR BD - {tPhone('মোবাইল অ্যাপ লাইভ সিমুলেটর', 'Mobile App Live Simulator')}
-                </span>
-              </div>
-              <h1 className="text-2xl font-black text-gray-900 dark:text-white flex items-center gap-2">
-                <Smartphone className="w-6 h-6 text-red-600" />
-                FF RIVAL TOUR BD - {tPhone('মোবাইল অ্যাপ ইন্টারঅ্যাক্টিভ ভিউ', 'Mobile App Interactive Simulator')}
-              </h1>
-              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                {tPhone(
-                  'রুম রুলস, রেজিস্টার্ড প্লেয়ার্স লিস্ট (৩ নং ছবি), টোটাল প্রাইজ ডিটেইলস (২ নং ছবি) ও বাংলা/ইংরেজি সিস্টেম টেস্ট করুন।',
-                  'Test Room Rules, Registered Participants list (Image 3), Total Prize Details (Image 2), and bilingual system.'
-                )}
-              </p>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2.5">
-              <button
-                onClick={() => setForceFullscreen(true)}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-black bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/20 transition-all"
-                title="Fullscreen App Mode"
-              >
-                <Smartphone className="w-4 h-4" />
-                <span>{tPhone('ফুলস্ক্রিন অ্যাপ ভিউ', 'Fullscreen App Mode')}</span>
-              </button>
-
-              {/* Bilingual System Switcher for Phone */}
-              <button
-                onClick={togglePhoneLang}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-black bg-gradient-to-r from-red-600/10 to-amber-500/10 border border-red-500/30 text-red-600 dark:text-amber-400 hover:scale-105 transition-all shadow-sm"
-                title="Toggle Bangla and English for Mobile Phone"
-              >
-                <Globe className="w-4 h-4 text-amber-500" />
-                <span>
-                  {phoneLang === 'bn' ? '🌐 Switch App to English' : '🌐 অ্যাপ বাংলায় দেখুন'}
-                </span>
-              </button>
-
-              <Link
-                href="/leaderboard"
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-black bg-amber-500 text-black hover:bg-amber-400 transition-all shadow-md shadow-amber-500/20"
-              >
-                <Trophy className="w-4 h-4" /> {tPhone('ওয়েব লিডারবোর্ড', 'Web Leaderboard')}
-              </Link>
-
-              {currentUser?.role === 'ADMIN' && (
-                <Link
-                  href="/admin"
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-red-600 text-white hover:bg-red-700 shadow-md shadow-red-600/20"
-                >
-                  <Shield className="w-4 h-4" /> {tPhone('অ্যাডমিন প্যানেল', 'Admin Panel')}
-                </Link>
-              )}
-
-              <button
-                onClick={() => setPhoneTheme(phoneTheme === 'dark' ? 'light' : 'dark')}
-                className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/15 transition-all text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-white/10"
-              >
-                {phoneTheme === 'dark' ? (
-                  <>
-                    <Sun className="w-4 h-4 text-amber-400" /> {tPhone('অ্যাপ লাইট মোড', 'Light Mode')}
-                  </>
-                ) : (
-                  <>
-                    <Moon className="w-4 h-4 text-slate-700" /> {tPhone('অ্যাপ ডার্ক মোড', 'Dark Mode')}
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Workspace: Phone Mockup on Left + Feature Highlights on Right */}
-        <div
-          className={
-            isMobileView
-              ? 'w-full h-full flex flex-col flex-1 min-h-0 overflow-hidden'
-              : 'grid grid-cols-1 lg:grid-cols-12 gap-8 items-start'
+      {/* Main Native Mobile App Container */}
+      <div
+        onTouchStart={(e) => {
+          const t = e.touches[0];
+          if (t.clientX < 28) {
+            setEdgeTouchStart({ x: t.clientX, y: t.clientY });
           }
-        >
-          {/* LEFT: Phone Simulator */}
-          <div
-            className={
-              isMobileView
-                ? 'w-full h-full flex flex-col flex-1 min-h-0 overflow-hidden'
-                : 'lg:col-span-5 flex justify-center'
-            }
-          >
-            {/* Realistic Smartphone Chassis */}
-            <div
-              className={
-                isMobileView
-                  ? 'w-full h-full flex flex-col flex-1 min-h-0 p-0 border-0 rounded-none shadow-none bg-transparent overflow-hidden'
-                  : 'relative w-[370px] sm:w-[390px] h-[780px] bg-slate-900 rounded-[50px] p-3 shadow-2xl ring-1 ring-white/20 shadow-red-500/10 border-4 border-slate-700 flex flex-col'
-              }
-            >
-              {/* Dynamic Island / Camera Notch */}
-              {!isMobileView && (
-                <div className="absolute top-4 left-1/2 -translate-x-1/2 w-28 h-5 bg-black rounded-full z-50 flex items-center justify-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full bg-slate-800"></div>
-                  <div className="w-2 h-2 rounded-full bg-blue-950"></div>
-                </div>
-              )}
+        }}
+        onTouchEnd={(e) => {
+          if (!edgeTouchStart) return;
+          const t = e.changedTouches[0];
+          const deltaX = t.clientX - edgeTouchStart.x;
+          const deltaY = Math.abs(t.clientY - edgeTouchStart.y);
+          if (deltaX > 40 && deltaX > deltaY) {
+            handleInAppBack();
+          }
+          setEdgeTouchStart(null);
+        }}
+        className="relative w-full h-full flex-1 min-h-0 overflow-hidden flex flex-col font-sans bg-white text-gray-900"
+      >
 
-              {/* Inside Screen Content */}
-              <div
-                onTouchStart={(e) => {
-                  const t = e.touches[0];
-                  if (t.clientX < 28) {
-                    setEdgeTouchStart({ x: t.clientX, y: t.clientY });
-                  }
-                }}
-                onTouchEnd={(e) => {
-                  if (!edgeTouchStart) return;
-                  const t = e.changedTouches[0];
-                  const deltaX = t.clientX - edgeTouchStart.x;
-                  const deltaY = Math.abs(t.clientY - edgeTouchStart.y);
-                  if (deltaX > 40 && deltaX > deltaY) {
-                    handleInAppBack();
-                  }
-                  setEdgeTouchStart(null);
-                }}
-                className={`relative w-full ${
-                  isMobileView ? 'h-full flex-1 min-h-0 rounded-none' : 'h-full rounded-[40px]'
-                } overflow-hidden flex flex-col min-h-0 font-sans bg-white text-gray-900`}
-              >
-                {/* Status Bar */}
-                {!isMobileView && (
-                  <div className="flex-shrink-0 pt-3 px-6 pb-2 flex justify-between items-center text-[11px] font-bold tracking-tight opacity-75 z-40 select-none">
-                    <span>3:41</span>
-                    <div className="flex items-center gap-1.5">
-                      <span>5G</span>
-                      <span>100%</span>
-                    </div>
-                  </div>
-                )}
 
                 {/* Guest Notice Bar if not logged in */}
                 {!currentUser && (
@@ -1756,7 +1690,7 @@ export default function MobileAppViewPage(props: any) {
                                   <div className="grid grid-cols-2 gap-2 pt-0.5">
                                     <button
                                       onClick={() => setMatchDetailsScreen(m)}
-                                      className="py-2 px-2.5 rounded-xl border border-blue-200 bg-blue-50/70 text-blue-700 text-[11px] font-black flex items-center justify-center gap-1.5 hover:bg-blue-100 transition-all shadow-xs"
+                                      className="py-2 px-2.5 rounded-xl border border-blue-200 bg-blue-50/70 text-blue-700 text-[11px] font-black flex items-center justify-center gap-1.5 hover:bg-blue-100 active:scale-95 transition-all shadow-xs"
                                     >
                                       <Key className="w-3.5 h-3.5 text-blue-600" />
                                       <span>Room Rules</span>
@@ -1765,7 +1699,7 @@ export default function MobileAppViewPage(props: any) {
 
                                     <button
                                       onClick={() => setTotalPrizeMatch(m)}
-                                      className="py-2 px-2.5 rounded-xl border border-amber-200 bg-amber-50/70 text-amber-800 text-[11px] font-black flex items-center justify-center gap-1 hover:bg-amber-100 transition-all shadow-xs"
+                                      className="py-2 px-2.5 rounded-xl border border-amber-200 bg-amber-50/70 text-amber-800 text-[11px] font-black flex items-center justify-center gap-1 hover:bg-amber-100 active:scale-95 transition-all shadow-xs"
                                     >
                                       <Trophy className="w-3.5 h-3.5 text-amber-600" />
                                       <span>Total Prize Details</span>
@@ -1971,7 +1905,7 @@ export default function MobileAppViewPage(props: any) {
                                     role="button"
                                     tabIndex={0}
                                     onClick={() => setSelectedCategory(cat.slug)}
-                                    className="group cursor-pointer rounded-xl overflow-hidden relative border border-white/10 shadow hover:border-red-500 active:scale-[0.97] transition-transform duration-75 h-28 flex flex-col justify-end p-2 bg-slate-900 touch-manipulation"
+                                    className="group cursor-pointer rounded-xl overflow-hidden relative border border-white/10 shadow hover:border-red-500 active:scale-[0.96] transition-transform duration-100 ease-out h-28 flex flex-col justify-end p-2 bg-slate-900 touch-manipulation hover:shadow-lg"
                                   >
                                     <img
                                       src={cat.bannerImage || cat.avatarImage || '/logo.png'}
@@ -2862,7 +2796,7 @@ export default function MobileAppViewPage(props: any) {
                       switchTab('home');
                       setSelectedCategory(null);
                     }}
-                    className={`flex flex-col items-center gap-0.5 text-[9px] font-bold ${
+                    className={`flex flex-col items-center gap-0.5 text-[9px] font-bold active:scale-90 transition-transform duration-100 ${
                       activeTab === 'home' ? 'text-red-500 font-black' : 'text-gray-400'
                     }`}
                   >
@@ -2873,7 +2807,7 @@ export default function MobileAppViewPage(props: any) {
                   {/* 2. MY MATCHES */}
                   <button
                     onClick={() => switchTab('my-matches')}
-                    className={`flex flex-col items-center gap-0.5 text-[9px] font-bold ${
+                    className={`flex flex-col items-center gap-0.5 text-[9px] font-bold active:scale-90 transition-transform duration-100 ${
                       activeTab === 'my-matches' ? 'text-red-500 font-black' : 'text-gray-400'
                     }`}
                   >
@@ -2884,7 +2818,7 @@ export default function MobileAppViewPage(props: any) {
                   {/* 3. TOP PLAYERS */}
                   <button
                     onClick={() => switchTab('top-players')}
-                    className={`flex flex-col items-center gap-0.5 text-[9px] font-bold ${
+                    className={`flex flex-col items-center gap-0.5 text-[9px] font-bold active:scale-90 transition-transform duration-100 ${
                       activeTab === 'top-players' ? 'text-amber-500 font-black' : 'text-gray-400'
                     }`}
                   >
@@ -2895,7 +2829,7 @@ export default function MobileAppViewPage(props: any) {
                   {/* 4. WALLET */}
                   <button
                     onClick={() => switchTab('wallet')}
-                    className={`flex flex-col items-center gap-0.5 text-[9px] font-bold ${
+                    className={`flex flex-col items-center gap-0.5 text-[9px] font-bold active:scale-90 transition-transform duration-100 ${
                       activeTab === 'wallet' ? 'text-red-500 font-black' : 'text-gray-400'
                     }`}
                   >
@@ -2906,7 +2840,7 @@ export default function MobileAppViewPage(props: any) {
                   {/* 5. PROFILE */}
                   <button
                     onClick={() => switchTab('profile')}
-                    className={`flex flex-col items-center gap-0.5 text-[9px] font-bold ${
+                    className={`flex flex-col items-center gap-0.5 text-[9px] font-bold active:scale-90 transition-transform duration-100 ${
                       activeTab === 'profile' ? 'text-red-500 font-black' : 'text-gray-400'
                     }`}
                   >
@@ -2918,7 +2852,7 @@ export default function MobileAppViewPage(props: any) {
                   {currentUser?.role === 'ADMIN' && (
                     <Link
                       href="/admin"
-                      className="flex flex-col items-center gap-0.5 text-[9px] font-black text-amber-500 hover:text-amber-400 transition-colors animate-pulse"
+                      className="flex flex-col items-center gap-0.5 text-[9px] font-black text-amber-500 hover:text-amber-400 transition-colors active:scale-90"
                     >
                       <Shield className="w-4 h-4 text-amber-500" />
                       <span>{tPhone('অ্যাডমিন', 'Admin')}</span>
@@ -2926,113 +2860,6 @@ export default function MobileAppViewPage(props: any) {
                   )}
                 </div>
               </div>
-            </div>
-          </div>
-
-          {/* RIGHT: Architecture & Feature Highlights */}
-          {!isMobileView && (
-            <div className="lg:col-span-7 space-y-6">
-            <div className="bg-white dark:bg-white/5 rounded-2xl border border-gray-200 dark:border-white/10 p-6 shadow-sm space-y-4">
-              <span className="text-xs font-black uppercase tracking-wider text-amber-500 bg-amber-50 dark:bg-amber-950/40 px-3 py-1 rounded-full border border-amber-200 dark:border-amber-900/50">
-                {tPhone('নতুন ডিজাইন: ইমেজ ১, ২ ও ৩ হুবহু বাস্তবায়িত', 'New Design: Image 1, 2 & 3 Exactly Implemented')}
-              </span>
-              <h2 className="text-xl font-black text-gray-900 dark:text-white">
-                {tPhone(
-                  'রুম রুলস, রেজিস্টার্ড প্লেয়ার্স ও টোটাল প্রাইজ ডিটেইলস',
-                  'Room Rules, Registered Participants & Total Prize Details'
-                )}
-              </h2>
-              <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
-                {tPhone(
-                  'আপনার আপলোড করা ৩টি ছবির আদলে মোবাইল অ্যাপ ও ওয়েবসাইটের কার্ড সম্পূর্ণ আপডেট করা হয়েছে:',
-                  'The mobile app and web match cards now match your uploaded screenshots:'
-                )}
-              </p>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
-                <div className="p-4 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/5 space-y-1">
-                  <div className="flex items-center gap-2 text-sm font-bold text-red-600">
-                    <Key className="w-4 h-4" />
-                    {tPhone('Room Rules ⌄ (ছবি ১ ও ৩)', 'Room Rules ⌄ (Img 1 & 3)')}
-                  </div>
-                  <p className="text-xs text-gray-500">
-                    {tPhone(
-                      'রুম ডিটেইলস এর বদলে Room Rules বোতাম। নিচে ফেসবুক সাপোর্ট নোটিশ ও নিবন্ধিত খেলোয়াড়দের তালিকা।',
-                      'Replaced room details with Room Rules. Shows support notice and Registered Participants list.'
-                    )}
-                  </p>
-                </div>
-
-                <div className="p-4 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/5 space-y-1">
-                  <div className="flex items-center gap-2 text-sm font-bold text-emerald-600">
-                    <Trophy className="w-4 h-4" />
-                    {tPhone('Total Prize Details (ছবি ২)', 'Total Prize Details (Img 2)')}
-                  </div>
-                  <p className="text-xs text-gray-500">
-                    {tPhone(
-                      'হলুদ হেডার ও সাদা কার্ডে Winner, 2nd, 3rd এবং Per Kill টাকার হিসেব পপআপ।',
-                      'Yellow header and clean card showing Winner, 2nd, 3rd, and Per Kill BDT payout.'
-                    )}
-                  </p>
-                </div>
-
-                <div className="p-4 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/5 space-y-1">
-                  <div className="flex items-center gap-2 text-sm font-bold text-blue-500">
-                    <Clock className="w-4 h-4" />
-                    {tPhone('STARTS IN কাউন্টডাউন', 'STARTS IN Countdown')}
-                  </div>
-                  <p className="text-xs text-gray-500">
-                    {tPhone(
-                      'সবুজ বারে ম্যাচ শুরুর সময় ও ৩টি কলামের ৬টি স্ট্যাট গ্রিড (WIN PRIZE, ENTRY, VERSION etc)।',
-                      'Green countdown bar and 6-stat grid matching the exact layout of Image 1.'
-                    )}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Quick Navigation Links */}
-            <div className="bg-white dark:bg-white/5 rounded-2xl border border-gray-200 dark:border-white/10 p-6 shadow-sm space-y-4">
-              <h3 className="text-base font-black text-gray-900 dark:text-white flex items-center gap-2">
-                <Zap className="w-4 h-4 text-amber-500" />
-                {tPhone('কুইক নেভিগেশন ও টেস্ট', 'Quick Navigation & Testing')}
-              </h3>
-              <p className="text-xs text-gray-600 dark:text-gray-400">
-                {tPhone(
-                  'ওয়েবসাইটের সম্পূর্ণ লিডারবোর্ড দেখতে বা অ্যাডমিন থেকে নিয়ন্ত্রণ করতে পারেন:',
-                  'Inspect web leaderboards or manage match schedules in the admin panel:'
-                )}
-              </p>
-
-              <div className="flex flex-wrap gap-3 pt-2">
-                <Link
-                  href="/leaderboard"
-                  className="px-5 py-3 rounded-xl text-xs font-black bg-amber-500 text-black hover:bg-amber-400 transition-all flex items-center gap-1.5 shadow-md shadow-amber-500/20"
-                >
-                  <Trophy className="w-4 h-4" /> {tPhone('ওয়েবসাইটের সম্পূর্ণ লিডারবোর্ড দেখুন', 'View Full Web Leaderboard')}
-                </Link>
-
-                {currentUser?.role === 'ADMIN' && (
-                  <Link
-                    href="/admin"
-                    className="px-5 py-3 rounded-xl text-xs font-black btn-red flex items-center gap-1.5 shadow-md shadow-red-600/20"
-                  >
-                    <Shield className="w-4 h-4" /> {tPhone('অ্যাডমিন প্যানেল', 'Admin Panel')}
-                  </Link>
-                )}
-
-                <Link
-                  href="/"
-                  className="px-5 py-3 rounded-xl text-xs font-bold bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/15 text-gray-900 dark:text-white transition-all flex items-center gap-1.5"
-                >
-                  {tPhone('হোমপেজে যান', 'Go to Homepage')}
-                </Link>
-              </div>
-            </div>
-            </div>
-          )}
-        </div>
-      </div>
 
       {/* 1. ROOM DETAILS MODAL (FALLBACK) */}
       {roomDetailsMatch && (
