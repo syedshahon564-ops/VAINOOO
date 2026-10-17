@@ -1058,10 +1058,9 @@ export default function MobileAppViewPage(props: any) {
     [selectedCategory, matches]
   );
 
-  const [subTypeFilter, setSubTypeFilter] = useState<'ALL' | 'SOLO' | 'DUO' | 'SQUAD'>('ALL');
+  const [subTypeFilter, setSubTypeFilter] = useState<'SOLO' | 'DUO' | 'SQUAD'>('SOLO');
   const filteredCurrentMatches = React.useMemo(() => {
     return currentCategoryMatches.filter((m) => {
-      if (subTypeFilter === 'ALL') return true;
       const typeStr = (m.type || m.matchType || '').toUpperCase();
       const titleStr = (m.title || '').toUpperCase();
       if (subTypeFilter === 'SOLO') {
@@ -1088,9 +1087,9 @@ export default function MobileAppViewPage(props: any) {
     });
   }, [currentCategoryMatches, subTypeFilter]);
 
-  // Reset filter to ALL whenever selected category changes
+  // Reset filter to SOLO whenever selected category changes
   useEffect(() => {
-    setSubTypeFilter('ALL');
+    setSubTypeFilter('SOLO');
   }, [selectedCategory]);
 
   return (
@@ -1553,7 +1552,6 @@ export default function MobileAppViewPage(props: any) {
                           {/* Match Sub-Type Switcher (Solo, Duo, Squad) */}
                           <div className="flex items-center gap-1 p-1 rounded-xl border border-gray-200 bg-white shadow-xs">
                             {[
-                              { key: 'ALL', labelBn: 'সকল (All)', labelEn: 'All' },
                               { key: 'SOLO', labelBn: 'সোলো (Solo)', labelEn: 'Solo' },
                               { key: 'DUO', labelBn: 'ডুও (Duo)', labelEn: 'Duo' },
                               { key: 'SQUAD', labelBn: 'স্কোয়াড (Squad)', labelEn: 'Squad' },
