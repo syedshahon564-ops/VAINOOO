@@ -1094,7 +1094,7 @@ export default function MobileAppViewPage(props: any) {
   }, [selectedCategory]);
 
   return (
-    <div className="fixed inset-0 w-full h-full h-[100dvh] max-h-[100dvh] overflow-hidden flex flex-col transition-colors bg-white select-none">
+    <div className="fixed inset-0 w-full h-full h-[100dvh] max-h-[100dvh] overflow-hidden flex flex-col transition-colors bg-white select-none lg:relative lg:inset-auto lg:h-auto lg:max-h-none lg:min-h-screen lg:overflow-visible lg:bg-slate-100 lg:dark:bg-[#07070a] lg:py-8 lg:px-4">
       {/* Premium Animated Esports Splash Loading Screen */}
       {splashVisible && (
         <div
@@ -1163,26 +1163,108 @@ export default function MobileAppViewPage(props: any) {
         </div>
       )}
 
-      {/* Main Native Mobile App Container */}
-      <div
-        onTouchStart={(e) => {
-          const t = e.touches[0];
-          if (t.clientX < 28) {
-            setEdgeTouchStart({ x: t.clientX, y: t.clientY });
-          }
-        }}
-        onTouchEnd={(e) => {
-          if (!edgeTouchStart) return;
-          const t = e.changedTouches[0];
-          const deltaX = t.clientX - edgeTouchStart.x;
-          const deltaY = Math.abs(t.clientY - edgeTouchStart.y);
-          if (deltaX > 40 && deltaX > deltaY) {
-            handleInAppBack();
-          }
-          setEdgeTouchStart(null);
-        }}
-        className="relative w-full h-full flex-1 min-h-0 overflow-hidden flex flex-col font-sans bg-white text-gray-900"
-      >
+      <div className="w-full h-full flex flex-col flex-1 min-h-0 overflow-hidden lg:max-w-7xl lg:mx-auto lg:h-auto lg:overflow-visible">
+        {/* Top Breadcrumb & Controls (Desktop Only) */}
+        <div className="hidden lg:flex flex-col md:flex-row items-center justify-between gap-4 mb-8 bg-white dark:bg-white/5 p-5 rounded-2xl border border-gray-200 dark:border-white/10 shadow-sm">
+          <div>
+            <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-1">
+              <Link href="/" className="hover:text-red-600 transition-colors">
+                {tPhone('হোম', 'Home')}
+              </Link>
+              <span>/</span>
+              <span className="text-red-600 font-bold">
+                FF RIVAL TOUR BD - {tPhone('মোবাইল অ্যাপ ভিউ', 'Mobile App View')}
+              </span>
+            </div>
+            <h1 className="text-2xl font-black text-gray-900 dark:text-white flex items-center gap-2">
+              <Smartphone className="w-6 h-6 text-red-600" />
+              FF RIVAL TOUR BD - {tPhone('মোবাইল অ্যাপ ইন্টারঅ্যাক্টিভ ভিউ', 'Mobile App Interactive Simulator')}
+            </h1>
+            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+              {tPhone(
+                'রুম রুলস, রেজিস্টার্ড প্লেয়ার্স লিস্ট ও টোটাল প্রাইজ ডিটেইলস লাইভ ইন্টারঅ্যাকশন।',
+                'Live interactive testing for Room Rules, Registered Participants list, and Total Prize Details.'
+              )}
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2.5">
+            <button
+              onClick={togglePhoneLang}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-black bg-gradient-to-r from-red-600/10 to-amber-500/10 border border-red-500/30 text-red-600 dark:text-amber-400 hover:scale-105 transition-all shadow-sm"
+              title="Toggle Bangla and English for Mobile Phone"
+            >
+              <Globe className="w-4 h-4 text-amber-500" />
+              <span>
+                {phoneLang === 'bn' ? '🌐 Switch App to English' : '🌐 অ্যাপ বাংলায় দেখুন'}
+              </span>
+            </button>
+
+            <Link
+              href="/leaderboard"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-black bg-amber-500 text-black hover:bg-amber-400 transition-all shadow-md shadow-amber-500/20"
+            >
+              <Trophy className="w-4 h-4" /> {tPhone('ওয়েব লিডারবোর্ড', 'Web Leaderboard')}
+            </Link>
+
+            {currentUser?.role === 'ADMIN' && (
+              <Link
+                href="/admin"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-red-600 text-white hover:bg-red-700 shadow-md shadow-red-600/20"
+              >
+                <Shield className="w-4 h-4" /> {tPhone('অ্যাডমিন প্যানেল', 'Admin Panel')}
+              </Link>
+            )}
+
+            <button
+              onClick={() => setPhoneTheme(phoneTheme === 'dark' ? 'light' : 'dark')}
+              className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/15 transition-all text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-white/10"
+            >
+              {phoneTheme === 'dark' ? (
+                <>
+                  <Sun className="w-4 h-4 text-amber-400" /> {tPhone('লাইট মোড', 'Light Mode')}
+                </>
+              ) : (
+                <>
+                  <Moon className="w-4 h-4 text-slate-700" /> {tPhone('ডার্ক মোড', 'Dark Mode')}
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Workspace: Phone Mockup on Left + Image Column on Right */}
+        <div className="w-full h-full flex flex-col flex-1 min-h-0 overflow-hidden lg:grid lg:grid-cols-12 lg:gap-8 lg:items-start lg:overflow-visible">
+          {/* LEFT: Phone Simulator */}
+          <div className="w-full h-full flex flex-col flex-1 min-h-0 overflow-hidden lg:col-span-5 lg:flex lg:justify-center lg:overflow-visible">
+            {/* Phone Chassis */}
+            <div className="w-full h-full flex flex-col flex-1 min-h-0 p-0 border-0 rounded-none shadow-none bg-transparent overflow-hidden lg:relative lg:w-[380px] lg:h-[780px] lg:bg-slate-900 lg:rounded-[50px] lg:p-3 lg:shadow-2xl lg:ring-1 lg:ring-white/20 lg:border-4 lg:border-slate-700 flex flex-col">
+              {/* Dynamic Island Notch (Desktop Only) */}
+              <div className="hidden lg:flex absolute top-4 left-1/2 -translate-x-1/2 w-28 h-5 bg-black rounded-full z-50 items-center justify-center gap-2">
+                <div className="w-2.5 h-2.5 rounded-full bg-slate-800"></div>
+                <div className="w-2 h-2 rounded-full bg-blue-950"></div>
+              </div>
+
+              {/* Inside Screen Content */}
+              <div
+                onTouchStart={(e) => {
+                  const t = e.touches[0];
+                  if (t.clientX < 28) {
+                    setEdgeTouchStart({ x: t.clientX, y: t.clientY });
+                  }
+                }}
+                onTouchEnd={(e) => {
+                  if (!edgeTouchStart) return;
+                  const t = e.changedTouches[0];
+                  const deltaX = t.clientX - edgeTouchStart.x;
+                  const deltaY = Math.abs(t.clientY - edgeTouchStart.y);
+                  if (deltaX > 40 && deltaX > deltaY) {
+                    handleInAppBack();
+                  }
+                  setEdgeTouchStart(null);
+                }}
+                className="relative w-full h-full flex-1 min-h-0 overflow-hidden flex flex-col font-sans bg-white text-gray-900 rounded-none lg:rounded-[40px]"
+              >
 
 
                 {/* Guest Notice Bar if not logged in */}
@@ -2860,6 +2942,111 @@ export default function MobileAppViewPage(props: any) {
                   )}
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* RIGHT: Architecture & Feature Highlights (THE IMAGE COLUMN) */}
+          <div className="hidden lg:block lg:col-span-7 space-y-6">
+            <div className="bg-white dark:bg-white/5 rounded-2xl border border-gray-200 dark:border-white/10 p-6 shadow-sm space-y-4">
+              <span className="text-xs font-black uppercase tracking-wider text-amber-500 bg-amber-50 dark:bg-amber-950/40 px-3 py-1 rounded-full border border-amber-200 dark:border-amber-900/50">
+                {tPhone('নতুন ডিজাইন: ইমেজ ১, ২ ও ৩ হুবহু বাস্তবায়িত', 'New Design: Image 1, 2 & 3 Exactly Implemented')}
+              </span>
+              <h2 className="text-xl font-black text-gray-900 dark:text-white">
+                {tPhone(
+                  'রুম রুলস, রেজিস্টার্ড প্লেয়ার্স ও টোটাল প্রাইজ ডিটেইলস',
+                  'Room Rules, Registered Participants & Total Prize Details'
+                )}
+              </h2>
+              <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+                {tPhone(
+                  'আপনার আপলোড করা ৩টি ছবির আদলে মোবাইল অ্যাপ ও ওয়েবসাইটের কার্ড সম্পূর্ণ আপডেট করা হয়েছে:',
+                  'The mobile app and web match cards now match your uploaded screenshots:'
+                )}
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                <div className="p-4 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/5 space-y-1">
+                  <div className="flex items-center gap-2 text-sm font-bold text-red-600">
+                    <Key className="w-4 h-4" />
+                    {tPhone('Room Rules ⌄ (ছবি ১ ও ৩)', 'Room Rules ⌄ (Img 1 & 3)')}
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    {tPhone(
+                      'রুম ডিটেইলস এর বদলে Room Rules বোতাম। নিচে ফেসবুক সাপোর্ট নোটিশ ও নিবন্ধিত খেলোয়াড়দের তালিকা।',
+                      'Replaced room details with Room Rules. Shows support notice and Registered Participants list.'
+                    )}
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/5 space-y-1">
+                  <div className="flex items-center gap-2 text-sm font-bold text-emerald-600">
+                    <Trophy className="w-4 h-4" />
+                    {tPhone('Total Prize Details (ছবি ২)', 'Total Prize Details (Img 2)')}
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    {tPhone(
+                      'হলুদ হেডার ও সাদা কার্ডে Winner, 2nd, 3rd এবং Per Kill টাকার হিসেব পপআপ।',
+                      'Yellow header and clean card showing Winner, 2nd, 3rd, and Per Kill BDT payout.'
+                    )}
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/5 space-y-1">
+                  <div className="flex items-center gap-2 text-sm font-bold text-blue-500">
+                    <Clock className="w-4 h-4" />
+                    {tPhone('STARTS IN কাউন্টডাউন', 'STARTS IN Countdown')}
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    {tPhone(
+                      'সবুজ বারে ম্যাচ শুরুর সময় ও ৩টি কলামের ৬টি স্ট্যাট গ্রিড (WIN PRIZE, ENTRY, VERSION etc)।',
+                      'Green countdown bar and 6-stat grid matching the exact layout of Image 1.'
+                    )}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Navigation Links */}
+            <div className="bg-white dark:bg-white/5 rounded-2xl border border-gray-200 dark:border-white/10 p-6 shadow-sm space-y-4">
+              <h3 className="text-base font-black text-gray-900 dark:text-white flex items-center gap-2">
+                <Zap className="w-4 h-4 text-amber-500" />
+                {tPhone('কুইক নেভিগেশন ও টেস্ট', 'Quick Navigation & Testing')}
+              </h3>
+              <p className="text-xs text-gray-600 dark:text-gray-400">
+                {tPhone(
+                  'ওয়েবসাইটের সম্পূর্ণ লিডারবোর্ড দেখতে বা অ্যাডমিন থেকে নিয়ন্ত্রণ করতে পারেন:',
+                  'Inspect web leaderboards or manage match schedules in the admin panel:'
+                )}
+              </p>
+
+              <div className="flex flex-wrap gap-3 pt-2">
+                <Link
+                  href="/leaderboard"
+                  className="px-5 py-3 rounded-xl text-xs font-black bg-amber-500 text-black hover:bg-amber-400 transition-all flex items-center gap-1.5 shadow-md shadow-amber-500/20"
+                >
+                  <Trophy className="w-4 h-4" /> {tPhone('ওয়েবসাইটের সম্পূর্ণ লিডারবোর্ড দেখুন', 'View Full Web Leaderboard')}
+                </Link>
+
+                {currentUser?.role === 'ADMIN' && (
+                  <Link
+                    href="/admin"
+                    className="px-5 py-3 rounded-xl text-xs font-black btn-red flex items-center gap-1.5 shadow-md shadow-red-600/20"
+                  >
+                    <Shield className="w-4 h-4" /> {tPhone('অ্যাডমিন প্যানেল', 'Admin Panel')}
+                  </Link>
+                )}
+
+                <Link
+                  href="/"
+                  className="px-5 py-3 rounded-xl text-xs font-bold bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/15 text-gray-900 dark:text-white transition-all flex items-center gap-1.5"
+                >
+                  {tPhone('হোমপেজে যান', 'Go to Homepage')}
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* 1. ROOM DETAILS MODAL (FALLBACK) */}
       {roomDetailsMatch && (
