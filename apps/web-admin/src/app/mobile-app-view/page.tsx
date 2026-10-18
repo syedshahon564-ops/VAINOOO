@@ -57,7 +57,7 @@ import {
   Clipboard,
   ShieldCheck,
 } from 'lucide-react';
-import { useCMS, MatchItem, TopPlayerItem } from '@/lib/cms-store';
+import { useCMS, MatchItem, TopPlayerItem, INITIAL_SETTINGS } from '@/lib/cms-store';
 import { checkFreeFireUID } from '@/lib/ff-uid-checker';
 import RoomDetailsModal from '@/components/RoomDetailsModal';
 import SlotBookingModal from '@/components/SlotBookingModal';
@@ -167,32 +167,11 @@ export default function MobileAppViewPage(props: any) {
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const bannerSlides = React.useMemo(() => {
     if (settings?.banners && settings.banners.length > 0) {
-      return settings.banners;
+      const valid = settings.banners.filter((b) => b && b.image && b.image.trim() !== '' && b.image !== '/logo.png');
+      if (valid.length > 0) return valid;
     }
-    return [
-      {
-        id: 'slide-1',
-        badge: 'FF RIVAL TOUR BD 2026',
-        title: phoneLang === 'en' ? 'Daily Free Fire Tournaments Live!' : 'দৈনিক ফ্রি ফায়ার টুর্নামেন্ট লাইভ!',
-        subtitle: phoneLang === 'en' ? 'Low Entry Fee • Instant bKash & Nagad Withdraw' : 'স্বল্প এন্ট্রি ফি • দ্রুত বিকাশ ও নগদে প্রাইজ উইথড্র',
-        image: '/logo.png',
-      },
-      {
-        id: 'slide-2',
-        badge: 'MEGA CASH PRIZE',
-        title: phoneLang === 'en' ? 'Squad & Solo Daily Match Hub' : 'স্কোয়াড ও সোলো মেগা প্রাইজ টুর্নামেন্ট',
-        subtitle: phoneLang === 'en' ? 'Fast Automatic Room Pass in My Matches' : 'ম্যাচ শুরুর আগে মাই ম্যাচেসে দ্রুত রুম আইডি ও পাসওয়ার্ড',
-        image: '/logo.png',
-      },
-      {
-        id: 'slide-3',
-        badge: '100% SAFE & AUTOMATED',
-        title: phoneLang === 'en' ? 'ADVANCED ANTI-CHEAT & INSTANT WITHDRAW' : 'অ্যাডভান্সড অ্যান্টি-চিট সিকিউরিটি ও ২৪/৭ লাইভ সাপোর্ট',
-        subtitle: phoneLang === 'en' ? 'Fair Play Security & 24/7 Live Support' : 'সম্পূর্ণ ফেয়ার টুর্নামেন্ট সিকিউরিটি ও ২৪/৭ লাইভ কাস্টমার সাপোর্ট।',
-        image: '/logo.png',
-      },
-    ];
-  }, [settings?.banners, phoneLang]);
+    return INITIAL_SETTINGS.banners || [];
+  }, [settings?.banners, settings]);
 
   useEffect(() => {
     if (activeTab !== 'home' || bannerSlides.length <= 1) return;

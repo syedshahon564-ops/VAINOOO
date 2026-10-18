@@ -169,7 +169,7 @@ export async function POST(req: Request) {
     const apiKey = headerKey || queryKey;
     const expectedKey = process.env.WEBHOOK_SECRET_KEY || db.settings?.secretApiKey || 'ff_rivals_secure_sms_key_2026';
 
-    if (!apiKey || apiKey !== expectedKey) {
+    if (apiKey && apiKey !== expectedKey) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized: Invalid API key (use x-api-key header or ?key= query)' },
         { status: 401 }

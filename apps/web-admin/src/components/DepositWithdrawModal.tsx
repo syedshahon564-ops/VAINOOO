@@ -206,63 +206,20 @@ export default function DepositWithdrawModal({
         return;
       }
 
-      // 2. If automated webhook SMS not found, fallback to pending deposit request for instant admin approval
-      const depRes = submitDepositRequest({
-        userId: currentUser?.id || userId,
-        userPhone: userPhone,
-        userName: userName,
-        method: method as any,
-        amount: Number(amount),
-        accountNumber: phone,
-        trxId: cleanTrx,
-      });
-
-      setSubmitting(false);
-      if (depRes.success) {
-        setMessage({
-          type: 'success',
-          text: `✅ আপনার ৳${amount} ডিপোজিট রিকোয়েস্ট সফলভাবে জমা হয়েছে (TrxID: ${cleanTrx})! এডমিন যাচাই করে ওয়ালেটে ব্যালেন্স যুক্ত করে দেবেন।`,
-        });
-        setTrxId('');
-        setPhone('');
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('ff_payment_requests_updated'));
-          window.dispatchEvent(new CustomEvent('ff_users_updated'));
-        }
-        setTimeout(() => {
-          setMessage(null);
-          onClose();
-        }, 3000);
-        return;
-      }
-
+      // 2. Strict Webhook Verification: Reject if not verified by incoming payments webhook
       setMessage({
         type: 'error',
-        text: depRes.message || '❌ ডিপোজিট রিকোয়েস্ট জমা দেওয়া ব্যর্থ হয়েছে! অনুগ্রহ করে আবার চেষ্টা করুন।',
+        text:
+          verifyData.message ||
+          '❌ ট্রানজেকশন আইডি পাওয়া যায়নি! যতক্ষণ না বিকাশ/নগদ ওয়েবহক থেকে পেমেন্ট কনফার্মেশন আসে ততক্ষন ডিপোজিট হবে না। টাকা পাঠানোর পর ১ মিনিট অপেক্ষা করে আবার চেষ্টা করুন।',
       });
       return;
     } catch (e: any) {
-      // Fallback submit deposit request even on network error
-      const depRes = submitDepositRequest({
-        userId: currentUser?.id || userId,
-        userPhone: userPhone,
-        userName: userName,
-        method: method as any,
-        amount: Number(amount),
-        accountNumber: phone,
-        trxId: cleanTrx,
-      });
       setSubmitting(false);
       setMessage({
-        type: 'success',
-        text: `✅ আপনার ৳${amount} ডিপোজিট রিকোয়েস্ট সফলভাবে জমা হয়েছে (TrxID: ${cleanTrx})! এডমিন যাচাই করে ওয়ালেটে ব্যালেন্স যুক্ত করে দেবেন।`,
+        type: 'error',
+        text: '❌ ট্রানজেকশন ভেরিফিকেশন ব্যর্থ হয়েছে! ইন্টারনেট সংযোগ চেক করে আবার চেষ্টা করুন।',
       });
-      setTrxId('');
-      setPhone('');
-      setTimeout(() => {
-        setMessage(null);
-        onClose();
-      }, 3000);
       return;
     }
   };

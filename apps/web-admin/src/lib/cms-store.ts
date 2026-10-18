@@ -938,14 +938,11 @@ export function syncCMSWithServer(): void {
         });
 
         const newSerialized = JSON.stringify(merged);
-        const currentSerialized = localStorage.getItem(STORAGE_KEY);
-        if (newSerialized !== currentSerialized) {
-          memoryCMSCache = merged;
-          try {
-            localStorage.setItem(STORAGE_KEY, newSerialized);
-          } catch (e) {}
-          window.dispatchEvent(new CustomEvent('ff_cms_updated', { detail: merged }));
-        }
+        memoryCMSCache = merged;
+        try {
+          localStorage.setItem(STORAGE_KEY, newSerialized);
+        } catch (e) {}
+        window.dispatchEvent(new CustomEvent('ff_cms_updated', { detail: merged }));
       }
     })
     .catch(() => {
@@ -979,6 +976,7 @@ export function useCMS() {
     initGlobalCmsSync();
     setData(memoryCMSCache || getCMSData());
     setLoaded(true);
+    syncCMSWithServer();
 
     const handleUpdate = (e: any) => {
       if (e?.detail && typeof e.detail === 'object') {
