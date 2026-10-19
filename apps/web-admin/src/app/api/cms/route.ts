@@ -10,10 +10,10 @@ export const revalidate = 0;
 
 function getCandidatePaths(): string[] {
   const list = [
-    path.join(os.tmpdir(), 'cms-data.json'),
-    path.join('/tmp', 'cms-data.json'),
-    path.join(process.cwd(), 'apps', 'web-admin', 'data', 'cms-data.json'),
     path.join(process.cwd(), 'data', 'cms-data.json'),
+    path.join(process.cwd(), 'apps', 'web-admin', 'data', 'cms-data.json'),
+    path.join('/tmp', 'cms-data.json'),
+    path.join(os.tmpdir(), 'cms-data.json'),
   ];
   return Array.from(new Set(list));
 }
@@ -47,6 +47,10 @@ export async function GET() {
         const content = fs.readFileSync(dataFile, 'utf-8');
         fileData = JSON.parse(content);
       } catch (e) {}
+    }
+
+    if (!inMemoryServerCache && fileData) {
+      inMemoryServerCache = fileData;
     }
 
     const result = inMemoryServerCache || fileData || { ok: true, data: null };
