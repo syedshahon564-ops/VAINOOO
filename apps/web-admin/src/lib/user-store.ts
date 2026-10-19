@@ -73,6 +73,11 @@ export interface BalanceTransaction {
 const USERS_STORAGE_KEY = 'ff_esports_users_db_v4';
 const TRANSACTIONS_STORAGE_KEY = 'ff_esports_balance_tx_v2';
 
+export const DEFAULT_AVATARS = [
+  '/avatars/avatar-1.png',
+  '/avatars/avatar-2.jpg',
+];
+
 export const INITIAL_USERS: UserAccount[] = [
   // 1. Master Owner Account
   {
@@ -270,6 +275,15 @@ export function getUsers(): UserAccount[] {
         }
       }
     });
+
+    // Heal player avatars to new gaming avatars if unset or pointing to unsplash
+    parsed.forEach((u, i) => {
+      if (!u.avatar || u.avatar.includes('unsplash.com')) {
+        u.avatar = DEFAULT_AVATARS[i % DEFAULT_AVATARS.length];
+        updated = true;
+      }
+    });
+
     if (updated) {
       localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(parsed));
     }
@@ -805,7 +819,7 @@ export async function registerUser(data: {
     totalWins: 0,
     totalEarnings: 0,
     matchHistory: [],
-    avatar: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=240',
+    avatar: DEFAULT_AVATARS[Math.floor(Math.random() * DEFAULT_AVATARS.length)],
     notes: 'Self-registered player via portal.',
   });
 
@@ -900,7 +914,11 @@ export function getCurrentUser(): UserAccount | null {
       clearSession();
       return null;
     }
-    return fresh || (parsed.role === 'ADMIN' ? parsed : null);
+    const res = fresh || (parsed.role === 'ADMIN' ? parsed : null);
+    if (res && (!res.avatar || res.avatar.includes('unsplash.com'))) {
+      res.avatar = DEFAULT_AVATARS[0];
+    }
+    return res;
   } catch (e) {
     return null;
   }

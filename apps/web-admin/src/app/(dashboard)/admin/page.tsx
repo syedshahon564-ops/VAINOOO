@@ -192,6 +192,9 @@ export default function AdminMasterPage() {
         setActiveTab(tab as any);
       }
     }
+    if (typeof document !== 'undefined') {
+      document.documentElement.classList.remove('dark');
+    }
   }, []);
 
   // Synchronize category form fields when user switches category OR when CMS finishes loading
@@ -656,7 +659,7 @@ export default function AdminMasterPage() {
   const categoriesList = Object.values(categories);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 admin-pure-white bg-white text-gray-900">
       {/* Toast Notification */}
       {toast && (
         <div

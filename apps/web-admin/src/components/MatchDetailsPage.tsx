@@ -95,12 +95,27 @@ export default function MatchDetailsPage({
         </h2>
       </div>
 
-      {/* 2. Top Notice Banner (Exact Screenshot 4) */}
-      <div className="p-3.5 rounded-2xl bg-amber-50/90 border border-amber-200">
-        <h3 className="text-xs sm:text-sm font-bold text-gray-900 leading-snug">
-          Prize Pool TOP 12 ✅ HP 500 😉 কাস্টমে নিজের জায়গায় বসতে হবে বাধ্যতামূলক - আইডি লেভেল 40+ থাকতে হবে - {match.categorySlug?.includes('survival') ? 'BR Survival' : match.title || 'BR Survival'} ম্যাচের নিয়ম পড়ে নিন, নিয়ম না মানলে রিফান্ড বা উইনিং পাবেন না! {settings.siteName || 'FF RIVAL TOUR BD'}
-        </h3>
-      </div>
+      {/* 2. Top Notice Banner (Dynamic from Admin Rules) */}
+      {(() => {
+        const currentCategory = categories[match.categorySlug];
+        const effectiveNotice =
+          (match.rules && match.rules.trim()) ||
+          (currentCategory?.customRules && currentCategory.customRules.trim()) ||
+          (settings.categoryRules?.[match.categorySlug] && settings.categoryRules[match.categorySlug].trim()) ||
+          (match.categorySlug === 'classic-match' && settings.categoryRules?.['regular-match'] && settings.categoryRules['regular-match'].trim()) ||
+          (settings.defaultRules && settings.defaultRules.trim()) ||
+          '';
+
+        if (!effectiveNotice) return null;
+
+        return (
+          <div className="p-3.5 rounded-2xl bg-amber-50/90 border border-amber-200">
+            <h3 className="text-xs sm:text-sm font-bold text-gray-900 leading-snug whitespace-pre-line">
+              {effectiveNotice}
+            </h3>
+          </div>
+        );
+      })()}
 
       {/* 3. Badge Pills Grid (Exact Screenshot 4) */}
       <div className="space-y-2 pt-1">

@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "activeSessionId": "5066f871-7035-4dc5-ae0d-abc95d0c051c",
+  "sessions": [
+    {
+      "id": "5066f871-7035-4dc5-ae0d-abc95d0c051c",
+      "title": "New session",
+      "createdAt": "2026-10-17T12:05:11.751Z",
+      "updatedAt": "2026-10-17T12:05:11.751Z",
+      "messages": []
+    }
+  ]
+}

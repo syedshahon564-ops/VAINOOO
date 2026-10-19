@@ -46,6 +46,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   // Auto-unlock owner session immediately on load
   useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.documentElement.classList.remove('dark');
+      const observer = new MutationObserver(() => {
+        if (document.documentElement.classList.contains('dark')) {
+          document.documentElement.classList.remove('dark');
+        }
+      });
+      observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+      return () => observer.disconnect();
+    }
+  }, []);
+
+  useEffect(() => {
     try {
       sessionStorage.setItem(ADMIN_AUTH_KEY, 'unlocked_owner');
       localStorage.setItem(ADMIN_AUTH_KEY, 'unlocked_owner');
@@ -250,7 +263,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   ];
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-gray-900">
+    <div className="min-h-screen bg-white text-gray-900 admin-pure-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Top Owner Bar */}
         <div className="mb-6 p-4 rounded-2xl bg-white border border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">

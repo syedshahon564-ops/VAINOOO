@@ -1,0 +1,53 @@
+[
+  {
+    "id": "u-owner-main",
+    "phone": "01700000000",
+    "ign": "OWNER_MAIN",
+    "uid": "100000000",
+    "password": "admin123",
+    "walletBalance": 50000,
+    "role": "ADMIN",
+    "status": "ACTIVE",
+    "matchesPlayed": 0,
+    "totalKills": 0,
+    "totalWins": 0,
+    "totalEarnings": 0,
+    "createdAt": "2026-09-01T00:00:00Z",
+    "avatar": "/logo.png",
+    "notes": "Master Platform Owner & Administrator."
+  },
+  {
+    "id": "u-owner-vaino",
+    "phone": "01911000000",
+    "ign": "VAINO_OWNER",
+    "uid": "200000000",
+    "password": "owner123",
+    "walletBalance": 25000,
+    "role": "ADMIN",
+    "status": "ACTIVE",
+    "matchesPlayed": 0,
+    "totalKills": 0,
+    "totalWins": 0,
+    "totalEarnings": 0,
+    "createdAt": "2026-09-01T00:00:00Z",
+    "avatar": "/logo.png",
+    "notes": "Official Vaino Esports Owner Account."
+  },
+  {
+    "id": "u-owner-tourbd",
+    "phone": "01822000000",
+    "ign": "TOUR_OWNER",
+    "uid": "300000000",
+    "password": "owner123",
+    "walletBalance": 15000,
+    "role": "ADMIN",
+    "status": "ACTIVE",
+    "matchesPlayed": 0,
+    "totalKills": 0,
+    "totalWins": 0,
+    "totalEarnings": 0,
+    "createdAt": "2026-09-01T00:00:00Z",
+    "avatar": "/logo.png",
+    "notes": "FF Rival Tour BD Operations Owner."
+  }
+]

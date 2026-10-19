@@ -201,4 +201,64 @@ html, body {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
+/* Owner / Admin Panel Pure White Theme (MANDATORY REQUEST) */
+.admin-pure-white,
+.admin-pure-white div,
+.admin-pure-white section,
+.admin-pure-white aside {
+  --tw-bg-opacity: 1;
+}
+
+.admin-pure-white {
+  background-color: #ffffff !important;
+  color: #111827 !important;
+}
+
+.admin-pure-white .bg-white\/5,
+.admin-pure-white .bg-white\/10,
+.admin-pure-white .bg-black\/30,
+.admin-pure-white .bg-black\/40,
+.admin-pure-white .bg-\[\#12121a\],
+.admin-pure-white .bg-\[\#111118\],
+.admin-pure-white .dark\:bg-\[\#12121a\],
+.admin-pure-white .dark\:bg-\[\#111118\],
+.admin-pure-white .dark\:bg-black\/30,
+.admin-pure-white .dark\:bg-black\/40,
+.admin-pure-white .dark\:bg-white\/5,
+.admin-pure-white .dark\:bg-white\/10 {
+  background-color: #ffffff !important;
+  border-color: #e5e7eb !important;
+  color: #111827 !important;
+}
+
+.admin-pure-white input:not([type="checkbox"]):not([type="radio"]),
+.admin-pure-white select,
+.admin-pure-white textarea {
+  background-color: #ffffff !important;
+  color: #111827 !important;
+  border-color: #d1d5db !important;
+}
+
+.admin-pure-white input::placeholder,
+.admin-pure-white textarea::placeholder {
+  color: #9ca3af !important;
+}
+
+.admin-pure-white label {
+  color: #111827 !important;
+  font-weight: 700 !important;
+}
+
+.admin-pure-white .text-white,
+.admin-pure-white .dark\:text-white {
+  color: #111827 !important;
+}
+
+.admin-pure-white button.bg-red-600,
+.admin-pure-white .btn-red,
+.admin-pure-white .badge-white-text,
+.admin-pure-white a.bg-red-600 {
+  color: #ffffff !important;
+}
+
 

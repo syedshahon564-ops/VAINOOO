@@ -1358,7 +1358,7 @@ export default function MobileAppViewPage(props: any) {
                         {/* Circular User Avatar Preview */}
                         <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-red-500 bg-slate-900 shadow-xs flex-shrink-0">
                           <img
-                            src={currentUser?.avatar || 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=240'}
+                            src={currentUser?.avatar || '/avatars/avatar-1.png'}
                             alt="User"
                             className="w-full h-full object-cover"
                           />
@@ -2601,7 +2601,7 @@ export default function MobileAppViewPage(props: any) {
                                 <div className="relative group flex-shrink-0">
                                   <div className="relative w-20 h-20 rounded-full border-4 border-white shadow-md overflow-hidden bg-slate-900 flex-shrink-0">
                                     <img
-                                      src={currentUser?.avatar || 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=240'}
+                                      src={currentUser?.avatar || '/avatars/avatar-1.png'}
                                       alt="Avatar"
                                       className="w-full h-full object-cover"
                                     />
@@ -3313,7 +3313,7 @@ export default function MobileAppViewPage(props: any) {
             <div className="flex items-center gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-100">
               <div className="relative w-14 h-14 rounded-full border-2 border-white shadow-sm overflow-hidden bg-slate-900 flex-shrink-0">
                 <img
-                  src={editAvatarInput || currentUser?.avatar || 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=240'}
+                  src={editAvatarInput || currentUser?.avatar || '/avatars/avatar-1.png'}
                   alt="Avatar"
                   className="w-full h-full object-cover"
                 />
