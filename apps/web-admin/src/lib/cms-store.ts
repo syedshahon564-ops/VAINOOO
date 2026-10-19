@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { INITIAL_CATEGORIES } from './initial-categories';
+import { INITIAL_CATEGORIES, INITIAL_BANNERS } from './initial-categories';
 export { isMatchFinished } from '@/components/LiveMatchCountdown';
-export { INITIAL_CATEGORIES };
+export { INITIAL_CATEGORIES, INITIAL_BANNERS };
 
 export interface MatchItem {
   id: string;
@@ -113,9 +113,9 @@ export interface CMSData {
   matchesUpdatedAt?: number;
 }
 
-const STORAGE_KEY = 'ff_esports_cms_data_v7';
-const MIGRATION_KEY = 'ff_esports_cms_migration_v7';
-const ZERO_RESET_KEY = 'ff_esports_matches_zero_reset_v7';
+const STORAGE_KEY = 'ff_esports_cms_data_v8';
+const MIGRATION_KEY = 'ff_esports_cms_migration_v8';
+const ZERO_RESET_KEY = 'ff_esports_matches_zero_reset_v8';
 
 export const INITIAL_TOP_PLAYERS: TopPlayerItem[] = [
   {
@@ -217,35 +217,7 @@ export const INITIAL_SETTINGS: SiteSettings = {
   importantNoticeTitle: 'Important Notice',
   importantNoticeBody: DEFAULT_IMPORTANT_NOTICE,
   importantNoticeEnabled: true,
-  banners: [
-    {
-      id: 'slide-1',
-      badge: 'CHAMPIONSHIP 2026',
-      title: 'JOIN DAILY FREE FIRE TOURNAMENTS & WIN REAL BDT',
-      subtitle: 'ব্যাটল রয়্যাল, ক্ল্যাশ স্কোয়াড ৪v৪, লোন উলফ এবং ১v১ হেডশট লড়াই। স্বয়ংক্রিয় স্লট বুকিং ও দ্রুত বিকাশ/নগদে প্রাইজ উইথড্র।',
-      image: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1400',
-      actionText: 'Telegram Community',
-      actionUrl: 'https://t.me/ffrivaltourbd',
-    },
-    {
-      id: 'slide-2',
-      badge: 'MEGA PRIZE POOL',
-      title: 'SPECIAL BR SURVIVAL & CLASH SQUAD 4V4',
-      subtitle: 'প্রতিটি বুইয়াহ এবং কিলে নিশ্চিত ক্যাশ রিওয়ার্ড। সরাসরি বিকাশ ও নগদে সুপার ফাস্ট পেমেন্ট উইথড্রল!',
-      image: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?q=80&w=1400',
-      actionText: 'Join Community',
-      actionUrl: 'https://t.me/ffrivaltourbd',
-    },
-    {
-      id: 'slide-3',
-      badge: '100% SAFE & AUTOMATED',
-      title: 'ADVANCED ANTI-CHEAT & INSTANT WITHDRAW',
-      subtitle: 'সম্পূর্ণ ফেয়ার টুর্নামেন্ট সিকিউরিটি ও ২৪/৭ লাইভ কাস্টমার সাপোর্ট।',
-      image: 'https://images.unsplash.com/photo-1538481199705-c710c4e965fc?q=80&w=1400',
-      actionText: 'Telegram Support',
-      actionUrl: 'https://t.me/ffrivaltourbd',
-    },
-  ],
+  banners: INITIAL_BANNERS,
   defaultRules: `⚠️ "FF RIVAL TOUR BD" BR Survival এর নিয়মাবলী এবং শর্তসমূহ:-
 
 ✅ ম্যাচের কাস্টমে ঢুকে একটি স্ক্রিনশট নিবেন, এবং আপনি মরে যাওয়ার পর একটি স্ক্রিনশট নিবেন রেজাল্টের, যেখানে আপনি কত নাম্বার হয়েছেন এবং সময় দেখায় ম্যাচটির হিস্ট্রিতে, এগুলো আমাদের এডমিন চাইলে দিতে হবে বাধ্যতামূলক! যদি না দিতে পারেন উইনিং প্রাইজ বাতিল পাবেন না!
@@ -428,23 +400,33 @@ export function normalizeCMSData(input: Partial<CMSData> | null | undefined): CM
     if (slug === 'br-survival' || deletedCategories.includes(slug)) continue;
     if (cat && typeof cat === 'object') {
       const item = cat as CategoryItem;
-      const fallbackBanner =
-        INITIAL_CATEGORIES[slug]?.bannerImage ||
-        'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=640';
-      const fallbackAvatar =
-        INITIAL_CATEGORIES[slug]?.avatarImage ||
-        'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=120';
+      const initialCat = INITIAL_CATEGORIES[slug];
+      const initialBanner = initialCat?.bannerImage;
+      const initialAvatar = initialCat?.avatarImage || initialBanner;
 
-      const bannerImage = item.bannerImage || fallbackBanner;
-      const avatarImage = item.avatarImage || fallbackAvatar;
+      let bannerImage = item.bannerImage;
+      if (!bannerImage || bannerImage.includes('unsplash.com') || bannerImage === '/logo.png') {
+        bannerImage = initialBanner || bannerImage;
+      }
+      let avatarImage = item.avatarImage;
+      if (!avatarImage || avatarImage.includes('unsplash.com') || avatarImage === '/logo.png') {
+        avatarImage = initialAvatar || bannerImage;
+      }
 
       healedCategories[slug] = {
-        ...(INITIAL_CATEGORIES[slug] || {}),
+        ...(initialCat || {}),
         ...item,
         bannerImage,
         avatarImage,
-        updatedAt: item.updatedAt || INITIAL_CATEGORIES[slug]?.updatedAt || 0,
+        updatedAt: item.updatedAt || initialCat?.updatedAt || 0,
       };
+    }
+  }
+
+  // Ensure all 6 initial categories are always present
+  for (const [slug, initCat] of Object.entries(INITIAL_CATEGORIES)) {
+    if (!healedCategories[slug] && !deletedCategories.includes(slug)) {
+      healedCategories[slug] = initCat as CategoryItem;
     }
   }
   delete healedCategories['br-survival'];
@@ -490,12 +472,28 @@ export function normalizeCMSData(input: Partial<CMSData> | null | undefined): CM
         })
     : [];
 
+  const rawBanners = Array.isArray(src.settings?.banners) && src.settings.banners.length > 0
+    ? src.settings.banners
+    : INITIAL_BANNERS;
+  const healedBanners = rawBanners.map((b: any, idx: number) => {
+    let img = b?.image;
+    if (!img || img.includes('unsplash.com') || img === '/logo.png') {
+      img = INITIAL_BANNERS[idx]?.image || INITIAL_BANNERS[0]?.image || img;
+    }
+    return {
+      ...(INITIAL_BANNERS[idx] || {}),
+      ...b,
+      image: img,
+    };
+  });
+
   return {
     categories: healedCategories,
     matches: cleanMatches,
     settings: {
       ...INITIAL_SETTINGS,
       ...(src.settings && typeof src.settings === 'object' ? src.settings : {}),
+      banners: healedBanners,
       importantNoticeTitle: src.settings?.importantNoticeTitle || INITIAL_SETTINGS.importantNoticeTitle,
       importantNoticeBody: src.settings?.importantNoticeBody ?? INITIAL_SETTINGS.importantNoticeBody,
       importantNoticeEnabled: src.settings?.importantNoticeEnabled ?? INITIAL_SETTINGS.importantNoticeEnabled,
@@ -772,16 +770,32 @@ export function syncCMSWithServer(): void {
             continue;
           }
           const localCat = mergedCategories[slug];
+          const initialCat = INITIAL_CATEGORIES[slug];
+          const rawServerCat = { ...(serverCat as any) };
+          if (!rawServerCat.bannerImage || rawServerCat.bannerImage.includes('unsplash.com') || rawServerCat.bannerImage === '/logo.png') {
+            rawServerCat.bannerImage = initialCat?.bannerImage || localCat?.bannerImage || rawServerCat.bannerImage;
+          }
+          if (!rawServerCat.avatarImage || rawServerCat.avatarImage.includes('unsplash.com') || rawServerCat.avatarImage === '/logo.png') {
+            rawServerCat.avatarImage = initialCat?.avatarImage || localCat?.avatarImage || rawServerCat.bannerImage;
+          }
+
           if (!localCat) {
-            mergedCategories[slug] = serverCat as CategoryItem;
+            mergedCategories[slug] = rawServerCat as CategoryItem;
           } else {
             const localTime = (localCat as any)?.updatedAt || 0;
-            const serverTime = (serverCat as any)?.updatedAt || 0;
+            const serverTime = (rawServerCat as any)?.updatedAt || 0;
             if (localTime > serverTime) {
-              mergedCategories[slug] = { ...(serverCat as CategoryItem), ...localCat };
+              mergedCategories[slug] = { ...(rawServerCat as CategoryItem), ...localCat };
             } else {
-              mergedCategories[slug] = { ...localCat, ...(serverCat as CategoryItem) };
+              mergedCategories[slug] = { ...localCat, ...(rawServerCat as CategoryItem) };
             }
+          }
+        }
+
+        // Ensure all 6 initial categories are always present
+        for (const [slug, initCat] of Object.entries(INITIAL_CATEGORIES)) {
+          if (!mergedCategories[slug] && !allDeleted.includes(slug)) {
+            mergedCategories[slug] = initCat as CategoryItem;
           }
         }
 
@@ -822,11 +836,19 @@ export function syncCMSWithServer(): void {
         }
 
         if (Array.isArray(serverSettings.banners) && serverSettings.banners.length > 0) {
+          const cleanServerBanners = serverSettings.banners.map((b: any, idx: number) => {
+            if (!b.image || b.image.includes('unsplash.com') || b.image === '/logo.png') {
+              return { ...b, image: INITIAL_BANNERS[idx]?.image || INITIAL_BANNERS[0]?.image };
+            }
+            return b;
+          });
           if (serverSettingsTime >= localSettingsTime) {
-            mergedSettings.banners = serverSettings.banners;
+            mergedSettings.banners = cleanServerBanners;
           }
         } else if (Array.isArray(localSettings.banners) && localSettings.banners.length > 0) {
           mergedSettings.banners = localSettings.banners;
+        } else {
+          mergedSettings.banners = INITIAL_BANNERS;
         }
 
         // Smart merge matches with Clear All Matches protection:

@@ -57,7 +57,7 @@ import {
   Clipboard,
   ShieldCheck,
 } from 'lucide-react';
-import { useCMS, MatchItem, TopPlayerItem, INITIAL_SETTINGS } from '@/lib/cms-store';
+import { useCMS, MatchItem, TopPlayerItem, INITIAL_SETTINGS, INITIAL_CATEGORIES, INITIAL_BANNERS } from '@/lib/cms-store';
 import { checkFreeFireUID } from '@/lib/ff-uid-checker';
 import RoomDetailsModal from '@/components/RoomDetailsModal';
 import SlotBookingModal from '@/components/SlotBookingModal';
@@ -1016,7 +1016,11 @@ export default function MobileAppViewPage(props: any) {
     setBookingModalMatch(null);
   };
 
-  const categoriesList = React.useMemo(() => Object.values(categories), [categories]);
+  const categoriesList = React.useMemo(() => {
+    const list = Object.values(categories || {});
+    if (list.length > 0) return list;
+    return Object.values(INITIAL_CATEGORIES);
+  }, [categories]);
   const currentCategoryData = selectedCategory ? categories[selectedCategory] : null;
   const currentCategoryMatches = React.useMemo(
     () =>
@@ -1879,6 +1883,9 @@ export default function MobileAppViewPage(props: any) {
                           <div className="relative rounded-2xl overflow-hidden h-36 sm:h-44 bg-slate-950 border border-gray-200 shadow-md select-none">
                             {bannerSlides.map((slide, idx) => {
                               const isCurrent = idx === currentSlideIndex;
+                              const bannerImgSrc = (slide.image && !slide.image.includes('unsplash.com'))
+                                ? slide.image
+                                : (INITIAL_BANNERS.find((b: any) => b.id === slide.id)?.image || INITIAL_BANNERS[idx]?.image || INITIAL_BANNERS[0]?.image || '/logo.png');
                               const slideContent = (
                                 <div
                                   key={slide.id || idx}
@@ -1887,8 +1894,11 @@ export default function MobileAppViewPage(props: any) {
                                   }`}
                                 >
                                   <img
-                                    src={slide.image || '/logo.png'}
+                                    src={bannerImgSrc}
                                     alt={slide.title || 'Banner'}
+                                    onError={(e) => {
+                                      (e.target as HTMLImageElement).src = INITIAL_BANNERS[idx]?.image || INITIAL_BANNERS[0]?.image || '/logo.png';
+                                    }}
                                     className="w-full h-full object-cover object-center"
                                   />
                                 </div>
@@ -1937,6 +1947,9 @@ export default function MobileAppViewPage(props: any) {
                             <div className="grid grid-cols-2 gap-2">
                               {categoriesList.map((cat) => {
                                 const count = matches.filter((m) => m.categorySlug === cat.slug && !isMatchFinished(m)).length;
+                                const catImgSrc = (cat.bannerImage && !cat.bannerImage.includes('unsplash.com'))
+                                  ? cat.bannerImage
+                                  : (INITIAL_CATEGORIES[cat.slug]?.bannerImage || cat.avatarImage || '/logo.png');
                                 return (
                                   <div
                                     key={cat.slug}
@@ -1946,10 +1959,10 @@ export default function MobileAppViewPage(props: any) {
                                     className="group cursor-pointer rounded-xl overflow-hidden relative border border-white/10 shadow hover:border-red-500 active:scale-[0.96] transition-transform duration-100 ease-out h-28 flex flex-col justify-end p-2 bg-slate-900 touch-manipulation hover:shadow-lg"
                                   >
                                     <img
-                                      src={cat.bannerImage || cat.avatarImage || '/logo.png'}
+                                      src={catImgSrc}
                                       alt={cat.name}
                                       onError={(e) => {
-                                        (e.target as HTMLImageElement).src = '/logo.png';
+                                        (e.target as HTMLImageElement).src = INITIAL_CATEGORIES[cat.slug]?.bannerImage || '/logo.png';
                                       }}
                                       className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform opacity-90"
                                     />

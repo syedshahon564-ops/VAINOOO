@@ -5,8 +5,9 @@ dist
 **/dist
 .next
 **/.next
-/data
 out
+!data/cms-data.json
+!apps/web-admin/data/cms-data.json
 build
 *.log
 *.idsig
