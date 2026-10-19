@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { INITIAL_CATEGORIES } from './initial-categories';
 export { isMatchFinished } from '@/components/LiveMatchCountdown';
+export { INITIAL_CATEGORIES };
 
 export interface MatchItem {
   id: string;
@@ -111,66 +113,9 @@ export interface CMSData {
   matchesUpdatedAt?: number;
 }
 
-const STORAGE_KEY = 'ff_esports_cms_data_v6';
-const MIGRATION_KEY = 'ff_esports_cms_migration_v6';
-const ZERO_RESET_KEY = 'ff_esports_matches_zero_reset_v6';
-
-export const INITIAL_CATEGORIES: Record<string, CategoryItem> = {
-  'special-match': {
-    slug: 'special-match',
-    id: 79,
-    name: 'SPECIAL MATCH',
-    section: 'FREE FIRE MATCHES',
-    bannerImage: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=640',
-    avatarImage: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=120',
-    description: 'Exclusive anime crossover & special event rules custom matches.',
-  },
-  'classic-match': {
-    slug: 'classic-match',
-    id: 80,
-    name: 'CLASSIC MATCH',
-    section: 'FREE FIRE MATCHES',
-    bannerImage: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=640',
-    avatarImage: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=120',
-    description: 'Standard 48-player Free Fire Battle Royale on Bermuda and Purgatory.',
-  },
-  'clash-squad': {
-    slug: 'clash-squad',
-    id: 81,
-    name: 'CLASH SQUAD',
-    section: 'FREE FIRE MATCHES',
-    bannerImage: 'https://images.unsplash.com/photo-1579373903781-fd5c0c30c4cd?q=80&w=640',
-    avatarImage: 'https://images.unsplash.com/photo-1563089145-599997674d42?q=80&w=120',
-    description: 'Competitive 4 vs 4 tactical round tournament.',
-  },
-  'lone-wolf': {
-    slug: 'lone-wolf',
-    id: 82,
-    name: 'LONE WOLF',
-    section: 'FREE FIRE MATCHES',
-    bannerImage: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=640',
-    avatarImage: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=120',
-    description: '1 vs 1 Iron Cage duel battles.',
-  },
-  'lost-to-win': {
-    slug: 'lost-to-win',
-    id: 76,
-    name: 'LOST TO WIN',
-    section: 'FREE FIRE MATCH 1 VS 1',
-    bannerImage: 'https://images.unsplash.com/photo-1538481199705-c710c4e965fc?q=80&w=640',
-    avatarImage: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?q=80&w=120',
-    description: 'Special 1 vs 1 challenges where every match offers massive cash returns.',
-  },
-  'cs-only-headshot': {
-    slug: 'cs-only-headshot',
-    id: 87,
-    name: 'CS ONLY HEADSHOT',
-    section: 'ONLY HEADSHOT',
-    bannerImage: 'https://images.unsplash.com/photo-1542751110-97427bbecf20?q=80&w=640',
-    avatarImage: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=120',
-    description: 'Clash Squad with Headshot only enabled. Body damage is nullified.',
-  },
-};
+const STORAGE_KEY = 'ff_esports_cms_data_v7';
+const MIGRATION_KEY = 'ff_esports_cms_migration_v7';
+const ZERO_RESET_KEY = 'ff_esports_matches_zero_reset_v7';
 
 export const INITIAL_TOP_PLAYERS: TopPlayerItem[] = [
   {

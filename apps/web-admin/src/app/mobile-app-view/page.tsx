@@ -136,21 +136,17 @@ export default function MobileAppViewPage(props: any) {
   useEffect(() => {
     setMounted(true);
 
-    // Fast, responsive esports splash loading sequence
-    const t1 = setTimeout(() => setSplashProgress(45), 100);
-    const t2 = setTimeout(() => setSplashProgress(75), 240);
-    const t3 = setTimeout(() => setSplashProgress(92), 420);
-    const t4 = setTimeout(() => setSplashProgress(100), 620);
-    const t5 = setTimeout(() => setSplashFading(true), 780);
-    const t6 = setTimeout(() => setSplashVisible(false), 1080);
+    // Fast, ultra-responsive esports splash loading sequence
+    const t1 = setTimeout(() => setSplashProgress(70), 50);
+    const t2 = setTimeout(() => setSplashProgress(100), 120);
+    const t3 = setTimeout(() => setSplashFading(true), 200);
+    const t4 = setTimeout(() => setSplashVisible(false), 350);
 
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);
       clearTimeout(t3);
       clearTimeout(t4);
-      clearTimeout(t5);
-      clearTimeout(t6);
     };
   }, []);
 
@@ -1861,11 +1857,20 @@ export default function MobileAppViewPage(props: any) {
                               <span>{tPhone('📢 নিউজ', '📢 NEWS')}</span>
                             </span>
                             <div className="flex-1 overflow-hidden relative whitespace-nowrap">
-                              <div className="animate-train-marquee text-[11px] font-black text-gray-900 tracking-wide inline-block">
-                                {settings?.noticeText || tPhone(
-                                  '🔥 FF RIVAL TOUR BD-তে স্বাগতম! প্রতিদিন টুর্নামেন্ট খেলুন এবং বিকাশ/নগদে প্রাইজ গ্রহণ করুন! 🏆 আইডি লেভেল ৫৫+ বাধ্যতামূলক • ১০০% ফেয়ার ও হ্যাকমুক্ত টুর্নামেন্ট!',
-                                  '🔥 Welcome to FF RIVAL TOUR BD! Play daily tournaments & win cash via bKash/Nagad! 🏆 Level 55+ Required • 100% Fair Gameplay!'
-                                )}
+                              <div className="animate-train-marquee text-[11px] font-black text-gray-900 tracking-wide inline-flex items-center gap-8">
+                                <span>
+                                  {settings?.noticeText || tPhone(
+                                    '🔥 FF RIVAL TOUR BD-তে স্বাগতম! প্রতিদিন টুর্নামেন্ট খেলুন এবং বিকাশ/নগদে প্রাইজ গ্রহণ করুন! 🏆 আইডি লেভেল ৫৫+ বাধ্যতামূলক • ১০০% ফেয়ার ও হ্যাকমুক্ত টুর্নামেন্ট!',
+                                    '🔥 Welcome to FF RIVAL TOUR BD! Play daily tournaments & win cash via bKash/Nagad! 🏆 Level 55+ Required • 100% Fair Gameplay!'
+                                  )}
+                                </span>
+                                <span aria-hidden="true" className="text-red-600 font-black">•</span>
+                                <span aria-hidden="true">
+                                  {settings?.noticeText || tPhone(
+                                    '🔥 FF RIVAL TOUR BD-তে স্বাগতম! প্রতিদিন টুর্নামেন্ট খেলুন এবং বিকাশ/নগদে প্রাইজ গ্রহণ করুন! 🏆 আইডি লেভেল ৫৫+ বাধ্যতামূলক • ১০০% ফেয়ার ও হ্যাকমুক্ত টুর্নামেন্ট!',
+                                    '🔥 Welcome to FF RIVAL TOUR BD! Play daily tournaments & win cash via bKash/Nagad! 🏆 Level 55+ Required • 100% Fair Gameplay!'
+                                  )}
+                                </span>
                               </div>
                             </div>
                           </div>
@@ -1905,34 +1910,9 @@ export default function MobileAppViewPage(props: any) {
                               return slideContent;
                             })}
 
-                            {/* Slider Prev / Next Controls */}
+                            {/* Pagination Dot Indicators (Clean, no distracting side buttons) */}
                             {bannerSlides.length > 1 && (
-                              <>
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setCurrentSlideIndex((prev) => (prev - 1 + bannerSlides.length) % bannerSlides.length);
-                                  }}
-                                  className="absolute left-1.5 top-1/2 -translate-y-1/2 z-20 w-6 h-6 rounded-full bg-black/50 text-white hover:bg-black/80 flex items-center justify-center text-xs shadow"
-                                  aria-label="Previous Slide"
-                                >
-                                  ‹
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setCurrentSlideIndex((prev) => (prev + 1) % bannerSlides.length);
-                                  }}
-                                  className="absolute right-1.5 top-1/2 -translate-y-1/2 z-20 w-6 h-6 rounded-full bg-black/50 text-white hover:bg-black/80 flex items-center justify-center text-xs shadow"
-                                  aria-label="Next Slide"
-                                >
-                                  ›
-                                </button>
-
-                                {/* Pagination Dot Indicators */}
-                                <div className="absolute bottom-2 right-3 z-20 flex items-center gap-1">
+                              <div className="absolute bottom-2 right-3 z-20 flex items-center gap-1">
                                   {bannerSlides.map((_, dotIdx) => (
                                     <button
                                       key={dotIdx}
@@ -1945,7 +1925,6 @@ export default function MobileAppViewPage(props: any) {
                                     />
                                   ))}
                                 </div>
-                              </>
                             )}
                           </div>
 

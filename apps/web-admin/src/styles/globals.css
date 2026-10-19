@@ -111,21 +111,21 @@ html.dark ::-webkit-scrollbar-thumb {
   background: #334155;
 }
 
-/* Train-style Marquee Animation (ট্রেনের মতন নিউজ স্ক্রলিং) */
+/* Train-style Marquee Animation (ট্রেনের মতন নিউজ স্ক্রলিং - Zero Gap, Instant Display) */
 @keyframes trainMarquee {
   0% {
-    transform: translateX(100%);
+    transform: translateX(0);
   }
   100% {
-    transform: translateX(-100%);
+    transform: translateX(-50%);
   }
 }
 
 .animate-train-marquee {
-  display: inline-block;
+  display: inline-flex;
   white-space: nowrap;
   will-change: transform;
-  animation: trainMarquee 20s linear infinite;
+  animation: trainMarquee 25s linear infinite;
 }
 
 .animate-train-marquee:hover,
