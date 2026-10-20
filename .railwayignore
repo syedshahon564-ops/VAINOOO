@@ -24,6 +24,4 @@ scratch/
 .idea
 backups
 backups/
-*.apk
-apps/web-admin/public/downloads/*.apk
-public/downloads/*.apk
+# APKs are included so players can download ffrivals.apk from the live server
