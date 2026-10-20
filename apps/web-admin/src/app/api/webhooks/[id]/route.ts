@@ -26,7 +26,19 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     ok: true,
     webhookId: params.id,
     service: 'FF Rivals WebhookFlow Bridge Endpoint',
-    status: 'ONLINE',
+    status: 'CONNECTED',
+    connected: true,
     instructions: 'Send POST requests with Nagad/bKash SMS or transaction payload',
+  });
+}
+
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS, HEAD',
+      'Access-Control-Allow-Headers': '*',
+    },
   });
 }

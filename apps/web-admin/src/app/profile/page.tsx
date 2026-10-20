@@ -57,27 +57,33 @@ export default function ProfilePage() {
     }
   };
   const [user, setUser] = useState<any>({
-    ign: 'BDX_STRIKER',
-    uid: '192837465',
-    phone: '01712-345678',
-    walletBalance: 1450.0,
+    ign: '',
+    uid: '',
+    phone: '',
+    walletBalance: 0,
     role: 'PLAYER',
-    totalMatches: 34,
-    totalWins: 12,
-    totalKills: 89,
-    winRate: '35.2%',
+    totalMatches: 0,
+    totalWins: 0,
+    totalKills: 0,
+    winRate: '0%',
   });
 
   useEffect(() => {
     const updateActiveUser = () => {
       const current = getCurrentUser();
       if (current) {
+        const matches = current.matchesPlayed ?? 0;
+        const wins = current.totalWins ?? 0;
+        const kills = current.totalKills ?? 0;
+        const winRate = matches > 0 ? ((wins / matches) * 100).toFixed(1) + '%' : '0%';
         setUser((prev: any) => ({
           ...prev,
           ...current,
-          totalMatches: current.matchesPlayed || prev.totalMatches,
-          totalKills: current.totalKills || prev.totalKills,
-          totalWins: current.totalWins || prev.totalWins,
+          walletBalance: current.walletBalance ?? 0,
+          totalMatches: matches,
+          totalKills: kills,
+          totalWins: wins,
+          winRate: winRate,
         }));
       }
     };
@@ -92,35 +98,7 @@ export default function ProfilePage() {
     };
   }, []);
 
-  const history = [
-    {
-      id: 'm-1',
-      title: 'Free Fire Bermuda Squad Championship #42',
-      date: 'Yesterday 08:30 PM',
-      rank: '#1 Booyah',
-      kills: 8,
-      winnings: 580,
-      status: 'Won',
-    },
-    {
-      id: 'm-2',
-      title: 'Purgatory Solo Quick Rush #39',
-      date: '02 Oct 2026',
-      rank: '#2 Place',
-      kills: 4,
-      winnings: 240,
-      status: 'Won',
-    },
-    {
-      id: 'm-3',
-      title: 'Clash Squad 4v4 War',
-      date: '01 Oct 2026',
-      rank: '#5 Place',
-      kills: 2,
-      winnings: 0,
-      status: 'Lost',
-    },
-  ];
+  const matchHistory: any[] = user?.matchHistory || [];
 
   const handleAvatarFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -205,7 +183,7 @@ export default function ProfilePage() {
             Wallet Balance
           </span>
           <div className="text-3xl font-black text-red-600 dark:text-red-400">
-            ৳ {Number(user.walletBalance || 1450).toFixed(2)}
+            ৳ {Number(user.walletBalance ?? 0).toFixed(2)}
           </div>
           <div className="flex gap-2 justify-center sm:justify-end pt-1 flex-wrap">
             <button
@@ -242,19 +220,19 @@ export default function ProfilePage() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="p-4 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-dark-card text-center space-y-1 shadow-sm">
           <div className="text-xs text-gray-500 font-semibold uppercase">Matches</div>
-          <div className="text-2xl font-black text-gray-900 dark:text-white">{user.totalMatches || 34}</div>
+          <div className="text-2xl font-black text-gray-900 dark:text-white">{user.totalMatches ?? 0}</div>
         </div>
         <div className="p-4 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-dark-card text-center space-y-1 shadow-sm">
           <div className="text-xs text-gray-500 font-semibold uppercase">Total Wins</div>
-          <div className="text-2xl font-black text-amber-500">{user.totalWins || 12}</div>
+          <div className="text-2xl font-black text-amber-500">{user.totalWins ?? 0}</div>
         </div>
         <div className="p-4 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-dark-card text-center space-y-1 shadow-sm">
           <div className="text-xs text-gray-500 font-semibold uppercase">Total Kills</div>
-          <div className="text-2xl font-black text-red-600">{user.totalKills || 89}</div>
+          <div className="text-2xl font-black text-red-600">{user.totalKills ?? 0}</div>
         </div>
         <div className="p-4 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-dark-card text-center space-y-1 shadow-sm">
           <div className="text-xs text-gray-500 font-semibold uppercase">Win Rate</div>
-          <div className="text-2xl font-black text-emerald-600">{user.winRate || '35.2%'}</div>
+          <div className="text-2xl font-black text-emerald-600">{user.winRate || '0%'}</div>
         </div>
       </div>
 
@@ -301,35 +279,41 @@ export default function ProfilePage() {
         </h3>
 
         <div className="divide-y divide-gray-100 dark:divide-white/5">
-          {history.map((h) => (
-            <div key={h.id} className="py-3 flex items-center justify-between text-xs">
-              <div className="space-y-1">
-                <div className="font-bold text-gray-900 dark:text-white">{h.title}</div>
-                <div className="text-gray-500 text-[11px] flex items-center gap-2">
-                  <span>{h.date}</span>
-                  <span>•</span>
-                  <span>{h.kills} Kills</span>
-                  <span>•</span>
-                  <span className="font-bold text-amber-500">{h.rank}</span>
-                </div>
-              </div>
-
-              <div className="text-right">
-                <div className="font-extrabold text-emerald-600 dark:text-emerald-400 text-sm">
-                  {h.winnings > 0 ? `+৳ ${h.winnings}` : '৳ 0.00'}
-                </div>
-                <span
-                  className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-                    h.status === 'Won'
-                      ? 'bg-emerald-50 text-emerald-700'
-                      : 'bg-gray-100 text-gray-600'
-                  }`}
-                >
-                  {h.status}
-                </span>
-              </div>
+          {matchHistory.length === 0 ? (
+            <div className="py-8 text-center text-xs text-gray-500 font-medium">
+              এখনো কোনো টুর্নামেন্ট খেলা হয়নি
             </div>
-          ))}
+          ) : (
+            matchHistory.map((h) => (
+              <div key={h.id} className="py-3 flex items-center justify-between text-xs">
+                <div className="space-y-1">
+                  <div className="font-bold text-gray-900 dark:text-white">{h.title || h.matchTitle}</div>
+                  <div className="text-gray-500 text-[11px] flex items-center gap-2">
+                    <span>{h.date}</span>
+                    <span>•</span>
+                    <span>{h.kills ?? 0} Kills</span>
+                    <span>•</span>
+                    <span className="font-bold text-amber-500">#{h.rank ?? '-'}</span>
+                  </div>
+                </div>
+
+                <div className="text-right">
+                  <div className="font-extrabold text-emerald-600 dark:text-emerald-400 text-sm">
+                    {(h.winnings || h.prizeEarned) > 0 ? `+৳ ${h.winnings || h.prizeEarned}` : '৳ 0.00'}
+                  </div>
+                  <span
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                      (h.winnings || h.prizeEarned || 0) > 0 || h.isBooyah
+                        ? 'bg-emerald-50 text-emerald-700'
+                        : 'bg-gray-100 text-gray-600'
+                    }`}
+                  >
+                    {(h.winnings || h.prizeEarned || 0) > 0 || h.isBooyah ? 'Won' : 'Played'}
+                  </span>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 

@@ -174,7 +174,7 @@ export async function fetchUsersFromServer(): Promise<UserAccount[]> {
           const luTime = lu.updatedAt ? new Date(lu.updatedAt).getTime() : 0;
           const suTime = su.updatedAt ? new Date(su.updatedAt).getTime() : 0;
           // Priority to server's walletBalance whenever admin credits balance
-          const effectiveBalance = suTime >= luTime ? su.walletBalance : (lu.walletBalance ?? su.walletBalance);
+          const effectiveBalance = su.walletBalance !== undefined && su.walletBalance !== null ? su.walletBalance : lu.walletBalance;
           const effectiveTime = Math.max(luTime, suTime);
 
           mergedMap.set(su.id, {
@@ -225,6 +225,15 @@ export async function fetchUsersFromServer(): Promise<UserAccount[]> {
 export function initUserSync() {
   if (typeof window === 'undefined' || hasInitializedUserSync) return;
   hasInitializedUserSync = true;
+
+  // Disconnect all previous test sessions once so all accounts start clean
+  const SESSION_BUILD_KEY = 'ff_live_session_clean_v4';
+  try {
+    if (localStorage.getItem(SESSION_BUILD_KEY) !== 'clean') {
+      clearSession();
+      localStorage.setItem(SESSION_BUILD_KEY, 'clean');
+    }
+  } catch (e) {}
 
   fetchUsersFromServer();
   setInterval(fetchUsersFromServer, 3000);
@@ -1138,6 +1147,19 @@ export function submitWithdrawRequest(data: {
     '💸 উইথড্রল রিকোয়েস্ট জমা হয়েছে',
     `৳${data.amount} উইথড্রল (${data.method}) পেন্ডিং আছে। এডমিন পেমেন্ট পাঠানোর পর কনফার্মেশন পাবেন।`
   );
+
+  // Instantly send alert notification to admin channel
+  if (typeof window !== 'undefined') {
+    fetch('/api/notifications/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: `💸 নতুন উইথড্রল রিকোয়েস্ট (${data.method})`,
+        message: `প্লেয়ার ${data.userName || data.userPhone} ৳${data.amount} উত্তোলন চেয়েছেন (${data.accountNumber})।`,
+        url: '/admin/finance',
+      }),
+    }).catch(() => {});
+  }
 
   return { success: true, request: newReq };
 }

@@ -48,7 +48,7 @@ export default function WalletPage() {
       setHistory(
         txs.map((t) => ({
           id: t.id,
-          type: t.type === 'CREDIT' ? 'DEPOSIT' : (t.category === 'match_join' || t.reason?.toLowerCase().includes('match') || t.reason?.toLowerCase().includes('ম্যাচ') || t.reason?.toLowerCase().includes('slot') || t.reason?.toLowerCase().includes('entry') ? 'MATCH_JOIN' : 'WITHDRAW'),
+          type: t.type === 'CREDIT' ? ((t as any).category === 'manual_adjustment' || t.reason?.includes('অ্যাডমিন') || t.reason?.toLowerCase().includes('admin') ? 'ADMIN_ADD' : 'DEPOSIT') : (t.category === 'match_join' || t.reason?.toLowerCase().includes('match') || t.reason?.toLowerCase().includes('ম্যাচ') || t.reason?.toLowerCase().includes('slot') || t.reason?.toLowerCase().includes('entry') ? 'MATCH_JOIN' : 'WITHDRAW'),
           method: t.reason.toUpperCase().includes('NAGAD')
             ? 'NAGAD'
             : t.reason.toUpperCase().includes('ROCKET')
@@ -432,7 +432,9 @@ export default function WalletPage() {
                         {tx.type === 'DEPOSIT' ? '+৳' : '-৳'}{tx.amount}
                       </span>
                       <span className="text-[10px] text-gray-400">
-                        {tx.type === 'DEPOSIT'
+                        {tx.type === 'ADMIN_ADD'
+                          ? `(অ্যাডমিন কর্তৃক যোগ - Added by Admin)`
+                          : tx.type === 'DEPOSIT'
                           ? `(ডিপোজিট - ${tx.method})`
                           : tx.type === 'MATCH_JOIN'
                           ? `(ম্যাচ জয়েন ফি)`

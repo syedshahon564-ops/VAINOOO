@@ -74,7 +74,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     };
     checkTickets();
 
-    const interval = setInterval(checkTickets, 5000);
+    const interval = setInterval(() => { if (document.visibilityState === 'visible') checkTickets(); }, 25000);
     window.addEventListener('ff_support_tickets_updated', checkTickets);
     window.addEventListener('storage', checkTickets);
 

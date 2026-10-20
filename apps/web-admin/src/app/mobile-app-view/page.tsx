@@ -77,6 +77,7 @@ import { useLanguage } from '@/components/LanguageProvider';
 import { readClipboardText, toEnDigits } from '@/lib/clipboard';
 import {
   getCurrentUser,
+  fetchUsersFromServer,
   loginUser,
   registerUser,
   logoutUser,
@@ -238,11 +239,14 @@ export default function MobileAppViewPage(props: any) {
   const [pullDistance, setPullDistance] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const touchStartYRef = React.useRef(0);
+  const pullDistRef = React.useRef(0);
+  const rafRef = React.useRef<number | null>(null);
   const scrollContainerRef = React.useRef<HTMLDivElement>(null);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     if (scrollContainerRef.current && scrollContainerRef.current.scrollTop <= 2) {
       touchStartYRef.current = e.touches[0].clientY;
+      pullDistRef.current = 0;
     } else {
       touchStartYRef.current = 0;
     }
@@ -253,40 +257,74 @@ export default function MobileAppViewPage(props: any) {
     const currentY = e.touches[0].clientY;
     const diff = currentY - touchStartYRef.current;
     if (diff > 0 && scrollContainerRef.current && scrollContainerRef.current.scrollTop <= 2) {
-      const dist = Math.min(75, diff * 0.45);
-      setPullDistance(dist);
-      setIsPulling(true);
+      const dist = Math.min(65, diff * 0.4);
+      pullDistRef.current = dist;
+      if (!rafRef.current) {
+        rafRef.current = requestAnimationFrame(() => {
+          setPullDistance(pullDistRef.current);
+          setIsPulling(true);
+          rafRef.current = null;
+        });
+      }
     } else if (diff < 0) {
-      // User is scrolling down, cancel pull gesture immediately
       touchStartYRef.current = 0;
+      pullDistRef.current = 0;
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
       setIsPulling(false);
       setPullDistance(0);
     }
   };
 
   const handleTouchEnd = async () => {
-    if (pullDistance > 45 && !isRefreshing) {
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+    const currentPull = pullDistRef.current || pullDistance;
+    if (currentPull > 35 && !isRefreshing) {
       setIsRefreshing(true);
-      setPullDistance(45);
+      setPullDistance(35);
       if (typeof window !== 'undefined') {
         try {
-          const res = await fetch(`/api/cms?t=${Date.now()}`, { cache: 'no-store' });
-          if (res.ok) {
-            const serverData = await res.json();
-            if (serverData && !serverData.error) {
-              window.dispatchEvent(new CustomEvent('ff_cms_updated', { detail: serverData }));
+          const [usersRes] = await Promise.allSettled([
+            fetchUsersFromServer(),
+            fetch(`/api/cms?t=${Date.now()}`, { cache: 'no-store' }).then(async (res) => {
+              if (res.ok) {
+                const serverData = await res.json();
+                if (serverData && !serverData.error) {
+                  window.dispatchEvent(new CustomEvent('ff_cms_updated', { detail: serverData }));
+                }
+              }
+            }),
+          ]);
+
+          if (usersRes.status === 'fulfilled' && Array.isArray(usersRes.value)) {
+            const logged = getCurrentUser();
+            if (logged) {
+              const matched = usersRes.value.find(
+                (u) => u.id === logged.id || (u.phone && logged.phone && u.phone === logged.phone)
+              );
+              if (matched) {
+                setCurrentUser(matched);
+                setUserBalance(matched.walletBalance ?? 0);
+              }
             }
           }
         } catch (e) {}
-        window.dispatchEvent(new CustomEvent('ff_cms_updated'));
+        const cur = getCurrentUser();
+        if (cur) {
+          setCurrentUser(cur);
+          setUserBalance(cur.walletBalance ?? 0);
+        }
       }
-      const cur = getCurrentUser();
-      if (cur) setCurrentUser(cur);
-      await new Promise((r) => setTimeout(r, 650));
       setIsRefreshing(false);
     }
     setIsPulling(false);
     setPullDistance(0);
+    pullDistRef.current = 0;
     touchStartYRef.current = 0;
   };
 
@@ -2546,7 +2584,11 @@ export default function MobileAppViewPage(props: any) {
                                     }`}
                                   >
                                     {tx.type === 'CREDIT'
-                                      ? '+ টাকা যোগ (ডিপোজিট)'
+                                      ? (tx.category === 'manual_adjustment' || tx.reason?.includes('অ্যাডমিন') || tx.reason?.toLowerCase().includes('admin')
+                                          ? '+ অ্যাডমিন কর্তৃক যোগ (Added by Admin)'
+                                          : tx.category === 'match_winning' || tx.reason?.includes('প্রাইজ') || tx.reason?.includes('Prize')
+                                          ? '+ টুর্নামেন্ট প্রাইজ (Winning)'
+                                          : '+ ডিপোজিট (Deposit)')
                                       : (tx as any).category === 'match_join' ||
                                         tx.reason?.toLowerCase().includes('match') ||
                                         tx.reason?.toLowerCase().includes('ম্যাচ') ||

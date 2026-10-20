@@ -409,7 +409,7 @@ export async function GET(req: Request) {
   if (!apiKey || apiKey !== expectedKey) {
     return NextResponse.json({
       ok: true,
-      status: 'ONLINE',
+      status: 'CONNECTED',
       connected: true,
       service: 'FF Rivals bKash/Nagad Webhook Service',
       instructions: 'Send POST requests with ?key=ff_rivals_secure_sms_key_2026 or Header x-api-key',
@@ -423,7 +423,7 @@ export async function GET(req: Request) {
   if (!rawText && !trx) {
     return NextResponse.json({
       ok: true,
-      status: 'ONLINE',
+      status: 'CONNECTED',
       connected: true,
       authenticated: true,
       service: 'FF Rivals bKash/Nagad Webhook Service',
@@ -457,3 +457,14 @@ export async function GET(req: Request) {
   });
 }
 
+
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS, HEAD',
+      'Access-Control-Allow-Headers': '*',
+    },
+  });
+}
