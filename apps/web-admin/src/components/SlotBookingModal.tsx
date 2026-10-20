@@ -51,9 +51,26 @@ export default function SlotBookingModal({
   const matchTypeLower = (match.type || '').toLowerCase();
   const isSquad =
     matchTypeLower.includes('squad') ||
+    matchTypeLower.includes('4 vs 4') ||
+    matchTypeLower.includes('4v4') ||
     (match.totalSlots === 48 && matchTypeLower.includes('squad')) ||
     match.type === 'Squad';
-  const isDuo = matchTypeLower.includes('duo');
+
+  const is1v1 =
+    matchTypeLower === '1 vs 1' ||
+    matchTypeLower === '1v1' ||
+    matchTypeLower.includes('1 vs 1') ||
+    matchTypeLower.includes('1v1') ||
+    match.totalSlots === 2;
+
+  const isDuo =
+    !is1v1 &&
+    (matchTypeLower.includes('duo') ||
+      matchTypeLower.includes('2 vs 2') ||
+      matchTypeLower.includes('2v2') ||
+      match.totalSlots === 4 ||
+      (match.totalSlots === 24 && !isSquad));
+
   const isSolo = !isSquad && !isDuo;
 
   const isClassicMatch =
@@ -68,9 +85,8 @@ export default function SlotBookingModal({
     (match.title || '').toLowerCase().includes('clash') ||
     (match.title || '').toLowerCase().includes('cs ');
 
-  // Slot system is enabled for Squad matches, Duo matches, and Classic Solo
-  // "ar solo duo 2 tai tey slot system kore daw khli classic match tar baki onno kno match a nh"
-  const hasSlotSelection = isSquad || isDuo || (isClassicMatch && isSolo);
+  // Slot system is enabled exclusively for Classic matches (Squad 12, Duo 24, Solo 48)
+  const hasSlotSelection = isClassicMatch && (isSquad || isDuo || isSolo);
 
   const totalSlotCount = isSquad ? 12 : isDuo ? 24 : 48;
 

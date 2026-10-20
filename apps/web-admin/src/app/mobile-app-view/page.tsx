@@ -1042,33 +1042,52 @@ export default function MobileAppViewPage(props: any) {
     return currentCategoryMatches.filter((m) => {
       const typeStr = (m.type || m.matchType || '').toUpperCase();
       const titleStr = (m.title || '').toUpperCase();
-      if (subTypeFilter === 'SOLO') {
-        return (
-          typeStr.includes('SOLO') ||
-          titleStr.includes('SOLO') ||
-          titleStr.includes('সোলো') ||
-          (m.totalSlots <= 2 && !typeStr.includes('DUO') && !titleStr.includes('DUO'))
-        );
-      }
-      if (subTypeFilter === 'DUO') {
-        return (
+      const is1v1OrSolo =
+        typeStr === 'SOLO' ||
+        typeStr === '1 VS 1' ||
+        typeStr === '1V1' ||
+        typeStr.includes('1 VS 1') ||
+        typeStr.includes('1V1') ||
+        titleStr.includes('1V1') ||
+        titleStr.includes('1 VS 1') ||
+        typeStr.includes('SOLO') ||
+        titleStr.includes('SOLO') ||
+        titleStr.includes('সোলো') ||
+        (m.totalSlots <= 2 && !typeStr.includes('DUO') && !titleStr.includes('DUO') && !typeStr.includes('2 VS 2') && !typeStr.includes('2V2'));
+
+      const isDuoMatch =
+        !is1v1OrSolo &&
+        (typeStr === 'DUO' ||
           typeStr.includes('DUO') ||
           titleStr.includes('DUO') ||
           titleStr.includes('ডুও') ||
           typeStr.includes('2 VS 2') ||
           typeStr.includes('2V2') ||
+          titleStr.includes('2V2') ||
+          titleStr.includes('2 VS 2') ||
           m.totalSlots === 4 ||
-          m.totalSlots === 24
-        );
+          (m.totalSlots === 24 && !typeStr.includes('SQUAD')));
+
+      const isSquadMatch =
+        typeStr === 'SQUAD' ||
+        typeStr.includes('SQUAD') ||
+        titleStr.includes('SQUAD') ||
+        titleStr.includes('স্কোয়াড') ||
+        typeStr.includes('4V4') ||
+        typeStr.includes('4 VS 4') ||
+        titleStr.includes('4V4') ||
+        titleStr.includes('4 VS 4') ||
+        m.totalSlots === 8 ||
+        (m.totalSlots === 48 && !is1v1OrSolo && !isDuoMatch);
+
+      if (subTypeFilter === 'SOLO') {
+        return is1v1OrSolo;
+      }
+      if (subTypeFilter === 'DUO') {
+        return isDuoMatch;
       }
       if (subTypeFilter === 'SQUAD') {
-        return (
-          typeStr.includes('SQUAD') ||
-          titleStr.includes('SQUAD') ||
-          titleStr.includes('স্কোয়াড') ||
-          typeStr.includes('4V4') ||
-          titleStr.includes('4V4')
-        );
+        return isSquadMatch;
       }
       return true;
     });

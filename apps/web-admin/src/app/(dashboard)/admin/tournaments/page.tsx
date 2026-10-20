@@ -168,7 +168,7 @@ export default function AdminTournamentsPage() {
     const finalThirdPrize = isSingle ? 0 : Number(thirdPrize);
     let finalSlots = Number(totalSlots);
     if (categorySlug === 'lone-wolf') {
-      finalSlots = (type.includes('2') || type.toLowerCase().includes('duo')) ? 4 : 2;
+      finalSlots = (type === '2 vs 2' || type === '2v2' || type.toLowerCase() === 'duo' || type.includes('2 vs 2')) ? 4 : 2;
     } else if (categorySlug === 'clash-squad' || categorySlug === 'cs-only-headshot') {
       finalSlots = type === '1 vs 1' ? 2 : type === '2 vs 2' ? 4 : 8;
     }
@@ -209,7 +209,7 @@ export default function AdminTournamentsPage() {
     const finalThirdPrize = isSingle ? 0 : Number(thirdPrize);
     let finalSlots = Number(totalSlots);
     if (categorySlug === 'lone-wolf') {
-      finalSlots = (type.includes('2') || type.toLowerCase().includes('duo')) ? 4 : 2;
+      finalSlots = (type === '2 vs 2' || type === '2v2' || type.toLowerCase() === 'duo' || type.includes('2 vs 2')) ? 4 : 2;
     } else if (categorySlug === 'clash-squad' || categorySlug === 'cs-only-headshot') {
       finalSlots = type === '1 vs 1' ? 2 : type === '2 vs 2' ? 4 : 8;
     }
@@ -366,7 +366,7 @@ export default function AdminTournamentsPage() {
   const handleEntryFeeChange = (fee: number, currentType: string) => {
     setEntryFee(fee);
     if (categorySlug === 'lone-wolf') {
-      const slots = (currentType.includes('2') || currentType.toLowerCase().includes('duo')) ? 4 : 2;
+      const slots = (currentType === '2 vs 2' || currentType === '2v2' || currentType.toLowerCase() === 'duo' || currentType.includes('2 vs 2')) ? 4 : 2;
       const winnerPrize = Math.max(10, Math.round(fee * slots * 0.85));
       setPrizePool(winnerPrize);
       setFirstPrize(winnerPrize);
@@ -449,7 +449,7 @@ export default function AdminTournamentsPage() {
   const handleTypeSelect = (newType: string) => {
     setType(newType);
     if (categorySlug === 'lone-wolf') {
-      const slots = (newType.includes('2') || newType.toLowerCase().includes('duo')) ? 4 : 2;
+      const slots = (newType === '2 vs 2' || newType === '2v2' || newType.toLowerCase() === 'duo' || newType.includes('2 vs 2')) ? 4 : 2;
       setTotalSlots(slots);
       const pool = Math.max(10, Math.round(entryFee * slots * 0.85));
       setPrizePool(pool);

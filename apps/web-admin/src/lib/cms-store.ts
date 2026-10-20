@@ -451,7 +451,7 @@ export function normalizeCMSData(input: Partial<CMSData> | null | undefined): CM
               secondPrize: 0,
               thirdPrize: 0,
               firstPrize: m.firstPrize || m.prizePool,
-              totalSlots: (m.type?.includes('2') || m.type?.toLowerCase().includes('duo')) ? 4 : 2,
+              totalSlots: (m.type === '2 vs 2' || m.type === '2v2' || m.type?.toLowerCase() === 'duo' || m.type?.includes('2 vs 2')) ? 4 : 2,
             };
           }
           if (isClashSquad) {
@@ -569,7 +569,7 @@ export function addMatch(match: Omit<MatchItem, 'id' | 'filledSlots'>): MatchIte
     secondPrize = 0;
     thirdPrize = 0;
     firstPrize = match.prizePool;
-    totalSlots = (match.type.includes('2') || match.type.toLowerCase().includes('duo')) ? 4 : 2;
+    totalSlots = (match.type === '2 vs 2' || match.type === '2v2' || match.type.toLowerCase() === 'duo' || match.type.includes('2 vs 2')) ? 4 : 2;
   } else if (isClashSquad) {
     perKill = 0;
     secondPrize = 0;
