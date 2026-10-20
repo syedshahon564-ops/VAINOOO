@@ -209,27 +209,30 @@ export default function AdminUsersPage() {
     refresh();
   };
 
-  // Delete User
+  // Delete User (Instant, safe on mobile WebViews)
   const handleDeleteUser = (user: UserAccount) => {
-    if (confirm(`Are you sure you want to permanently delete user "${user.ign}"?`)) {
-      deleteUser(user.id);
-      showToast(`User ${user.ign} deleted!`, 'success');
-      refresh();
-    }
+    deleteUser(user.id);
+    showToast(`User ${user.ign || 'ID: ' + user.id} deleted!`, 'success');
+    refresh();
   };
 
-  // Filtered users list
-  const filteredUsers = users.filter((u) => {
+  // Filtered users list with safe string guards
+  const filteredUsers = (users || []).filter((u) => {
+    if (!u) return false;
+    const ignStr = String(u.ign || u.username || '').toLowerCase();
+    const phoneStr = String(u.phone || '');
+    const uidStr = String(u.uid || '');
+    const searchLower = searchTerm.toLowerCase().trim();
     const matchSearch =
-      u.ign.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.phone.includes(searchTerm) ||
-      u.uid.includes(searchTerm);
+      ignStr.includes(searchLower) ||
+      phoneStr.includes(searchLower) ||
+      uidStr.includes(searchLower);
     if (statusFilter === 'ALL') return matchSearch;
     return matchSearch && u.status === statusFilter;
   });
 
   // Aggregate Stats
-  const totalBalanceSum = users.reduce((acc, u) => acc + (u.walletBalance || 0), 0);
+  const totalBalanceSum = (users || []).reduce((acc, u) => acc + (Number(u?.walletBalance) || 0), 0);
   const activeCount = users.filter((u) => u.status === 'ACTIVE').length;
   const bannedCount = users.filter((u) => u.status === 'BANNED').length;
 
@@ -481,7 +484,7 @@ export default function AdminUsersPage() {
                       <td className="py-3.5 px-4">
                         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 font-black text-emerald-600 dark:text-emerald-400 shadow-sm">
                           <Wallet className="w-3.5 h-3.5" />
-                          <span>৳ {user.walletBalance.toFixed(2)}</span>
+                          <span>৳ {Number(user.walletBalance || 0).toFixed(2)}</span>
                         </div>
                       </td>
 
@@ -501,11 +504,11 @@ export default function AdminUsersPage() {
                       {/* Matches / Stats */}
                       <td className="py-3.5 px-4">
                         <div className="text-[11px] text-gray-600 dark:text-gray-300">
-                          <span className="font-bold">{user.matchesPlayed}</span> matches •{' '}
-                          <span className="font-bold text-amber-500">{user.totalKills}</span> kills
+                          <span className="font-bold">{user.matchesPlayed ?? 0}</span> matches •{' '}
+                          <span className="font-bold text-amber-500">{user.totalKills ?? 0}</span> kills
                         </div>
                         <span className="text-[10px] text-emerald-500 font-bold">
-                          {user.totalWins} Booyah
+                          {user.totalWins ?? 0} Booyah
                         </span>
                       </td>
 

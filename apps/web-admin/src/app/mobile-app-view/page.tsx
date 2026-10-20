@@ -1518,13 +1518,19 @@ export default function MobileAppViewPage(props: any) {
                   onTouchEnd={handleTouchEnd}
                   className="flex-1 min-h-0 overflow-y-auto p-3 space-y-3 relative overscroll-y-contain [-webkit-overflow-scrolling:touch] touch-pan-y pb-24"
                 >
-                  {/* Pull-to-refresh spinner indicator */}
+                  {/* Pull-to-refresh spinner indicator (GPU accelerated, zero layout reflow) */}
                   {(isPulling || isRefreshing) && (
                     <div
-                      className="flex items-center justify-center transition-all duration-150 overflow-hidden"
-                      style={{ height: `${pullDistance}px` }}
+                      className="flex items-center justify-center overflow-hidden pointer-events-none will-change-transform"
+                      style={{
+                        height: '42px',
+                        marginTop: '-42px',
+                        transform: `translate3d(0, ${Math.min(pullDistance, 55)}px, 0)`,
+                        opacity: Math.min(1, pullDistance / 30),
+                        transition: isPulling ? 'none' : 'transform 0.25s ease-out, opacity 0.25s ease-out',
+                      }}
                     >
-                      <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/80 text-white text-[10px] font-bold shadow-lg">
+                      <div className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-slate-900/90 text-white text-[11px] font-black shadow-xl border border-white/10 backdrop-blur-md">
                         <RefreshCw className={`w-3.5 h-3.5 text-amber-400 ${isRefreshing ? 'animate-spin' : ''}`} />
                         <span>{isRefreshing ? 'রিফ্রেশ হচ্ছে...' : 'ছেড়ে দিলে রিফ্রেশ হবে'}</span>
                       </div>
@@ -1961,6 +1967,8 @@ export default function MobileAppViewPage(props: any) {
                                   <img
                                     src={bannerImgSrc}
                                     alt={slide.title || 'Banner'}
+                                    loading="eager"
+                                    decoding="async"
                                     onError={(e) => {
                                       (e.target as HTMLImageElement).src = INITIAL_BANNERS[idx]?.image || INITIAL_BANNERS[0]?.image || '/logo.png';
                                     }}
@@ -2026,6 +2034,8 @@ export default function MobileAppViewPage(props: any) {
                                     <img
                                       src={catImgSrc}
                                       alt={cat.name}
+                                      loading="eager"
+                                      decoding="async"
                                       onError={(e) => {
                                         (e.target as HTMLImageElement).src = INITIAL_CATEGORIES[cat.slug]?.bannerImage || '/logo.png';
                                       }}
