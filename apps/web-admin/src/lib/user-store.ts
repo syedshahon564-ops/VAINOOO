@@ -173,18 +173,34 @@ export async function fetchUsersFromServer(): Promise<UserAccount[]> {
         } else {
           const luTime = lu.updatedAt ? new Date(lu.updatedAt).getTime() : 0;
           const suTime = su.updatedAt ? new Date(su.updatedAt).getTime() : 0;
-          if (suTime > luTime) {
-            mergedMap.set(su.id, { ...lu, ...su });
-          } else {
-            // Keep local updates (including recent balance modifications)
-            mergedMap.set(su.id, { ...su, ...lu });
-          }
+          // Priority to server's walletBalance whenever admin credits balance
+          const effectiveBalance = suTime >= luTime ? su.walletBalance : (lu.walletBalance ?? su.walletBalance);
+          const effectiveTime = Math.max(luTime, suTime);
+
+          mergedMap.set(su.id, {
+            ...lu,
+            ...su,
+            walletBalance: effectiveBalance,
+            updatedAt: new Date(effectiveTime).toISOString(),
+          });
         }
       });
 
       const merged = Array.from(mergedMap.values());
       try {
         localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(merged));
+        
+        // Immediately sync currently logged-in user session with new balance
+        const currentLoggedStr = localStorage.getItem('ff_user') || getCookieUser();
+        if (currentLoggedStr) {
+          const current = typeof currentLoggedStr === 'string' ? JSON.parse(currentLoggedStr) : currentLoggedStr;
+          const found = merged.find((u) => u.id === current.id || (u.phone && current.phone && u.phone === current.phone));
+          if (found) {
+            saveSession(found);
+            window.dispatchEvent(new CustomEvent('ff_user_profile_updated', { detail: found }));
+          }
+        }
+
         notifyUsersChange(merged);
       } catch (e) {}
 
@@ -211,7 +227,7 @@ export function initUserSync() {
   hasInitializedUserSync = true;
 
   fetchUsersFromServer();
-  setInterval(fetchUsersFromServer, 10000);
+  setInterval(fetchUsersFromServer, 3000);
 
   window.addEventListener('focus', () => {
     fetchUsersFromServer();
@@ -415,7 +431,13 @@ export function addBalance(
   if (amount <= 0) return { success: false, error: 'টাকার পরিমাণ ০ এর বেশি হতে হবে' };
 
   const users = getUsers();
-  const user = users.find((u) => u.id === userId);
+  const user = users.find(
+    (u) =>
+      u.id === userId ||
+      u.phone === userId ||
+      (u.ign && u.ign.toLowerCase() === String(userId).toLowerCase()) ||
+      (u.username && u.username.toLowerCase() === String(userId).toLowerCase())
+  );
   if (!user) return { success: false, error: 'ইউজার খুঁজে পাওয়া যায়নি' };
 
   const newBalance = Number((user.walletBalance + amount).toFixed(2));
@@ -553,7 +575,13 @@ export function deductBalance(
   if (amount <= 0) return { success: false, error: 'টাকার পরিমাণ ০ এর বেশি হতে হবে' };
 
   const users = getUsers();
-  const user = users.find((u) => u.id === userId);
+  const user = users.find(
+    (u) =>
+      u.id === userId ||
+      u.phone === userId ||
+      (u.ign && u.ign.toLowerCase() === String(userId).toLowerCase()) ||
+      (u.username && u.username.toLowerCase() === String(userId).toLowerCase())
+  );
   if (!user) return { success: false, error: 'ইউজার খুঁজে পাওয়া যায়নি' };
 
   if (user.walletBalance < amount) {

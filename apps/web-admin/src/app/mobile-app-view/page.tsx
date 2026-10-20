@@ -1051,7 +1051,15 @@ export default function MobileAppViewPage(props: any) {
         );
       }
       if (subTypeFilter === 'DUO') {
-        return typeStr.includes('DUO') || titleStr.includes('DUO') || titleStr.includes('ডুও');
+        return (
+          typeStr.includes('DUO') ||
+          titleStr.includes('DUO') ||
+          titleStr.includes('ডুও') ||
+          typeStr.includes('2 VS 2') ||
+          typeStr.includes('2V2') ||
+          m.totalSlots === 4 ||
+          m.totalSlots === 24
+        );
       }
       if (subTypeFilter === 'SQUAD') {
         return (

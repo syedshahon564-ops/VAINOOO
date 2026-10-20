@@ -202,13 +202,6 @@ html, body {
 }
 
 /* Owner / Admin Panel Pure White Theme (MANDATORY REQUEST) */
-.admin-pure-white,
-.admin-pure-white div,
-.admin-pure-white section,
-.admin-pure-white aside {
-  --tw-bg-opacity: 1;
-}
-
 .admin-pure-white {
   background-color: #ffffff !important;
   color: #111827 !important;

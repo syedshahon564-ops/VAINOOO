@@ -24,3 +24,6 @@ scratch/
 .idea
 backups
 backups/
+*.apk
+apps/web-admin/public/downloads/*.apk
+public/downloads/*.apk

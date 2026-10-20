@@ -48,13 +48,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   useEffect(() => {
     if (typeof document !== 'undefined') {
       document.documentElement.classList.remove('dark');
-      const observer = new MutationObserver(() => {
-        if (document.documentElement.classList.contains('dark')) {
-          document.documentElement.classList.remove('dark');
-        }
-      });
-      observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
-      return () => observer.disconnect();
+      try {
+        localStorage.setItem('ff_theme', 'light');
+      } catch (e) {}
     }
   }, []);
 

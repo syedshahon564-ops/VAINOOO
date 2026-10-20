@@ -382,7 +382,8 @@ export default function AdminMasterPage() {
   const handleSelectMatchType = (newType: string) => {
     setMatchType(newType);
     if (matchCategory === 'lone-wolf') {
-      const slots = newType === '2 vs 2' ? 4 : 2;
+      const isDuo = newType.includes('2') || newType.toLowerCase().includes('duo');
+      const slots = isDuo ? 4 : 2;
       setMatchTotalSlots(slots);
       const pool = Math.max(10, Math.round(matchEntryFee * slots * 0.85));
       setMatchPrizePool(pool);
@@ -391,7 +392,7 @@ export default function AdminMasterPage() {
       setMatchThirdPrize(0);
       setMatchPerKill(0);
     } else if (matchCategory === 'clash-squad' || matchCategory === 'cs-only-headshot') {
-      const slots = newType === '1 vs 1' ? 2 : newType === '2 vs 2' ? 4 : 8;
+      const slots = newType === '1 vs 1' ? 2 : (newType.includes('2') || newType.includes('Duo')) ? 4 : 8;
       setMatchTotalSlots(slots);
       const pool = Math.max(10, Math.round(matchEntryFee * slots * 0.8));
       setMatchPrizePool(pool);
@@ -400,7 +401,9 @@ export default function AdminMasterPage() {
       setMatchThirdPrize(0);
       setMatchPerKill(0);
     } else {
-      if (newType === 'Squad' || newType === 'Solo' || newType === 'Duo') setMatchTotalSlots(48);
+      if (newType === 'Squad') setMatchTotalSlots(48);
+      else if (newType === 'Solo') setMatchTotalSlots(48);
+      else if (newType === 'Duo') setMatchTotalSlots(24);
       else if (newType === '4 vs 4') setMatchTotalSlots(8);
       else if (newType === '1 vs 1') setMatchTotalSlots(2);
       else if (newType === '2 vs 2') setMatchTotalSlots(4);
@@ -421,9 +424,11 @@ export default function AdminMasterPage() {
     const finalThirdPrize = isSingle ? 0 : Number(matchThirdPrize);
     let finalSlots = Number(matchTotalSlots);
     if (matchCategory === 'lone-wolf') {
-      finalSlots = matchType === '2 vs 2' ? 4 : 2;
+      finalSlots = (matchType.includes('2') || matchType.toLowerCase().includes('duo')) ? 4 : 2;
     } else if (matchCategory === 'clash-squad' || matchCategory === 'cs-only-headshot') {
-      finalSlots = matchType === '1 vs 1' ? 2 : matchType === '2 vs 2' ? 4 : 8;
+      finalSlots = matchType === '1 vs 1' ? 2 : (matchType.includes('2') || matchType.includes('Duo')) ? 4 : 8;
+    } else if (matchType === 'Duo' && finalSlots > 24) {
+      finalSlots = 24;
     }
 
     addMatch({
@@ -462,9 +467,11 @@ export default function AdminMasterPage() {
     const finalThirdPrize = isSingle ? 0 : Number(matchThirdPrize);
     let finalSlots = Number(matchTotalSlots);
     if (matchCategory === 'lone-wolf') {
-      finalSlots = matchType === '2 vs 2' ? 4 : 2;
+      finalSlots = (matchType.includes('2') || matchType.toLowerCase().includes('duo')) ? 4 : 2;
     } else if (matchCategory === 'clash-squad' || matchCategory === 'cs-only-headshot') {
-      finalSlots = matchType === '1 vs 1' ? 2 : matchType === '2 vs 2' ? 4 : 8;
+      finalSlots = matchType === '1 vs 1' ? 2 : (matchType.includes('2') || matchType.includes('Duo')) ? 4 : 8;
+    } else if (matchType === 'Duo' && finalSlots > 24) {
+      finalSlots = 24;
     }
 
     const cat = categories[matchCategory];
@@ -932,6 +939,7 @@ export default function AdminMasterPage() {
                       <>
                         <option value="1 vs 1">1 vs 1 (Solo)</option>
                         <option value="2 vs 2">2 vs 2 (Duo)</option>
+                        <option value="Duo">Duo (2 vs 2)</option>
                       </>
                     ) : isMatchClashSquad ? (
                       <>
