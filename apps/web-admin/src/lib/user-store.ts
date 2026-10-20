@@ -208,7 +208,22 @@ export async function fetchUsersFromServer(): Promise<UserAccount[]> {
       // Merge with server users
       serverUsers.forEach((su) => {
         if (!su || !su.id) return;
-        const lu = mergedMap.get(su.id);
+        let targetKey = su.id;
+        let lu = mergedMap.get(su.id);
+        if (!lu) {
+          for (const [k, v] of mergedMap.entries()) {
+            if (
+              (v.phone && su.phone && v.phone.trim() === su.phone.trim()) ||
+              (v.username && su.username && v.username.toLowerCase() === su.username.toLowerCase()) ||
+              (v.email && su.email && v.email.toLowerCase() === su.email.toLowerCase())
+            ) {
+              lu = v;
+              targetKey = k;
+              break;
+            }
+          }
+        }
+
         if (!lu) {
           mergedMap.set(su.id, su);
         } else {
@@ -218,20 +233,17 @@ export async function fetchUsersFromServer(): Promise<UserAccount[]> {
           let effectiveTime: number;
 
           if (luTime > suTime) {
-            // Local balance was updated more recently (e.g. Admin credited money in 1ms)
             effectiveBalance = typeof lu.walletBalance === 'number' ? lu.walletBalance : Number(lu.walletBalance || 0);
             effectiveTime = luTime;
           } else if (suTime > luTime) {
-            // Server balance was updated more recently
             effectiveBalance = typeof su.walletBalance === 'number' ? su.walletBalance : Number(su.walletBalance || 0);
             effectiveTime = suTime;
           } else {
-            // Equal or fallback: take the highest balance to protect player's added funds
             effectiveBalance = Math.max(Number(lu.walletBalance || 0), Number(su.walletBalance || 0));
             effectiveTime = luTime || suTime || Date.now();
           }
 
-          mergedMap.set(su.id, {
+          mergedMap.set(targetKey, {
             ...lu,
             ...su,
             walletBalance: effectiveBalance,
@@ -244,11 +256,17 @@ export async function fetchUsersFromServer(): Promise<UserAccount[]> {
       try {
         localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(merged));
         
-        // Immediately sync currently logged-in user session with new balance
+        // Immediately sync currently logged-in user session with new balance across all identifiers
         const currentLoggedStr = localStorage.getItem('ff_user') || getCookieUser();
         if (currentLoggedStr) {
           const current = typeof currentLoggedStr === 'string' ? JSON.parse(currentLoggedStr) : currentLoggedStr;
-          const found = merged.find((u) => u.id === current.id || (u.phone && current.phone && u.phone === current.phone));
+          const found = merged.find(
+            (u) =>
+              u.id === current.id ||
+              (u.phone && current.phone && u.phone.trim() === current.phone.trim()) ||
+              (u.username && current.username && u.username.toLowerCase() === current.username.toLowerCase()) ||
+              (u.email && current.email && u.email.toLowerCase() === current.email.toLowerCase())
+          );
           if (found) {
             saveSession(found);
             window.dispatchEvent(new CustomEvent('ff_user_profile_updated', { detail: found }));
@@ -929,6 +947,15 @@ export async function registerUser(data: {
     avatar: DEFAULT_AVATARS[Math.floor(Math.random() * DEFAULT_AVATARS.length)],
     notes: 'Self-registered player via portal.',
   });
+
+  if (typeof window !== 'undefined') {
+    fetch('/api/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      keepalive: true,
+      body: JSON.stringify({ action: 'register', user: newUser }),
+    }).catch(() => {});
+  }
 
   if (typeof window !== 'undefined') {
     try {

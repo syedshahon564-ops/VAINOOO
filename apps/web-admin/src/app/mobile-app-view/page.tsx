@@ -3223,34 +3223,78 @@ export default function MobileAppViewPage(props: any) {
               {authMode === 'LOGIN' ? (
                 <>
                   <div>
-                    <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                      Username or Email
-                    </label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300">
+                        Username or Email
+                      </label>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const text = await readClipboardText();
+                          if (text) setAuthUsername(text.trim());
+                        }}
+                        className="text-[10px] text-amber-500 hover:text-amber-400 font-bold flex items-center gap-1 cursor-pointer"
+                        title="Paste from clipboard"
+                      >
+                        <Clipboard className="w-3 h-3" />
+                        <span>পেস্ট</span>
+                      </button>
+                    </div>
                     <div className="relative">
                       <User className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                       <input
                         type="text"
                         required
+                        autoComplete="username"
                         placeholder="Enter your username or email"
                         value={authUsername}
                         onChange={(e) => setAuthUsername(e.target.value)}
+                        onPaste={(e) => {
+                          const text = e.clipboardData?.getData('text');
+                          if (text) {
+                            e.preventDefault();
+                            setAuthUsername(text.trim());
+                          }
+                        }}
                         className="w-full pl-9 pr-3 py-2 rounded-xl bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-white/10 text-xs text-gray-900 dark:text-white focus:outline-none focus:border-red-500"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                      Password
-                    </label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300">
+                        Password
+                      </label>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const text = await readClipboardText();
+                          if (text) setAuthPassword(text.trim());
+                        }}
+                        className="text-[10px] text-amber-500 hover:text-amber-400 font-bold flex items-center gap-1 cursor-pointer"
+                        title="Paste password"
+                      >
+                        <Clipboard className="w-3 h-3" />
+                        <span>পেস্ট</span>
+                      </button>
+                    </div>
                     <div className="relative">
                       <Lock className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                       <input
                         type={showAuthPassword ? 'text' : 'password'}
                         required
+                        autoComplete="current-password"
                         placeholder="••••••••"
                         value={authPassword}
                         onChange={(e) => setAuthPassword(e.target.value)}
+                        onPaste={(e) => {
+                          const text = e.clipboardData?.getData('text');
+                          if (text) {
+                            e.preventDefault();
+                            setAuthPassword(text.trim());
+                          }
+                        }}
                         className="w-full pl-9 pr-9 py-2 rounded-xl bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-white/10 text-xs text-gray-900 dark:text-white focus:outline-none focus:border-red-500"
                       />
                       <button
@@ -3267,51 +3311,117 @@ export default function MobileAppViewPage(props: any) {
                 <>
                   {/* REGISTER FORM: 1. Username 2. Gmail ID 3. Password 4. Confirm Password */}
                   <div>
-                    <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                      1. Username
-                    </label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300">
+                        1. Username
+                      </label>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const text = await readClipboardText();
+                          if (text) setAuthUsername(text.trim());
+                        }}
+                        className="text-[10px] text-amber-500 hover:text-amber-400 font-bold flex items-center gap-1 cursor-pointer"
+                        title="Paste from clipboard"
+                      >
+                        <Clipboard className="w-3 h-3" />
+                        <span>পেস্ট</span>
+                      </button>
+                    </div>
                     <div className="relative">
                       <User className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                       <input
                         type="text"
                         required
+                        autoComplete="username"
                         placeholder="e.g. shadow_hunter"
                         value={authUsername}
                         onChange={(e) => setAuthUsername(e.target.value)}
+                        onPaste={(e) => {
+                          const text = e.clipboardData?.getData('text');
+                          if (text) {
+                            e.preventDefault();
+                            setAuthUsername(text.trim());
+                          }
+                        }}
                         className="w-full pl-9 pr-3 py-2 rounded-xl bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-white/10 text-xs text-gray-900 dark:text-white focus:outline-none focus:border-red-500"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                      2. Gmail ID (Email)
-                    </label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300">
+                        2. Gmail ID (Email)
+                      </label>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const text = await readClipboardText();
+                          if (text) setAuthEmail(text.trim());
+                        }}
+                        className="text-[10px] text-amber-500 hover:text-amber-400 font-bold flex items-center gap-1 cursor-pointer"
+                        title="Paste from clipboard"
+                      >
+                        <Clipboard className="w-3 h-3" />
+                        <span>পেস্ট</span>
+                      </button>
+                    </div>
                     <div className="relative">
                       <Mail className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                       <input
                         type="email"
                         required
+                        autoComplete="email"
                         placeholder="e.g. yourname@gmail.com"
                         value={authEmail}
                         onChange={(e) => setAuthEmail(e.target.value)}
+                        onPaste={(e) => {
+                          const text = e.clipboardData?.getData('text');
+                          if (text) {
+                            e.preventDefault();
+                            setAuthEmail(text.trim());
+                          }
+                        }}
                         className="w-full pl-9 pr-3 py-2 rounded-xl bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-white/10 text-xs text-gray-900 dark:text-white focus:outline-none focus:border-red-500"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                      3. Password
-                    </label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300">
+                        3. Password
+                      </label>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const text = await readClipboardText();
+                          if (text) setAuthPassword(text.trim());
+                        }}
+                        className="text-[10px] text-amber-500 hover:text-amber-400 font-bold flex items-center gap-1 cursor-pointer"
+                        title="Paste password"
+                      >
+                        <Clipboard className="w-3 h-3" />
+                        <span>পেস্ট</span>
+                      </button>
+                    </div>
                     <div className="relative">
                       <Lock className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                       <input
                         type={showAuthPassword ? 'text' : 'password'}
                         required
+                        autoComplete="new-password"
                         placeholder="At least 6 characters"
                         value={authPassword}
                         onChange={(e) => setAuthPassword(e.target.value)}
+                        onPaste={(e) => {
+                          const text = e.clipboardData?.getData('text');
+                          if (text) {
+                            e.preventDefault();
+                            setAuthPassword(text.trim());
+                          }
+                        }}
                         className="w-full pl-9 pr-9 py-2 rounded-xl bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-white/10 text-xs text-gray-900 dark:text-white focus:outline-none focus:border-red-500"
                       />
                       <button
@@ -3325,17 +3435,39 @@ export default function MobileAppViewPage(props: any) {
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                      4. Confirm Password
-                    </label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300">
+                        4. Confirm Password
+                      </label>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const text = await readClipboardText();
+                          if (text) setAuthConfirmPassword(text.trim());
+                        }}
+                        className="text-[10px] text-amber-500 hover:text-amber-400 font-bold flex items-center gap-1 cursor-pointer"
+                        title="Paste confirm password"
+                      >
+                        <Clipboard className="w-3 h-3" />
+                        <span>পেস্ট</span>
+                      </button>
+                    </div>
                     <div className="relative">
                       <Lock className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                       <input
                         type={showConfirmPassword ? 'text' : 'password'}
                         required
+                        autoComplete="new-password"
                         placeholder="Re-enter password"
                         value={authConfirmPassword}
                         onChange={(e) => setAuthConfirmPassword(e.target.value)}
+                        onPaste={(e) => {
+                          const text = e.clipboardData?.getData('text');
+                          if (text) {
+                            e.preventDefault();
+                            setAuthConfirmPassword(text.trim());
+                          }
+                        }}
                         className="w-full pl-9 pr-9 py-2 rounded-xl bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-white/10 text-xs text-gray-900 dark:text-white focus:outline-none focus:border-red-500"
                       />
                       <button

@@ -2,21 +2,21 @@ import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 
-function getUsersFilePath(): string {
-  const possiblePaths = [
-    path.join(process.cwd(), 'apps', 'web-admin', 'data', 'users-db.json'),
+function getCandidatePaths(): string[] {
+  const list = [
     path.join(process.cwd(), 'data', 'users-db.json'),
+    path.join(process.cwd(), 'apps', 'web-admin', 'data', 'users-db.json'),
     path.join('/tmp', 'users-db.json'),
   ];
+  return Array.from(new Set(list));
+}
 
-  for (const p of possiblePaths) {
-    if (fs.existsSync(p)) return p;
+function getUsersFilePath(): string {
+  for (const p of getCandidatePaths()) {
+    try {
+      if (fs.existsSync(p)) return p;
+    } catch {}
   }
-
-  if (process.env.VERCEL) {
-    return path.join('/tmp', 'users-db.json');
-  }
-
   return path.join(process.cwd(), 'data', 'users-db.json');
 }
 
@@ -35,51 +35,33 @@ export const revalidate = 0;
 let inMemoryUsersCache: any[] | null = null;
 
 function readUsersFromFile(): any[] {
-  if (inMemoryUsersCache) return inMemoryUsersCache;
+  const dataFile = getUsersFilePath();
   try {
-    const dataFile = getUsersFilePath();
     if (fs.existsSync(dataFile)) {
       const content = fs.readFileSync(dataFile, 'utf-8');
       const parsed = JSON.parse(content);
-      if (Array.isArray(parsed)) {
-        inMemoryUsersCache = parsed;
-        return parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        if (!inMemoryUsersCache || parsed.length >= inMemoryUsersCache.length) {
+          inMemoryUsersCache = parsed;
+        }
       }
     }
   } catch (err) {
     console.error('Failed reading users file:', err);
   }
-  return [];
+  return inMemoryUsersCache || [];
 }
 
 function writeUsersToFile(users: any[]): boolean {
   inMemoryUsersCache = users;
-  const possiblePaths = [
-    path.join(process.cwd(), 'apps', 'web-admin', 'data', 'users-db.json'),
-    path.join(process.cwd(), 'data', 'users-db.json'),
-    path.join('/tmp', 'users-db.json'),
-  ];
-
+  const payload = JSON.stringify(users, null, 2);
   let anyWritten = false;
-  // Write first candidate synchronously
-  if (possiblePaths.length > 0) {
+  for (const p of getCandidatePaths()) {
     try {
-      ensureDataFile(possiblePaths[0]);
-      fs.writeFileSync(possiblePaths[0], JSON.stringify(users, null, 2), 'utf-8');
+      ensureDataFile(p);
+      fs.writeFileSync(p, payload, 'utf-8');
       anyWritten = true;
     } catch (e) {}
-  }
-
-  // Write remaining asynchronously
-  if (possiblePaths.length > 1) {
-    Promise.resolve().then(() => {
-      for (let i = 1; i < possiblePaths.length; i++) {
-        try {
-          ensureDataFile(possiblePaths[i]);
-          fs.writeFileSync(possiblePaths[i], JSON.stringify(users, null, 2), 'utf-8');
-        } catch (err) {}
-      }
-    }).catch(() => {});
   }
   return anyWritten;
 }
@@ -110,21 +92,23 @@ export async function POST(req: Request) {
     // 1. Register Action
     if (body.action === 'register') {
       const newUser = body.user;
-      if (!newUser || !newUser.username || !newUser.password) {
-        return NextResponse.json({ ok: false, error: 'Username and password are required' }, { status: 400 });
+      if (!newUser || (!newUser.username && !newUser.phone) || !newUser.password) {
+        return NextResponse.json({ ok: false, error: 'Username/phone and password are required' }, { status: 400 });
       }
 
-      const cleanU = String(newUser.username).trim().toLowerCase();
+      const cleanU = String(newUser.username || '').trim().toLowerCase();
       const cleanMail = String(newUser.email || '').trim().toLowerCase();
+      const cleanPhone = String(newUser.phone || '').trim();
 
       const exists = currentUsers.some((u: any) => {
         const uName = String(u.username || u.ign || '').trim().toLowerCase();
         const uMail = String(u.email || '').trim().toLowerCase();
-        return uName === cleanU || (cleanMail && uMail === cleanMail);
+        const uPhone = String(u.phone || '').trim();
+        return (cleanU && uName === cleanU) || (cleanMail && uMail === cleanMail) || (cleanPhone && uPhone === cleanPhone);
       });
 
       if (exists) {
-        return NextResponse.json({ ok: false, error: 'Username or email already exists' }, { status: 400 });
+        return NextResponse.json({ ok: false, error: 'User already exists' }, { status: 400 });
       }
 
       currentUsers.unshift(newUser);
@@ -134,22 +118,51 @@ export async function POST(req: Request) {
 
     // 2. Direct Sync Action (bulk save from client or admin)
     if (body.action === 'sync' && Array.isArray(body.users)) {
-      // Merge users without duplicate IDs
-      const map = new Map<string, any>();
-      body.users.forEach((u: any) => {
-        if (u && u.id) map.set(u.id, u);
-      });
+      const mergedMap = new Map<string, any>();
       currentUsers.forEach((u: any) => {
-        if (u && u.id && !map.has(u.id)) map.set(u.id, u);
+        if (u && u.id) mergedMap.set(u.id, u);
       });
-      const merged = Array.from(map.values());
+
+      body.users.forEach((incoming: any) => {
+        if (!incoming || !incoming.id) return;
+        const existing = mergedMap.get(incoming.id);
+        if (!existing) {
+          mergedMap.set(incoming.id, incoming);
+        } else {
+          const inTime = incoming.updatedAt ? new Date(incoming.updatedAt).getTime() : 0;
+          const exTime = existing.updatedAt ? new Date(existing.updatedAt).getTime() : 0;
+          const effectiveBalance =
+            inTime >= exTime && incoming.walletBalance !== undefined
+              ? incoming.walletBalance
+              : existing.walletBalance !== undefined
+              ? existing.walletBalance
+              : incoming.walletBalance;
+
+          mergedMap.set(incoming.id, {
+            ...existing,
+            ...incoming,
+            walletBalance: effectiveBalance,
+            updatedAt: new Date(Math.max(inTime, exTime || Date.now())).toISOString(),
+          });
+        }
+      });
+
+      const merged = Array.from(mergedMap.values());
       writeUsersToFile(merged);
       return NextResponse.json({ ok: true, count: merged.length });
     }
 
-    // 3. Update Action (Upsert)
+    // 3. Update Action (Instant Balance or User Details Upsert)
     if (body.action === 'update' && body.userId && body.updates) {
-      const idx = currentUsers.findIndex((u: any) => u.id === body.userId);
+      const cleanTarget = String(body.userId).trim().toLowerCase();
+      const idx = currentUsers.findIndex(
+        (u: any) =>
+          String(u.id || '').trim().toLowerCase() === cleanTarget ||
+          String(u.phone || '').trim().toLowerCase() === cleanTarget ||
+          String(u.username || '').trim().toLowerCase() === cleanTarget ||
+          String(u.ign || '').trim().toLowerCase() === cleanTarget
+      );
+
       if (idx !== -1) {
         currentUsers[idx] = { ...currentUsers[idx], ...body.updates };
         writeUsersToFile(currentUsers);
@@ -166,7 +179,12 @@ export async function POST(req: Request) {
     if (body.action === 'purge_non_owners' || body.action === 'reset_players') {
       const ownersOnly = currentUsers.filter((u: any) => u.role === 'ADMIN' || String(u.id).startsWith('u-owner'));
       writeUsersToFile(ownersOnly);
-      return NextResponse.json({ ok: true, message: 'All player accounts deleted, only owner IDs preserved.', count: ownersOnly.length, users: ownersOnly });
+      return NextResponse.json({
+        ok: true,
+        message: 'All player accounts deleted, only owner IDs preserved.',
+        count: ownersOnly.length,
+        users: ownersOnly,
+      });
     }
 
     return NextResponse.json({ ok: false, error: 'Invalid action' }, { status: 400 });

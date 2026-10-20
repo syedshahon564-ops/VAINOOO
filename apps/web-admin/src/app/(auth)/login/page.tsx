@@ -1,9 +1,8 @@
-'use client';
-
 import React, { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Trophy, Phone, Lock, User, Mail, Check, AlertCircle, Shield, Eye, EyeOff } from 'lucide-react';
+import { Trophy, Phone, Lock, User, Mail, Check, AlertCircle, Shield, Eye, EyeOff, Clipboard } from 'lucide-react';
 import { loginUser, registerUser } from '@/lib/user-store';
+import { readClipboardText } from '@/lib/clipboard';
 
 function AuthContent() {
   const router = useRouter();
@@ -20,14 +19,6 @@ function AuthContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-
-  // Quick fill demo credentials
-  const fillDemo = (demoIdentifier: string, demoPass: string) => {
-    setMode('LOGIN');
-    setUsername(demoIdentifier);
-    setPassword(demoPass);
-    setError(null);
-  };
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -98,42 +89,43 @@ function AuthContent() {
           throw new Error(localRes.error || 'Login failed. Please verify your credentials.');
         }
 
-        setSuccess(`Login successful! Welcome, ${localRes.user?.username || localRes.user?.ign}!`);
+        const redirect = searchParams.get('redirect') || '/';
+        setSuccess('Login successful! Redirecting...');
         setTimeout(() => {
-          if (localRes.user?.role === 'ADMIN' || localRes.user?.role === 'SUPERVISOR') {
+          if (localRes.user?.role === 'ADMIN' && redirect === '/') {
             router.push('/admin');
           } else {
-            router.push('/');
+            router.push(redirect);
           }
         }, 800);
       }
     } catch (err: any) {
-      setError(err.message || 'Authentication failed. Please verify your credentials.');
+      setError(err.message || 'Operation failed');
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="max-w-md mx-auto px-4 py-12">
-      <div className="rounded-3xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#12121a] p-8 sm:p-10 shadow-2xl space-y-6">
-        {/* Header */}
+    <div className="min-h-screen bg-gray-50 dark:bg-[#07070a] flex items-center justify-center p-4">
+      <div className="w-full max-w-md bg-white dark:bg-[#12121a] rounded-3xl p-6 sm:p-8 border border-gray-200 dark:border-white/10 shadow-2xl space-y-6">
+        {/* Brand Header */}
         <div className="text-center space-y-2">
-          <div className="w-14 h-14 rounded-2xl bg-red-600 mx-auto flex items-center justify-center shadow-lg shadow-red-600/30 text-white">
+          <div className="w-14 h-14 rounded-2xl bg-red-600/10 border border-red-600/20 text-red-600 flex items-center justify-center mx-auto shadow-lg shadow-red-600/10">
             <Trophy className="w-7 h-7" />
           </div>
-          <h2 className="text-2xl font-black text-gray-900 dark:text-white">
-            {mode === 'LOGIN' ? 'Account Login' : 'Create Account'}
-          </h2>
+          <h1 className="text-xl font-black text-gray-900 dark:text-white">
+            {mode === 'LOGIN' ? 'Welcome Back!' : 'Create Esports Account'}
+          </h1>
           <p className="text-xs text-gray-500 dark:text-gray-400">
             {mode === 'LOGIN'
-              ? 'Enter your username or email and password to enter'
-              : 'Register your account with username and email'}
+              ? 'Log in to join Free Fire tournaments & claim prizes'
+              : 'Register in seconds and start competing live'}
           </p>
         </div>
 
-        {/* Mode Switcher */}
-        <div className="grid grid-cols-2 p-1.5 rounded-2xl bg-gray-100 dark:bg-black/40 border border-gray-200 dark:border-white/5">
+        {/* Tab Switcher */}
+        <div className="grid grid-cols-2 p-1 rounded-2xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/5">
           <button
             type="button"
             onClick={() => {
@@ -182,17 +174,39 @@ function AuthContent() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-              {mode === 'LOGIN' ? 'Username or Email' : '1. Username'}
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-xs font-bold text-gray-700 dark:text-gray-300">
+                {mode === 'LOGIN' ? 'Username or Email' : '1. Username'}
+              </label>
+              <button
+                type="button"
+                onClick={async () => {
+                  const text = await readClipboardText();
+                  if (text) setUsername(text.trim());
+                }}
+                className="text-[10px] text-amber-500 hover:text-amber-400 font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                title="Paste from clipboard"
+              >
+                <Clipboard className="w-3 h-3" />
+                <span>পেস্ট</span>
+              </button>
+            </div>
             <div className="relative">
               <User className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 required
+                autoComplete="username"
                 placeholder={mode === 'LOGIN' ? 'Enter username or email' : 'e.g. shadow_hunter'}
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
+                onPaste={(e) => {
+                  const pasted = e.clipboardData?.getData('text');
+                  if (pasted) {
+                    e.preventDefault();
+                    setUsername(pasted.trim());
+                  }
+                }}
                 className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white text-xs font-bold focus:border-red-500 focus:outline-none"
               />
             </div>
@@ -200,17 +214,39 @@ function AuthContent() {
 
           {mode === 'REGISTER' && (
             <div>
-              <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                2. Gmail ID (Email)
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs font-bold text-gray-700 dark:text-gray-300">
+                  2. Gmail ID (Email)
+                </label>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const text = await readClipboardText();
+                    if (text) setEmail(text.trim());
+                  }}
+                  className="text-[10px] text-amber-500 hover:text-amber-400 font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                  title="Paste from clipboard"
+                >
+                  <Clipboard className="w-3 h-3" />
+                  <span>পেস্ট</span>
+                </button>
+              </div>
               <div className="relative">
                 <Mail className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
                   type="email"
                   required
+                  autoComplete="email"
                   placeholder="e.g. yourname@gmail.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  onPaste={(e) => {
+                    const pasted = e.clipboardData?.getData('text');
+                    if (pasted) {
+                      e.preventDefault();
+                      setEmail(pasted.trim());
+                    }
+                  }}
                   className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white text-xs focus:border-red-500 focus:outline-none"
                 />
               </div>
@@ -218,17 +254,39 @@ function AuthContent() {
           )}
 
           <div>
-            <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-              {mode === 'REGISTER' ? '3. Password' : 'Password'}
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-xs font-bold text-gray-700 dark:text-gray-300">
+                {mode === 'REGISTER' ? '3. Password' : 'Password'}
+              </label>
+              <button
+                type="button"
+                onClick={async () => {
+                  const text = await readClipboardText();
+                  if (text) setPassword(text.trim());
+                }}
+                className="text-[10px] text-amber-500 hover:text-amber-400 font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                title="Paste password"
+              >
+                <Clipboard className="w-3 h-3" />
+                <span>পেস্ট</span>
+              </button>
+            </div>
             <div className="relative">
               <Lock className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type={showPassword ? 'text' : 'password'}
                 required
+                autoComplete={mode === 'LOGIN' ? 'current-password' : 'new-password'}
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                onPaste={(e) => {
+                  const pasted = e.clipboardData?.getData('text');
+                  if (pasted) {
+                    e.preventDefault();
+                    setPassword(pasted.trim());
+                  }
+                }}
                 className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white text-xs focus:border-red-500 focus:outline-none"
               />
               <button
@@ -244,17 +302,39 @@ function AuthContent() {
 
           {mode === 'REGISTER' && (
             <div>
-              <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                4. Confirm Password
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs font-bold text-gray-700 dark:text-gray-300">
+                  4. Confirm Password
+                </label>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const text = await readClipboardText();
+                    if (text) setConfirmPassword(text.trim());
+                  }}
+                  className="text-[10px] text-amber-500 hover:text-amber-400 font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                  title="Paste confirm password"
+                >
+                  <Clipboard className="w-3 h-3" />
+                  <span>পেস্ট</span>
+                </button>
+              </div>
               <div className="relative">
                 <Lock className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
                   type={showConfirmPassword ? 'text' : 'password'}
                   required
+                  autoComplete="new-password"
                   placeholder="Re-enter password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
+                  onPaste={(e) => {
+                    const pasted = e.clipboardData?.getData('text');
+                    if (pasted) {
+                      e.preventDefault();
+                      setConfirmPassword(pasted.trim());
+                    }
+                  }}
                   className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white text-xs focus:border-red-500 focus:outline-none"
                 />
                 <button
@@ -288,66 +368,6 @@ function AuthContent() {
               : 'Create Account'}
           </button>
         </form>
-
-        {/* 1-Click Quick Demo & Owner Credentials */}
-        <div className="pt-4 border-t border-gray-200 dark:border-white/10 space-y-3">
-          <div>
-            <span className="text-[10px] uppercase font-black text-amber-500 block tracking-wider text-center mb-1.5 flex items-center justify-center gap-1">
-              <Shield className="w-3 h-3 text-amber-500" /> Official Owner / Admin Accounts (1-Click Login)
-            </span>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
-              {[
-                { label: 'ওনার ১', phone: '01700000001', pass: 'admin@owner1', ign: 'OWNER_BOSS_1' },
-                { label: 'ওনার ২', phone: '01700000002', pass: 'admin@owner2', ign: 'OWNER_BOSS_2' },
-                { label: 'ওনার ৩', phone: '01700000003', pass: 'admin@owner3', ign: 'OWNER_BOSS_3' },
-                { label: 'ওনার ৪', phone: '01700000004', pass: 'admin@owner4', ign: 'OWNER_BOSS_4' },
-                { label: 'ওনার ৫', phone: '01700000005', pass: 'admin@owner5', ign: 'OWNER_BOSS_5' },
-                { label: 'মাস্টার অ্যাডমিন', phone: '01700000000', pass: 'admin123', ign: 'ADMIN_MASTER' },
-              ].map((adm) => (
-                <button
-                  key={adm.phone}
-                  type="button"
-                  onClick={() => fillDemo(adm.phone, adm.pass)}
-                  className="p-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 text-left transition-all group"
-                >
-                  <div className="text-[10px] font-black text-amber-600 dark:text-amber-400 group-hover:underline">
-                    {adm.label}
-                  </div>
-                  <div className="text-[9px] text-gray-400 font-mono">{adm.phone}</div>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <span className="text-[10px] uppercase font-black text-gray-400 block tracking-wider text-center mb-1.5">
-              🎮 প্লেয়ার অ্যাকাউন্ট ডেমো
-            </span>
-            <div className="grid grid-cols-2 gap-1.5">
-              <button
-                type="button"
-                onClick={() => fillDemo('01712345678', 'striker@2026')}
-                className="p-1.5 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 hover:border-red-500 text-left transition-all"
-              >
-                <div className="text-[10px] font-black text-gray-900 dark:text-white">
-                  BDX_STRIKER
-                </div>
-                <div className="text-[9px] text-emerald-500 font-bold">ব্যালেন্স: ৳1450.00</div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => fillDemo('01899887766', 'tanvir#ff99')}
-                className="p-1.5 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 hover:border-red-500 text-left transition-all"
-              >
-                <div className="text-[10px] font-black text-gray-900 dark:text-white">
-                  TANVIR_FF
-                </div>
-                <div className="text-[9px] text-emerald-500 font-bold">ব্যালেন্স: ৳820.00</div>
-              </button>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );
