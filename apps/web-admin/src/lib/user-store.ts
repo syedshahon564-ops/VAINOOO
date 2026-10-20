@@ -137,10 +137,51 @@ export const INITIAL_USERS: UserAccount[] = [
 
 export const INITIAL_TRANSACTIONS: BalanceTransaction[] = [];
 
-// Helper to notify other components/tabs
+// 1ms Real-Time Sync Bus across tabs, iframes & windows
+let userSyncChannel: BroadcastChannel | null = null;
+if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+  try {
+    userSyncChannel = new BroadcastChannel('ff_users_sync_bus');
+    userSyncChannel.onmessage = (event) => {
+      if (event?.data?.type === 'USERS_UPDATED' && Array.isArray(event.data.users)) {
+        try {
+          localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(event.data.users));
+        } catch (e) {}
+        const currentLoggedStr = localStorage.getItem('ff_user') || getCookieUser();
+        if (currentLoggedStr) {
+          const current = typeof currentLoggedStr === 'string' ? JSON.parse(currentLoggedStr) : currentLoggedStr;
+          const found = event.data.users.find(
+            (u: any) => u && (u.id === current.id || (u.phone && current.phone && u.phone === current.phone))
+          );
+          if (found) {
+            saveSession(found);
+            window.dispatchEvent(new CustomEvent('ff_user_profile_updated', { detail: found }));
+          }
+        }
+        window.dispatchEvent(new CustomEvent('ff_users_updated', { detail: event.data.users }));
+      } else if (event?.data?.type === 'USER_PROFILE_UPDATED' && event.data.user) {
+        const u = event.data.user;
+        const currentLoggedStr = localStorage.getItem('ff_user') || getCookieUser();
+        if (currentLoggedStr) {
+          const current = typeof currentLoggedStr === 'string' ? JSON.parse(currentLoggedStr) : currentLoggedStr;
+          if (u.id === current.id || (u.phone && current.phone && u.phone === current.phone)) {
+            saveSession(u);
+            window.dispatchEvent(new CustomEvent('ff_user_profile_updated', { detail: u }));
+          }
+        }
+        window.dispatchEvent(new CustomEvent('ff_users_updated', { detail: getUsers() }));
+      }
+    };
+  } catch (e) {}
+}
+
+// Helper to notify other components/tabs in 1ms
 function notifyUsersChange(users: UserAccount[]) {
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('ff_users_updated', { detail: users }));
+    try {
+      userSyncChannel?.postMessage({ type: 'USERS_UPDATED', users });
+    } catch (e) {}
   }
 }
 
@@ -173,9 +214,22 @@ export async function fetchUsersFromServer(): Promise<UserAccount[]> {
         } else {
           const luTime = lu.updatedAt ? new Date(lu.updatedAt).getTime() : 0;
           const suTime = su.updatedAt ? new Date(su.updatedAt).getTime() : 0;
-          // Priority to server's walletBalance whenever admin credits balance
-          const effectiveBalance = su.walletBalance !== undefined && su.walletBalance !== null ? su.walletBalance : lu.walletBalance;
-          const effectiveTime = Math.max(luTime, suTime);
+          let effectiveBalance: number;
+          let effectiveTime: number;
+
+          if (luTime > suTime) {
+            // Local balance was updated more recently (e.g. Admin credited money in 1ms)
+            effectiveBalance = typeof lu.walletBalance === 'number' ? lu.walletBalance : Number(lu.walletBalance || 0);
+            effectiveTime = luTime;
+          } else if (suTime > luTime) {
+            // Server balance was updated more recently
+            effectiveBalance = typeof su.walletBalance === 'number' ? su.walletBalance : Number(su.walletBalance || 0);
+            effectiveTime = suTime;
+          } else {
+            // Equal or fallback: take the highest balance to protect player's added funds
+            effectiveBalance = Math.max(Number(lu.walletBalance || 0), Number(su.walletBalance || 0));
+            effectiveTime = luTime || suTime || Date.now();
+          }
 
           mergedMap.set(su.id, {
             ...lu,
@@ -236,11 +290,15 @@ export function initUserSync() {
   } catch (e) {}
 
   fetchUsersFromServer();
-  setInterval(fetchUsersFromServer, 3000);
+  // 1-second rapid server sync for immediate cross-device balance & user updates
+  setInterval(fetchUsersFromServer, 1000);
 
   window.addEventListener('focus', () => {
     fetchUsersFromServer();
   });
+  window.addEventListener('touchstart', () => {
+    fetchUsersFromServer();
+  }, { passive: true });
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
       fetchUsersFromServer();
@@ -456,9 +514,15 @@ export function addBalance(
   saveUsers(users);
 
   if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('ff_user_profile_updated', { detail: user }));
+    try {
+      userSyncChannel?.postMessage({ type: 'USER_PROFILE_UPDATED', user });
+    } catch (e) {}
+
     fetch('/api/users', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      keepalive: true,
       body: JSON.stringify({
         action: 'update',
         userId: user.id,
@@ -604,9 +668,15 @@ export function deductBalance(
   saveUsers(users);
 
   if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('ff_user_profile_updated', { detail: user }));
+    try {
+      userSyncChannel?.postMessage({ type: 'USER_PROFILE_UPDATED', user });
+    } catch (e) {}
+
     fetch('/api/users', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      keepalive: true,
       body: JSON.stringify({
         action: 'update',
         userId: user.id,

@@ -821,18 +821,26 @@ export default function MobileAppViewPage(props: any) {
       setBookedMatchesList(getUserBookedMatches());
     };
 
+    const onBotCmsTrigger = () => {
+      runBotRoomManagerCycle();
+    };
+
     window.addEventListener('ff_user_bookings_updated', handleBookingsUpdated);
     window.addEventListener('ff_room_credentials_delivered', handleCredentialsDelivered);
+    window.addEventListener('ff_cms_updated', onBotCmsTrigger);
+    window.addEventListener('ff_match_added', onBotCmsTrigger);
 
     // Initial check & interval runner for Bot Room Credentials Manager
     runBotRoomManagerCycle();
     const botInterval = setInterval(() => {
       runBotRoomManagerCycle();
-    }, 20000);
+    }, 5000);
 
     return () => {
       window.removeEventListener('ff_user_bookings_updated', handleBookingsUpdated);
       window.removeEventListener('ff_room_credentials_delivered', handleCredentialsDelivered);
+      window.removeEventListener('ff_cms_updated', onBotCmsTrigger);
+      window.removeEventListener('ff_match_added', onBotCmsTrigger);
       clearInterval(botInterval);
     };
   }, []);
@@ -2315,7 +2323,7 @@ export default function MobileAppViewPage(props: any) {
                                 )}
 
                                 <div className="flex justify-between items-center text-[10px] text-gray-500 pt-1 font-semibold">
-                                  <span>UID: {bm.uid}</span>
+                                  <span>{bm.ign ? `Player: ${bm.ign}` : 'Registered Player'}</span>
                                   <span className="text-amber-600 font-bold">{bm.time}</span>
                                 </div>
 
@@ -2376,7 +2384,6 @@ export default function MobileAppViewPage(props: any) {
                             <span className="text-[10px] font-black uppercase tracking-wider bg-black/40 px-2 py-0.5 rounded text-amber-300">
                               👑 #1 Champion
                             </span>
-                            <span className="text-xs font-mono font-bold">UID: {topPlayers[0].uid}</span>
                           </div>
 
                           <div className="flex items-center gap-3">
@@ -2450,11 +2457,8 @@ export default function MobileAppViewPage(props: any) {
                               </div>
 
                               <div>
-                                <span className="text-xs font-black text-gray-900 dark:text-white block truncate max-w-[95px]">
+                                <span className="text-xs font-black text-gray-900 dark:text-white block truncate max-w-[120px]">
                                   {p.ign}
-                                </span>
-                                <span className="text-[9px] text-gray-400 font-mono">
-                                  UID: {p.uid}
                                 </span>
                               </div>
                             </div>
@@ -2706,7 +2710,7 @@ export default function MobileAppViewPage(props: any) {
                                     {currentUser?.username || currentUser?.ign || 'Abu Numan'}
                                   </h3>
                                   <p className="text-[11px] text-slate-400 font-mono">
-                                    @{currentUser?.username ? currentUser.username : (currentUser?.uid ? `g_${currentUser.uid}` : 'g_aiohdiuabf')}
+                                    @{currentUser?.username || currentUser?.ign || 'player'}
                                   </p>
                                   <p className="text-[11px] text-slate-400 flex items-center gap-1 truncate">
                                     <Mail className="w-3 h-3 text-slate-400 flex-shrink-0" />

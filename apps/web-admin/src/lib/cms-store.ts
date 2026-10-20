@@ -122,7 +122,7 @@ export const INITIAL_TOP_PLAYERS: TopPlayerItem[] = [
     id: 'tp-1',
     rank: 1,
     ign: 'OP_NINJA_99',
-    uid: '748291034',
+    uid: '',
     avatar: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=120',
     kills: 184,
     earnings: 14500,
@@ -134,7 +134,7 @@ export const INITIAL_TOP_PLAYERS: TopPlayerItem[] = [
     id: 'tp-2',
     rank: 2,
     ign: 'VAMPIRE_FF',
-    uid: '839201948',
+    uid: '',
     avatar: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=120',
     kills: 156,
     earnings: 11200,
@@ -146,7 +146,7 @@ export const INITIAL_TOP_PLAYERS: TopPlayerItem[] = [
     id: 'tp-3',
     rank: 3,
     ign: 'BDX_STRIKER',
-    uid: '192837465',
+    uid: '',
     avatar: 'https://images.unsplash.com/photo-1563089145-599997674d42?q=80&w=120',
     kills: 142,
     earnings: 8600,
@@ -158,7 +158,7 @@ export const INITIAL_TOP_PLAYERS: TopPlayerItem[] = [
     id: 'tp-4',
     rank: 4,
     ign: 'KING_HEADSHOT',
-    uid: '610293847',
+    uid: '',
     avatar: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=120',
     kills: 118,
     earnings: 6400,
@@ -170,7 +170,7 @@ export const INITIAL_TOP_PLAYERS: TopPlayerItem[] = [
     id: 'tp-5',
     rank: 5,
     ign: 'RIVAL_BOSS_BD',
-    uid: '920182746',
+    uid: '',
     avatar: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?q=80&w=120',
     kills: 97,
     earnings: 4800,
@@ -182,7 +182,7 @@ export const INITIAL_TOP_PLAYERS: TopPlayerItem[] = [
     id: 'tp-6',
     rank: 6,
     ign: 'CYBER_SNIPER',
-    uid: '501928374',
+    uid: '',
     avatar: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=120',
     kills: 85,
     earnings: 3900,
@@ -507,6 +507,24 @@ export function normalizeCMSData(input: Partial<CMSData> | null | undefined): CM
   };
 }
 
+// 1ms Real-Time CMS Sync Bus for Owner Actions & Autonomous Bots
+let cmsSyncChannel: BroadcastChannel | null = null;
+if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+  try {
+    cmsSyncChannel = new BroadcastChannel('ff_cms_sync_channel');
+    cmsSyncChannel.onmessage = (event) => {
+      if (event?.data?.type === 'CMS_UPDATED' && event.data.data) {
+        const next = normalizeCMSData(event.data.data);
+        memoryCMSCache = next;
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+        } catch (e) {}
+        window.dispatchEvent(new CustomEvent('ff_cms_updated', { detail: next }));
+      }
+    };
+  } catch (e) {}
+}
+
 export function saveCMSData(input: CMSData): void {
   if (typeof window === 'undefined') return;
   const data = normalizeCMSData(input);
@@ -518,6 +536,7 @@ export function saveCMSData(input: CMSData): void {
   }
   try {
     window.dispatchEvent(new CustomEvent('ff_cms_updated', { detail: data }));
+    cmsSyncChannel?.postMessage({ type: 'CMS_UPDATED', data });
   } catch (e) {}
 
   // Server sync so all phones, emulators and browsers stay updated
@@ -525,6 +544,7 @@ export function saveCMSData(input: CMSData): void {
     fetch('/api/cms', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      keepalive: true,
       body: JSON.stringify(data),
     }).catch(() => {});
   } catch (e) {}
@@ -917,12 +937,76 @@ export function syncCMSWithServer(): void {
     });
 }
 
+const DEFAULT_PLAYER_AVATAR = 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=120';
+
+export function getLiveTopPlayers(cmsData?: CMSData): TopPlayerItem[] {
+  const currentCMS = cmsData || getCMSData();
+  const rawList: TopPlayerItem[] = Array.isArray(currentCMS?.topPlayers) && currentCMS.topPlayers.length > 0
+    ? currentCMS.topPlayers.map((p) => ({ ...p, uid: '' }))
+    : INITIAL_TOP_PLAYERS.map((p) => ({ ...p, uid: '' }));
+
+  if (typeof window !== 'undefined') {
+    try {
+      const storedUsers = localStorage.getItem('ff_esports_users_db_v1');
+      if (storedUsers) {
+        const users = JSON.parse(storedUsers);
+        if (Array.isArray(users)) {
+          users.forEach((u: any) => {
+            if (!u || u.role === 'ADMIN') return;
+            const ign = String(u.ign || u.username || '').trim();
+            if (!ign) return;
+            const kills = Number(u.totalKills || 0);
+            const earnings = Number(u.totalEarnings || 0);
+            const matches = Number(u.matchesPlayed || 0);
+            const booyahs = Number(u.totalWins || 0);
+
+            if (kills > 0 || earnings > 0 || matches > 0 || booyahs > 0) {
+              const existingIdx = rawList.findIndex((p) => p.ign.toLowerCase() === ign.toLowerCase());
+              const entry: TopPlayerItem = {
+                id: u.id || `live-${Date.now()}`,
+                rank: 0,
+                ign: ign.toUpperCase(),
+                uid: '', // Strict constraint: never expose UID
+                avatar: u.avatar || DEFAULT_PLAYER_AVATAR,
+                kills,
+                earnings,
+                matchesPlayed: matches,
+                booyahs,
+                winRate: matches > 0 ? `${Math.round((booyahs / matches) * 100)}%` : '0%',
+              };
+              if (existingIdx !== -1) {
+                rawList[existingIdx] = { ...rawList[existingIdx], ...entry };
+              } else {
+                rawList.push(entry);
+              }
+            }
+          });
+        }
+      }
+    } catch (e) {}
+  }
+
+  // Filter out any entries without an IGN
+  const validPlayers = rawList.filter((p) => p && p.ign && p.ign.trim().length > 0);
+
+  // Sort by earnings descending, then kills descending
+  validPlayers.sort((a, b) => (Number(b.earnings) || 0) - (Number(a.earnings) || 0) || (Number(b.kills) || 0) - (Number(a.kills) || 0));
+
+  // Re-assign 1-based ranks and clear any UID
+  return validPlayers.map((p, idx) => ({
+    ...p,
+    rank: idx + 1,
+    uid: '',
+  }));
+}
+
 function initGlobalCmsSync(): void {
   if (typeof window === 'undefined' || globalSyncInitialized) return;
   globalSyncInitialized = true;
 
   syncCMSWithServer();
-  setInterval(syncCMSWithServer, 10000);
+  // 1.5-second rapid sync so Owner panel changes go live immediately to all devices
+  setInterval(syncCMSWithServer, 1500);
 
   const onVisibilityChange = () => {
     if (document.visibilityState === 'visible') {
@@ -932,6 +1016,7 @@ function initGlobalCmsSync(): void {
   window.addEventListener('visibilitychange', onVisibilityChange);
   window.addEventListener('focus', syncCMSWithServer);
   window.addEventListener('online', syncCMSWithServer);
+  window.addEventListener('touchstart', () => { syncCMSWithServer(); }, { passive: true });
 }
 
 // React Hook for Reactive CMS Sync across pages
@@ -957,6 +1042,9 @@ export function useCMS() {
     };
 
     window.addEventListener('ff_cms_updated', handleUpdate);
+    window.addEventListener('ff_users_updated', () => {
+      setData(getCMSData());
+    });
     window.addEventListener('storage', handleUpdate);
     window.addEventListener('ff_matches_cleared', () => {
       memoryCMSCache = null;
@@ -977,7 +1065,7 @@ export function useCMS() {
     categories: safe.categories,
     matches: safe.matches,
     settings: safe.settings,
-    topPlayers: safe.topPlayers,
+    topPlayers: getLiveTopPlayers(safe),
     addMatch,
     updateMatch,
     deleteMatch,

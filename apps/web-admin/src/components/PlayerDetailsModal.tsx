@@ -23,7 +23,7 @@ export interface PlayerDetailsData {
   id?: string;
   rank?: number;
   ign: string;
-  uid: string;
+  uid?: string;
   avatar?: string;
   kills?: number;
   earnings?: number;
@@ -50,21 +50,13 @@ export default function PlayerDetailsModal({
   language = 'bn',
   onClose,
 }: PlayerDetailsModalProps) {
-  const [copiedUID, setCopiedUID] = useState(false);
-
   const t = (bn: string, en: string) => (language === 'en' ? en : bn);
 
-  const handleCopyUID = () => {
-    navigator.clipboard?.writeText(player.uid);
-    setCopiedUID(true);
-    setTimeout(() => setCopiedUID(false), 2000);
-  };
-
   // Enriched defaults for stats
-  const level = player.level || (70 + (parseInt(player.uid.slice(-1) || '4', 10) % 15));
+  const level = player.level || 75;
   const guild = player.guild || 'BD_RIVALS_ELITE';
   const kd = player.kdRatio || (3.8 + (player.kills ? (player.kills % 30) / 10 : 0.8)).toFixed(2);
-  const hsRate = player.headshotRate || `${55 + (parseInt(player.uid.slice(-2) || '12', 10) % 25)}%`;
+  const hsRate = player.headshotRate || '68%';
   const likes = player.likes || 12840 + (player.kills || 50) * 12;
   const badge = player.badge || (player.rank === 1 ? 'GRANDMASTER' : player.rank && player.rank <= 3 ? 'HEROIC' : 'MASTER');
 
@@ -148,7 +140,7 @@ export default function PlayerDetailsModal({
               </span>
             </div>
 
-            {/* Name, UID & Badges */}
+            {/* Name & Badges */}
             <div className="flex-1 min-w-0 space-y-1">
               <div className="flex items-center gap-2">
                 <h4 className="text-base font-black truncate">{player.ign}</h4>
@@ -157,28 +149,12 @@ export default function PlayerDetailsModal({
                 </span>
               </div>
 
-              {/* UID with copy button */}
+              {/* Verified Player Status (No UID) */}
               <div className="flex items-center gap-2 text-xs text-gray-300">
-                <span className="font-mono bg-black/40 px-2 py-0.5 rounded border border-white/10 text-[11px]">
-                  UID: {player.uid}
+                <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-0.5 rounded-full text-[10px] font-black flex items-center gap-1">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>{t('ভেরিফায়েড অফিসিয়াল প্লেয়ার', 'Verified Esports Player')}</span>
                 </span>
-                <button
-                  onClick={handleCopyUID}
-                  className="text-amber-400 hover:text-amber-300 transition-colors flex items-center gap-1 text-[10px] font-bold"
-                  title="Copy UID"
-                >
-                  {copiedUID ? (
-                    <>
-                      <Check className="w-3.5 h-3.5 text-emerald-400" />
-                      <span className="text-emerald-400">{t('কপি হয়েছে', 'Copied')}</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="w-3.5 h-3.5" />
-                      <span>{t('কপি', 'Copy')}</span>
-                    </>
-                  )}
-                </button>
               </div>
 
               {/* Guild and Server */}

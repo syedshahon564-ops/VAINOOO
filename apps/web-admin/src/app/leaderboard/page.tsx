@@ -28,8 +28,7 @@ export default function LeaderboardPage() {
 
   const filteredPlayers = topPlayers.filter(
     (p) =>
-      p.ign.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.uid.includes(searchQuery)
+      p.ign.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -74,7 +73,6 @@ export default function LeaderboardPage() {
             </div>
             <div>
               <h3 className="text-lg font-black text-gray-900 dark:text-white">{topPlayers[1].ign}</h3>
-              <span className="text-xs text-gray-500 font-mono">UID: {topPlayers[1].uid}</span>
             </div>
             <div className="grid grid-cols-3 gap-1 py-2 rounded-xl bg-gray-50 dark:bg-white/5 text-[11px]">
               <div>
@@ -107,7 +105,6 @@ export default function LeaderboardPage() {
                 {topPlayers[0].ign}
                 <ShieldCheck className="w-5 h-5 text-emerald-500" />
               </h3>
-              <span className="text-xs text-gray-500 font-mono">UID: {topPlayers[0].uid}</span>
             </div>
             <div className="grid grid-cols-3 gap-2 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs">
               <div>
@@ -137,7 +134,6 @@ export default function LeaderboardPage() {
             </div>
             <div>
               <h3 className="text-lg font-black text-gray-900 dark:text-white">{topPlayers[2].ign}</h3>
-              <span className="text-xs text-gray-500 font-mono">UID: {topPlayers[2].uid}</span>
             </div>
             <div className="grid grid-cols-3 gap-1 py-2 rounded-xl bg-gray-50 dark:bg-white/5 text-[11px]">
               <div>
@@ -163,7 +159,7 @@ export default function LeaderboardPage() {
           <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="প্লেয়ারের নাম বা UID খুঁজুন..."
+            placeholder="প্লেয়ারের নাম খুঁজুন..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/30 text-xs font-bold focus:outline-none focus:border-red-500"
@@ -193,7 +189,7 @@ export default function LeaderboardPage() {
           <thead className="bg-gray-50 dark:bg-black/40 border-b border-gray-200 dark:border-white/10 text-gray-500 font-bold uppercase tracking-wider">
             <tr>
               <th className="p-4 text-center">র‍্যাংক</th>
-              <th className="p-4">প্লেয়ারের নাম ও UID</th>
+              <th className="p-4">প্লেয়ারের নাম</th>
               <th className="p-4 text-center">মোট কিল (Kills)</th>
               <th className="p-4 text-center">মোট আয় (Earnings)</th>
               <th className="p-4 text-center">ম্যাচ খেলেছে</th>
@@ -234,7 +230,6 @@ export default function LeaderboardPage() {
                         {p.ign}
                         <Eye className="w-3 h-3 text-amber-500 opacity-0 group-hover:opacity-100 transition-opacity" />
                       </span>
-                      <span className="text-[10px] text-gray-500 font-mono">UID: {p.uid}</span>
                     </div>
                   </div>
                 </td>
