@@ -25,7 +25,10 @@ export async function GET() {
   }
 
   if (!apkBuffer) {
-    return NextResponse.json({ error: 'APK file not found' }, { status: 404 });
+    return NextResponse.redirect(
+      'https://raw.githubusercontent.com/syedshahon564-ops/VAINOOO/main/public/downloads/ffrivals.apk',
+      302
+    );
   }
 
   return new NextResponse(new Uint8Array(apkBuffer), {

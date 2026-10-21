@@ -6,12 +6,14 @@ node_modules
 node_modules/
 **/node_modules
 **/node_modules/
+apps/web-admin/node_modules
+apps/web-admin/node_modules/
 .toolchain
 .toolchain/
 **/.toolchain
-**/.toolchain/
 mobile-app
 mobile-app/
+mobile-app/**
 services
 services/
 scratch
@@ -24,4 +26,5 @@ scratch/
 .idea
 backups
 backups/
-# APKs are included so players can download ffrivals.apk from the live server
+*.apk
+**/*.apk
