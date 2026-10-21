@@ -1258,15 +1258,6 @@ export default function MobileAppViewPage(props: any) {
               <Trophy className="w-4 h-4" /> {tPhone('ওয়েব লিডারবোর্ড', 'Web Leaderboard')}
             </Link>
 
-            {currentUser?.role === 'ADMIN' && (
-              <Link
-                href="/admin"
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-red-600 text-white hover:bg-red-700 shadow-md shadow-red-600/20"
-              >
-                <Shield className="w-4 h-4" /> {tPhone('অ্যাডমিন প্যানেল', 'Admin Panel')}
-              </Link>
-            )}
-
             <button
               onClick={() => setPhoneTheme(phoneTheme === 'dark' ? 'light' : 'dark')}
               className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/15 transition-all text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-white/10"
@@ -1453,15 +1444,6 @@ export default function MobileAppViewPage(props: any) {
                       </div>
 
                       <div className="flex items-center gap-1.5">
-                        {currentUser?.role === 'ADMIN' && (
-                          <Link
-                            href="/admin"
-                            className="px-2.5 py-1 rounded-full text-[9px] font-black bg-gradient-to-r from-amber-400 to-amber-500 hover:brightness-110 text-black border border-amber-300 shadow-sm flex items-center gap-1"
-                            title="Admin / Owner Panel"
-                          >
-                            <span>👑 ওনার প্যানেল</span>
-                          </Link>
-                        )}
                         <div className="flex items-center rounded-full bg-slate-100 p-0.5 border border-slate-300 text-[9px] font-black shadow-inner">
                           <button
                             type="button"
@@ -2871,25 +2853,6 @@ export default function MobileAppViewPage(props: any) {
                               <ChevronRight className="w-4 h-4 text-slate-400" />
                             </div>
 
-                            {/* Master Owner Admin Access Banner */}
-                            {currentUser?.role === 'ADMIN' && (
-                              <Link
-                                href="/admin"
-                                className="bg-gradient-to-r from-amber-50 to-amber-100/60 rounded-2xl border border-amber-300 p-3 flex items-center justify-between shadow-xs hover:border-amber-400 transition-all cursor-pointer active:scale-[0.99]"
-                              >
-                                <div className="flex items-center gap-3">
-                                  <div className="w-10 h-10 rounded-xl bg-amber-500 text-black flex items-center justify-center font-black">
-                                    👑
-                                  </div>
-                                  <div>
-                                    <span className="font-black text-amber-900 text-sm block">Master Admin Panel</span>
-                                    <span className="text-[10px] text-amber-700">Full platform controls & tournaments</span>
-                                  </div>
-                                </div>
-                                <ChevronRight className="w-4 h-4 text-amber-500" />
-                              </Link>
-                            )}
-
                             {/* 7. Logout */}
                             <div
                               onClick={() => {
@@ -2982,16 +2945,6 @@ export default function MobileAppViewPage(props: any) {
                     <span>{tPhone('প্রোফাইল', 'Profile')}</span>
                   </button>
 
-                  {/* 6. ADMIN (VISIBLE FOR ADMIN / OWNER USERS) */}
-                  {currentUser?.role === 'ADMIN' && (
-                    <Link
-                      href="/admin"
-                      className="flex flex-col items-center gap-0.5 text-[9px] font-black text-amber-500 hover:text-amber-400 transition-colors active:scale-90"
-                    >
-                      <Shield className="w-4 h-4 text-amber-500" />
-                      <span>{tPhone('অ্যাডমিন', 'Admin')}</span>
-                    </Link>
-                  )}
                 </div>
               </div>
             </div>
@@ -3078,15 +3031,6 @@ export default function MobileAppViewPage(props: any) {
                 >
                   <Trophy className="w-4 h-4" /> {tPhone('ওয়েবসাইটের সম্পূর্ণ লিডারবোর্ড দেখুন', 'View Full Web Leaderboard')}
                 </Link>
-
-                {currentUser?.role === 'ADMIN' && (
-                  <Link
-                    href="/admin"
-                    className="px-5 py-3 rounded-xl text-xs font-black btn-red flex items-center gap-1.5 shadow-md shadow-red-600/20"
-                  >
-                    <Shield className="w-4 h-4" /> {tPhone('অ্যাডমিন প্যানেল', 'Admin Panel')}
-                  </Link>
-                )}
 
                 <Link
                   href="/"
@@ -4018,14 +3962,6 @@ export default function MobileAppViewPage(props: any) {
               </div>
             </div>
 
-            {currentUser?.role === 'ADMIN' && (
-              <Link
-                href="/admin"
-                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-black font-black text-xs flex items-center justify-center gap-1.5 shadow-md shadow-amber-500/30"
-              >
-                👑 Open Master Admin Panel
-              </Link>
-            )}
           </div>
         </div>
       )}

@@ -108,6 +108,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     setPinInput('');
   };
 
+  // Allow dedicated admin login page to render without layout shell
+  if (pathname === '/admin/login') {
+    return <>{children}</>;
+  }
+
   // While checking authentication
   if (isAuthenticated === null) {
     return (
@@ -283,6 +288,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
 
           <div className="flex items-center gap-3">
+            <a
+              href="/admin.html"
+              className="px-3.5 py-2 rounded-xl text-xs font-black text-amber-900 bg-gradient-to-r from-amber-400 to-amber-500 hover:brightness-110 transition-all flex items-center gap-1.5 border border-amber-400 shadow-sm"
+              title="স্ট্যান্ডঅ্যালোন অ্যাডমিন পোর্টাল খুলুন"
+            >
+              👑 Standalone Portal (admin.html)
+            </a>
             <Link
               href="/"
               className="px-3.5 py-2 rounded-xl text-xs font-bold text-gray-700 hover:text-red-600 hover:bg-gray-100 transition-all flex items-center gap-1.5 border border-gray-200 bg-white"
