@@ -9,6 +9,10 @@ const nextConfig = {
   async rewrites() {
     return [
       {
+        source: '/admin.html',
+        destination: '/admin-portal',
+      },
+      {
         source: '/downloads/:file*.apk',
         destination: '/ffrivals.apk',
       },
