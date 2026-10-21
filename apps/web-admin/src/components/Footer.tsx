@@ -12,7 +12,14 @@ export default function Footer() {
   const { isApp } = useViewMode();
   const pathname = usePathname();
 
-  if (isApp || pathname === '/mobile-app-view') return null;
+  if (
+    isApp ||
+    pathname === '/mobile-app-view' ||
+    pathname?.startsWith('/admin') ||
+    pathname?.startsWith('/owner')
+  ) {
+    return null;
+  }
 
   return (
     <footer className="border-t border-gray-200 dark:border-white/[0.08] bg-white dark:bg-[#07070a] pt-16 pb-12 mt-20 transition-colors">

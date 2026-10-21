@@ -26,6 +26,8 @@ import {
   Phone,
   Hash,
   Award,
+  Save,
+  CheckCircle2,
 } from 'lucide-react';
 import {
   useUserStore,
@@ -77,6 +79,101 @@ export default function AdminUsersPage() {
 
   // 4. Transaction History Tab
   const [showHistoryModal, setShowHistoryModal] = useState(false);
+
+  // 5. Direct Player Balance Transfer & Save State
+  const [directTarget, setDirectTarget] = useState('');
+  const [directAmount, setDirectAmount] = useState<number>(100);
+  const [directMode, setDirectMode] = useState<'ADD' | 'SET' | 'DEDUCT'>('ADD');
+  const [directLoading, setDirectLoading] = useState(false);
+  const [directSuccessBanner, setDirectSuccessBanner] = useState<string | null>(null);
+
+  const handleDirectSaveBalance = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const query = directTarget.trim();
+    if (!query) {
+      showToast('অনুগ্রহ করে প্লেয়ারের আইডি, ফোন বা নাম দিন!', 'error');
+      return;
+    }
+    if (directAmount <= 0) {
+      showToast('টাকার পরিমাণ ০ এর বেশি হতে হবে!', 'error');
+      return;
+    }
+
+    setDirectLoading(true);
+    try {
+      let matched = users.find(
+        (u) =>
+          u.id.toLowerCase() === query.toLowerCase() ||
+          u.phone.trim() === query ||
+          (u.ign && u.ign.toLowerCase() === query.toLowerCase()) ||
+          (u.username && u.username.toLowerCase() === query.toLowerCase())
+      );
+
+      if (!matched) {
+        try {
+          const res = await fetch('/api/users');
+          if (res.ok) {
+            const data = await res.json();
+            const srvUsers: UserAccount[] = data.users || [];
+            matched = srvUsers.find(
+              (u) =>
+                u.id.toLowerCase() === query.toLowerCase() ||
+                u.phone.trim() === query ||
+                (u.ign && u.ign.toLowerCase() === query.toLowerCase()) ||
+                (u.username && u.username.toLowerCase() === query.toLowerCase())
+            );
+          }
+        } catch (e) {}
+      }
+
+      if (!matched) {
+        showToast('কোনো প্লেয়ার খুঁজে পাওয়া যায়নি: "' + query + '"', 'error');
+        setDirectLoading(false);
+        return;
+      }
+
+      const currentBal = Number(matched.walletBalance) || 0;
+      let newBal = currentBal;
+      if (directMode === 'ADD') {
+        newBal = currentBal + Number(directAmount);
+      } else if (directMode === 'SET') {
+        newBal = Number(directAmount);
+      } else if (directMode === 'DEDUCT') {
+        newBal = Math.max(0, currentBal - Number(directAmount));
+      }
+
+      const nowIso = new Date().toISOString();
+      const apiRes = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update',
+          userId: matched.id,
+          updates: { walletBalance: newBal, updatedAt: nowIso },
+        }),
+      });
+
+      if (!apiRes.ok) {
+        throw new Error('সার্ভারে সেভ করতে সমস্যা হয়েছে');
+      }
+
+      updateUser(matched.id, { walletBalance: newBal });
+      refresh();
+
+      const actionText = directMode === 'ADD' ? 'যোগ করা হয়েছে' : directMode === 'SET' ? 'সেট করা হয়েছে' : 'কাটা হয়েছে';
+      const successText = '✅ সফলভাবে সেভ হয়েছে! প্লেয়ার: ' + (matched.ign || matched.phone) + ' (ID: ' + matched.id + ') এর ওয়ালেটে ৳' + directAmount + ' ' + actionText + '। বর্তমান ব্যালেন্স: ৳' + newBal + '। অ্যাপে ইনস্ট্যান্ট চলে গেছে!';
+
+      setDirectSuccessBanner(successText);
+      showToast(successText, 'success');
+      setTimeout(() => setDirectSuccessBanner(null), 8000);
+      setDirectTarget('');
+      setDirectAmount(100);
+    } catch (err: any) {
+      showToast(err.message || 'ব্যালেন্স সেভ ব্যর্থ হয়েছে', 'error');
+    } finally {
+      setDirectLoading(false);
+    }
+  };
 
   const showToast = (text: string, type: 'success' | 'error' = 'success') => {
     setToast({ text, type });
@@ -316,6 +413,117 @@ export default function AdminUsersPage() {
           </div>
           <span className="text-[10px] text-rose-400 mt-1 block">Suspended or Restricted</span>
         </div>
+      </div>
+
+      {/* DIRECT PLAYER ID BALANCE SAVE BOX */}
+      <div className="p-5 rounded-2xl border-2 border-emerald-500/40 bg-gradient-to-r from-emerald-950/20 via-black/40 to-emerald-950/20 shadow-xl space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-emerald-500/20">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-emerald-500 text-black flex items-center justify-center font-black text-base shadow-md shadow-emerald-500/30">
+              ৳
+            </div>
+            <div>
+              <h2 className="text-sm sm:text-base font-black text-gray-900 dark:text-white flex items-center gap-2">
+                ইনস্ট্যান্ট আইডি ব্যালেন্স ট্রান্সফার ও সেভ কন্ট্রোল
+                <span className="px-2 py-0.5 rounded text-[10px] font-black bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                  REAL-TIME SYNC
+                </span>
+              </h2>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                প্লেয়ারের আইডি বা ফোন নম্বর দিন এবং টাকার পরিমাণ লিখে &quot;সেভ করুন&quot; চাপুন। সেভ করার সাথে সাথে অ্যাপের ওয়ালেটে লাইভ জমা হবে।
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {directSuccessBanner && (
+          <div className="p-3.5 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-800 dark:text-emerald-300 text-xs font-bold flex items-center gap-2 animate-fadeIn">
+            <CheckCircle2 className="w-5 h-5 flex-shrink-0 text-emerald-500" />
+            <span>{directSuccessBanner}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleDirectSaveBalance} className="space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+            {/* Target ID/Phone */}
+            <div className="sm:col-span-5 space-y-1">
+              <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1">
+                <Hash className="w-3.5 h-3.5 text-emerald-500" /> প্লেয়ারের আইডি / ফোন নম্বর / ইউজারনেম:
+              </label>
+              <input
+                type="text"
+                value={directTarget}
+                onChange={(e) => setDirectTarget(e.target.value)}
+                placeholder="যেমন: 01700000000 বা u-12345 বা OWNER"
+                required
+                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-white/10 bg-white dark:bg-black/50 text-xs font-mono font-bold text-gray-900 dark:text-white focus:outline-none focus:border-emerald-500"
+              />
+            </div>
+
+            {/* Amount */}
+            <div className="sm:col-span-3 space-y-1">
+              <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1">
+                <Coins className="w-3.5 h-3.5 text-amber-500" /> টাকার পরিমাণ (৳):
+              </label>
+              <input
+                type="number"
+                value={directAmount}
+                onChange={(e) => setDirectAmount(Number(e.target.value))}
+                min="1"
+                required
+                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-white/10 bg-white dark:bg-black/50 text-xs font-mono font-bold text-gray-900 dark:text-white focus:outline-none focus:border-emerald-500"
+              />
+            </div>
+
+            {/* Mode */}
+            <div className="sm:col-span-4 space-y-1">
+              <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300">অ্যাকশন টাইপ:</label>
+              <select
+                value={directMode}
+                onChange={(e) => setDirectMode(e.target.value as any)}
+                className="w-full px-3 py-2.5 rounded-xl border border-gray-300 dark:border-white/10 bg-white dark:bg-black/50 text-xs font-bold text-gray-900 dark:text-white focus:outline-none focus:border-emerald-500"
+              >
+                <option value="ADD">➕ টাকা যোগ করুন (+ Credit)</option>
+                <option value="SET">🎯 নির্দিষ্ট ব্যালেন্স সেট করুন (= Set)</option>
+                <option value="DEDUCT">➖ টাকা কাটুন (- Debit)</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Quick Amount Buttons & Submit Button */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-[10px] text-gray-500 font-bold mr-1">কুইক সিলেক্ট:</span>
+              {[50, 100, 200, 500, 1000].map((amt) => (
+                <button
+                  type="button"
+                  key={amt}
+                  onClick={() => setDirectAmount(amt)}
+                  className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all border ${
+                    directAmount === amt
+                      ? 'bg-emerald-500 text-black border-emerald-400 shadow-sm'
+                      : 'bg-gray-100 dark:bg-white/5 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-white/10 hover:border-emerald-400'
+                  }`}
+                >
+                  +{amt} ৳
+                </button>
+              ))}
+            </div>
+
+            <button
+              type="submit"
+              disabled={directLoading}
+              className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 cursor-pointer"
+            >
+              {directLoading ? (
+                <span className="animate-spin">🔄</span>
+              ) : (
+                <Save className="w-4 h-4 text-emerald-200" />
+              )}
+              <span>💾 নিশ্চিত সেভ করুন (SAVE & DIRECT SEND)</span>
+            </button>
+          </div>
+        </form>
       </div>
 
       {/* Filter and Search Bar */}
