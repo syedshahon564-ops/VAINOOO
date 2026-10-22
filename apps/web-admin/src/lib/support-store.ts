@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { dispatchDevicePushNotification } from './match-scheduler';
 import { addBalance } from './user-store';
@@ -30,6 +30,8 @@ export interface SupportTicket {
   paymentVerified?: boolean;
   verifiedTrxId?: string;
   verifiedAmount?: number;
+  matchPrizeVerified?: boolean;
+  prizeAmount?: number;
 }
 
 const SUPPORT_TICKETS_KEY = 'ff_support_tickets_v2';
@@ -209,6 +211,8 @@ export function generateClientAiResponse(
     paymentVerified: result.paymentVerified,
     verifiedTrxId: result.verifiedTrxId,
     verifiedAmount: result.verifiedAmount,
+    matchPrizeVerified: result.matchPrizeVerified,
+    prizeAmount: result.prizeAmount,
   };
 }
 
@@ -256,6 +260,8 @@ export function createSupportTicket(data: {
     paymentVerified: aiResult.paymentVerified,
     verifiedTrxId: aiResult.verifiedTrxId,
     verifiedAmount: aiResult.verifiedAmount,
+    matchPrizeVerified: aiResult.matchPrizeVerified,
+    prizeAmount: aiResult.prizeAmount,
     messages: [
       {
         id: 'msg-' + Date.now(),
@@ -278,7 +284,7 @@ export function createSupportTicket(data: {
     `[${data.category}] ${data.userIgn} (${data.userPhone}): "${data.subject}"`
   );
 
-  if (newTicket.paymentVerified && newTicket.verifiedAmount) {
+  if ((newTicket.paymentVerified && newTicket.verifiedAmount) || (newTicket.matchPrizeVerified && newTicket.prizeAmount)) {
     handleAiAutoCredits([newTicket]);
   }
 

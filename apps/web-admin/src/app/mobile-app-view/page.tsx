@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
@@ -2359,8 +2359,23 @@ export default function MobileAppViewPage(props: any) {
                         </span>
                       </div>
 
-                      {/* Top 1 Hero Card */}
-                      {topPlayers[0] && (
+                      {topPlayers.length === 0 ? (
+                        <div className="p-8 text-center rounded-2xl bg-slate-50 border border-slate-100 space-y-2.5 my-3 shadow-xs">
+                          <Trophy className="w-12 h-12 text-amber-500/40 mx-auto animate-pulse" />
+                          <h4 className="text-sm font-black text-slate-800">
+                            {tPhone('à¦²à¦¿à¦¡à¦¾à¦°à¦¬à§‹à¦°à§à¦¡ à¦à¦–à¦¨à¦“ à¦¶à§à¦°à§ à¦¹à§Ÿà¦¨à¦¿', 'Leaderboard Not Live Yet')}
+                          </h4>
+                          <p className="text-[11px] text-slate-500 max-w-xs mx-auto leading-relaxed">
+                            {tPhone(
+                              'à¦Ÿà§à¦°à§à¦¨à¦¾à¦®à§‡à¦¨à§à¦Ÿà§‡à¦° à¦²à¦¾à¦‡à¦­ à¦®à§à¦¯à¦¾à¦š à¦¶à§à¦°à§ à¦¹à¦²à§‡ à¦ªà§à¦²à§‡à¦¯à¦¼à¦¾à¦°à¦¦à§‡à¦° à¦•à¦¿à¦² à¦“ à¦…à¦°à§à¦œà¦¿à¦¤ à¦°â€à§à¦¯à¦¾à¦™à§à¦• à¦¸à§à¦¬à§Ÿà¦‚à¦•à§à¦°à¦¿à§Ÿà¦­à¦¾à¦¬à§‡ à¦à¦–à¦¾à¦¨à§‡ à¦¯à§à¦•à§à¦¤ à¦¹à¦¬à§‡à¥¤',
+                              'Player kills, wins, and ranks will automatically appear here once live tournament matches begin.'
+                            )}
+                          </p>
+                        </div>
+                      ) : (
+                        <>
+                          {/* Top 1 Hero Card */}
+                          {topPlayers[0] && (
                         <div className="p-3.5 rounded-2xl bg-gradient-to-r from-amber-600 via-amber-700 to-slate-900 text-white shadow-lg space-y-2.5">
                           <div className="flex items-center justify-between">
                             <span className="text-[10px] font-black uppercase tracking-wider bg-black/40 px-2 py-0.5 rounded text-amber-300">
@@ -2467,6 +2482,8 @@ export default function MobileAppViewPage(props: any) {
                           </div>
                         ))}
                       </div>
+                        </>
+                      )}
                     </div>
                   )}
 

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState } from 'react';
 import Link from 'next/link';
@@ -60,8 +60,17 @@ export default function LeaderboardPage() {
         </Link>
       </div>
 
-      {/* TOP 3 PODIUM */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
+      {/* TOP 3 PODIUM HERO SECTION */}
+      {topPlayers.length === 0 ? (
+        <div className="p-12 text-center rounded-3xl bg-white dark:bg-[#12121a] border border-gray-200 dark:border-white/10 shadow-sm space-y-3 my-4">
+          <Trophy className="w-16 h-16 text-amber-500/50 mx-auto animate-pulse" />
+          <h3 className="text-lg font-black text-gray-900 dark:text-white">à¦²à¦¿à¦¡à¦¾à¦°à¦¬à§‹à¦°à§à¦¡ à¦à¦–à¦¨à§‹ à¦‰à¦¨à§à¦®à§à¦•à§à¦¤ à¦¹à§Ÿà¦¨à¦¿</h3>
+          <p className="text-xs text-gray-500 max-w-md mx-auto">
+            à¦Ÿà§à¦°à§à¦¨à¦¾à¦®à§‡à¦¨à§à¦Ÿà§‡à¦° à¦…à¦«à¦¿à¦¸à¦¿à§Ÿà¦¾à¦² à¦²à¦¾à¦‡à¦­ à¦®à§à¦¯à¦¾à¦š à¦¶à§à¦°à§ à¦¹à¦“à§Ÿà¦¾à¦° à¦ªà¦° à¦¬à¦¿à¦œà§Ÿà§€ à¦“ à¦¸à§‡à¦°à¦¾ à¦ªà§à¦²à§‡à§Ÿà¦¾à¦°à¦¦à§‡à¦° à¦•à¦¿à¦², à¦°â€à§à¦¯à¦¾à¦™à§à¦• à¦“ à¦ªà§à¦°à¦¾à¦‡à¦œà¦®à¦¾à¦¨à¦¿ à¦¸à§à¦¬à§Ÿà¦‚à¦•à§à¦°à¦¿à§Ÿà¦­à¦¾à¦¬à§‡ à¦à¦–à¦¾à¦¨à§‡ à¦ªà§à¦°à¦¦à¦°à§à¦¶à¦¿à¦¤ à¦¹à¦¬à§‡à¥¤
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
         {/* Rank 2 */}
         {topPlayers[1] && (
           <div className="order-2 md:order-1 rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#12121a] p-6 text-center space-y-3 relative shadow-sm hover:shadow-md transition-all">
@@ -152,6 +161,7 @@ export default function LeaderboardPage() {
           </div>
         )}
       </div>
+      )}
 
       {/* SEARCH & FILTER */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-white dark:bg-[#12121a] border border-gray-200 dark:border-white/10 shadow-sm">

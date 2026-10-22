@@ -1,4 +1,4 @@
-/**
+﻿/**
  * ADVANCED HIGH-LEVEL MULTILINGUAL AI ASSISTANT FOR FF RIVAL TOUR BD
  *
  * Capabilities:
@@ -37,6 +37,8 @@ export interface AiResponseOutput {
   paymentVerified?: boolean;
   verifiedTrxId?: string;
   verifiedAmount?: number;
+  matchPrizeVerified?: boolean;
+  prizeAmount?: number;
   detectedLanguage: 'BANGLA' | 'BANGLISH' | 'ENGLISH' | 'HINDI';
   intent: string;
 }

@@ -85,10 +85,17 @@ export default function SlotBookingModal({
     (match.title || '').toLowerCase().includes('clash') ||
     (match.title || '').toLowerCase().includes('cs ');
 
-  // Slot system is enabled exclusively for Classic matches (Squad 12, Duo 24, Solo 48)
-  const hasSlotSelection = isClassicMatch && (isSquad || isDuo || isSolo);
+  const isLoneWolf =
+    (match.categorySlug || '').toLowerCase().includes('lone') ||
+    (match.title || '').toLowerCase().includes('lone') ||
+    ((match as any).category || '').toLowerCase().includes('lone');
 
-  const totalSlotCount = isSquad ? 12 : isDuo ? 24 : 48;
+  const isLoneWolf2v2 = isLoneWolf && isDuo;
+
+  // Slot system is enabled for Classic matches and Lone Wolf 2v2 (which has 2 slots: Team 1 & Team 2)
+  const hasSlotSelection = (isClassicMatch && (isSquad || isDuo || isSolo)) || isLoneWolf2v2;
+
+  const totalSlotCount = isLoneWolf2v2 ? 2 : isSquad ? 12 : isDuo ? 24 : 48;
 
   // Starts at 'SELECT_SLOT' if slot system is enabled, otherwise directly goes to 'PLAYER_DETAILS'
   const [currentStep, setCurrentStep] = useState<'SELECT_SLOT' | 'PLAYER_DETAILS'>(
@@ -660,7 +667,9 @@ export default function SlotBookingModal({
             </div>
             <h3 className="text-lg font-black text-gray-900">
               {currentStep === 'SELECT_SLOT'
-                ? isSquad
+                ? isLoneWolf2v2
+                  ? 'Select Team Slot (Slot #1 or Slot #2)'
+                  : isSquad
                   ? 'Select Squad Slot'
                   : isDuo
                   ? 'Select Classic Duo Slot'
@@ -668,7 +677,7 @@ export default function SlotBookingModal({
                 : isSquad
                 ? 'Enter Squad Player Details'
                 : isDuo
-                ? 'Duo Registration'
+                ? isLoneWolf2v2 ? 'Lone Wolf 2v2 Duo Team Registration' : 'Duo Registration'
                 : 'Solo Registration'}
             </h3>
           </div>
@@ -743,8 +752,8 @@ export default function SlotBookingModal({
                     >
                       <div className="flex items-center justify-between text-[11px] font-bold">
                         <span className="flex items-center gap-1">
-                          {isSolo ? <User className="w-3 h-3" /> : <Users className="w-3 h-3" />}
-                          Slot #{slotNum}
+                          {isLoneWolf2v2 ? <Users className="w-3.5 h-3.5 text-red-600" /> : isSolo ? <User className="w-3 h-3" /> : <Users className="w-3 h-3" />}
+                          {isLoneWolf2v2 ? `Team #${slotNum} (Slot #${slotNum})` : `Slot #${slotNum}`}
                         </span>
                         <span className={`text-[9px] px-1 py-0.2 rounded font-black ${
                           isLocked
