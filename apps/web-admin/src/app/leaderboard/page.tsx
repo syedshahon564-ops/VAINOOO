@@ -55,12 +55,7 @@ export default function LeaderboardPage() {
           </p>
         </div>
 
-        <Link
-          href="/mobile-app-view"
-          className="px-4 py-2.5 rounded-xl text-xs font-bold btn-red flex items-center gap-1.5 shadow-md shadow-red-600/30"
-        >
-          📱 {t('মোবাইল অ্যাপে দেখুন', 'View in Mobile App')}
-        </Link>
+
       </div>
 
       {/* TOP 3 PODIUM HERO SECTION */}
