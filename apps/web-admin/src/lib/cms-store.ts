@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { INITIAL_CATEGORIES, INITIAL_BANNERS, LONE_WOLF_1V1_RULES } from './initial-categories';
+import { INITIAL_CATEGORIES, INITIAL_BANNERS, LONE_WOLF_1V1_RULES, LONE_WOLF_2V2_RULES } from './initial-categories';
 export { isMatchFinished } from '@/components/LiveMatchCountdown';
-export { INITIAL_CATEGORIES, INITIAL_BANNERS, LONE_WOLF_1V1_RULES };
+export { INITIAL_CATEGORIES, INITIAL_BANNERS, LONE_WOLF_1V1_RULES, LONE_WOLF_2V2_RULES };
 
 export interface MatchItem {
   id: string;
@@ -204,12 +204,7 @@ FF RIVAL TOUR BD এর সিদ্ধান্ত চূড়ান্ত সি
 4. লেভেল সর্বনিম্ন ৪০+ হতে হবে।`,
     'lone-wolf': LONE_WOLF_1V1_RULES,
     'lone-wolf-solo': LONE_WOLF_1V1_RULES,
-    'lone-wolf-duo': `🐺 Lone Wolf (2 VS 2 DUO) স্পেশাল নিয়মাবলী:
-১. এটি ২ বনাম ২ ডুও ম্যাচ। প্রতিটি টিমে ২ জন প্লেয়ার থাকবে।
-২. উভয় প্লেয়ারকে অবশ্যই নির্ধারিত স্লটে (Slot 1 বা Slot 2) জয়েন করতে হবে।
-৩. কোন প্রকার গ্রেনেড (Grenade/Flashbang) ব্যবহার করা সম্পূর্ণ নিষিদ্ধ।
-৪. কোন প্রকার হ্যাক, স্ক্রিপ্ট, বা থার্ড পার্টি অ্যাপ ব্যবহার করলে অ্যাকাউন্ট ও ডিভাইস স্থায়ীভাবে ব্যান করা হবে।
-৫. ম্যাচ শেষে বিজয়ী দলের রুম ও উইন স্ক্রিনশট সাপোর্ট বটে জমা দিয়ে প্রাইজ অটোমেটিক গ্রহণ করতে হবে।`,
+    'lone-wolf-duo': LONE_WOLF_2V2_RULES,
     'lost-to-win': `💰 Lost To Win (1 vs 1) বিশেষ নিয়মাবলী:
 1. ১v১ চ্যালেঞ্জ লড়াই। হারলেও অথবা জিতলেও ক্যাশ রিটার্ন অফার প্রযোজ্য।
 2. কাস্টম রুমে নিজের স্লটে উপস্থিত থাকতে হবে।
@@ -276,12 +271,7 @@ export function getEffectiveMatchRules(
       if (settings?.categoryRules?.['lone-wolf-duo'] && settings.categoryRules['lone-wolf-duo'].trim() !== '') {
         return settings.categoryRules['lone-wolf-duo'];
       }
-      return `🐺 Lone Wolf (2 VS 2 DUO) স্পেশাল নিয়মাবলী:
-১. এটি ২ বনাম ২ ডুও ম্যাচ। প্রতিটি টিমে ২ জন প্লেয়ার থাকবে।
-২. উভয় প্লেয়ারকে অবশ্যই নির্ধারিত স্লটে (Slot 1 বা Slot 2) জয়েন করতে হবে।
-৩. কোন প্রকার গ্রেনেড (Grenade/Flashbang) ব্যবহার করা সম্পূর্ণ নিষিদ্ধ।
-৪. কোন প্রকার হ্যাক, স্ক্রিপ্ট, বা থার্ড পার্টি অ্যাপ ব্যবহার করলে অ্যাকাউন্ট ও ডিভাইস স্থায়ীভাবে ব্যান করা হবে।
-৫. ম্যাচ শেষে বিজয়ী দলের রুম ও উইন স্ক্রিনশট সাপোর্ট বটে জমা দিয়ে প্রাইজ অটোমেটিক গ্রহণ করতে হবে।`;
+      return LONE_WOLF_2V2_RULES;
     } else {
       if (settings?.categoryRules?.['lone-wolf-solo'] && settings.categoryRules['lone-wolf-solo'].trim() !== '') {
         return settings.categoryRules['lone-wolf-solo'];

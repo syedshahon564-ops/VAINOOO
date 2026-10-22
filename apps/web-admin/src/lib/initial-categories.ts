@@ -41,6 +41,73 @@ Gloo wall Limited (3 ta)
 
 সবশেষে এডমিনের সিদ্ধান্তই চূড়ান্ত সিদ্ধান্ত..`;
 
+export const LONE_WOLF_2V2_RULES = `FF RIVALS TOUR BD [ Lone Wolf 2vs2 Rules]
+
+
+1.GAME ID RULE
+
+👉ম্যাচে জয়েন করার সময় Game Uid  দিলেই অটোমেটিক Game id name চলে আসবে✅
+👉 ভুল Uid/Name দিয়ে জয়েন দিলে ম্যাচ খেলতে দেওয়া হবে না❌
+
+
+2. LEVEL RULE
+
+👉আপনার গেম আইডির Level Minimum 40 হতে হবে✅
+👉Level কম হলে Match Allow করা হবে না❌ 
+
+3.Allowence Rules
+
+👉ম্যাচে সকল প্রকার Flash Grenade ও Bomb জাতীয় Utility Item ব্যবহার করা Allowed এবং সকল প্রকার gun ব্যবহার করা যাবে✅
+Character Skill off.
+Gloo wall Limited(3 ta)
+
+4. Room Join ও Refund Rules
+
+👉আপনি যদি Custom Room-এ Join করতে না পারেন, তাহলে আপনার Join Fee থেকে অর্ধেক টাকা Refund দেওয়া হবে।✅
+
+তবে আপনি যদি একবার Room-এ Join করার পর বের হয়ে যান বা Network সমস্যা হয়, তাহলে কোনো প্রকার Refund দেওয়া হবে না❌
+
+5. Custom room এ player Entry Problem Rules
+
+  👉Custom Match Start হওয়ার পর যদি কোনো Team-এর একজন Player ম্যাচে প্রবেশ করতে না পারে, তাহলে Fair Play বজায় রাখার জন্য প্রতিপক্ষ Team থেকেও সমসংখ্যক Player Zone-এ গিয়ে Eliminate হবে অথবা ইচ্ছাকৃতভাবে Opponent Player-এর কাছে হারবে। সে অবস্থায় Opponent Team-এর কাউকে 1 Damage ও দেওয়া যাবে না।
+ম্যাচ শেষ হওয়া পর্যন্ত সে ম্যাচ থেকে Back করতে পারবে না। যদি ম্যাচ থেকে Back করে, তাহলে কোনো ধরনের Refund বা Reward পাবে না।
+এক্ষেত্রে যে Player Zone-এ গিয়ে Eliminate হবে বা ইচ্ছাকৃতভাবে হারবে—
+★তার  Team হারলে Entry Refund পাবে।
+★ তার Team জিতলে Winning Reward পাবে।
+
+##তবে যদি প্রতিপক্ষ Team থেকে কেউ Zone-এ গিয়ে Eliminate বা ইচ্ছাকৃতভাবে Kill না হয়, তাহলে সেই Team-এর কোনো Player কোনো ধরনের Reward বা Refund পাবে না।❌
+অন্যদিকে, যে Team-এর ১ জন Player ম্যাচে প্রবেশ করতে পারেনি, সেই Team-এর  যে Player Room-এ Join করেছে, সে Player Refund পাবে।
+এছাড়া যে Player শুরুতে ম্যাচে প্রবেশ করতে পারেনি, তাকে আলাদাভাবে কোনো Refund প্রদান করা হবে না।
+
+ বিশেষ নির্দেশনা:
+👉যে Player Room-এ প্রবেশ করতে পারেনি, ১-২ রাউন্ড পর ম্যাচের মধ্যে সে পুনরায় Reconnect হলে, Fair Play অনুযায়ী Zone-এ যাওয়া Opponent Player-কেও সেই রাউন্ড থেকে আবার Match Play করতে হবে। এরপরের সব Round সাধারণ Rules অনুযায়ী চলবে।
+
+ 6. Match Back/Exit & Network Rules
+
+  👉Match শুরু হওয়ার পর ম্যাচের মধ্যে কোনো Player-এর স্থায়ীভাবে Network চলে গেলে বা ইচ্ছাকৃতভাবে Match থেকে Back/Exit দিলে, Opponent Team-এর একজন Player-কে Zone-এ গিয়ে নিজে থেকে Eliminated হতে হবে অথবা Opponent-এর কাছে গিয়ে Kill হতে হবে।
+##তবে যদি Network চলে যাওয়া Player পুনরায় Network ঠিক করে match-এ ফিরে আসতে সক্ষম হয়, তাহলে সে আবার স্বাভাবিকভাবে ম্যাচে অংশগ্রহণ করতে পারবে। একইভাবে, Zone-এ গিয়ে Eliminated বা free kill হওয়া Opponent Player-ও পুনরায় ম্যাচে যোগ দিয়ে স্বাভাবিকভাবে খেলতে পারবে।
+যদি network চলে যাওয়া প্লেয়ার রুমে আসতে না পারে সে ক্ষেত্রে যে Team-এর Player Zone-এ গিয়ে Eliminate বা free kill হবে—
+★তার  Team হারলে Entry Refund পাবে।
+★তার  Team জিতলে Winning Reward পাবে।
+
+ 7. Teaming Rules
+
+👉ম্যাচ চলাকালীন কোনো Player বা Team যদি Teaming করে অথবা ইচ্ছাকৃতভাবে প্রতিপক্ষ Team-কে জিতিয়ে দেওয়ার চেষ্টা করে, তাহলে সেই Player/Team-এর Entry Fee সহ অতিরিক্ত ৫০ টাকা জরিমানা করা হবে।
+এ ধরনের ঘটনা ম্যাচের শুরুতেই প্রমাণিত হলে Full Match Refund প্রদান করা হবে।
+তবে ৪-৫ Round খেলার পর যদি Teaming-এর ঘটনা ঘটে, তাহলে Full Match Refund দেওয়া হবে না।
+সেক্ষেত্রে যে Team ম্যাচ জিতবে, তারাই Winning Reward পাবে।
+
+তবে উপরের জরিমানার Rules তখনও প্রযোজ্য থাকবে।
+
+8.HACK RULE
+
+👉Hack / Panel / Config / glitchব্যবহার করলে ⛔ Account + Balance Permanent Ban🚫
+
+#ম্যাচে solo,duo দুইভাবেই জয়েন দিতে পারবেন।
+তবে যদি চারটা আলাদা আলাদা প্লেয়ার সবাই (solo) জয়েন দেয় তাহলে ম্যাচে ১,৩ vs ২,৪ এইভাবে  হবে। 
+
+সবশেষে এডমিনের সিদ্ধান্তই চূড়ান্ত সিদ্ধান্ত..`;
+
 export const INITIAL_CATEGORIES: Record<string, any> = {
   "special-match": {
     "slug": "special-match",

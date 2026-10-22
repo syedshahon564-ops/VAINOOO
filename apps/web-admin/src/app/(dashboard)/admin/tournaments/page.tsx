@@ -17,7 +17,7 @@ import {
   Bot,
   Zap,
 } from 'lucide-react';
-import { useCMS, MatchItem } from '@/lib/cms-store';
+import { useCMS, MatchItem, getEffectiveMatchRules } from '@/lib/cms-store';
 import ImageUploadInput from '@/components/ImageUploadInput';
 import {
   autoDeliverRoomCredentials,
@@ -117,16 +117,16 @@ export default function AdminTournamentsPage() {
       if (!bannerImage || bannerImage === '/logo.png') {
         setBannerImage(catImg);
       }
-      const catRule =
-        cat?.customRules ||
-        settings?.categoryRules?.[categorySlug] ||
-        (categorySlug === 'classic-match' ? settings?.categoryRules?.['regular-match'] : '') ||
-        '';
+      const catRule = getEffectiveMatchRules(
+        { categorySlug, type: type, totalSlots } as MatchItem,
+        categories,
+        settings
+      );
       if (catRule) {
         setRules(catRule);
       }
     }
-  }, [showCreateModal, categorySlug, categories, settings]);
+  }, [showCreateModal, categorySlug, type, totalSlots, categories, settings]);
 
   const showNotification = (text: string, type: 'success' | 'error' = 'success') => {
     setToast({ text, type });
