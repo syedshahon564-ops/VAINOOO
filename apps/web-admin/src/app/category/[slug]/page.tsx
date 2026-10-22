@@ -418,14 +418,6 @@ export default function CategoryDetailPage() {
                         {t(`এই ফিল্টারে (${matchTypeFilter}) কোনো সক্রিয় ম্যাচ পাওয়া যায়নি। অন্য ফিল্টার বেছে নিন।`, `No active matches found for this filter (${matchTypeFilter}).`)}
                       </p>
                     </div>
-                    <div className="pt-2">
-                      <Link
-                        href="/admin"
-                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold btn-red"
-                      >
-                        <PlusCircle className="w-4 h-4" /> {t('অ্যাডমিন প্যানেলে ম্যাচ তৈরি করুন', 'Create Match in Admin')}
-                      </Link>
-                    </div>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -461,7 +453,7 @@ export default function CategoryDetailPage() {
                             {/* Notice text on right */}
                             <div className="flex-1 min-w-0">
                               <p className="text-xs font-bold text-gray-800 dark:text-gray-200 leading-snug">
-                                কাস্টমে নিজের জায়গায় বসতে হবে বাধ্যতামূলক - আইডি লেভেল ৫৫+ থাকতে হবে -
+                                কাস্টমে নিজের জায়গায় বসতে হবে বাধ্যতামূলক - আইডি লেভেল ৪০+ থাকতে হবে -
                                 Normal {m.type} ম্যাচের নিয়ম পড়ে নিন, নিয়ম না মানলে রিফান্ড বা উইনিং
                                 পাবেন না! {settings.siteName || 'FF RIVAL TOUR BD'}
                               </p>

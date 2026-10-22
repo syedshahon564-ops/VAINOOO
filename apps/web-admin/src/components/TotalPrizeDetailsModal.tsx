@@ -66,7 +66,7 @@ export default function TotalPrizeDetailsModal({
                 ? `লোন উলফ (${match.type}) ম্যাচের নিয়ম: কাস্টমে নিজের স্লটে বসতে হবে। বিজয়ী সম্পূর্ণ উইনিং প্রাইজ পাবে! FF RIVAL TOUR BD`
                 : isClashSquad
                 ? `ক্লাশ স্কোয়াড (${match.type}) ম্যাচের নিয়ম: বিজয়ী দল সম্পূর্ণ প্রাইজপুল পাবে! FF RIVAL TOUR BD`
-                : `কাস্টমে নিজের জায়গায় বসতে হবে বাধ্যতামূলক - আইডি লেভেল ৫৫+ থাকতে হবে - Normal ${match.type} ম্যাচের নিয়ম পড়ে নিন! FF RIVAL TOUR BD`}
+                : `কাস্টমে নিজের জায়গায় বসতে হবে বাধ্যতামূলক - আইডি লেভেল ৪০+ থাকতে হবে - Normal ${match.type} ম্যাচের নিয়ম পড়ে নিন! FF RIVAL TOUR BD`}
             </p>
           </div>
 

@@ -63,7 +63,7 @@ export default function HomePage() {
       badge: '100% SAFE & AUTOMATED',
       title: t('অ্যাডভান্সড অ্যান্টি-চিট সিকিউরিটি ও ২৪/৭ লাইভ সাপোর্ট', 'ADVANCED ANTI-CHEAT & 24/7 LIVE SUPPORT'),
       subtitle: t(
-        'সম্পূর্ণ ফেয়ার টুর্নামেন্ট সিকিউরিটি ও ২৪/৭ লাইভ কাস্টমার সাপোর্ট। আইডি লেভেল ৫৫+ বাধ্যতামূলক।',
+        'সম্পূর্ণ ফেয়ার টুর্নামেন্ট সিকিউরিটি ও ২৪/৭ লাইভ কাস্টমার সাপোর্ট। আইডি লেভেল ৪০+ বাধ্যতামূলক।',
         '100% fair tournament rules, anti-hack verification & instant room password dispatch.'
       ),
       image: 'https://images.unsplash.com/photo-1538481199705-c710c4e965fc?q=80&w=1400',

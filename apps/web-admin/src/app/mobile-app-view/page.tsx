@@ -1657,7 +1657,7 @@ export default function MobileAppViewPage(props: any) {
                                     {/* Notice text on right */}
                                     <div className="flex-1 min-w-0">
                                       <p className="text-[10px] font-bold text-gray-800 leading-snug">
-                                        কাস্টমে নিজের জায়গায় বসতে হবে বাধ্যতামূলক - আইডি লেভেল ৫৫+ থাকতে হবে -
+                                        কাস্টমে নিজের জায়গায় বসতে হবে বাধ্যতামূলক - আইডি লেভেল ৪০+ থাকতে হবে -
                                         Normal {m.type} ম্যাচের নিয়ম পড়ে নিন, নিয়ম না মানলে রিফান্ড বা উইনিং
                                         পাবেন না! {settings?.siteName || 'FF RIVAL TOUR BD'}
                                       </p>
@@ -1925,15 +1925,15 @@ export default function MobileAppViewPage(props: any) {
                               <div className="animate-train-marquee text-[11px] font-black text-gray-900 tracking-wide inline-flex items-center gap-8">
                                 <span>
                                   {settings?.noticeText || tPhone(
-                                    '🔥 FF RIVAL TOUR BD-তে স্বাগতম! প্রতিদিন টুর্নামেন্ট খেলুন এবং বিকাশ/নগদে প্রাইজ গ্রহণ করুন! 🏆 আইডি লেভেল ৫৫+ বাধ্যতামূলক • ১০০% ফেয়ার ও হ্যাকমুক্ত টুর্নামেন্ট!',
-                                    '🔥 Welcome to FF RIVAL TOUR BD! Play daily tournaments & win cash via bKash/Nagad! 🏆 Level 55+ Required • 100% Fair Gameplay!'
+                                    '🔥 FF RIVAL TOUR BD-তে স্বাগতম! প্রতিদিন টুর্নামেন্ট খেলুন এবং বিকাশ/নগদে প্রাইজ গ্রহণ করুন! 🏆 আইডি লেভেল ৪০+ বাধ্যতামূলক • ১০০% ফেয়ার ও হ্যাকমুক্ত টুর্নামেন্ট!',
+                                    '🔥 Welcome to FF RIVAL TOUR BD! Play daily tournaments & win cash via bKash/Nagad! 🏆 Level 40+ Required • 100% Fair Gameplay!'
                                   )}
                                 </span>
                                 <span aria-hidden="true" className="text-red-600 font-black">•</span>
                                 <span aria-hidden="true">
                                   {settings?.noticeText || tPhone(
-                                    '🔥 FF RIVAL TOUR BD-তে স্বাগতম! প্রতিদিন টুর্নামেন্ট খেলুন এবং বিকাশ/নগদে প্রাইজ গ্রহণ করুন! 🏆 আইডি লেভেল ৫৫+ বাধ্যতামূলক • ১০০% ফেয়ার ও হ্যাকমুক্ত টুর্নামেন্ট!',
-                                    '🔥 Welcome to FF RIVAL TOUR BD! Play daily tournaments & win cash via bKash/Nagad! 🏆 Level 55+ Required • 100% Fair Gameplay!'
+                                    '🔥 FF RIVAL TOUR BD-তে স্বাগতম! প্রতিদিন টুর্নামেন্ট খেলুন এবং বিকাশ/নগদে প্রাইজ গ্রহণ করুন! 🏆 আইডি লেভেল ৪০+ বাধ্যতামূলক • ১০০% ফেয়ার ও হ্যাকমুক্ত টুর্নামেন্ট!',
+                                    '🔥 Welcome to FF RIVAL TOUR BD! Play daily tournaments & win cash via bKash/Nagad! 🏆 Level 40+ Required • 100% Fair Gameplay!'
                                   )}
                                 </span>
                               </div>

@@ -43,7 +43,7 @@ const DEFAULT_INITIAL_BANNERS: BannerSlide[] = [
     id: 'slide-3',
     badge: '100% SAFE & AUTOMATED',
     title: 'ADVANCED ANTI-CHEAT & INSTANT WITHDRAW',
-    subtitle: 'সম্পূর্ণ ফেয়ার টুর্নামেন্ট সিকিউরিটি ও ২৪/৭ লাইভ কাস্টমার সাপোর্ট। আইডি লেভেল ৫৫+ বাধ্যতামূলক।',
+    subtitle: 'সম্পূর্ণ ফেয়ার টুর্নামেন্ট সিকিউরিটি ও ২৪/৭ লাইভ কাস্টমার সাপোর্ট। আইডি লেভেল ৪০+ বাধ্যতামূলক।',
     image: 'https://images.unsplash.com/photo-1538481199705-c710c4e965fc?q=80&w=1400',
     actionText: 'Telegram Support',
     actionUrl: 'https://t.me/ffrivaltourbd',

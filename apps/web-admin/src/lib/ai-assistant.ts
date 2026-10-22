@@ -12,7 +12,7 @@
  *    - Solo 48, Duo 24, Squad 12 slot system
  *    - bKash & Nagad instant webhook verification, deposit troubleshooting
  *    - Withdrawal rules (100 BDT minimum, 30m - 2h payout)
- *    - Anti-cheat, Emulator/PC ban, Level 40+/55+ ID rules
+ *    - Anti-cheat, Emulator/PC ban, Level 40+/40+ ID rules
  * 3. Self-Troubleshooting & Autonomous Error Fix Engine:
  *    - Diagnoses app lag, Android WebView cache, APK install errors, login issues, network ping issues.
  * 4. Free Fire Gameplay & Universal Q&A:
