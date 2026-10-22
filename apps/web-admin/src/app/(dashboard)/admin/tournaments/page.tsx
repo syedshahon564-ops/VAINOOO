@@ -17,7 +17,8 @@ import {
   Bot,
   Zap,
 } from 'lucide-react';
-import { useCMS, MatchItem, getEffectiveMatchRules } from '@/lib/cms-store';
+import { useCMS, MatchItem, getEffectiveMatchRules, INITIAL_CATEGORIES } from '@/lib/cms-store';
+import { getUpcomingScheduleTime } from '@/components/LiveMatchCountdown';
 import ImageUploadInput from '@/components/ImageUploadInput';
 import {
   autoDeliverRoomCredentials,
@@ -82,7 +83,7 @@ export default function AdminTournamentsPage() {
     const padM = m < 10 ? `0${m}` : `${m}`;
     return `Today ${padH}:${padM} ${period}`;
   };
-  const [time, setTime] = useState(getNextHourSchedule);
+  const [time, setTime] = useState(() => getUpcomingScheduleTime(1));
   const [bannerImage, setBannerImage] = useState(
     'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=640'
   );
@@ -111,10 +112,10 @@ export default function AdminTournamentsPage() {
 
   // Auto-inherit category banner & rules when create modal opens or category changes
   React.useEffect(() => {
-    if (categories[categorySlug]) {
-      const cat = categories[categorySlug];
-      const catImg = cat?.bannerImage || cat?.avatarImage || '';
-      if (!bannerImage || bannerImage === '/logo.png') {
+    const cat = categories[categorySlug] || INITIAL_CATEGORIES[categorySlug];
+    if (cat) {
+      const catImg = cat.bannerImage || cat.avatarImage || INITIAL_CATEGORIES[categorySlug]?.bannerImage || '';
+      if (catImg) {
         setBannerImage(catImg);
       }
       const catRule = getEffectiveMatchRules(
@@ -177,17 +178,23 @@ export default function AdminTournamentsPage() {
     const finalSecondPrize = isSingle ? 0 : Number(secondPrize);
     const finalThirdPrize = isSingle ? 0 : Number(thirdPrize);
     let finalSlots = Number(totalSlots);
+    let finalType = type;
     if (categorySlug === 'lone-wolf') {
-      finalSlots = (type === '2 vs 2' || type === '2v2' || type.toLowerCase() === 'duo' || type.includes('2 vs 2')) ? 4 : 2;
+      const isDuo = finalSlots === 4 || type === '2 vs 2' || type === '2v2' || type.toLowerCase().includes('duo');
+      finalSlots = isDuo ? 4 : 2;
+      finalType = isDuo ? '2 vs 2' : '1 vs 1';
     } else if (categorySlug === 'clash-squad' || categorySlug === 'cs-only-headshot') {
       finalSlots = type === '1 vs 1' ? 2 : type === '2 vs 2' ? 4 : 8;
     }
+
+    const cat = categories[categorySlug] || INITIAL_CATEGORIES[categorySlug];
+    const finalBanner = (bannerImage && bannerImage !== '/logo.png' && !bannerImage.includes('default.png')) ? bannerImage : (cat?.bannerImage || cat?.avatarImage || '/logo.png');
 
     addMatch({
       categorySlug,
       title,
       map: mapType,
-      type,
+      type: finalType,
       entryFee: Number(entryFee),
       prizePool: Number(prizePool),
       firstPrize: finalFirstPrize,
@@ -196,7 +203,7 @@ export default function AdminTournamentsPage() {
       perKill: finalPerKill,
       totalSlots: finalSlots,
       time,
-      bannerImage,
+      bannerImage: finalBanner,
       rules,
     });
 
@@ -424,9 +431,10 @@ export default function AdminTournamentsPage() {
 
   const handleCategorySelect = (slug: string) => {
     setCategorySlug(slug);
-    const cat = categories[slug];
-    if (cat?.bannerImage) {
-      setBannerImage(cat.bannerImage);
+    const cat = categories[slug] || INITIAL_CATEGORIES[slug];
+    const catImg = cat?.bannerImage || cat?.avatarImage || INITIAL_CATEGORIES[slug]?.bannerImage || '';
+    if (catImg) {
+      setBannerImage(catImg);
     }
     if (slug === 'lone-wolf') {
       setType('1 vs 1');
@@ -459,8 +467,10 @@ export default function AdminTournamentsPage() {
   const handleTypeSelect = (newType: string) => {
     setType(newType);
     if (categorySlug === 'lone-wolf') {
-      const slots = (newType === '2 vs 2' || newType === '2v2' || newType.toLowerCase() === 'duo' || newType.includes('2 vs 2')) ? 4 : 2;
+      const isDuo = newType === '2 vs 2' || newType === '2v2' || newType.toLowerCase() === 'duo' || newType.includes('2 vs 2');
+      const slots = isDuo ? 4 : 2;
       setTotalSlots(slots);
+      setType(isDuo ? '2 vs 2' : '1 vs 1');
       const pool = Math.max(10, Math.round(entryFee * slots * 0.85));
       setPrizePool(pool);
       setFirstPrize(pool);
@@ -539,7 +549,12 @@ export default function AdminTournamentsPage() {
           </button>
 
           <button
-            onClick={() => { setTime(getNextHourSchedule()); setShowCreateModal(true); }}
+            onClick={() => {
+              setTime(getUpcomingScheduleTime(1));
+              const cat = categories[categorySlug] || INITIAL_CATEGORIES[categorySlug];
+              if (cat?.bannerImage) setBannerImage(cat.bannerImage);
+              setShowCreateModal(true);
+            }}
             className="px-4 py-2.5 rounded-xl btn-red text-xs font-black flex items-center gap-1.5 shadow-md shadow-red-600/30"
           >
             <Plus className="w-4 h-4" /> Create New Match
@@ -1032,7 +1047,17 @@ export default function AdminTournamentsPage() {
                   </label>
                   <select
                     value={totalSlots}
-                    onChange={(e) => setTotalSlots(Number(e.target.value))}
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      setTotalSlots(val);
+                      if (categorySlug === 'lone-wolf') {
+                        const isDuo = val === 4;
+                        setType(isDuo ? '2 vs 2' : '1 vs 1');
+                        const pool = Math.max(10, Math.round(entryFee * val * 0.85));
+                        setPrizePool(pool);
+                        setFirstPrize(pool);
+                      }
+                    }}
                     className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/40 text-xs font-bold focus:outline-none focus:border-red-500"
                   >
                     {isLoneWolf ? (

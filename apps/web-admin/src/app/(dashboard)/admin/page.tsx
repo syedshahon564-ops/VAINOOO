@@ -34,7 +34,8 @@ import {
   Zap,
   Cpu,
 } from 'lucide-react';
-import { useCMS, MatchItem, BannerSlide } from '@/lib/cms-store';
+import { useCMS, MatchItem, BannerSlide, INITIAL_CATEGORIES } from '@/lib/cms-store';
+import { getUpcomingScheduleTime } from '@/components/LiveMatchCountdown';
 import ImageUploadInput from '@/components/ImageUploadInput';
 import {
   generateAutomatedMatchBatch,
@@ -120,10 +121,8 @@ export default function AdminMasterPage() {
   const [matchSecondPrize, setMatchSecondPrize] = useState(500);
   const [matchThirdPrize, setMatchThirdPrize] = useState(200);
   const [matchTotalSlots, setMatchTotalSlots] = useState(48);
-  const [matchTime, setMatchTime] = useState('Today 08:00 PM');
-  const [matchBannerImage, setMatchBannerImage] = useState(
-    'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=640'
-  );
+  const [matchTime, setMatchTime] = useState(() => getUpcomingScheduleTime(1));
+  const [matchBannerImage, setMatchBannerImage] = useState(() => INITIAL_CATEGORIES['classic-match']?.bannerImage || '');
   const [matchRules, setMatchRules] = useState('');
 
   // ROOM CREDENTIALS FORM STATE
@@ -348,9 +347,10 @@ export default function AdminMasterPage() {
 
   const handleSelectMatchCategory = (slug: string) => {
     setMatchCategory(slug);
-    const cat = categories[slug];
-    if (cat?.bannerImage) {
-      setMatchBannerImage(cat.bannerImage);
+    const cat = categories[slug] || INITIAL_CATEGORIES[slug];
+    const catImg = cat?.bannerImage || cat?.avatarImage || INITIAL_CATEGORIES[slug]?.bannerImage || '';
+    if (catImg) {
+      setMatchBannerImage(catImg);
     }
     if (slug === 'lone-wolf') {
       setMatchType('1 vs 1');
@@ -385,6 +385,7 @@ export default function AdminMasterPage() {
       const isDuo = newType === '2 vs 2' || newType === '2v2' || newType.toLowerCase() === 'duo' || newType.includes('2 vs 2');
       const slots = isDuo ? 4 : 2;
       setMatchTotalSlots(slots);
+      setMatchType(isDuo ? '2 vs 2' : '1 vs 1');
       const pool = Math.max(10, Math.round(matchEntryFee * slots * 0.85));
       setMatchPrizePool(pool);
       setMatchFirstPrize(pool);
@@ -423,8 +424,11 @@ export default function AdminMasterPage() {
     const finalSecondPrize = isSingle ? 0 : Number(matchSecondPrize);
     const finalThirdPrize = isSingle ? 0 : Number(matchThirdPrize);
     let finalSlots = Number(matchTotalSlots);
+    let finalType = matchType;
     if (matchCategory === 'lone-wolf') {
-      finalSlots = (matchType === '2 vs 2' || matchType === '2v2' || matchType.toLowerCase() === 'duo' || matchType.includes('2 vs 2')) ? 4 : 2;
+      const isDuo = finalSlots === 4 || matchType === '2 vs 2' || matchType === '2v2' || matchType.toLowerCase().includes('duo');
+      finalSlots = isDuo ? 4 : 2;
+      finalType = isDuo ? '2 vs 2' : '1 vs 1';
     } else if (matchCategory === 'clash-squad' || matchCategory === 'cs-only-headshot') {
       finalSlots = matchType === '1 vs 1' ? 2 : (matchType.includes('2') || matchType.includes('Duo')) ? 4 : 8;
     } else if (matchType === 'Duo' && finalSlots > 24) {
@@ -435,7 +439,7 @@ export default function AdminMasterPage() {
       categorySlug: matchCategory,
       title: matchTitle,
       map: matchMap,
-      type: matchType,
+      type: finalType,
       time: matchTime,
       entryFee: Number(matchEntryFee),
       prizePool: Number(matchPrizePool),
@@ -967,7 +971,17 @@ export default function AdminMasterPage() {
                   </label>
                   <select
                     value={matchTotalSlots}
-                    onChange={(e) => setMatchTotalSlots(Number(e.target.value))}
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      setMatchTotalSlots(val);
+                      if (isMatchLoneWolf) {
+                        const isDuo = val === 4;
+                        setMatchType(isDuo ? '2 vs 2' : '1 vs 1');
+                        const pool = Math.max(10, Math.round(matchEntryFee * val * 0.85));
+                        setMatchPrizePool(pool);
+                        setMatchFirstPrize(pool);
+                      }
+                    }}
                     className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/30 text-xs font-bold focus:outline-none focus:border-red-500"
                   >
                     {isMatchLoneWolf ? (

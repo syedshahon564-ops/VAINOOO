@@ -63,7 +63,7 @@ export async function GET() {
       } else {
         for (const [slug, initCat] of Object.entries(INITIAL_CATEGORIES)) {
           const cat = result.categories[slug];
-          if (!cat || !cat.bannerImage || cat.bannerImage.includes('unsplash.com') || cat.bannerImage === '/logo.png') {
+          if (!cat || !cat.bannerImage || cat.bannerImage.includes('unsplash.com') || cat.bannerImage === '/logo.png' || cat.bannerImage === '/banners/default.png' || cat.bannerImage.startsWith('/uploads/')) {
             result.categories[slug] = {
               ...(initCat as any),
               ...(cat || {}),
@@ -81,7 +81,7 @@ export async function GET() {
         result.settings.banners = INITIAL_BANNERS;
       } else {
         result.settings.banners = result.settings.banners.map((b: any, idx: number) => {
-          if (!b.image || b.image.includes('unsplash.com') || b.image === '/logo.png') {
+          if (!b.image || b.image.includes('unsplash.com') || b.image === '/logo.png' || b.image === '/banners/default.png' || b.image.startsWith('/uploads/')) {
             return {
               ...(INITIAL_BANNERS[idx] || {}),
               ...b,

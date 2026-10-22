@@ -80,10 +80,32 @@ export function parseScheduleTimeToDate(matchTime: string, startTimeIso?: string
     }
     target.setHours(hours, minutes, 0, 0);
 
+    // If dayOffset was 0 (Today) and target is already in the past, roll to tomorrow
+    if (!ymdMatch && dayOffset === 0 && target.getTime() < Date.now() - 3600 * 1000) {
+      target.setDate(target.getDate() + 1);
+    }
+
     return target;
   }
 
   return null;
+}
+
+/**
+ * Returns a clean, upcoming schedule string like "Today 08:30 PM" or "Tomorrow 10:00 AM".
+ */
+export function getUpcomingScheduleTime(offsetHours: number = 1): string {
+  const now = new Date();
+  const d = new Date(Date.now() + offsetHours * 60 * 60 * 1000);
+  const isTomorrow = d.getDate() !== now.getDate();
+  const dayPrefix = isTomorrow ? 'Tomorrow' : 'Today';
+  const h = d.getHours();
+  const m = d.getMinutes();
+  const period = h >= 12 ? 'PM' : 'AM';
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  const padH = h12 < 10 ? `0${h12}` : `${h12}`;
+  const padM = m < 10 ? `0${m}` : `${m}`;
+  return `${dayPrefix} ${padH}:${padM} ${period}`;
 }
 
 /**

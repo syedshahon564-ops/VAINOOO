@@ -363,11 +363,11 @@ export function normalizeCMSData(input: Partial<CMSData> | null | undefined): CM
       const initialAvatar = initialCat?.avatarImage || initialBanner;
 
       let bannerImage = item.bannerImage;
-      if (!bannerImage || bannerImage.includes('unsplash.com') || bannerImage === '/logo.png') {
+      if (!bannerImage || bannerImage.includes('unsplash.com') || bannerImage === '/logo.png' || bannerImage === '/banners/default.png' || bannerImage.startsWith('/uploads/')) {
         bannerImage = initialBanner || bannerImage;
       }
       let avatarImage = item.avatarImage;
-      if (!avatarImage || avatarImage.includes('unsplash.com') || avatarImage === '/logo.png') {
+      if (!avatarImage || avatarImage.includes('unsplash.com') || avatarImage === '/logo.png' || avatarImage === '/banners/default.png' || avatarImage.startsWith('/uploads/')) {
         avatarImage = initialAvatar || bannerImage;
       }
 
@@ -402,14 +402,16 @@ export function normalizeCMSData(input: Partial<CMSData> | null | undefined): CM
               : cat?.bannerImage || cat?.avatarImage || '/logo.png';
 
           if (isLoneWolf) {
+            const isDuo = m.totalSlots === 4 || m.type === '2 vs 2' || m.type === '2v2' || m.type?.toLowerCase()?.includes('duo') || m.type?.includes('2 vs 2');
             return {
               ...m,
+              type: isDuo ? '2 vs 2' : '1 vs 1',
+              totalSlots: isDuo ? 4 : 2,
               bannerImage,
               perKill: 0,
               secondPrize: 0,
               thirdPrize: 0,
               firstPrize: m.firstPrize || m.prizePool,
-              totalSlots: (m.type === '2 vs 2' || m.type === '2v2' || m.type?.toLowerCase() === 'duo' || m.type?.includes('2 vs 2')) ? 4 : 2,
             };
           }
           if (isClashSquad) {
@@ -435,7 +437,7 @@ export function normalizeCMSData(input: Partial<CMSData> | null | undefined): CM
     : INITIAL_BANNERS;
   const healedBanners = rawBanners.map((b: any, idx: number) => {
     let img = b?.image;
-    if (!img || img.includes('unsplash.com') || img === '/logo.png') {
+    if (!img || img.includes('unsplash.com') || img === '/logo.png' || img === '/banners/default.png' || img.startsWith('/uploads/')) {
       img = INITIAL_BANNERS[idx]?.image || INITIAL_BANNERS[0]?.image || img;
     }
     return {
@@ -484,33 +486,7 @@ if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
 }
 
 export function prepareCMSPayload(data: CMSData) {
-  // Strip huge default base64 images from categories to keep payload tiny (<10KB)
-  const lightCategories: Record<string, any> = {};
-  for (const [slug, cat] of Object.entries(data.categories || {})) {
-    const isHeavyBanner = cat.bannerImage && cat.bannerImage.startsWith('data:') && cat.bannerImage.length > 50000;
-    const isHeavyAvatar = cat.avatarImage && cat.avatarImage.startsWith('data:') && cat.avatarImage.length > 50000;
-    lightCategories[slug] = {
-      ...cat,
-      bannerImage: isHeavyBanner ? '/categories/' + slug + '.png' : cat.bannerImage,
-      avatarImage: isHeavyAvatar ? '/categories/' + slug + '.png' : cat.avatarImage,
-    };
-  }
-
-  const lightBanners = (data.settings?.banners || []).map((b) => {
-    if (b.image && b.image.startsWith('data:') && b.image.length > 50000) {
-      return { ...b, image: '/banners/default.png' };
-    }
-    return b;
-  });
-
-  return {
-    ...data,
-    categories: lightCategories,
-    settings: {
-      ...data.settings,
-      banners: lightBanners,
-    },
-  };
+  return data;
 }
 
 export function saveCMSData(input: CMSData): void {
@@ -568,6 +544,7 @@ export function addMatch(match: Omit<MatchItem, 'id' | 'filledSlots'>): MatchIte
   const isClashSquad = match.categorySlug === 'clash-squad' || match.categorySlug === 'cs-only-headshot';
 
   let totalSlots = match.totalSlots;
+  let matchTypeVal = match.type || "1 vs 1";
   let perKill = match.perKill;
   let firstPrize = match.firstPrize || match.prizePool;
   let secondPrize = match.secondPrize || 0;
@@ -578,7 +555,9 @@ export function addMatch(match: Omit<MatchItem, 'id' | 'filledSlots'>): MatchIte
     secondPrize = 0;
     thirdPrize = 0;
     firstPrize = match.prizePool;
-    totalSlots = (match.type === '2 vs 2' || match.type === '2v2' || match.type.toLowerCase() === 'duo' || match.type.includes('2 vs 2')) ? 4 : 2;
+    const isDuo = totalSlots === 4 || match.type === '2 vs 2' || match.type === '2v2' || match.type?.toLowerCase()?.includes('duo') || match.type?.includes('2 vs 2');
+    totalSlots = isDuo ? 4 : 2;
+    matchTypeVal = isDuo ? "2 vs 2" : "1 vs 1";
   } else if (isClashSquad) {
     perKill = 0;
     secondPrize = 0;
@@ -601,6 +580,7 @@ export function addMatch(match: Omit<MatchItem, 'id' | 'filledSlots'>): MatchIte
   const now = Date.now();
   const newMatch: MatchItem = {
     ...match,
+    type: matchTypeVal,
     rules: match.rules && match.rules.trim() !== '' ? match.rules : catRule,
     bannerImage: finalBanner,
     totalSlots,
