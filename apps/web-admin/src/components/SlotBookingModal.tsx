@@ -717,13 +717,13 @@ export default function SlotBookingModal({
             {/* Scrollable Slots Grid */}
             <div className="flex-1 overflow-y-auto py-2 space-y-3 pr-1 max-h-[50vh]">
               <div className="text-xs font-bold text-gray-600 flex items-center justify-between">
-                <span>{isSquad ? 'Choose your Squad Slot:' : isDuo ? 'Choose your Duo Slot:' : 'Choose your Solo Slot:'}</span>
+                <span>{isLoneWolf2v2 ? 'টিম স্লট নির্বাচন করুন (Team 1 বা Team 2):' : isSquad ? 'Choose your Squad Slot:' : isDuo ? 'Choose your Duo Slot:' : 'Choose your Solo Slot:'}</span>
                 <span className="text-red-600 font-black">
-                  {isSquad ? '12 Slots (48 Players)' : isDuo ? '24 Slots (48 Players)' : '48 Slots (48 Players)'}
+                  {isLoneWolf2v2 ? '২টি স্লট (Team 1 vs Team 2 • মোট ৪ জন)' : isSquad ? '12 Slots (48 Players)' : isDuo ? '24 Slots (48 Players)' : '48 Slots (48 Players)'}
                 </span>
               </div>
 
-              <div className={`grid ${totalSlotCount > 24 ? 'grid-cols-3 sm:grid-cols-6' : 'grid-cols-2 sm:grid-cols-4'} gap-2`}>
+              <div className={`grid ${isLoneWolf2v2 ? 'grid-cols-2 max-w-lg mx-auto w-full' : totalSlotCount > 24 ? 'grid-cols-3 sm:grid-cols-6' : 'grid-cols-2 sm:grid-cols-4'} gap-3`}>
                 {Array.from({ length: totalSlotCount }, (_, tIndex) => {
                   const slotNum = tIndex + 1;
                   const playersInSlot = slotParticipantsMap[slotNum] || [];
