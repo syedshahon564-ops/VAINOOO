@@ -197,7 +197,14 @@ export function generateClientAiResponse(
   ticket: Partial<SupportTicket>,
   userMessage: string,
   imageUrl?: string
-): { response: string; paymentVerified?: boolean; verifiedTrxId?: string; verifiedAmount?: number } {
+): {
+  response: string;
+  paymentVerified?: boolean;
+  verifiedTrxId?: string;
+  verifiedAmount?: number;
+  matchPrizeVerified?: boolean;
+  prizeAmount?: number;
+} {
   const result = generateAdvancedAiResponse({
     userMessage,
     userIgn: ticket.userIgn,
