@@ -1083,7 +1083,7 @@ export default function MobileAppViewPage(props: any) {
     [selectedCategory, matches]
   );
 
-  const [subTypeFilter, setSubTypeFilter] = useState<'SOLO' | 'DUO' | 'SQUAD'>('SOLO');
+  const [subTypeFilter, setSubTypeFilter] = useState<'ALL' | 'SOLO' | 'DUO' | 'SQUAD'>('ALL');
   const filteredCurrentMatches = React.useMemo(() => {
     return currentCategoryMatches.filter((m) => {
       const typeStr = (m.type || m.matchType || '').toUpperCase();
@@ -1126,6 +1126,7 @@ export default function MobileAppViewPage(props: any) {
         m.totalSlots === 8 ||
         (m.totalSlots === 48 && !is1v1OrSolo && !isDuoMatch);
 
+      if (subTypeFilter === 'ALL') return true;
       if (subTypeFilter === 'SOLO') {
         return is1v1OrSolo;
       }
@@ -1141,7 +1142,7 @@ export default function MobileAppViewPage(props: any) {
 
   // Reset filter to SOLO whenever selected category changes
   useEffect(() => {
-    setSubTypeFilter('SOLO');
+    setSubTypeFilter('ALL');
   }, [selectedCategory]);
 
   return (
@@ -2363,11 +2364,11 @@ export default function MobileAppViewPage(props: any) {
                         <div className="p-8 text-center rounded-2xl bg-slate-50 border border-slate-100 space-y-2.5 my-3 shadow-xs">
                           <Trophy className="w-12 h-12 text-amber-500/40 mx-auto animate-pulse" />
                           <h4 className="text-sm font-black text-slate-800">
-                            {tPhone('à¦²à¦¿à¦¡à¦¾à¦°à¦¬à§‹à¦°à§à¦¡ à¦à¦–à¦¨à¦“ à¦¶à§à¦°à§ à¦¹à§Ÿà¦¨à¦¿', 'Leaderboard Not Live Yet')}
+                            {tPhone('লিডারবোর্ড এখনো উন্মুক্ত হয়নি', 'Leaderboard Not Live Yet')}
                           </h4>
                           <p className="text-[11px] text-slate-500 max-w-xs mx-auto leading-relaxed">
                             {tPhone(
-                              'à¦Ÿà§à¦°à§à¦¨à¦¾à¦®à§‡à¦¨à§à¦Ÿà§‡à¦° à¦²à¦¾à¦‡à¦­ à¦®à§à¦¯à¦¾à¦š à¦¶à§à¦°à§ à¦¹à¦²à§‡ à¦ªà§à¦²à§‡à¦¯à¦¼à¦¾à¦°à¦¦à§‡à¦° à¦•à¦¿à¦² à¦“ à¦…à¦°à§à¦œà¦¿à¦¤ à¦°â€à§à¦¯à¦¾à¦™à§à¦• à¦¸à§à¦¬à§Ÿà¦‚à¦•à§à¦°à¦¿à§Ÿà¦­à¦¾à¦¬à§‡ à¦à¦–à¦¾à¦¨à§‡ à¦¯à§à¦•à§à¦¤ à¦¹à¦¬à§‡à¥¤',
+                              'টুর্নামেন্টের অফিসিয়াল লাইভ ম্যাচ শুরু হওয়ার পর বিজয়ী ও সেরা প্লেয়ারদের কিল, র‍্যাংক ও প্রাইজমানি স্বয়ংক্রিয়ভাবে এখানে প্রদর্শিত হবে।',
                               'Player kills, wins, and ranks will automatically appear here once live tournament matches begin.'
                             )}
                           </p>

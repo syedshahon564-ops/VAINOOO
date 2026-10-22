@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState } from 'react';
 import Link from 'next/link';
@@ -38,17 +38,20 @@ export default function LeaderboardPage() {
         <div>
           <div className="flex items-center gap-2 text-xs text-gray-500 mb-1">
             <Link href="/" className="hover:text-red-600 transition-colors">
-              হোম
+              {t('হোম', 'Home')}
             </Link>
             <span>/</span>
-            <span className="text-amber-500 font-bold">টপ প্লেয়ার লিডারবোর্ড</span>
+            <span className="text-amber-500 font-bold">{t('টপ প্লেয়ার লিডারবোর্ড', 'Top Players Leaderboard')}</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white flex items-center gap-2.5">
             <Trophy className="w-8 h-8 text-amber-500" />
-            {settings.siteName} - শীর্ষ প্লেয়ারদের তালিকা (Top Players)
+            {settings.siteName} - {t('শীর্ষ প্লেয়ারদের তালিকা (Top Players)', 'Top Players Leaderboard')}
           </h1>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            কে কয়টা কিল করেছে, কে কত টাকা আয় করেছে এবং কে কয়টা ম্যাচ খেলেছে তার লাইভ ফলাফল।
+            {t(
+              'কে কয়টা কিল করেছে, কে কত টাকা আয় করেছে এবং কে কয়টা ম্যাচ খেলেছে তার লাইভ ফলাফল।',
+              'Live statistics on player kills, total earnings, and matches played.'
+            )}
           </p>
         </div>
 
@@ -56,7 +59,7 @@ export default function LeaderboardPage() {
           href="/mobile-app-view"
           className="px-4 py-2.5 rounded-xl text-xs font-bold btn-red flex items-center gap-1.5 shadow-md shadow-red-600/30"
         >
-          📱 মোবাইল অ্যাপে দেখুন
+          📱 {t('মোবাইল অ্যাপে দেখুন', 'View in Mobile App')}
         </Link>
       </div>
 
@@ -64,103 +67,108 @@ export default function LeaderboardPage() {
       {topPlayers.length === 0 ? (
         <div className="p-12 text-center rounded-3xl bg-white dark:bg-[#12121a] border border-gray-200 dark:border-white/10 shadow-sm space-y-3 my-4">
           <Trophy className="w-16 h-16 text-amber-500/50 mx-auto animate-pulse" />
-          <h3 className="text-lg font-black text-gray-900 dark:text-white">à¦²à¦¿à¦¡à¦¾à¦°à¦¬à§‹à¦°à§à¦¡ à¦à¦–à¦¨à§‹ à¦‰à¦¨à§à¦®à§à¦•à§à¦¤ à¦¹à§Ÿà¦¨à¦¿</h3>
+          <h3 className="text-lg font-black text-gray-900 dark:text-white">
+            {t('লিডারবোর্ড এখনো উন্মুক্ত হয়নি', 'Leaderboard Not Yet Available')}
+          </h3>
           <p className="text-xs text-gray-500 max-w-md mx-auto">
-            à¦Ÿà§à¦°à§à¦¨à¦¾à¦®à§‡à¦¨à§à¦Ÿà§‡à¦° à¦…à¦«à¦¿à¦¸à¦¿à§Ÿà¦¾à¦² à¦²à¦¾à¦‡à¦­ à¦®à§à¦¯à¦¾à¦š à¦¶à§à¦°à§ à¦¹à¦“à§Ÿà¦¾à¦° à¦ªà¦° à¦¬à¦¿à¦œà§Ÿà§€ à¦“ à¦¸à§‡à¦°à¦¾ à¦ªà§à¦²à§‡à§Ÿà¦¾à¦°à¦¦à§‡à¦° à¦•à¦¿à¦², à¦°â€à§à¦¯à¦¾à¦™à§à¦• à¦“ à¦ªà§à¦°à¦¾à¦‡à¦œà¦®à¦¾à¦¨à¦¿ à¦¸à§à¦¬à§Ÿà¦‚à¦•à§à¦°à¦¿à§Ÿà¦­à¦¾à¦¬à§‡ à¦à¦–à¦¾à¦¨à§‡ à¦ªà§à¦°à¦¦à¦°à§à¦¶à¦¿à¦¤ à¦¹à¦¬à§‡à¥¤
+            {t(
+              'টুর্নামেন্টের অফিসিয়াল লাইভ ম্যাচ শুরু হওয়ার পর বিজয়ী ও সেরা প্লেয়ারদের কিল, র‍্যাংক ও প্রাইজমানি স্বয়ংক্রিয়ভাবে এখানে প্রদর্শিত হবে।',
+              'Player kills, ranks, and prize money will automatically appear here once official tournament matches begin.'
+            )}
           </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
-        {/* Rank 2 */}
-        {topPlayers[1] && (
-          <div className="order-2 md:order-1 rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#12121a] p-6 text-center space-y-3 relative shadow-sm hover:shadow-md transition-all">
-            <div className="w-10 h-10 rounded-full bg-slate-300 dark:bg-slate-700 text-slate-900 dark:text-white font-black text-sm mx-auto flex items-center justify-center shadow-md">
-              2nd
-            </div>
-            <div className="w-20 h-20 rounded-full mx-auto overflow-hidden border-4 border-slate-300 dark:border-slate-600 shadow-xl">
-              <img src={topPlayers[1].avatar} alt={topPlayers[1].ign} className="w-full h-full object-cover" />
-            </div>
-            <div>
-              <h3 className="text-lg font-black text-gray-900 dark:text-white">{topPlayers[1].ign}</h3>
-            </div>
-            <div className="grid grid-cols-3 gap-1 py-2 rounded-xl bg-gray-50 dark:bg-white/5 text-[11px]">
-              <div>
-                <span className="text-gray-400 block text-[9px] uppercase font-bold">মোট কিল</span>
-                <span className="font-black text-red-600">{topPlayers[1].kills}</span>
+          {/* Rank 2 */}
+          {topPlayers[1] && (
+            <div className="order-2 md:order-1 rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#12121a] p-6 text-center space-y-3 relative shadow-sm hover:shadow-md transition-all">
+              <div className="w-10 h-10 rounded-full bg-slate-300 dark:bg-slate-700 text-slate-900 dark:text-white font-black text-sm mx-auto flex items-center justify-center shadow-md">
+                {t('২য়', '2nd')}
+              </div>
+              <div className="w-20 h-20 rounded-full mx-auto overflow-hidden border-4 border-slate-300 dark:border-slate-600 shadow-xl">
+                <img src={topPlayers[1].avatar} alt={topPlayers[1].ign} className="w-full h-full object-cover" />
               </div>
               <div>
-                <span className="text-gray-400 block text-[9px] uppercase font-bold">মোট আয়</span>
-                <span className="font-black text-emerald-600">৳{topPlayers[1].earnings}</span>
+                <h3 className="text-lg font-black text-gray-900 dark:text-white">{topPlayers[1].ign}</h3>
               </div>
-              <div>
-                <span className="text-gray-400 block text-[9px] uppercase font-bold">ম্যাচ</span>
-                <span className="font-black text-blue-500">{topPlayers[1].matchesPlayed}</span>
+              <div className="grid grid-cols-3 gap-1 py-2 rounded-xl bg-gray-50 dark:bg-white/5 text-[11px]">
+                <div>
+                  <span className="text-gray-400 block text-[9px] uppercase font-bold">{t('মোট কিল', 'Total Kills')}</span>
+                  <span className="font-black text-red-600">{topPlayers[1].kills}</span>
+                </div>
+                <div>
+                  <span className="text-gray-400 block text-[9px] uppercase font-bold">{t('মোট আয়', 'Earnings')}</span>
+                  <span className="font-black text-emerald-600">৳{topPlayers[1].earnings}</span>
+                </div>
+                <div>
+                  <span className="text-gray-400 block text-[9px] uppercase font-bold">{t('ম্যাচ', 'Matches')}</span>
+                  <span className="font-black text-blue-500">{topPlayers[1].matchesPlayed}</span>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Rank 1 (Champion) */}
-        {topPlayers[0] && (
-          <div className="order-1 md:order-2 rounded-2xl border-2 border-amber-500 bg-gradient-to-b from-amber-500/10 via-white to-white dark:via-[#141420] dark:to-[#12121a] p-6 sm:p-8 text-center space-y-4 relative shadow-xl transform md:-translate-y-4">
-            <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-amber-500 text-black font-black text-xs shadow-md shadow-amber-500/30 uppercase tracking-wider">
-              👑 Champion #1
-            </div>
-            <div className="w-24 h-24 rounded-full mx-auto overflow-hidden border-4 border-amber-400 shadow-2xl relative">
-              <img src={topPlayers[0].avatar} alt={topPlayers[0].ign} className="w-full h-full object-cover" />
-            </div>
-            <div>
-              <h3 className="text-xl font-black text-gray-900 dark:text-white flex items-center justify-center gap-1.5">
-                {topPlayers[0].ign}
-                <ShieldCheck className="w-5 h-5 text-emerald-500" />
-              </h3>
-            </div>
-            <div className="grid grid-cols-3 gap-2 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs">
-              <div>
-                <span className="text-amber-800 dark:text-amber-300 block text-[10px] uppercase font-bold">মোট কিল</span>
-                <span className="text-base font-black text-red-600">{topPlayers[0].kills}</span>
+          {/* Rank 1 (Champion) */}
+          {topPlayers[0] && (
+            <div className="order-1 md:order-2 rounded-2xl border-2 border-amber-500 bg-gradient-to-b from-amber-500/10 via-white to-white dark:via-[#141420] dark:to-[#12121a] p-6 sm:p-8 text-center space-y-4 relative shadow-xl transform md:-translate-y-4">
+              <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-amber-500 text-black font-black text-xs shadow-md shadow-amber-500/30 uppercase tracking-wider">
+                👑 {t('চ্যাম্পিয়ন #1', 'Champion #1')}
+              </div>
+              <div className="w-24 h-24 rounded-full mx-auto overflow-hidden border-4 border-amber-400 shadow-2xl relative">
+                <img src={topPlayers[0].avatar} alt={topPlayers[0].ign} className="w-full h-full object-cover" />
               </div>
               <div>
-                <span className="text-amber-800 dark:text-amber-300 block text-[10px] uppercase font-bold">মোট আয়</span>
-                <span className="text-base font-black text-emerald-600">৳{topPlayers[0].earnings}</span>
+                <h3 className="text-xl font-black text-gray-900 dark:text-white flex items-center justify-center gap-1.5">
+                  {topPlayers[0].ign}
+                  <ShieldCheck className="w-5 h-5 text-emerald-500" />
+                </h3>
               </div>
-              <div>
-                <span className="text-amber-800 dark:text-amber-300 block text-[10px] uppercase font-bold">ম্যাচ খেলা</span>
-                <span className="text-base font-black text-blue-600">{topPlayers[0].matchesPlayed}</span>
+              <div className="grid grid-cols-3 gap-2 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs">
+                <div>
+                  <span className="text-amber-800 dark:text-amber-300 block text-[10px] uppercase font-bold">{t('মোট কিল', 'Total Kills')}</span>
+                  <span className="text-base font-black text-red-600">{topPlayers[0].kills}</span>
+                </div>
+                <div>
+                  <span className="text-amber-800 dark:text-amber-300 block text-[10px] uppercase font-bold">{t('মোট আয়', 'Earnings')}</span>
+                  <span className="text-base font-black text-emerald-600">৳{topPlayers[0].earnings}</span>
+                </div>
+                <div>
+                  <span className="text-amber-800 dark:text-amber-300 block text-[10px] uppercase font-bold">{t('ম্যাচ খেলা', 'Matches Played')}</span>
+                  <span className="text-base font-black text-blue-600">{topPlayers[0].matchesPlayed}</span>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Rank 3 */}
-        {topPlayers[2] && (
-          <div className="order-3 md:order-3 rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#12121a] p-6 text-center space-y-3 relative shadow-sm hover:shadow-md transition-all">
-            <div className="w-10 h-10 rounded-full bg-amber-700/30 text-amber-600 font-black text-sm mx-auto flex items-center justify-center shadow-md">
-              3rd
-            </div>
-            <div className="w-20 h-20 rounded-full mx-auto overflow-hidden border-4 border-amber-700/40 shadow-xl">
-              <img src={topPlayers[2].avatar} alt={topPlayers[2].ign} className="w-full h-full object-cover" />
-            </div>
-            <div>
-              <h3 className="text-lg font-black text-gray-900 dark:text-white">{topPlayers[2].ign}</h3>
-            </div>
-            <div className="grid grid-cols-3 gap-1 py-2 rounded-xl bg-gray-50 dark:bg-white/5 text-[11px]">
-              <div>
-                <span className="text-gray-400 block text-[9px] uppercase font-bold">মোট কিল</span>
-                <span className="font-black text-red-600">{topPlayers[2].kills}</span>
+          {/* Rank 3 */}
+          {topPlayers[2] && (
+            <div className="order-3 md:order-3 rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#12121a] p-6 text-center space-y-3 relative shadow-sm hover:shadow-md transition-all">
+              <div className="w-10 h-10 rounded-full bg-amber-700/30 text-amber-600 font-black text-sm mx-auto flex items-center justify-center shadow-md">
+                {t('৩য়', '3rd')}
+              </div>
+              <div className="w-20 h-20 rounded-full mx-auto overflow-hidden border-4 border-amber-700/40 shadow-xl">
+                <img src={topPlayers[2].avatar} alt={topPlayers[2].ign} className="w-full h-full object-cover" />
               </div>
               <div>
-                <span className="text-gray-400 block text-[9px] uppercase font-bold">মোট আয়</span>
-                <span className="font-black text-emerald-600">৳{topPlayers[2].earnings}</span>
+                <h3 className="text-lg font-black text-gray-900 dark:text-white">{topPlayers[2].ign}</h3>
               </div>
-              <div>
-                <span className="text-gray-400 block text-[9px] uppercase font-bold">ম্যাচ</span>
-                <span className="font-black text-blue-500">{topPlayers[2].matchesPlayed}</span>
+              <div className="grid grid-cols-3 gap-1 py-2 rounded-xl bg-gray-50 dark:bg-white/5 text-[11px]">
+                <div>
+                  <span className="text-gray-400 block text-[9px] uppercase font-bold">{t('মোট কিল', 'Total Kills')}</span>
+                  <span className="font-black text-red-600">{topPlayers[2].kills}</span>
+                </div>
+                <div>
+                  <span className="text-gray-400 block text-[9px] uppercase font-bold">{t('মোট আয়', 'Earnings')}</span>
+                  <span className="font-black text-emerald-600">৳{topPlayers[2].earnings}</span>
+                </div>
+                <div>
+                  <span className="text-gray-400 block text-[9px] uppercase font-bold">{t('ম্যাচ', 'Matches')}</span>
+                  <span className="font-black text-blue-500">{topPlayers[2].matchesPlayed}</span>
+                </div>
               </div>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
       )}
 
       {/* SEARCH & FILTER */}
@@ -169,7 +177,7 @@ export default function LeaderboardPage() {
           <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="প্লেয়ারের নাম খুঁজুন..."
+            placeholder={t('প্লেয়ারের নাম খুঁজুন...', 'Search player name...')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/30 text-xs font-bold focus:outline-none focus:border-red-500"
@@ -177,17 +185,21 @@ export default function LeaderboardPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          {(['all', 'monthly', 'weekly'] as const).map((t) => (
+          {(['all', 'monthly', 'weekly'] as const).map((filterKey) => (
             <button
-              key={t}
-              onClick={() => setTimeFilter(t)}
+              key={filterKey}
+              onClick={() => setTimeFilter(filterKey)}
               className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all capitalize ${
-                timeFilter === t
+                timeFilter === filterKey
                   ? 'bg-red-600 text-white shadow-md'
                   : 'bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-300'
               }`}
             >
-              {t === 'all' ? 'সর্বকালের সেরা' : t === 'monthly' ? 'এই মাসের' : 'এই সপ্তাহের'}
+              {filterKey === 'all'
+                ? t('সর্বকালের সেরা', 'All Time')
+                : filterKey === 'monthly'
+                ? t('এই মাসের', 'This Month')
+                : t('এই সপ্তাহের', 'This Week')}
             </button>
           ))}
         </div>
@@ -198,68 +210,76 @@ export default function LeaderboardPage() {
         <table className="w-full text-left text-xs">
           <thead className="bg-gray-50 dark:bg-black/40 border-b border-gray-200 dark:border-white/10 text-gray-500 font-bold uppercase tracking-wider">
             <tr>
-              <th className="p-4 text-center">র‍্যাংক</th>
-              <th className="p-4">প্লেয়ারের নাম</th>
-              <th className="p-4 text-center">মোট কিল (Kills)</th>
-              <th className="p-4 text-center">মোট আয় (Earnings)</th>
-              <th className="p-4 text-center">ম্যাচ খেলেছে</th>
-              <th className="p-4 text-center">Booyah সংখ্যা</th>
-              <th className="p-4 text-right">উইন রেট</th>
+              <th className="p-4 text-center">{t('র‍্যাংক', 'Rank')}</th>
+              <th className="p-4">{t('প্লেয়ারের নাম', 'Player Name')}</th>
+              <th className="p-4 text-center">{t('মোট কিল', 'Total Kills')}</th>
+              <th className="p-4 text-center">{t('মোট আয়', 'Total Earnings')}</th>
+              <th className="p-4 text-center">{t('ম্যাচ খেলেছে', 'Matches Played')}</th>
+              <th className="p-4 text-center">{t('Booyah সংখ্যা', 'Booyahs')}</th>
+              <th className="p-4 text-right">{t('উইন রেট', 'Win Rate')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 dark:divide-white/5 text-gray-700 dark:text-gray-300">
-            {filteredPlayers.map((p) => (
-              <tr
-                key={p.id}
-                onClick={() => setSelectedPlayer(p)}
-                className="hover:bg-amber-500/5 dark:hover:bg-white/[0.04] cursor-pointer transition-all group"
-                title={language === 'en' ? 'Click to view player details' : 'প্লেয়ার ডিটেইলস দেখতে ক্লিক করুন'}
-              >
-                <td className="p-4 text-center">
-                  <span
-                    className={`w-7 h-7 rounded-full inline-flex items-center justify-center font-black text-xs ${
-                      p.rank === 1
-                        ? 'bg-amber-400 text-black shadow-md'
-                        : p.rank === 2
-                        ? 'bg-slate-300 text-black'
-                        : p.rank === 3
-                        ? 'bg-amber-700/50 text-white'
-                        : 'bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300'
-                    }`}
-                  >
-                    #{p.rank}
-                  </span>
-                </td>
-                <td className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full overflow-hidden border border-white/20 flex-shrink-0">
-                      <img src={p.avatar} alt={p.ign} className="w-full h-full object-cover" />
-                    </div>
-                    <div>
-                      <span className="font-black text-gray-900 dark:text-white block text-sm group-hover:text-amber-500 transition-colors flex items-center gap-1.5">
-                        {p.ign}
-                        <Eye className="w-3 h-3 text-amber-500 opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </span>
-                    </div>
-                  </div>
-                </td>
-                <td className="p-4 text-center font-black text-red-600 text-sm">
-                  {p.kills} Kills
-                </td>
-                <td className="p-4 text-center font-black text-emerald-600 text-sm">
-                  ৳{p.earnings.toLocaleString()}
-                </td>
-                <td className="p-4 text-center font-bold text-gray-800 dark:text-gray-200">
-                  {p.matchesPlayed} Matches
-                </td>
-                <td className="p-4 text-center font-black text-amber-500">
-                  {p.booyahs} Booyahs
-                </td>
-                <td className="p-4 text-right font-black text-blue-500">
-                  {p.winRate}
+            {filteredPlayers.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="p-8 text-center text-gray-400 font-bold">
+                  {t('কোনো প্লেয়ার পাওয়া যায়নি', 'No players found')}
                 </td>
               </tr>
-            ))}
+            ) : (
+              filteredPlayers.map((p) => (
+                <tr
+                  key={p.id}
+                  onClick={() => setSelectedPlayer(p)}
+                  className="hover:bg-amber-500/5 dark:hover:bg-white/[0.04] cursor-pointer transition-all group"
+                  title={language === 'en' ? 'Click to view player details' : 'প্লেয়ার ডিটেইলস দেখতে ক্লিক করুন'}
+                >
+                  <td className="p-4 text-center">
+                    <span
+                      className={`w-7 h-7 rounded-full inline-flex items-center justify-center font-black text-xs ${
+                        p.rank === 1
+                          ? 'bg-amber-400 text-black shadow-md'
+                          : p.rank === 2
+                          ? 'bg-slate-300 text-black'
+                          : p.rank === 3
+                          ? 'bg-amber-700/50 text-white'
+                          : 'bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300'
+                      }`}
+                    >
+                      #{p.rank}
+                    </span>
+                  </td>
+                  <td className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full overflow-hidden border border-white/20 flex-shrink-0">
+                        <img src={p.avatar} alt={p.ign} className="w-full h-full object-cover" />
+                      </div>
+                      <div>
+                        <span className="font-black text-gray-900 dark:text-white block text-sm group-hover:text-amber-500 transition-colors flex items-center gap-1.5">
+                          {p.ign}
+                          <Eye className="w-3 h-3 text-amber-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </span>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="p-4 text-center font-black text-red-600 text-sm">
+                    {p.kills} {t('কিল', 'Kills')}
+                  </td>
+                  <td className="p-4 text-center font-black text-emerald-600 text-sm">
+                    ৳{p.earnings.toLocaleString()}
+                  </td>
+                  <td className="p-4 text-center font-bold text-gray-800 dark:text-gray-200">
+                    {p.matchesPlayed} {t('ম্যাচ', 'Matches')}
+                  </td>
+                  <td className="p-4 text-center font-black text-amber-500">
+                    {p.booyahs} {t('বুইয়া', 'Booyahs')}
+                  </td>
+                  <td className="p-4 text-right font-black text-blue-500">
+                    {p.winRate}
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

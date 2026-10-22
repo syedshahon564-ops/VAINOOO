@@ -110,29 +110,49 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    inMemoryServerCache = body;
-
-    const payload = JSON.stringify(body);
-    const candidatePaths = getCandidatePaths();
-
-    // Persist to primary candidate synchronously for crash safety
-    if (candidatePaths.length > 0) {
-      try {
-        ensureDataFile(candidatePaths[0]);
-        fs.writeFileSync(candidatePaths[0], payload, 'utf-8');
-      } catch (e) {}
+    if (!body || typeof body !== 'object') {
+      return NextResponse.json({ ok: false, error: 'Invalid payload' }, { status: 400 });
     }
 
-    // Persist other paths asynchronously without blocking response
-    if (candidatePaths.length > 1) {
-      Promise.resolve().then(() => {
-        for (let i = 1; i < candidatePaths.length; i++) {
-          try {
-            ensureDataFile(candidatePaths[i]);
-            fs.writeFileSync(candidatePaths[i], payload, 'utf-8');
-          } catch (err) {}
-        }
-      }).catch(() => {});
+    const dataFile = getDataFilePath();
+    let current: any = inMemoryServerCache;
+    if (!current && dataFile && fs.existsSync(dataFile)) {
+      try {
+        current = JSON.parse(fs.readFileSync(dataFile, 'utf-8'));
+      } catch (e) {}
+    }
+    if (!current || typeof current !== 'object') {
+      current = {};
+    }
+
+    // Smart merge incoming properties
+    const nextData = {
+      ...current,
+      ...body,
+      categories: {
+        ...(current.categories || {}),
+        ...(body.categories || {}),
+      },
+      settings: {
+        ...(current.settings || {}),
+        ...(body.settings || {}),
+      },
+      // If matches array is provided in body, update matches
+      matches: Array.isArray(body.matches) ? body.matches : (current.matches || []),
+      topPlayers: Array.isArray(body.topPlayers) ? body.topPlayers : (current.topPlayers || []),
+      matchesUpdatedAt: body.matchesUpdatedAt || Date.now(),
+    };
+
+    inMemoryServerCache = nextData;
+    const payload = JSON.stringify(nextData);
+    const candidatePaths = getCandidatePaths();
+
+    // Persist to all candidate paths
+    for (const p of candidatePaths) {
+      try {
+        ensureDataFile(p);
+        fs.writeFileSync(p, payload, 'utf-8');
+      } catch (e) {}
     }
 
     return NextResponse.json({ ok: true, timestamp: Date.now() });

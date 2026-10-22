@@ -72,7 +72,17 @@ export default function AdminTournamentsPage() {
   const [thirdPrize, setThirdPrize] = useState(30);
   const [perKill, setPerKill] = useState(3);
   const [totalSlots, setTotalSlots] = useState(48);
-  const [time, setTime] = useState('Today 08:30 PM');
+  const getNextHourSchedule = () => {
+    const d = new Date(Date.now() + 60 * 60 * 1000);
+    const h = d.getHours();
+    const m = d.getMinutes();
+    const period = h >= 12 ? 'PM' : 'AM';
+    const h12 = h % 12 === 0 ? 12 : h % 12;
+    const padH = h12 < 10 ? `0${h12}` : `${h12}`;
+    const padM = m < 10 ? `0${m}` : `${m}`;
+    return `Today ${padH}:${padM} ${period}`;
+  };
+  const [time, setTime] = useState(getNextHourSchedule);
   const [bannerImage, setBannerImage] = useState(
     'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=640'
   );
@@ -529,7 +539,7 @@ export default function AdminTournamentsPage() {
           </button>
 
           <button
-            onClick={() => setShowCreateModal(true)}
+            onClick={() => { setTime(getNextHourSchedule()); setShowCreateModal(true); }}
             className="px-4 py-2.5 rounded-xl btn-red text-xs font-black flex items-center gap-1.5 shadow-md shadow-red-600/30"
           >
             <Plus className="w-4 h-4" /> Create New Match

@@ -72,7 +72,7 @@ export default function CategoryDetailPage() {
     [allCategoryMatches]
   );
 
-  const [matchTypeFilter, setMatchTypeFilter] = useState<'SOLO' | 'DUO' | 'SQUAD'>('SOLO');
+  const [matchTypeFilter, setMatchTypeFilter] = useState<'ALL' | 'SOLO' | 'DUO' | 'SQUAD'>('ALL');
   const [activeTab, setActiveTab] = useState<'PLAY' | 'RESULT'>('PLAY');
 
   const filteredCategoryMatches = React.useMemo(() => {
@@ -117,6 +117,7 @@ export default function CategoryDetailPage() {
         m.totalSlots === 8 ||
         (m.totalSlots === 48 && !is1v1OrSolo && !isDuoMatch);
 
+      if (matchTypeFilter === 'ALL') return true;
       if (matchTypeFilter === 'SOLO') {
         return is1v1OrSolo;
       }

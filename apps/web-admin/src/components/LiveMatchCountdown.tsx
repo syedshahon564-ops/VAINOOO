@@ -129,18 +129,26 @@ export function isMatchFinished(match: {
     return true;
   }
 
-  // Exactly 6 minutes after Room ID & password delivery, match auto-finishes & leaves active lobbies
+  // After Room ID & password delivery, match auto-finishes after 30 minutes
   const deliveredIso = (match as any)?.roomDeliveredAt || (match as any)?.deliveredAt;
   if (deliveredIso) {
     try {
       const deliveredTime = new Date(deliveredIso).getTime();
       if (!isNaN(deliveredTime)) {
         const elapsedMins = (Date.now() - deliveredTime) / (60 * 1000);
-        if (elapsedMins >= 6) {
+        if (elapsedMins >= 30) {
           return true;
         }
       }
     } catch (e) {}
+  }
+
+  // Never auto-finish a newly created match that is still UPCOMING
+  const createdAt = (match as any)?.createdAt;
+  if (typeof createdAt === 'number' && Date.now() - createdAt < 48 * 3600 * 1000) {
+    if (s === 'UPCOMING' || s === '') {
+      return false;
+    }
   }
 
   if (match.time) {
@@ -148,8 +156,8 @@ export function isMatchFinished(match: {
       const d = parseScheduleTimeToDate(match.time, match.startTimeIso);
       if (d && !isNaN(d.getTime())) {
         const elapsedMins = (Date.now() - d.getTime()) / (60 * 1000);
-        // If 45 minutes have elapsed since the scheduled start time, match has concluded
-        if (elapsedMins > 45) {
+        // If 6 hours have elapsed since the scheduled start time, consider concluded
+        if (elapsedMins > 360) {
           return true;
         }
       }

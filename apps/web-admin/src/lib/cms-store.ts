@@ -507,6 +507,36 @@ if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
   } catch (e) {}
 }
 
+export function prepareCMSPayload(data: CMSData) {
+  // Strip huge default base64 images from categories to keep payload tiny (<10KB)
+  const lightCategories: Record<string, any> = {};
+  for (const [slug, cat] of Object.entries(data.categories || {})) {
+    const isHeavyBanner = cat.bannerImage && cat.bannerImage.startsWith('data:') && cat.bannerImage.length > 50000;
+    const isHeavyAvatar = cat.avatarImage && cat.avatarImage.startsWith('data:') && cat.avatarImage.length > 50000;
+    lightCategories[slug] = {
+      ...cat,
+      bannerImage: isHeavyBanner ? '/categories/' + slug + '.png' : cat.bannerImage,
+      avatarImage: isHeavyAvatar ? '/categories/' + slug + '.png' : cat.avatarImage,
+    };
+  }
+
+  const lightBanners = (data.settings?.banners || []).map((b) => {
+    if (b.image && b.image.startsWith('data:') && b.image.length > 50000) {
+      return { ...b, image: '/banners/default.png' };
+    }
+    return b;
+  });
+
+  return {
+    ...data,
+    categories: lightCategories,
+    settings: {
+      ...data.settings,
+      banners: lightBanners,
+    },
+  };
+}
+
 export function saveCMSData(input: CMSData): void {
   if (typeof window === 'undefined') return;
   const data = normalizeCMSData(input);
@@ -523,11 +553,11 @@ export function saveCMSData(input: CMSData): void {
 
   // Server sync so all phones, emulators and browsers stay updated
   try {
+    const payload = prepareCMSPayload(data);
     fetch('/api/cms', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      keepalive: true,
-      body: JSON.stringify(data),
+      body: JSON.stringify(payload),
     }).catch(() => {});
   } catch (e) {}
 }
@@ -544,10 +574,11 @@ export async function saveCMSDataAsync(input: CMSData): Promise<boolean> {
   } catch (e) {}
 
   try {
+    const payload = prepareCMSPayload(data);
     const res = await fetch('/api/cms', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
+      body: JSON.stringify(payload),
     });
     return res.ok;
   } catch (e) {
@@ -875,10 +906,7 @@ export function syncCMSWithServer(): void {
           const serverIdSet = new Set(validServerMatches.map((m: MatchItem) => m.id));
           const now = Date.now();
           const localPending = (current?.matches || []).filter(
-            (m: MatchItem) =>
-              !serverIdSet.has(m.id) &&
-              getMatchTime(m) > effectiveClearedAt &&
-              now - getMatchTime(m) < 60000
+            (m: MatchItem) => !serverIdSet.has(m.id) && getMatchTime(m) > effectiveClearedAt
           );
           mergedMatches = [...localPending, ...validServerMatches];
         } else {
