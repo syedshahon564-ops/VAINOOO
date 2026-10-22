@@ -13,7 +13,7 @@ import {
   Key,
   Users,
 } from 'lucide-react';
-import { MatchItem, useCMS } from '@/lib/cms-store';
+import { MatchItem, useCMS, getEffectiveMatchRules } from '@/lib/cms-store';
 import { formatMatchSchedule } from '@/components/LiveMatchCountdown';
 import { getCurrentUser, hasUserJoinedMatch } from '@/lib/user-store';
 
@@ -218,11 +218,7 @@ export default function MatchDetailsPage({
       {/* 8. Category & Match Specific Dynamic Rules (from Admin CMS) */}
       {(() => {
         const currentCategory = categories[match.categorySlug];
-        const categoryRule =
-          currentCategory?.customRules ||
-          settings.categoryRules?.[match.categorySlug] ||
-          (match.categorySlug === 'classic-match' ? settings.categoryRules?.['regular-match'] : '') ||
-          match.rules;
+        const categoryRule = getEffectiveMatchRules(match, categories, settings);
 
         if (!categoryRule || categoryRule.trim() === '') return null;
 

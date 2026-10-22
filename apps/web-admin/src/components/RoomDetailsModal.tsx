@@ -15,7 +15,7 @@ import {
   Flame,
   Lock,
 } from 'lucide-react';
-import { MatchItem, useCMS } from '@/lib/cms-store';
+import { MatchItem, useCMS, getEffectiveMatchRules } from '@/lib/cms-store';
 import { parseScheduleTimeToDate } from '@/components/LiveMatchCountdown';
 import { getCurrentUser, hasUserJoinedMatch } from '@/lib/user-store';
 
@@ -225,15 +225,8 @@ export default function RoomDetailsModal({ match, onClose, onJoinClick }: RoomDe
         {/* Specific Rules for this match */}
         {(() => {
           const currentCategory = categories[match.categorySlug];
-          const effectiveRule =
-            currentCategory?.customRules ||
-            settings?.categoryRules?.[match.categorySlug] ||
-            (match.categorySlug === 'classic-match' ? settings?.categoryRules?.['regular-match'] : '') ||
-            match.rules ||
-            `১. গান প্রোপার্টি অফ, ক্যারেক্টার স্কিল অন, লিমিটেড অ্যামো ইয়েস।
-২. আপনার বুক করা নির্দিষ্ট স্লটেই বসতে হবে, অন্য স্লটে বসলে কিক করা হবে।
-৩. কোনো প্রকার হ্যাক, কনফিগ বা স্ক্রিপ্ট ব্যবহার সম্পূর্ণ নিষিদ্ধ।
-৪. টিম-আপ (Friendly Teaming) করলে কোনো প্রাইজমানি দেওয়া হবে না।`;
+          const effectiveRule = getEffectiveMatchRules(match, categories, settings);
+          if (!effectiveRule || effectiveRule.trim() === '') return null;
 
           return (
             <div className="space-y-3">
