@@ -111,6 +111,17 @@ export async function POST(req: Request) {
         return NextResponse.json({ ok: false, error: 'User already exists' }, { status: 400 });
       }
 
+      const DEFAULT_AVATARS = [
+        '/avatars/avatar-1.png',
+        '/avatars/avatar-2.png',
+        '/avatars/avatar-3.png',
+        '/avatars/avatar-4.png',
+        '/avatars/avatar-5.png',
+      ];
+      if (!newUser.avatar || newUser.avatar === '/avatars/avatar-2.jpg') {
+        newUser.avatar = DEFAULT_AVATARS[Math.floor(Math.random() * DEFAULT_AVATARS.length)];
+      }
+
       currentUsers.unshift(newUser);
       writeUsersToFile(currentUsers);
       return NextResponse.json({ ok: true, user: newUser });

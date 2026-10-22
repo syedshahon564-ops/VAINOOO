@@ -75,7 +75,10 @@ const TRANSACTIONS_STORAGE_KEY = 'ff_esports_balance_tx_v2';
 
 export const DEFAULT_AVATARS = [
   '/avatars/avatar-1.png',
-  '/avatars/avatar-2.jpg',
+  '/avatars/avatar-2.png',
+  '/avatars/avatar-3.png',
+  '/avatars/avatar-4.png',
+  '/avatars/avatar-5.png',
 ];
 
 export const INITIAL_USERS: UserAccount[] = [
@@ -379,7 +382,7 @@ export function getUsers(): UserAccount[] {
 
     // Heal player avatars to new gaming avatars if unset or pointing to unsplash
     parsed.forEach((u, i) => {
-      if (!u.avatar || u.avatar.includes('unsplash.com')) {
+      if (!u.avatar || u.avatar.includes('unsplash.com') || u.avatar === '/avatars/avatar-2.jpg') {
         u.avatar = DEFAULT_AVATARS[i % DEFAULT_AVATARS.length];
         updated = true;
       }
@@ -1049,7 +1052,7 @@ export function getCurrentUser(): UserAccount | null {
       return null;
     }
     const res = fresh || (parsed.role === 'ADMIN' ? parsed : null);
-    if (res && (!res.avatar || res.avatar.includes('unsplash.com'))) {
+    if (res && (!res.avatar || res.avatar.includes('unsplash.com') || res.avatar === '/avatars/avatar-2.jpg')) {
       res.avatar = DEFAULT_AVATARS[0];
     }
     return res;
