@@ -668,6 +668,11 @@ export async function updateCategory(slug: string, updated: Partial<CategoryItem
     updatedAt: Date.now(),
   };
 
+  // If this category was previously deleted, un-delete it
+  if (data.deletedCategories && data.deletedCategories.includes(slug)) {
+    data.deletedCategories = data.deletedCategories.filter((s) => s !== slug);
+  }
+
   data.categories[slug] = updatedCategory;
 
   // Auto-propagate category rules to settings and all matches belonging to this category:
@@ -689,6 +694,73 @@ export async function updateCategory(slug: string, updated: Partial<CategoryItem
 
   saveCMSData(data);
   return true;
+}
+
+
+export async function addCategory(
+  newCategory: Omit<CategoryItem, 'id'> & { id?: number }
+): Promise<{ ok: boolean; slug: string; error?: string }> {
+  const data = getCMSData();
+  if (!data.categories) {
+    data.categories = {};
+  }
+
+  let cleanSlug = (newCategory.slug || '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+  if (!cleanSlug) {
+    cleanSlug = (newCategory.name || 'category')
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  }
+
+  if (!cleanSlug) {
+    cleanSlug = 'category-' + Date.now();
+  }
+
+  let uniqueSlug = cleanSlug;
+  let counter = 1;
+  while (data.categories[uniqueSlug]) {
+    uniqueSlug = cleanSlug + '-' + counter;
+    counter++;
+  }
+
+  const finalBanner = newCategory.bannerImage?.trim() || newCategory.avatarImage?.trim() || '/logo.png';
+  const finalAvatar = newCategory.avatarImage?.trim() || newCategory.bannerImage?.trim() || '/logo.png';
+
+  const categoryItem: CategoryItem = {
+    slug: uniqueSlug,
+    id: newCategory.id || Date.now(),
+    name: newCategory.name.trim(),
+    section: newCategory.section?.trim() || 'FREE FIRE MATCHES',
+    bannerImage: finalBanner,
+    avatarImage: finalAvatar,
+    description: newCategory.description || '',
+    customRules: newCategory.customRules || '',
+    updatedAt: Date.now(),
+  };
+
+  if (data.deletedCategories && data.deletedCategories.includes(uniqueSlug)) {
+    data.deletedCategories = data.deletedCategories.filter((s) => s !== uniqueSlug);
+  }
+
+  data.categories[uniqueSlug] = categoryItem;
+
+  if (categoryItem.customRules) {
+    if (!data.settings.categoryRules) {
+      data.settings.categoryRules = {};
+    }
+    data.settings.categoryRules[uniqueSlug] = categoryItem.customRules;
+    data.settings.updatedAt = Date.now();
+  }
+
+  saveCMSData(data);
+  return { ok: true, slug: uniqueSlug };
 }
 
 export async function deleteCategory(slug: string): Promise<boolean> {
@@ -1042,6 +1114,7 @@ export function useCMS() {
     updateMatch,
     deleteMatch,
     clearAllMatches,
+    addCategory,
     updateCategory,
     deleteCategory,
     updateSiteSettings,

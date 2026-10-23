@@ -126,17 +126,26 @@ export async function POST(req: Request) {
     }
 
     // Smart merge incoming properties
+    const nextCategories = {
+      ...(current.categories || {}),
+      ...(body.categories || {}),
+    };
+
+    if (Array.isArray(body.deletedCategories)) {
+      for (const del of body.deletedCategories) {
+        delete nextCategories[del];
+      }
+    }
+
     const nextData = {
       ...current,
       ...body,
-      categories: {
-        ...(current.categories || {}),
-        ...(body.categories || {}),
-      },
+      categories: nextCategories,
       settings: {
         ...(current.settings || {}),
         ...(body.settings || {}),
       },
+      deletedCategories: Array.isArray(body.deletedCategories) ? body.deletedCategories : (current.deletedCategories || []),
       // If matches array is provided in body, update matches
       matches: Array.isArray(body.matches) ? body.matches : (current.matches || []),
       topPlayers: Array.isArray(body.topPlayers) ? body.topPlayers : (current.topPlayers || []),
