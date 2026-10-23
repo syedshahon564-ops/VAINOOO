@@ -351,16 +351,41 @@ export default function AdminCategoriesPage() {
             </div>
 
             <div>
-              <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                Section Title (সেকশনের শিরোনাম)
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs font-bold text-gray-700 dark:text-gray-300">
+                  Parent Section (মূল সেকশন নির্বাচন) <span className="text-red-500">*</span>
+                </label>
+                <span className="text-[10px] text-gray-400">এই ক্যাটাগরি কোন সেকশনে দেখাবে</span>
+              </div>
               <input
                 type="text"
                 required
                 value={section}
                 onChange={(e) => setSection(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/30 text-xs font-bold focus:outline-none focus:border-red-500"
+                placeholder="e.g. FREE FIRE MATCHES, FREE FIRE MATCH 1 VS 1, ONLY HEADSHOT"
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/30 text-xs font-bold focus:outline-none focus:border-red-500 mb-2"
               />
+              <div className="flex flex-wrap gap-1.5">
+                <span className="text-[10px] text-gray-400 mr-1 self-center font-bold">ক্লিক করে সিলেক্ট করুন:</span>
+                {[
+                  { title: 'FREE FIRE MATCHES', label: '🔥 FREE FIRE MATCHES' },
+                  { title: 'FREE FIRE MATCH 1 VS 1', label: '⚔️ FREE FIRE MATCH 1 VS 1' },
+                  { title: 'ONLY HEADSHOT', label: '🎯 ONLY HEADSHOT' },
+                ].map((p) => (
+                  <button
+                    key={p.title}
+                    type="button"
+                    onClick={() => setSection(p.title)}
+                    className={`text-[10px] px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
+                      section === p.title
+                        ? 'border-red-500 bg-red-600 text-white font-black shadow-sm'
+                        : 'border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300 hover:border-red-400'
+                    }`}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -547,31 +572,40 @@ export default function AdminCategoriesPage() {
 
               {/* Section Header & Preset Chips */}
               <div>
-                <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                  সেকশনের শিরোনাম (Section Title)
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-bold text-gray-700 dark:text-gray-300">
+                    মূল সেকশন নির্বাচন (Parent Section) <span className="text-red-500">*</span>
+                  </label>
+                  <span className="text-[10px] text-gray-400">এই ক্যাটাগরি কোন সেকশনে দেখাবে</span>
+                </div>
                 <input
                   type="text"
                   required
                   value={newCatSection}
                   onChange={(e) => setNewCatSection(e.target.value)}
-                  placeholder="e.g. FREE FIRE MATCHES"
+                  placeholder="e.g. FREE FIRE MATCHES, ONLY HEADSHOT"
                   className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/40 text-xs font-bold text-gray-900 dark:text-white focus:outline-none focus:border-red-500 mb-2"
                 />
                 <div className="flex flex-wrap gap-1.5">
-                  <span className="text-[10px] text-gray-400 mr-1 self-center">প্রিসেট:</span>
-                  {SECTION_PRESETS.map((preset) => (
+                  <span className="text-[10px] text-gray-400 mr-1 self-center font-bold">মূল সেকশন:</span>
+                  {[
+                    { title: 'FREE FIRE MATCHES', label: '🔥 FREE FIRE MATCHES' },
+                    { title: 'FREE FIRE MATCH 1 VS 1', label: '⚔️ FREE FIRE MATCH 1 VS 1' },
+                    { title: 'ONLY HEADSHOT', label: '🎯 ONLY HEADSHOT' },
+                    { title: 'CLASH SQUAD ARENA', label: 'CLASH SQUAD ARENA' },
+                    { title: 'SPECIAL TOURNAMENTS', label: 'SPECIAL TOURNAMENTS' },
+                  ].map((preset) => (
                     <button
-                      key={preset}
+                      key={preset.title}
                       type="button"
-                      onClick={() => setNewCatSection(preset)}
-                      className={`text-[10px] px-2.5 py-1 rounded-lg border transition-all ${
-                        newCatSection === preset
-                          ? 'border-red-500 bg-red-50 dark:bg-red-950/40 text-red-600 font-bold'
-                          : 'border-gray-200 dark:border-white/10 text-gray-500 hover:border-gray-400'
+                      onClick={() => setNewCatSection(preset.title)}
+                      className={`text-[10px] px-2.5 py-1.5 rounded-lg border transition-all cursor-pointer ${
+                        newCatSection === preset.title
+                          ? 'border-red-500 bg-red-600 text-white font-black shadow-sm'
+                          : 'border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300 hover:border-red-400'
                       }`}
                     >
-                      {preset}
+                      {preset.label}
                     </button>
                   ))}
                 </div>

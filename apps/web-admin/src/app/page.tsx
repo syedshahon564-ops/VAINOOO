@@ -116,12 +116,30 @@ export default function HomePage() {
   const catLostToWin = categories['lost-to-win'];
   const catHeadshot = categories['cs-only-headshot'];
 
-  const freeFireMatches = [catSpecial, catClassic, catClash, catLoneWolf].filter(Boolean);
-  const match1vs1 = [catLostToWin].filter(Boolean);
-  const onlyHeadshot = [catHeadshot].filter(Boolean);
+  const allCats = Object.values(categories || {});
+  const norm = (s: string = '') => (s || '').trim().toUpperCase();
 
-  const standardSlugs = new Set(['special-match', 'classic-match', 'clash-squad', 'lone-wolf', 'lost-to-win', 'cs-only-headshot']);
-  const customCategories = Object.values(categories || {}).filter((c) => c && !standardSlugs.has(c.slug));
+  const freeFireMatches = allCats.filter((c) => {
+    const s = norm(c.section);
+    return s === 'FREE FIRE MATCHES' || (!c.section && ['classic-match', 'clash-squad', 'lone-wolf', 'special-match'].includes(c.slug));
+  });
+
+  const match1vs1 = allCats.filter((c) => {
+    const s = norm(c.section);
+    return s === 'FREE FIRE MATCH 1 VS 1' || s.includes('1 VS 1') || s.includes('1V1') || (!c.section && c.slug === 'lost-to-win');
+  });
+
+  const onlyHeadshot = allCats.filter((c) => {
+    const s = norm(c.section);
+    return s === 'ONLY HEADSHOT' || s.includes('HEADSHOT') || (!c.section && c.slug === 'cs-only-headshot');
+  });
+
+  const placedSlugs = new Set([
+    ...freeFireMatches.map((c) => c.slug),
+    ...match1vs1.map((c) => c.slug),
+    ...onlyHeadshot.map((c) => c.slug),
+  ]);
+  const customCategories = allCats.filter((c) => !placedSlugs.has(c.slug));
 
   if (isApp) {
     return <MobileAppViewPage standalone={true} />;

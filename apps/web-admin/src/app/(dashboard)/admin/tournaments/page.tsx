@@ -377,6 +377,7 @@ export default function AdminTournamentsPage() {
     }
   };
 
+  const isLostToWin = categorySlug === 'lost-to-win';
   const isLoneWolf = categorySlug === 'lone-wolf';
   const isClashSquad = categorySlug === 'clash-squad' || categorySlug === 'cs-only-headshot';
 
@@ -436,7 +437,17 @@ export default function AdminTournamentsPage() {
     if (catImg) {
       setBannerImage(catImg);
     }
-    if (slug === 'lone-wolf') {
+    if (slug === 'lost-to-win') {
+      setType('1 vs 1');
+      setTotalSlots(2);
+      setMapType('Iron Cage');
+      setPerKill(0);
+      setSecondPrize(0);
+      setThirdPrize(0);
+      const pool = Math.max(10, Math.round(entryFee * 2 * 0.85));
+      setPrizePool(pool);
+      setFirstPrize(pool);
+    } else if (slug === 'lone-wolf') {
       setType('1 vs 1');
       setTotalSlots(2);
       setMapType('Iron Cage');
@@ -895,7 +906,9 @@ export default function AdminTournamentsPage() {
                     onChange={(e) => handleTypeSelect(e.target.value)}
                     className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/40 text-xs font-bold focus:outline-none focus:border-red-500"
                   >
-                    {isLoneWolf ? (
+                    {isLostToWin ? (
+                      <option value="1 vs 1">1 vs 1 (Solo)</option>
+                    ) : isLoneWolf ? (
                       <>
                         <option value="1 vs 1">1 vs 1 (Solo)</option>
                         <option value="2 vs 2">2 vs 2 (Duo)</option>
@@ -1060,7 +1073,9 @@ export default function AdminTournamentsPage() {
                     }}
                     className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/40 text-xs font-bold focus:outline-none focus:border-red-500"
                   >
-                    {isLoneWolf ? (
+                    {isLostToWin ? (
+                      <option value="2">2 Slots (1 vs 1 Solo)</option>
+                    ) : isLoneWolf ? (
                       <>
                         <option value="2">2 Slots (1 vs 1 Solo)</option>
                         <option value="4">4 Slots (2 vs 2 Duo)</option>

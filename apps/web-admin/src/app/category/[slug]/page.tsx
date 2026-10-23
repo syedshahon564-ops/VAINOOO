@@ -362,26 +362,44 @@ export default function CategoryDetailPage() {
         {activeTab === 'PLAY' && (
           <div className="pt-6 space-y-6">
             {/* Top Match Type Sub-Filter (Solo, Duo, Squad) */}
-            <div className="flex items-center justify-center gap-2 max-w-lg mx-auto p-1 rounded-2xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10">
-              {[
+            {(() => {
+              const isLostToWin = slug === 'lost-to-win';
+              const isLoneWolf = slug === 'lone-wolf';
+
+              let items = [
                 { key: 'SOLO', labelBn: 'সোলো (Solo)', labelEn: 'Solo' },
                 { key: 'DUO', labelBn: 'ডুও (Duo)', labelEn: 'Duo' },
                 { key: 'SQUAD', labelBn: 'স্কোয়াড (Squad)', labelEn: 'Squad' },
-              ].map((item) => (
-                <button
-                  key={item.key}
-                  type="button"
-                  onClick={() => setMatchTypeFilter(item.key as any)}
-                  className={`flex-1 py-2 px-3 rounded-xl text-xs font-black transition-all text-center ${
-                    matchTypeFilter === item.key
-                      ? 'bg-red-600 text-white shadow-md shadow-red-600/30'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                  }`}
-                >
-                  {t(item.labelBn, item.labelEn)}
-                </button>
-              ))}
-            </div>
+              ];
+
+              if (isLostToWin) {
+                items = [{ key: 'SOLO', labelBn: 'সোলো (Solo)', labelEn: 'Solo' }];
+              } else if (isLoneWolf) {
+                items = [
+                  { key: 'SOLO', labelBn: 'সোলো (Solo)', labelEn: 'Solo' },
+                  { key: 'DUO', labelBn: 'ডুও (Duo)', labelEn: 'Duo' },
+                ];
+              }
+
+              return (
+                <div className="flex items-center justify-center gap-2 max-w-lg mx-auto p-1 rounded-2xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10">
+                  {items.map((item) => (
+                    <button
+                      key={item.key}
+                      type="button"
+                      onClick={() => setMatchTypeFilter(item.key as any)}
+                      className={`flex-1 py-2 px-3 rounded-xl text-xs font-black transition-all text-center ${
+                        matchTypeFilter === item.key
+                          ? 'bg-red-600 text-white shadow-md shadow-red-600/30'
+                          : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                      }`}
+                    >
+                      {t(item.labelBn, item.labelEn)}
+                    </button>
+                  ))}
+                </div>
+              );
+            })()}
 
             {matchDetailsScreen ? (
               <MatchDetailsPage

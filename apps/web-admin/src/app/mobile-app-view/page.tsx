@@ -1791,26 +1791,44 @@ export default function MobileAppViewPage(props: any) {
                           </div>
 
                           {/* Match Sub-Type Switcher (Solo, Duo, Squad) */}
-                          <div className="flex items-center gap-1 p-1 rounded-xl border border-gray-200 bg-white shadow-xs">
-                            {[
+                          {(() => {
+                            const isLostToWin = selectedCategory === 'lost-to-win';
+                            const isLoneWolf = selectedCategory === 'lone-wolf';
+
+                            let items = [
                               { key: 'SOLO', labelBn: 'সোলো (Solo)', labelEn: 'Solo' },
                               { key: 'DUO', labelBn: 'ডুও (Duo)', labelEn: 'Duo' },
                               { key: 'SQUAD', labelBn: 'স্কোয়াড (Squad)', labelEn: 'Squad' },
-                            ].map((item) => (
-                              <button
-                                key={item.key}
-                                type="button"
-                                onClick={() => setSubTypeFilter(item.key as any)}
-                                className={`flex-1 py-1.5 rounded-lg text-[10px] font-black transition-all text-center ${
-                                  subTypeFilter === item.key
-                                    ? 'bg-red-600 text-white shadow font-black'
-                                    : 'text-gray-600 hover:text-gray-900 font-bold'
-                                }`}
-                              >
-                                {tPhone(item.labelBn, item.labelEn)}
-                              </button>
-                            ))}
-                          </div>
+                            ];
+
+                            if (isLostToWin) {
+                              items = [{ key: 'SOLO', labelBn: 'সোলো (Solo)', labelEn: 'Solo' }];
+                            } else if (isLoneWolf) {
+                              items = [
+                                { key: 'SOLO', labelBn: 'সোলো (Solo)', labelEn: 'Solo' },
+                                { key: 'DUO', labelBn: 'ডুও (Duo)', labelEn: 'Duo' },
+                              ];
+                            }
+
+                            return (
+                              <div className="flex items-center gap-1 p-1 rounded-xl border border-gray-200 bg-white shadow-xs">
+                                {items.map((item) => (
+                                  <button
+                                    key={item.key}
+                                    type="button"
+                                    onClick={() => setSubTypeFilter(item.key as any)}
+                                    className={`flex-1 py-1.5 rounded-lg text-[10px] font-black transition-all text-center ${
+                                      subTypeFilter === item.key
+                                        ? 'bg-red-600 text-white shadow font-black'
+                                        : 'text-gray-600 hover:text-gray-900 font-bold'
+                                    }`}
+                                  >
+                                    {tPhone(item.labelBn, item.labelEn)}
+                                  </button>
+                                ))}
+                              </div>
+                            );
+                          })()}
 
                           {categoryTab === 'PLAY' ? (
                             filteredCurrentMatches.length === 0 ? (
@@ -2202,50 +2220,125 @@ export default function MobileAppViewPage(props: any) {
                             )}
                           </div>
 
-                          {/* Category Cards Section */}
-                          <div className="space-y-2">
-                            <div className="text-[11px] font-black uppercase tracking-wider text-gray-500 dark:text-gray-400 px-1">
-                              {tPhone('গেম ক্যাটাগরি (Select Mode)', 'Game Categories (Select Mode)')}
-                            </div>
+                          {/* Category Cards Grouped by Parent Section */}
+                          {(() => {
+                            const allCats = categoriesList;
+                            const norm = (s: string = '') => (s || '').trim().toUpperCase();
 
-                            <div className="grid grid-cols-2 gap-2">
-                              {categoriesList.map((cat) => {
-                                const count = matches.filter((m) => m.categorySlug === cat.slug && !isMatchFinished(m)).length;
-                                const catImgSrc = (cat.bannerImage && !cat.bannerImage.includes('unsplash.com'))
-                                  ? cat.bannerImage
-                                  : (INITIAL_CATEGORIES[cat.slug]?.bannerImage || cat.avatarImage || '/logo.png');
-                                return (
-                                  <div
-                                    key={cat.slug}
-                                    role="button"
-                                    tabIndex={0}
-                                    onClick={() => setSelectedCategory(cat.slug)}
-                                    className="group cursor-pointer rounded-xl overflow-hidden relative border border-white/10 shadow hover:border-red-500 active:scale-[0.96] transition-transform duration-100 ease-out h-28 flex flex-col justify-end p-2 bg-slate-900 touch-manipulation hover:shadow-lg"
-                                  >
-                                    <img
-                                      src={catImgSrc}
-                                      alt={cat.name}
-                                      loading="eager"
-                                      decoding="async"
-                                      onError={(e) => {
-                                        (e.target as HTMLImageElement).src = INITIAL_CATEGORIES[cat.slug]?.bannerImage || '/logo.png';
-                                      }}
-                                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform opacity-90"
-                                    />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent"></div>
-                                    <div className="relative z-10">
-                                      <span className="text-[9px] px-1.5 py-0.2 rounded-full font-bold bg-red-600 text-white inline-block mb-0.5">
-                                        {count} {tPhone('ম্যাচ', 'Matches')}
-                                      </span>
-                                      <h4 className="text-[11px] font-black text-white leading-tight">
-                                        {cat.name}
-                                      </h4>
+                            const ffMatches = allCats.filter((c) => {
+                              const s = norm(c.section);
+                              return s === 'FREE FIRE MATCHES' || (!c.section && ['classic-match', 'clash-squad', 'lone-wolf', 'special-match'].includes(c.slug));
+                            });
+
+                            const match1v1 = allCats.filter((c) => {
+                              const s = norm(c.section);
+                              return s === 'FREE FIRE MATCH 1 VS 1' || s.includes('1 VS 1') || s.includes('1V1') || (!c.section && c.slug === 'lost-to-win');
+                            });
+
+                            const headshot = allCats.filter((c) => {
+                              const s = norm(c.section);
+                              return s === 'ONLY HEADSHOT' || s.includes('HEADSHOT') || (!c.section && c.slug === 'cs-only-headshot');
+                            });
+
+                            const placedSlugs = new Set([
+                              ...ffMatches.map((c) => c.slug),
+                              ...match1v1.map((c) => c.slug),
+                              ...headshot.map((c) => c.slug),
+                            ]);
+                            const customCats = allCats.filter((c) => !placedSlugs.has(c.slug));
+
+                            const renderCard = (cat: any) => {
+                              const count = matches.filter((m) => m.categorySlug === cat.slug && !isMatchFinished(m)).length;
+                              const catImgSrc = (cat.bannerImage && !cat.bannerImage.includes('unsplash.com'))
+                                ? cat.bannerImage
+                                : (INITIAL_CATEGORIES[cat.slug]?.bannerImage || cat.avatarImage || '/logo.png');
+                              return (
+                                <div
+                                  key={cat.slug}
+                                  role="button"
+                                  tabIndex={0}
+                                  onClick={() => setSelectedCategory(cat.slug)}
+                                  className="group cursor-pointer rounded-xl overflow-hidden relative border border-white/10 shadow hover:border-red-500 active:scale-[0.96] transition-transform duration-100 ease-out h-28 flex flex-col justify-end p-2 bg-slate-900 touch-manipulation hover:shadow-lg"
+                                >
+                                  <img
+                                    src={catImgSrc}
+                                    alt={cat.name}
+                                    loading="eager"
+                                    decoding="async"
+                                    onError={(e) => {
+                                      (e.target as HTMLImageElement).src = INITIAL_CATEGORIES[cat.slug]?.bannerImage || '/logo.png';
+                                    }}
+                                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform opacity-90"
+                                  />
+                                  <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent"></div>
+                                  <div className="relative z-10">
+                                    <span className="text-[9px] px-1.5 py-0.2 rounded-full font-bold bg-red-600 text-white inline-block mb-0.5">
+                                      {count} {tPhone('ম্যাচ', 'Matches')}
+                                    </span>
+                                    <h4 className="text-[11px] font-black text-white leading-tight truncate">
+                                      {cat.name}
+                                    </h4>
+                                  </div>
+                                </div>
+                              );
+                            };
+
+                            return (
+                              <div className="space-y-4">
+                                {/* SECTION 1: FREE FIRE MATCHES */}
+                                {ffMatches.length > 0 && (
+                                  <div className="space-y-2">
+                                    <div className="text-[11px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 px-1 flex items-center justify-between border-b border-gray-100 dark:border-white/5 pb-1">
+                                      <span>🔥 {tPhone('ফ্রি ফায়ার ম্যাচ (FREE FIRE MATCHES)', 'FREE FIRE MATCHES')}</span>
+                                      <span className="text-[9px] text-gray-400 font-bold">{ffMatches.length} Categories</span>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                      {ffMatches.map(renderCard)}
                                     </div>
                                   </div>
-                                );
-                              })}
-                            </div>
-                          </div>
+                                )}
+
+                                {/* SECTION 2: FREE FIRE MATCH 1 VS 1 */}
+                                {match1v1.length > 0 && (
+                                  <div className="space-y-2">
+                                    <div className="text-[11px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 px-1 flex items-center justify-between border-b border-gray-100 dark:border-white/5 pb-1">
+                                      <span>⚔️ {tPhone('ফ্রি ফায়ার ম্যাচ ১ VS ১ (FREE FIRE MATCH 1 VS 1)', 'FREE FIRE MATCH 1 VS 1')}</span>
+                                      <span className="text-[9px] text-gray-400 font-bold">{match1v1.length} Categories</span>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                      {match1v1.map(renderCard)}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* SECTION 3: ONLY HEADSHOT */}
+                                {headshot.length > 0 && (
+                                  <div className="space-y-2">
+                                    <div className="text-[11px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 px-1 flex items-center justify-between border-b border-gray-100 dark:border-white/5 pb-1">
+                                      <span>🎯 {tPhone('ওনলি হেডশট (ONLY HEADSHOT)', 'ONLY HEADSHOT')}</span>
+                                      <span className="text-[9px] text-gray-400 font-bold">{headshot.length} Categories</span>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                      {headshot.map(renderCard)}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* SECTION 4: OTHER CUSTOM CATEGORIES */}
+                                {customCats.length > 0 && (
+                                  <div className="space-y-2">
+                                    <div className="text-[11px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 px-1 flex items-center justify-between border-b border-gray-100 dark:border-white/5 pb-1">
+                                      <span>⭐ {tPhone('অন্যান্য টুর্নামেন্ট (OTHER TOURNAMENTS)', 'OTHER TOURNAMENTS')}</span>
+                                      <span className="text-[9px] text-gray-400 font-bold">{customCats.length} Categories</span>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                      {customCats.map(renderCard)}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })()}
                         </div>
                       )}
                     </>
