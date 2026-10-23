@@ -65,7 +65,10 @@
     "totalWins": 0,
     "createdAt": "2026-10-23T00:00:00Z",
     "notes": "Dedicated PayBot Auto-Payment Collector Device #1",
-    "avatar": "/logo.png"
+    "avatar": "/logo.png",
+    "username": "01799000001",
+    "email": "paybot1@ffrivaltourbd.com",
+    "totalEarnings": 0
   },
   {
     "id": "u-paybot-02",
@@ -81,7 +84,10 @@
     "totalWins": 0,
     "createdAt": "2026-10-23T00:00:00Z",
     "notes": "Dedicated PayBot Auto-Payment Collector Device #2",
-    "avatar": "/logo.png"
+    "avatar": "/logo.png",
+    "username": "01799000002",
+    "email": "paybot2@ffrivaltourbd.com",
+    "totalEarnings": 0
   },
   {
     "id": "u-paybot-03",
@@ -97,7 +103,10 @@
     "totalWins": 0,
     "createdAt": "2026-10-23T00:00:00Z",
     "notes": "Dedicated PayBot Auto-Payment Collector Device #3",
-    "avatar": "/logo.png"
+    "avatar": "/logo.png",
+    "username": "01799000003",
+    "email": "paybot3@ffrivaltourbd.com",
+    "totalEarnings": 0
   },
   {
     "id": "u-paybot-04",
@@ -113,6 +122,9 @@
     "totalWins": 0,
     "createdAt": "2026-10-23T00:00:00Z",
     "notes": "Dedicated PayBot Auto-Payment Collector Device #4",
-    "avatar": "/logo.png"
+    "avatar": "/logo.png",
+    "username": "01799000004",
+    "email": "paybot4@ffrivaltourbd.com",
+    "totalEarnings": 0
   }
 ]

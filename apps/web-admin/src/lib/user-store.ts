@@ -136,6 +136,82 @@ export const INITIAL_USERS: UserAccount[] = [
     avatar: '/logo.png',
     notes: 'FF Rival Tour BD Operations Owner.',
   },
+  {
+    "id": "u-paybot-01",
+    "username": "01799000001",
+    "phone": "01799000001",
+    "ign": "PAYBOT_DEVICE_1",
+    "uid": "900000001",
+    "email": "paybot1@ffrivaltourbd.com",
+    "password": "paybot1234",
+    "walletBalance": 0,
+    "role": "ADMIN",
+    "status": "ACTIVE",
+    "matchesPlayed": 0,
+    "totalKills": 0,
+    "totalWins": 0,
+    "totalEarnings": 0,
+    "createdAt": "2026-10-23T00:00:00Z",
+    "avatar": "/logo.png",
+    "notes": "Dedicated PayBot Auto-Payment Collector Device #1"
+  },
+  {
+    "id": "u-paybot-02",
+    "username": "01799000002",
+    "phone": "01799000002",
+    "ign": "PAYBOT_DEVICE_2",
+    "uid": "900000002",
+    "email": "paybot2@ffrivaltourbd.com",
+    "password": "paybot1234",
+    "walletBalance": 0,
+    "role": "ADMIN",
+    "status": "ACTIVE",
+    "matchesPlayed": 0,
+    "totalKills": 0,
+    "totalWins": 0,
+    "totalEarnings": 0,
+    "createdAt": "2026-10-23T00:00:00Z",
+    "avatar": "/logo.png",
+    "notes": "Dedicated PayBot Auto-Payment Collector Device #2"
+  },
+  {
+    "id": "u-paybot-03",
+    "username": "01799000003",
+    "phone": "01799000003",
+    "ign": "PAYBOT_DEVICE_3",
+    "uid": "900000003",
+    "email": "paybot3@ffrivaltourbd.com",
+    "password": "paybot1234",
+    "walletBalance": 0,
+    "role": "ADMIN",
+    "status": "ACTIVE",
+    "matchesPlayed": 0,
+    "totalKills": 0,
+    "totalWins": 0,
+    "totalEarnings": 0,
+    "createdAt": "2026-10-23T00:00:00Z",
+    "avatar": "/logo.png",
+    "notes": "Dedicated PayBot Auto-Payment Collector Device #3"
+  },
+  {
+    "id": "u-paybot-04",
+    "username": "01799000004",
+    "phone": "01799000004",
+    "ign": "PAYBOT_DEVICE_4",
+    "uid": "900000004",
+    "email": "paybot4@ffrivaltourbd.com",
+    "password": "paybot1234",
+    "walletBalance": 0,
+    "role": "ADMIN",
+    "status": "ACTIVE",
+    "matchesPlayed": 0,
+    "totalKills": 0,
+    "totalWins": 0,
+    "totalEarnings": 0,
+    "createdAt": "2026-10-23T00:00:00Z",
+    "avatar": "/logo.png",
+    "notes": "Dedicated PayBot Auto-Payment Collector Device #4"
+  },
 ];
 
 export const INITIAL_TRANSACTIONS: BalanceTransaction[] = [];
@@ -814,10 +890,14 @@ export function loginUserSync(identifier: string, pass: string): { success: bool
     const uUid = String(u.uid || '').trim().toLowerCase();
     const uId = String(u.id || '').trim().toLowerCase();
 
+    const cleanDigits = clean.replace(/\D/g, '').slice(-11);
+    const uPhoneDigits = uPhone.replace(/\D/g, '').slice(-11);
+
     return (
       (uUsername && uUsername === clean) ||
       (uEmail && uEmail === clean) ||
       (uPhone && uPhone === clean) ||
+      (cleanDigits.length >= 10 && uPhoneDigits === cleanDigits) ||
       (uIgn && uIgn === clean) ||
       (uUid && uUid === clean) ||
       (uId && uId === clean)

@@ -342,6 +342,32 @@ async function runAllTests() {
   }
 
   // ----------------------------------------------------
+  // TEST GROUP 6: PAYBOT DEDICATED ACCOUNTS LOGIN
+  // ----------------------------------------------------
+  console.log('\n📱 TEST GROUP 6: 4 Dedicated PayBot Accounts Login & Verification');
+
+  const { INITIAL_USERS } = require('../apps/web-admin/src/lib/user-store.ts');
+  const paybotNumbers = ['01799000001', '01799000002', '01799000003', '01799000004'];
+
+  for (const pNum of paybotNumbers) {
+    const foundInInitial = INITIAL_USERS.find((u) => u.phone === pNum);
+    assert(
+      Boolean(foundInInitial && foundInInitial.password === 'paybot1234' && foundInInitial.role === 'ADMIN'),
+      `PayBot Account Active in INITIAL_USERS: ${pNum}`
+    );
+  }
+
+  // Verify accounts in users-db.json
+  const currentDbUsers = JSON.parse(fs.readFileSync(usersDbPath, 'utf-8'));
+  for (const pNum of paybotNumbers) {
+    const inDb = currentDbUsers.find((u) => u.phone === pNum);
+    assert(
+      Boolean(inDb && inDb.password === 'paybot1234' && inDb.role === 'ADMIN'),
+      `PayBot Account in Database: ${pNum} (${inDb?.ign})`
+    );
+  }
+
+  // ----------------------------------------------------
   // FINAL RESULTS SUMMARY
   // ----------------------------------------------------
   console.log('\n====================================================');
