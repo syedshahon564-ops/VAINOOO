@@ -1,7 +1,8 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect } from 'react';
 import { dispatchDevicePushNotification } from './match-scheduler';
+import { toEnDigits } from './clipboard';
 
 export interface PaymentRequest {
   id: string;
@@ -870,10 +871,12 @@ export function setUserStatus(userId: string, status: 'ACTIVE' | 'BANNED' | 'SUS
 
 // Auth Helpers
 export function loginUserSync(identifier: string, pass: string): { success: boolean; user?: UserAccount; error?: string } {
-  const clean = String(identifier || '').trim().toLowerCase();
+  const rawInput = String(identifier || '').trim();
+  const clean = rawInput.toLowerCase();
+  const enDigits = toEnDigits(rawInput);
   const cleanPass = String(pass || '').trim();
 
-  if (!clean) {
+  if (!clean && !enDigits) {
     return { success: false, error: 'Please enter your username or email.' };
   }
   if (!cleanPass) {
@@ -890,16 +893,18 @@ export function loginUserSync(identifier: string, pass: string): { success: bool
     const uUid = String(u.uid || '').trim().toLowerCase();
     const uId = String(u.id || '').trim().toLowerCase();
 
-    const cleanDigits = clean.replace(/\D/g, '').slice(-11);
-    const uPhoneDigits = uPhone.replace(/\D/g, '').slice(-11);
+    const cleanDigits = enDigits.length >= 10 ? enDigits.slice(-11) : clean.replace(/\D/g, '').slice(-11);
+    const uPhoneDigits = toEnDigits(uPhone).slice(-11);
 
     return (
       (uUsername && uUsername === clean) ||
       (uEmail && uEmail === clean) ||
       (uPhone && uPhone === clean) ||
+      (uPhone && enDigits && uPhone === enDigits) ||
       (cleanDigits.length >= 10 && uPhoneDigits === cleanDigits) ||
       (uIgn && uIgn === clean) ||
       (uUid && uUid === clean) ||
+      (uUid && enDigits && uUid === enDigits) ||
       (uId && uId === clean)
     );
   });
@@ -909,7 +914,12 @@ export function loginUserSync(identifier: string, pass: string): { success: bool
   }
 
   const uPass = String(user.password || '').trim();
-  if (uPass !== cleanPass) {
+  const passMatches =
+    uPass === cleanPass ||
+    toEnDigits(cleanPass) === uPass ||
+    cleanPass.replace(/[০-৯٠-٩]/g, (d) => toEnDigits(d)) === uPass;
+
+  if (!passMatches) {
     return { success: false, error: 'Incorrect password. Please try again.' };
   }
 

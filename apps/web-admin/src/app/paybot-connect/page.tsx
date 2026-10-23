@@ -21,7 +21,7 @@ import {
   Monitor,
   CheckCircle2,
 } from 'lucide-react';
-import { getCurrentUser } from '@/lib/user-store';
+import { getCurrentUser, loginUser, logoutUser } from '@/lib/user-store';
 
 export default function PayBotConnectPage() {
   const router = useRouter();
@@ -37,10 +37,28 @@ export default function PayBotConnectPage() {
   const [isTesting, setIsTesting] = useState<boolean>(false);
   const pingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // 1. Authorize: only the 4 PayBot IDs (or Admin accounts) can access
+  // Quick Login State for PayBot
+  const [selectedDevicePhone, setSelectedDevicePhone] = useState('01799000001');
+  const [selectedPassword, setSelectedPassword] = useState('paybot1234');
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
+
+  const PAYBOT_DEVICES = [
+    { phone: '01799000001', name: 'ডিভাইস ১ (PAYBOT_DEVICE_1)' },
+    { phone: '01799000002', name: 'ডিভাইস ২ (PAYBOT_DEVICE_2)' },
+    { phone: '01799000003', name: 'ডিভাইস ৩ (PAYBOT_DEVICE_3)' },
+    { phone: '01799000004', name: 'ডিভাইস ৪ (PAYBOT_DEVICE_4)' },
+  ];
+
+  // 1. Authorize: check if user is a PayBot account or Admin
   useEffect(() => {
     const cur = getCurrentUser();
     setCurrentUser(cur);
+
+    if (!cur) {
+      setIsAuthorized(false);
+      return;
+    }
 
     const isPaybotUser = Boolean(
       cur &&
@@ -50,11 +68,25 @@ export default function PayBotConnectPage() {
     );
 
     setIsAuthorized(isPaybotUser);
+  }, []);
 
-    if (cur && !isPaybotUser) {
-      router.replace('/profile');
+  const handleQuickLogin = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setLoginLoading(true);
+    setLoginError(null);
+    try {
+      const res = await loginUser(selectedDevicePhone, selectedPassword);
+      if (!res.success || !res.user) {
+        throw new Error(res.error || 'লগইন ব্যর্থ হয়েছে। ক্রেডেনশিয়াল সঠিক আছে কি না চেক করুন।');
+      }
+      setCurrentUser(res.user);
+      setIsAuthorized(true);
+    } catch (err: any) {
+      setLoginError(err.message || 'Login error');
+    } finally {
+      setLoginLoading(false);
     }
-  }, [router]);
+  };
 
   // Read battery if available
   useEffect(() => {
@@ -191,20 +223,120 @@ export default function PayBotConnectPage() {
   };
 
   if (isAuthorized === false) {
+    if (!currentUser) {
+      return (
+        <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center p-4">
+          <div className="max-w-md w-full p-6 rounded-3xl bg-slate-900 border border-emerald-500/30 text-center space-y-5 shadow-2xl">
+            <div className="w-14 h-14 rounded-2xl bg-emerald-500/20 text-emerald-400 mx-auto flex items-center justify-center border border-emerald-500/30 shadow-lg shadow-emerald-500/20">
+              <Zap className="w-7 h-7 animate-pulse text-emerald-400" />
+            </div>
+            <div>
+              <h2 className="text-lg font-black text-white">PayBot অটো-কালেক্টর লগইন</h2>
+              <p className="text-xs text-slate-400 mt-1">
+                বিকাশ/নগদ অটো-ডিপোজিট রিসিভ করতে এই ফোনের জন্য একটি PayBot ডিভাইস আইডি সিলেক্ট করে লগইন করুন।
+              </p>
+            </div>
+
+            {loginError && (
+              <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-bold text-center">
+                {loginError}
+              </div>
+            )}
+
+            <div className="space-y-2 text-left">
+              <label className="text-[11px] font-bold text-slate-400">ডিভাইস আইডি সিলেক্ট করুন:</label>
+              <div className="grid grid-cols-2 gap-2">
+                {PAYBOT_DEVICES.map((d) => (
+                  <button
+                    key={d.phone}
+                    type="button"
+                    onClick={() => {
+                      setSelectedDevicePhone(d.phone);
+                      setLoginError(null);
+                    }}
+                    className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                      selectedDevicePhone === d.phone
+                        ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300 shadow-sm'
+                        : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700'
+                    }`}
+                  >
+                    <div className="text-[11px] font-black">{d.phone}</div>
+                    <div className="text-[9px] text-slate-500">{d.name.split(' ')[0]}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <form onSubmit={handleQuickLogin} className="space-y-3 text-left">
+              <div>
+                <label className="text-[11px] font-bold text-slate-400">পাসওয়ার্ড:</label>
+                <input
+                  type="password"
+                  value={selectedPassword}
+                  onChange={(e) => setSelectedPassword(e.target.value)}
+                  className="w-full mt-1 px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={loginLoading}
+                className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs shadow-lg shadow-emerald-500/30 flex items-center justify-center gap-2 cursor-pointer active:scale-98 transition-all"
+              >
+                {loginLoading ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin text-slate-950" />
+                    লগইন হচ্ছে...
+                  </>
+                ) : (
+                  <>
+                    <Zap className="w-4 h-4 fill-slate-950 text-slate-950" />
+                    লগইন করুন & এক্সেস দিন
+                  </>
+                )}
+              </button>
+            </form>
+
+            <div className="pt-2">
+              <Link
+                href="/mobile-app-view"
+                className="text-[11px] text-slate-500 hover:text-slate-300 font-bold"
+              >
+                &larr; মোবাইল অ্যাপ ভিউতে ফিরে যান
+              </Link>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center p-4">
         <div className="max-w-md w-full p-6 rounded-2xl bg-slate-900 border border-red-500/30 text-center space-y-4">
           <AlertTriangle className="w-12 h-12 text-red-500 mx-auto" />
           <h2 className="text-lg font-black text-red-400">অননুমোদিত প্রবেশাধিকার (Restricted Area)</h2>
           <p className="text-xs text-slate-400">
-            এই অপশনটি শুধুমাত্র অফিসিয়াল ৪টি PayBot সংগ্রাহক আইডির জন্য নির্ধারিত। সাধারণ প্লেয়ারদের জন্য এটি উন্মুক্ত নয়।
+            আপনি বর্তমানে সাধারণ প্লেয়ার ({currentUser?.ign || currentUser?.phone}) হিসেবে লগইন আছেন। এই অপশনটি শুধুমাত্র অফিসিয়াল ৪টি PayBot সংগ্রাহক আইডির জন্য।
           </p>
-          <Link
-            href="/profile"
-            className="inline-block px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-white transition-all"
-          >
-            প্রোফাইলে ফিরে যান
-          </Link>
+          <div className="flex gap-2 justify-center">
+            <button
+              type="button"
+              onClick={() => {
+                logoutUser();
+                setCurrentUser(null);
+                setIsAuthorized(false);
+              }}
+              className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-xs font-bold text-white transition-all cursor-pointer"
+            >
+              লগআউট করে PayBot এ ঢুকুন
+            </button>
+            <Link
+              href="/profile"
+              className="inline-block px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-white transition-all"
+            >
+              প্রোফাইলে ফিরে যান
+            </Link>
+          </div>
         </div>
       </div>
     );

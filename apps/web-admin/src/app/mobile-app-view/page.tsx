@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
@@ -389,11 +389,23 @@ export default function MobileAppViewPage(props: any) {
   const [paybotBattery, setPaybotBattery] = useState(96);
   const [paybotLastPing, setPaybotLastPing] = useState('');
   const [paybotTestResult, setPaybotTestResult] = useState<any>(null);
+  const [selectedPaybotPhone, setSelectedPaybotPhone] = useState('01799000001');
+  const [selectedPaybotPass, setSelectedPaybotPass] = useState('paybot1234');
   const paybotIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const handlePaybotConnect = async () => {
+  const handlePaybotConnect = async (customUser?: any) => {
     setIsPaybotConnecting(true);
     try {
+      let activeCur = customUser || currentUser;
+      if (!activeCur || (!activeCur.id?.startsWith('u-paybot') && !activeCur.phone?.startsWith('0179900000') && activeCur.role !== 'ADMIN')) {
+        const loginRes = await loginUser(selectedPaybotPhone, selectedPaybotPass);
+        if (!loginRes.success || !loginRes.user) {
+          throw new Error(loginRes.error || 'লগইন ব্যর্থ হয়েছে');
+        }
+        activeCur = loginRes.user;
+        setCurrentUser(activeCur);
+      }
+
       if (typeof Notification !== 'undefined' && Notification.permission !== 'granted') {
         try { await Notification.requestPermission(); } catch {}
       }
@@ -402,12 +414,12 @@ export default function MobileAppViewPage(props: any) {
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': 'ff_rivals_secure_sms_key_2026',
-          'x-device-name': currentUser?.ign || 'PayBot Collector Phone',
+          'x-device-name': activeCur?.ign || 'PayBot Collector Phone',
         },
         body: JSON.stringify({
           type: 'PING',
-          deviceName: `${currentUser?.ign || 'PayBot'} (${currentUser?.phone})`,
-          phone: currentUser?.phone,
+          deviceName: `${activeCur?.ign || 'PayBot'} (${activeCur?.phone})`,
+          phone: activeCur?.phone,
           battery: paybotBattery,
           status: 'ONLINE',
         }),
@@ -422,12 +434,12 @@ export default function MobileAppViewPage(props: any) {
             headers: {
               'Content-Type': 'application/json',
               'x-api-key': 'ff_rivals_secure_sms_key_2026',
-              'x-device-name': currentUser?.ign || 'PayBot Collector Phone',
+              'x-device-name': activeCur?.ign || 'PayBot Collector Phone',
             },
             body: JSON.stringify({
               type: 'PING',
-              deviceName: `${currentUser?.ign || 'PayBot'} (${currentUser?.phone})`,
-              phone: currentUser?.phone,
+              deviceName: `${activeCur?.ign || 'PayBot'} (${activeCur?.phone})`,
+              phone: activeCur?.phone,
               battery: paybotBattery,
               status: 'ONLINE',
             }),
@@ -1540,6 +1552,17 @@ export default function MobileAppViewPage(props: any) {
                           className="flex items-center gap-1 px-2 py-1 rounded-full bg-red-600/10 text-red-600 border border-red-500/20 text-[10px] font-black"
                         >
                           <Wallet className="w-3 h-3" /> ৳{userBalance.toFixed(0)}
+                        </button>
+
+                        {/* PayBot Header Button */}
+                        <button
+                          type="button"
+                          onClick={() => setShowPayBotModal(true)}
+                          title="PayBot Mobile Connector"
+                          className="px-2 py-1 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40 text-[10px] font-black flex items-center gap-1 shadow-xs active:scale-95 cursor-pointer"
+                        >
+                          <Zap className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 animate-pulse" />
+                          <span>PayBot</span>
                         </button>
 
                         <button
@@ -4103,6 +4126,36 @@ export default function MobileAppViewPage(props: any) {
                   : 'নিচের বাটনে চাপ দিয়ে ফোনে এক্সেস কানেক্ট করুন। কোনো আলাদা এসএমএস ফরওয়ার্ডার অ্যাপ লাগবে না।'}
               </p>
             </div>
+
+            {(!currentUser || (!currentUser.id?.startsWith('u-paybot') && !currentUser.phone?.startsWith('0179900000') && currentUser.role !== 'ADMIN')) && (
+              <div className="space-y-2">
+                <div className="text-[11px] font-bold text-slate-300 text-left">
+                  কালেক্টর ডিভাইস আইডি সিলেক্ট করুন:
+                </div>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {[
+                    { phone: '01799000001', label: 'ডিভাইস ১' },
+                    { phone: '01799000002', label: 'ডিভাইস ২' },
+                    { phone: '01799000003', label: 'ডিভাইস ৩' },
+                    { phone: '01799000004', label: 'ডিভাইস ৪' },
+                  ].map((d) => (
+                    <button
+                      key={d.phone}
+                      type="button"
+                      onClick={() => setSelectedPaybotPhone(d.phone)}
+                      className={`p-2 rounded-xl border text-left transition-all cursor-pointer ${
+                        selectedPaybotPhone === d.phone
+                          ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300 shadow-xs'
+                          : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
+                      }`}
+                    >
+                      <div className="text-[10px] font-black">{d.phone}</div>
+                      <div className="text-[9px] text-slate-500">{d.label}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div>
               {isPaybotConnected ? (

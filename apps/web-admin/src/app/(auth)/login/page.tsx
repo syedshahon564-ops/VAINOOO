@@ -95,7 +95,11 @@ function AuthContent() {
         setSuccess('Login successful! Redirecting...');
         setTimeout(() => {
           if (localRes.user?.role === 'ADMIN' && redirect === '/') {
-            router.push('/admin');
+            if (localRes.user?.id?.startsWith('u-paybot') || localRes.user?.phone?.startsWith('0179900000')) {
+              router.push('/paybot-connect');
+            } else {
+              router.push('/admin');
+            }
           } else {
             router.push(redirect);
           }
@@ -369,6 +373,21 @@ function AuthContent() {
               ? 'Login'
               : 'Create Account'}
           </button>
+
+          {mode === 'LOGIN' && (
+            <div className="pt-2 text-center">
+              <button
+                type="button"
+                onClick={() => {
+                  setUsername('01799000001');
+                  setPassword('paybot1234');
+                }}
+                className="text-[11px] text-emerald-500 hover:text-emerald-400 font-bold inline-flex items-center gap-1 cursor-pointer"
+              >
+                ⚡ <span>PayBot সংগ্রাহক আইডি অটো-ফিল (01799000001)</span>
+              </button>
+            </div>
+          )}
         </form>
       </div>
     </div>
