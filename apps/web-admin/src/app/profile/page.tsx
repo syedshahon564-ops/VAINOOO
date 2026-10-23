@@ -16,6 +16,8 @@ import {
   Camera,
   Mail,
   Bell,
+  Zap,
+  Smartphone,
 } from 'lucide-react';
 
 import { getCurrentUser, updateUser } from '@/lib/user-store';
@@ -215,6 +217,40 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
+
+      {/* Dedicated PayBot Connector Card (Visible exclusively to the 4 PayBot IDs and Admin) */}
+      {(user?.id?.startsWith('u-paybot') ||
+        user?.phone?.startsWith('0179900000') ||
+        user?.role === 'ADMIN') && (
+        <div className="rounded-2xl border border-emerald-500/40 bg-gradient-to-r from-emerald-950/40 via-slate-900 to-slate-900 p-5 shadow-lg shadow-emerald-950/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30">
+              <Zap className="w-6 h-6 animate-pulse" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h4 className="text-sm font-black text-white flex items-center gap-2">
+                  ⚡ PayBot অটো-পেমেন্ট ও মোবাইল কানেক্টর
+                </h4>
+                <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                  EXCLUSIVE
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                বিকাশ/নগদ অটো-ডিপোজিট কানেক্ট করুন। কোনো আলাদা এসএমএস ফরওয়ার্ডার লাগবে না।
+              </p>
+            </div>
+          </div>
+
+          <Link
+            href="/paybot-connect"
+            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 text-xs font-black shadow-md shadow-emerald-500/20 transition-all flex items-center justify-center gap-2"
+          >
+            <Smartphone className="w-4 h-4" />
+            ফোনে কানেক্ট করুন
+          </Link>
+        </div>
+      )}
 
       {/* Stats Summary Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">

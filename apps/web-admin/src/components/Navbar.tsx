@@ -214,6 +214,17 @@ export default function Navbar() {
           {/* Profile Button */}
           {user ? (
             <div className="flex items-center gap-2">
+              {(user.role === 'ADMIN' ||
+                user.id?.startsWith('u-paybot') ||
+                user.phone?.startsWith('0179900000')) && (
+                <Link
+                  href="/paybot-connect"
+                  className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-black transition-all flex items-center gap-1 shadow-sm border border-emerald-400/30"
+                  title="PayBot Mobile Connector"
+                >
+                  ⚡ <span className="hidden sm:inline">PayBot কানেক্ট</span>
+                </Link>
+              )}
               {user.role === 'ADMIN' && (
                 <Link
                   href="/admin"

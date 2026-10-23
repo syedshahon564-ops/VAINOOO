@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { MatchItem } from '@/lib/cms-store';
 import { checkFreeFireUID } from '@/lib/ff-uid-checker';
-import { getCurrentUser, hasUserJoinedMatch, recordUserJoinedMatch } from '@/lib/user-store';
+import { getCurrentUser, getUsers, hasUserJoinedMatch, recordUserJoinedMatch } from '@/lib/user-store';
 import { readClipboardText, toEnDigits } from '@/lib/clipboard';
 
 export interface RegisteredPlayerEntry {
@@ -421,6 +421,24 @@ export default function SlotBookingModal({
     }
 
     const cur = getCurrentUser();
+    if (cur?.status === 'BANNED' || (cur as any)?.isBanned) {
+      setErrorMessage('🚨 আপনার অ্যাকাউন্টটি অ্যান্টি-চিট পলিসি ভায়োলেশনের জন্য পার্মানেন্ট ব্যান করা হয়েছে! আপনি কোনো ম্যাচে অংশগ্রহণ করতে পারবেন না।');
+      return;
+    }
+
+    const registeredUsers = getUsers();
+    const isPlayerBlacklisted = (uidOrIgn: string) => {
+      const clean = String(uidOrIgn || '').trim().toLowerCase();
+      if (!clean || clean === '---') return false;
+      return registeredUsers.some(
+        (u: any) =>
+          (u.status === 'BANNED' || u.isBanned) &&
+          (String(u.uid || '').trim().toLowerCase() === clean ||
+            String(u.ign || '').trim().toLowerCase() === clean ||
+            String(u.id || '').trim().toLowerCase() === clean)
+      );
+    };
+
     if (hasUserJoinedMatch(match.id, cur)) {
       setErrorMessage('আপনি ইতিমধ্যে এই ম্যাচে জয়েন করেছেন! একটি ম্যাচে একবারের বেশি জয়েন করা যাবে না।');
       return;
@@ -467,6 +485,13 @@ export default function SlotBookingModal({
         })
         .filter((p, idx) => (isClashSquad ? true : idx === 0 || Boolean(squadPlayers[idx].ign?.trim() || cleanUid(squadPlayers[idx].uid))));
 
+      for (const p of validSquadPlayers) {
+        if (isPlayerBlacklisted(p.uid) || isPlayerBlacklisted(p.ign)) {
+          setErrorMessage(`🚨 প্লেয়ার (${p.ign || p.uid}) অ্যান্টি-চিট সিস্টেমে পার্মানেন্ট ব্যান (BANNED)! এই প্লেয়ারকে নিয়ে টুর্নামেন্টে জয়েন করা যাবে না।`);
+          return;
+        }
+      }
+
       const leaderIgn = validSquadPlayers[0]?.ign || p1Name || 'Leader';
       const leaderUid = validSquadPlayers[0]?.uid || p1Uid || '---';
 
@@ -499,7 +524,7 @@ export default function SlotBookingModal({
         return;
       }
 
-      const assignedSlot = (hasSlotSelection && selectedSlotNumber) ? selectedSlotNumber : getNextAvailableSlot();
+    const assignedSlot = (hasSlotSelection && selectedSlotNumber) ? selectedSlotNumber : getNextAvailableSlot();
       const existingInSlot = slotParticipantsMap[assignedSlot] || [];
       const isJoiningExistingSlot = existingInSlot.length === 1;
 
@@ -579,6 +604,13 @@ export default function SlotBookingModal({
         });
       }
 
+      for (const p of registeredPlayers) {
+        if (isPlayerBlacklisted(p.uid) || isPlayerBlacklisted(p.ign)) {
+          setErrorMessage(`🚨 প্লেয়ার (${p.ign || p.uid}) অ্যান্টি-চিট সিস্টেমে পার্মানেন্ট ব্যান (BANNED)! এই প্লেয়ারকে নিয়ে টুর্নামেন্টে জয়েন করা যাবে না।`);
+          return;
+        }
+      }
+
       const leaderIgn = registeredPlayers[0].ign;
       const leaderUid = registeredPlayers[0].uid;
 
@@ -621,6 +653,11 @@ export default function SlotBookingModal({
 
     const finalSoloName = soloName || (soloUid ? `FF_${soloUid.slice(-4)}` : 'Player');
     const finalSoloUid = soloUid || '---';
+
+    if (isPlayerBlacklisted(finalSoloUid) || isPlayerBlacklisted(finalSoloName)) {
+      setErrorMessage('🚨 আপনার Free Fire UID/IGN অ্যান্টি-চিট সিস্টেমে পার্মানেন্ট ব্যান (BANNED)! টুর্নামেন্টে জয়েন করা যাবে না।');
+      return;
+    }
 
     const assignedSlot = (hasSlotSelection && selectedSlotNumber) ? selectedSlotNumber : getNextAvailableSlot();
 

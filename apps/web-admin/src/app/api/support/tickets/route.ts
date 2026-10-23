@@ -38,7 +38,7 @@ export async function POST(req: Request) {
     const aiMsgId = 'msg-ai-' + (Date.now() + 10);
 
     // AI Intent & Verification Processing
-    const aiResult = processAiResponse(
+    const aiResult = await processAiResponse(
       {
         userIgn: body.userIgn,
         subject: body.subject,
@@ -125,7 +125,7 @@ export async function PUT(req: Request) {
 
       // If user replied, generate automated AI follow-up
       if (reply.senderRole === 'USER') {
-        const aiResult = processAiResponse(ticket, reply.message, reply.imageUrl);
+        const aiResult = await processAiResponse(ticket, reply.message, reply.imageUrl);
         const aiMsg: TicketMessage = {
           id: 'msg-ai-' + Date.now(),
           senderRole: 'AI_BOT',

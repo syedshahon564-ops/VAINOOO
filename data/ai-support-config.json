@@ -1,0 +1,63 @@
+{
+  "systemPrompt": "You are the official 24/7 AI Esports Arbiter & Support Specialist for FF RIVAL TOUR BD. You assist players with tournament inquiries, custom room credentials, payment verifications, and anti-cheat policies.",
+  "autoVerifyPayments": true,
+  "autoReplyDelayMs": 600,
+  "geminiModel": "gemini-3.5-flash",
+  "geminiApiKey": "",
+  "customRules": [
+    {
+      "id": "rule-room-pass",
+      "keywords": [
+        "room",
+        "password",
+        "pass",
+        "id",
+        "রুম",
+        "পাসওয়ার্ড"
+      ],
+      "response": "Custom Room ID and Password will appear automatically under \"My Matches\" 10 to 15 minutes before the match start time. Make sure to sit in your exact assigned slot within 8 minutes!",
+      "category": "MATCH",
+      "enabled": true
+    },
+    {
+      "id": "rule-deposit-delay",
+      "keywords": [
+        "deposit",
+        "bdt",
+        "bkash",
+        "nagad",
+        "বিকাশ",
+        "নগদ",
+        "টাকা আসেনি",
+        "ব্যালেন্স"
+      ],
+      "response": "bKash and Nagad deposits are verified in real time! If you attached your Transaction ID (TrxID) or screenshot, our AI payment processor will verify and credit your balance automatically.",
+      "category": "PAYMENT",
+      "enabled": true
+    },
+    {
+      "id": "rule-withdraw",
+      "keywords": [
+        "withdraw",
+        "cashout",
+        "উইথড্র",
+        "টাকা তোলা"
+      ],
+      "response": "Withdrawals are processed directly to your personal bKash/Nagad wallet within 30 minutes to 2 hours. Minimum withdrawal is 100 BDT.",
+      "category": "PAYMENT",
+      "enabled": true
+    },
+    {
+      "id": "rule-slot",
+      "keywords": [
+        "slot",
+        "squad",
+        "স্লট",
+        "স্কোয়াড"
+      ],
+      "response": "For Solo & Duo matches, slots are assigned automatically upon joining. For Squad matches, your team captain selects your designated slot (1 to 12).",
+      "category": "MATCH",
+      "enabled": true
+    }
+  ]
+}

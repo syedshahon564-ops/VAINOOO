@@ -833,7 +833,7 @@ export function loginUserSync(identifier: string, pass: string): { success: bool
     return { success: false, error: 'Incorrect password. Please try again.' };
   }
 
-  if (user.status === 'BANNED') {
+  if (user.status === 'BANNED' || (user as any).isBanned) {
     return {
       success: false,
       error: 'Your account has been banned. Please contact support.',
