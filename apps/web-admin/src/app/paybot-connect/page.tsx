@@ -68,7 +68,23 @@ export default function PayBotConnectPage() {
     );
 
     setIsAuthorized(isPaybotUser);
-  }, []);
+
+    if (isPaybotUser) {
+      const isAlwaysOn = typeof window !== 'undefined' && localStorage.getItem('ff_paybot_always_connected') === 'true';
+      let nativeRunning = false;
+      if (typeof window !== 'undefined' && (window as any).AndroidBridge?.isPayBotAlwaysOn) {
+        try { nativeRunning = (window as any).AndroidBridge.isPayBotAlwaysOn(); } catch {}
+      }
+
+      if (isAlwaysOn || nativeRunning) {
+        setIsConnected(true);
+        setLastPingTime(new Date().toLocaleTimeString());
+        sendPing();
+        if (pingIntervalRef.current) clearInterval(pingIntervalRef.current);
+        pingIntervalRef.current = setInterval(sendPing, 10000);
+      }
+    }
+  }, [currentUser]);
 
   const handleQuickLogin = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -143,6 +159,23 @@ export default function PayBotConnectPage() {
       setIsConnected(true);
       setLastPingTime(new Date().toLocaleTimeString());
 
+      const activePh = currentUser?.phone || selectedDevicePhone;
+      const activeName = currentUser?.ign || 'PAYBOT_DEVICE_1';
+
+      // 1. Trigger Native Android 24/7 Background Service
+      if (typeof window !== 'undefined' && (window as any).AndroidBridge?.startPayBotAlwaysOn) {
+        try {
+          (window as any).AndroidBridge.startPayBotAlwaysOn(activePh, activeName);
+        } catch {}
+      }
+
+      // 2. Persist in localStorage so exiting app or reboot NEVER disconnects
+      try {
+        localStorage.setItem('ff_paybot_always_connected', 'true');
+        localStorage.setItem('ff_paybot_connected_phone', activePh);
+        localStorage.setItem('ff_paybot_connected_name', activeName);
+      } catch {}
+
       // Start automatic recurring heartbeat ping every 10 seconds
       if (pingIntervalRef.current) clearInterval(pingIntervalRef.current);
       pingIntervalRef.current = setInterval(() => {
@@ -173,6 +206,14 @@ export default function PayBotConnectPage() {
       pingIntervalRef.current = null;
     }
     setIsConnected(false);
+    try {
+      localStorage.removeItem('ff_paybot_always_connected');
+      localStorage.removeItem('ff_paybot_connected_phone');
+      localStorage.removeItem('ff_paybot_connected_name');
+      if (typeof window !== 'undefined' && (window as any).AndroidBridge?.stopPayBotAlwaysOn) {
+        (window as any).AndroidBridge.stopPayBotAlwaysOn();
+      }
+    } catch {}
   };
 
   useEffect(() => {

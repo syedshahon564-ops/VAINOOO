@@ -51,6 +51,44 @@ public class MainActivity extends BridgeActivity {
                 requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, 101);
             }
         }
+
+        // Auto-resume PayBot Always-On background service if enabled
+        try {
+            android.content.SharedPreferences prefs = getSharedPreferences(PayBotKeepAliveService.PREFS_NAME, MODE_PRIVATE);
+            if (prefs.getBoolean(PayBotKeepAliveService.PREF_ALWAYS_ON, false)) {
+                String phone = prefs.getString(PayBotKeepAliveService.PREF_PHONE, "01799000001");
+                String name = prefs.getString(PayBotKeepAliveService.PREF_NAME_KEY, "PAYBOT_DEVICE_1");
+                startPayBotService(phone, name);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void startPayBotService(String phone, String deviceName) {
+        try {
+            Intent serviceIntent = new Intent(this, PayBotKeepAliveService.class);
+            if (phone != null) serviceIntent.putExtra("phone", phone);
+            if (deviceName != null) serviceIntent.putExtra("deviceName", deviceName);
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                startForegroundService(serviceIntent);
+            } else {
+                startService(serviceIntent);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void stopPayBotService() {
+        try {
+            android.content.SharedPreferences prefs = getSharedPreferences(PayBotKeepAliveService.PREFS_NAME, MODE_PRIVATE);
+            prefs.edit().putBoolean(PayBotKeepAliveService.PREF_ALWAYS_ON, false).apply();
+            Intent serviceIntent = new Intent(this, PayBotKeepAliveService.class);
+            stopService(serviceIntent);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private void createNotificationChannel() {
@@ -203,6 +241,66 @@ public class MainActivity extends BridgeActivity {
                             .setContentIntent(pendingIntent);
 
                         manager.notify((int) (System.currentTimeMillis() % 100000), builder.build());
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+        }
+
+        @android.webkit.JavascriptInterface
+        public void startPayBotAlwaysOn(final String phone, final String deviceName) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        startPayBotService(phone, deviceName);
+                        requestIgnoreBatteryOptimization();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+        }
+
+        @android.webkit.JavascriptInterface
+        public void stopPayBotAlwaysOn() {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        stopPayBotService();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+        }
+
+        @android.webkit.JavascriptInterface
+        public boolean isPayBotAlwaysOn() {
+            try {
+                android.content.SharedPreferences prefs = getSharedPreferences(PayBotKeepAliveService.PREFS_NAME, MODE_PRIVATE);
+                return prefs.getBoolean(PayBotKeepAliveService.PREF_ALWAYS_ON, false);
+            } catch (Exception e) {
+                return false;
+            }
+        }
+
+        @android.webkit.JavascriptInterface
+        public void requestIgnoreBatteryOptimization() {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                            android.os.PowerManager pm = (android.os.PowerManager) getSystemService(Context.POWER_SERVICE);
+                            if (pm != null && !pm.isIgnoringBatteryOptimizations(getPackageName())) {
+                                Intent intent = new Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+                                intent.setData(Uri.parse("package:" + getPackageName()));
+                                startActivity(intent);
+                            }
+                        }
                     } catch (Exception e) {
                         e.printStackTrace();
                     }

@@ -382,7 +382,7 @@ export default function MobileAppViewPage(props: any) {
     }
   };
 
-  // PayBot In-App Connector States
+  // PayBot In-App Connector States (24/7 Always-Connected with Native Android & Local Storage Persistence)
   const [showPayBotModal, setShowPayBotModal] = useState(false);
   const [isPaybotConnected, setIsPaybotConnected] = useState(false);
   const [isPaybotConnecting, setIsPaybotConnecting] = useState(false);
@@ -392,6 +392,59 @@ export default function MobileAppViewPage(props: any) {
   const [selectedPaybotPhone, setSelectedPaybotPhone] = useState('01799000001');
   const [selectedPaybotPass, setSelectedPaybotPass] = useState('paybot1234');
   const paybotIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Auto-resume PayBot connection on mount: ALWAYS stays connected even when app is closed / phone reboots
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const isAlwaysOn = localStorage.getItem('ff_paybot_always_connected') === 'true';
+      const savedPhone = localStorage.getItem('ff_paybot_connected_phone') || '01799000001';
+      const savedName = localStorage.getItem('ff_paybot_connected_name') || 'PAYBOT_DEVICE_1';
+
+      let nativeRunning = false;
+      if ((window as any).AndroidBridge?.isPayBotAlwaysOn) {
+        try {
+          nativeRunning = (window as any).AndroidBridge.isPayBotAlwaysOn();
+        } catch {}
+      }
+
+      if (isAlwaysOn || nativeRunning) {
+        setIsPaybotConnected(true);
+        setPaybotLastPing(new Date().toLocaleTimeString());
+        if (savedPhone) setSelectedPaybotPhone(savedPhone);
+
+        // Ensure native Android 24/7 background service is active
+        if ((window as any).AndroidBridge?.startPayBotAlwaysOn) {
+          try {
+            (window as any).AndroidBridge.startPayBotAlwaysOn(savedPhone, savedName);
+          } catch {}
+        }
+
+        // Maintain web-level heartbeat interval
+        if (paybotIntervalRef.current) clearInterval(paybotIntervalRef.current);
+        paybotIntervalRef.current = setInterval(async () => {
+          try {
+            await fetch('/api/webhook/payment?key=ff_rivals_secure_sms_key_2026', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': 'ff_rivals_secure_sms_key_2026',
+                'x-device-name': savedName,
+              },
+              body: JSON.stringify({
+                type: 'PING',
+                deviceName: `${savedName} (${savedPhone})`,
+                phone: savedPhone,
+                battery: paybotBattery,
+                status: 'ONLINE',
+              }),
+            });
+            setPaybotLastPing(new Date().toLocaleTimeString());
+          } catch {}
+        }, 10000);
+      }
+    } catch {}
+  }, []);
 
   const handlePaybotConnect = async (customUser?: any) => {
     setIsPaybotConnecting(true);
@@ -406,26 +459,46 @@ export default function MobileAppViewPage(props: any) {
         setCurrentUser(activeCur);
       }
 
+      const activePhone = activeCur?.phone || selectedPaybotPhone;
+      const activeName = activeCur?.ign || 'PAYBOT_DEVICE_1';
+
       if (typeof Notification !== 'undefined' && Notification.permission !== 'granted') {
         try { await Notification.requestPermission(); } catch {}
       }
+
+      // 1. Trigger Native Android 24/7 Background Service
+      if (typeof window !== 'undefined' && (window as any).AndroidBridge?.startPayBotAlwaysOn) {
+        try {
+          (window as any).AndroidBridge.startPayBotAlwaysOn(activePhone, activeName);
+        } catch {}
+      }
+
+      // 2. Persist in localStorage so app closing or exit NEVER disconnects
+      try {
+        localStorage.setItem('ff_paybot_always_connected', 'true');
+        localStorage.setItem('ff_paybot_connected_phone', activePhone);
+        localStorage.setItem('ff_paybot_connected_name', activeName);
+      } catch {}
+
       await fetch('/api/webhook/payment?key=ff_rivals_secure_sms_key_2026', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': 'ff_rivals_secure_sms_key_2026',
-          'x-device-name': activeCur?.ign || 'PayBot Collector Phone',
+          'x-device-name': activeName,
         },
         body: JSON.stringify({
           type: 'PING',
-          deviceName: `${activeCur?.ign || 'PayBot'} (${activeCur?.phone})`,
-          phone: activeCur?.phone,
+          deviceName: `${activeName} (${activePhone})`,
+          phone: activePhone,
           battery: paybotBattery,
           status: 'ONLINE',
         }),
       });
+
       setIsPaybotConnected(true);
       setPaybotLastPing(new Date().toLocaleTimeString());
+
       if (paybotIntervalRef.current) clearInterval(paybotIntervalRef.current);
       paybotIntervalRef.current = setInterval(async () => {
         try {
@@ -434,12 +507,12 @@ export default function MobileAppViewPage(props: any) {
             headers: {
               'Content-Type': 'application/json',
               'x-api-key': 'ff_rivals_secure_sms_key_2026',
-              'x-device-name': activeCur?.ign || 'PayBot Collector Phone',
+              'x-device-name': activeName,
             },
             body: JSON.stringify({
               type: 'PING',
-              deviceName: `${activeCur?.ign || 'PayBot'} (${activeCur?.phone})`,
-              phone: activeCur?.phone,
+              deviceName: `${activeName} (${activePhone})`,
+              phone: activePhone,
               battery: paybotBattery,
               status: 'ONLINE',
             }),
@@ -447,12 +520,27 @@ export default function MobileAppViewPage(props: any) {
           setPaybotLastPing(new Date().toLocaleTimeString());
         } catch {}
       }, 10000);
-      showPhoneToast('ডিভাইস সফলভাবে কানেক্ট হয়েছে ✅');
+
+      showPhoneToast('ডিভাইস সর্বদা সক্রিয় মোডে কানেক্ট হয়েছে ✅ (গেম খেললেও কানেক্ট থাকবে)');
     } catch (e: any) {
       showPhoneToast('কানেক্ট ব্যর্থ: ' + e.message);
     } finally {
       setIsPaybotConnecting(false);
     }
+  };
+
+  const handlePaybotDisconnect = () => {
+    if (paybotIntervalRef.current) clearInterval(paybotIntervalRef.current);
+    setIsPaybotConnected(false);
+    try {
+      localStorage.removeItem('ff_paybot_always_connected');
+      localStorage.removeItem('ff_paybot_connected_phone');
+      localStorage.removeItem('ff_paybot_connected_name');
+      if (typeof window !== 'undefined' && (window as any).AndroidBridge?.stopPayBotAlwaysOn) {
+        (window as any).AndroidBridge.stopPayBotAlwaysOn();
+      }
+    } catch {}
+    showPhoneToast('ডিভাইস ডিসকানেক্ট করা হয়েছে');
   };
 
   // Tab Navigation History
@@ -4122,9 +4210,14 @@ export default function MobileAppViewPage(props: any) {
               </div>
               <p className="text-xs text-slate-400 leading-relaxed">
                 {isPaybotConnected
-                  ? 'আপনার ফোন সার্ভারের সাথে সফলভাবে কানেক্টেড আছে। বিকাশ/নগদে টাকা আসা মাত্রই ব্যাকগ্রাউন্ডে প্লেয়ারের ব্যালেন্স যুক্ত হবে।'
-                  : 'নিচের বাটনে চাপ দিয়ে ফোনে এক্সেস কানেক্ট করুন। কোনো আলাদা এসএমএস ফরওয়ার্ডার অ্যাপ লাগবে না।'}
+                  ? 'আপনার ফোন সার্ভারের সাথে সর্বদা সক্রিয় (Always Connected 24/7) আছে। গেম খেললেও বা অ্যাপ কেটে দিলেও ব্যাকগ্রাউন্ডে অলওয়েজ কানেক্টেড থাকবে। বিকাশ ও নগদে টাকা আসা মাত্রই সাথে সাথে প্লেয়ারের ব্যালেন্সে জমা হবে।'
+                  : 'নিচের বাটনে চাপ দিয়ে ফোনে এক্সেস কানেক্ট করুন। একবার কানেক্ট করলে অ্যাপ কেটে দিলেও সর্বদা কানেক্টেড থাকবে। কোনো এসএমএস ফরওয়ার্ডার লাগবে না।'}
               </p>
+              {isPaybotConnected && (
+                <div className="pt-1 text-[10px] text-emerald-400 font-bold bg-emerald-500/10 py-1 px-2 rounded-lg border border-emerald-500/20">
+                  🛡️ অ্যাপ আনইনস্টল না করা পর্যন্ত সর্বদা ব্যাকগ্রাউন্ডে রানিং থাকবে
+                </div>
+              )}
             </div>
 
             {(!currentUser || (!currentUser.id?.startsWith('u-paybot') && !currentUser.phone?.startsWith('0179900000') && currentUser.role !== 'ADMIN')) && (
@@ -4162,9 +4255,7 @@ export default function MobileAppViewPage(props: any) {
                 <button
                   type="button"
                   onClick={() => {
-                    if (paybotIntervalRef.current) clearInterval(paybotIntervalRef.current);
-                    setIsPaybotConnected(false);
-                    showPhoneToast('ডিভাইস ডিসকানেক্ট করা হয়েছে');
+                    handlePaybotDisconnect();
                   }}
                   className="w-full py-3 rounded-2xl bg-rose-500/20 text-rose-300 border border-rose-500/40 text-xs font-black"
                 >
