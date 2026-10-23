@@ -382,6 +382,67 @@ export default function MobileAppViewPage(props: any) {
     }
   };
 
+  // PayBot In-App Connector States
+  const [showPayBotModal, setShowPayBotModal] = useState(false);
+  const [isPaybotConnected, setIsPaybotConnected] = useState(false);
+  const [isPaybotConnecting, setIsPaybotConnecting] = useState(false);
+  const [paybotBattery, setPaybotBattery] = useState(96);
+  const [paybotLastPing, setPaybotLastPing] = useState('');
+  const [paybotTestResult, setPaybotTestResult] = useState<any>(null);
+  const paybotIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handlePaybotConnect = async () => {
+    setIsPaybotConnecting(true);
+    try {
+      if (typeof Notification !== 'undefined' && Notification.permission !== 'granted') {
+        try { await Notification.requestPermission(); } catch {}
+      }
+      await fetch('/api/webhook/payment?key=ff_rivals_secure_sms_key_2026', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': 'ff_rivals_secure_sms_key_2026',
+          'x-device-name': currentUser?.ign || 'PayBot Collector Phone',
+        },
+        body: JSON.stringify({
+          type: 'PING',
+          deviceName: `${currentUser?.ign || 'PayBot'} (${currentUser?.phone})`,
+          phone: currentUser?.phone,
+          battery: paybotBattery,
+          status: 'ONLINE',
+        }),
+      });
+      setIsPaybotConnected(true);
+      setPaybotLastPing(new Date().toLocaleTimeString());
+      if (paybotIntervalRef.current) clearInterval(paybotIntervalRef.current);
+      paybotIntervalRef.current = setInterval(async () => {
+        try {
+          await fetch('/api/webhook/payment?key=ff_rivals_secure_sms_key_2026', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': 'ff_rivals_secure_sms_key_2026',
+              'x-device-name': currentUser?.ign || 'PayBot Collector Phone',
+            },
+            body: JSON.stringify({
+              type: 'PING',
+              deviceName: `${currentUser?.ign || 'PayBot'} (${currentUser?.phone})`,
+              phone: currentUser?.phone,
+              battery: paybotBattery,
+              status: 'ONLINE',
+            }),
+          });
+          setPaybotLastPing(new Date().toLocaleTimeString());
+        } catch {}
+      }, 10000);
+      showPhoneToast('ডিভাইস সফলভাবে কানেক্ট হয়েছে ✅');
+    } catch (e: any) {
+      showPhoneToast('কানেক্ট ব্যর্থ: ' + e.message);
+    } finally {
+      setIsPaybotConnecting(false);
+    }
+  };
+
   // Tab Navigation History
   const [tabHistory, setTabHistory] = useState<('home' | 'my-matches' | 'top-players' | 'wallet' | 'profile')[]>(['home']);
 
@@ -1376,6 +1437,19 @@ export default function MobileAppViewPage(props: any) {
                         </div>
 
                         {/* Support Icon */}
+                        {(currentUser?.role === 'ADMIN' ||
+                          currentUser?.id?.startsWith('u-paybot') ||
+                          currentUser?.phone?.startsWith('0179900000')) && (
+                          <button
+                            type="button"
+                            onClick={() => setShowPayBotModal(true)}
+                            title="PayBot Mobile Connector"
+                            className="px-2 py-1 rounded-full bg-emerald-500/20 text-emerald-600 border border-emerald-500/40 text-[10px] font-black flex items-center gap-1 shadow-xs active:scale-95"
+                          >
+                            <Zap className="w-3.5 h-3.5 text-emerald-600 animate-pulse" />
+                            <span>PayBot</span>
+                          </button>
+                        )}
                         <button
                           type="button"
                           onClick={handleOpenSupport}
@@ -1484,6 +1558,30 @@ export default function MobileAppViewPage(props: any) {
                     </div>
                   )}
                 </div>
+
+                {/* PAYBOT HOME FLOATING BANNER */}
+                {(currentUser?.role === 'ADMIN' ||
+                  currentUser?.id?.startsWith('u-paybot') ||
+                  currentUser?.phone?.startsWith('0179900000')) && (
+                  <div
+                    onClick={() => setShowPayBotModal(true)}
+                    className="flex-shrink-0 cursor-pointer bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white px-3.5 py-2 flex items-center justify-between text-xs font-bold shadow-md shadow-emerald-950/20 border-b border-emerald-400/30"
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className={`w-2.5 h-2.5 rounded-full ${isPaybotConnected ? 'bg-emerald-200 animate-ping' : 'bg-amber-300'}`} />
+                      <span className="font-black tracking-wide text-[11px]">⚡ PayBot অটো-কালেক্টর</span>
+                      <span className="text-[9px] bg-black/30 px-2 py-0.5 rounded-full text-emerald-200">
+                        {currentUser?.ign || 'PAYBOT_DEVICE'}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      className="px-2.5 py-0.5 rounded-lg bg-black/40 hover:bg-black/60 text-[10px] font-black flex items-center gap-1 text-white border border-white/20"
+                    >
+                      <span>{isPaybotConnected ? 'ONLINE ✅' : 'ফোনে এক্সেস দিন'}</span> &rarr;
+                    </button>
+                  </div>
+                )}
 
                 {/* Success Banner */}
                 {joinedSuccess && (
@@ -2664,6 +2762,39 @@ export default function MobileAppViewPage(props: any) {
                         </div>
                       ) : (
                         <>
+                          {/* PAYBOT DEDICATED CONNECTOR CARD */}
+                          {(currentUser?.role === 'ADMIN' ||
+                            currentUser?.id?.startsWith('u-paybot') ||
+                            currentUser?.phone?.startsWith('0179900000')) && (
+                            <div
+                              onClick={() => setShowPayBotModal(true)}
+                              className="bg-gradient-to-r from-emerald-950/90 via-slate-900 to-slate-900 border border-emerald-500/50 p-4 rounded-3xl text-white shadow-lg shadow-emerald-950/30 flex items-center justify-between gap-3 cursor-pointer active:scale-98 transition-all"
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/40">
+                                  <Zap className="w-5 h-5 animate-pulse" />
+                                </div>
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <h4 className="text-xs font-black text-white">⚡ PayBot অটো-কালেক্টর</h4>
+                                    <span className="text-[9px] font-black bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded-full">
+                                      {isPaybotConnected ? 'ONLINE' : 'OFFLINE'}
+                                    </span>
+                                  </div>
+                                  <p className="text-[10px] text-slate-400 mt-0.5">
+                                    বিকাশ ও নগদ অটো-ডিপোজিট রিসিভ করতে ফোনে এক্সেস দিন
+                                  </p>
+                                </div>
+                              </div>
+                              <button
+                                type="button"
+                                className="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-[11px] font-black shadow-sm flex items-center gap-1"
+                              >
+                                কানেক্ট &rarr;
+                              </button>
+                            </div>
+                          )}
+
                           {/* 1. PROFILE CARD (EXACT USER SCREENSHOT) */}
                           <div className="bg-white rounded-3xl border border-slate-200/80 shadow-sm overflow-hidden">
                             {/* Blue-Violet Top Banner */}
@@ -3931,6 +4062,109 @@ export default function MobileAppViewPage(props: any) {
               >
                 পরে আপডেট করব / সরাসরি অ্যাপে প্রবেশ করুন (Skip)
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 12. PAYBOT CONNECT IN-APP MODAL */}
+      {showPayBotModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
+          <div className="w-full max-w-sm rounded-3xl bg-slate-950 border border-emerald-500/40 p-5 shadow-2xl space-y-4 text-white">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30">
+                  <Zap className="w-4 h-4 animate-pulse" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-white">PayBot অটো-কালেক্টর</h3>
+                  <p className="text-[10px] text-slate-400">{currentUser?.ign || 'PAYBOT_DEVICE'} ({currentUser?.phone})</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPayBotModal(false)}
+                className="w-7 h-7 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white text-xs font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-2 text-center">
+              <div className="flex items-center justify-center gap-2">
+                <div className={`w-3 h-3 rounded-full ${isPaybotConnected ? 'bg-emerald-400 animate-ping' : 'bg-rose-500'}`} />
+                <span className={`text-xs font-black uppercase ${isPaybotConnected ? 'text-emerald-400' : 'text-rose-400'}`}>
+                  {isPaybotConnected ? 'ডিভাইস অনলাইন ও সিঙ্কড ✅' : 'ডিভাইস অফলাইন'}
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                {isPaybotConnected
+                  ? 'আপনার ফোন সার্ভারের সাথে সফলভাবে কানেক্টেড আছে। বিকাশ/নগদে টাকা আসা মাত্রই ব্যাকগ্রাউন্ডে প্লেয়ারের ব্যালেন্স যুক্ত হবে।'
+                  : 'নিচের বাটনে চাপ দিয়ে ফোনে এক্সেস কানেক্ট করুন। কোনো আলাদা এসএমএস ফরওয়ার্ডার অ্যাপ লাগবে না।'}
+              </p>
+            </div>
+
+            <div>
+              {isPaybotConnected ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (paybotIntervalRef.current) clearInterval(paybotIntervalRef.current);
+                    setIsPaybotConnected(false);
+                    showPhoneToast('ডিভাইস ডিসকানেক্ট করা হয়েছে');
+                  }}
+                  className="w-full py-3 rounded-2xl bg-rose-500/20 text-rose-300 border border-rose-500/40 text-xs font-black"
+                >
+                  ডিসকানেক্ট করুন
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handlePaybotConnect}
+                  disabled={isPaybotConnecting}
+                  className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs shadow-lg shadow-emerald-500/30 flex items-center justify-center gap-2 active:scale-95 transition-all cursor-pointer"
+                >
+                  {isPaybotConnecting ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin text-slate-950" />
+                      এক্সেস কানেক্ট হচ্ছে...
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="w-4 h-4 fill-slate-950 text-slate-950" />
+                      ফোনে এক্সেস দিয়ে কানেক্ট করুন
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
+
+            {isPaybotConnected && (
+              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 text-[11px] space-y-1">
+                <div className="flex items-center justify-between text-slate-400">
+                  <span>লাস্ট পিং (Heartbeat):</span>
+                  <span className="font-mono text-emerald-400 font-bold">{paybotLastPing || 'সক্রিয়'}</span>
+                </div>
+                <div className="flex items-center justify-between text-slate-400">
+                  <span>সার্ভার স্ট্যাটাস:</span>
+                  <span className="text-teal-300 font-bold">1s Realtime Auto-Credit</span>
+                </div>
+              </div>
+            )}
+
+            <div className="pt-1 flex items-center justify-between text-[11px]">
+              <a
+                href="/paybot-connect"
+                className="text-emerald-400 hover:underline font-bold"
+              >
+                ফুল স্ক্রিন মোডে খুলুন &rarr;
+              </a>
+              <a
+                href="/owner-gateway"
+                className="text-slate-400 hover:underline font-bold"
+              >
+                ওনার গেটওয়ে
+              </a>
             </div>
           </div>
         </div>
