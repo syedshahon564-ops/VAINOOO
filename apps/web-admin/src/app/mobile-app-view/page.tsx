@@ -15,6 +15,7 @@ import {
   Key,
   Copy,
   CheckCircle,
+  CheckCircle2,
   Clock,
   Users,
   Sun,
@@ -95,6 +96,7 @@ import {
   AppNotification,
   getUserBookedMatches,
   saveUserBookedMatches,
+  getUserPlayedMatchesHistory,
   addUserBooking,
   autoDeliverRoomCredentials,
   runBotRoomManagerCycle,
@@ -163,7 +165,18 @@ export default function MobileAppViewPage(props: any) {
   }, []);
 
   // Active Tab & Screen Navigation
-  const [activeTab, setActiveTab] = useState<'home' | 'my-matches' | 'top-players' | 'wallet' | 'profile'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'my-matches' | 'top-players' | 'wallet' | 'profile'>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const t = params.get('tab');
+        if (t === 'my-matches' || t === 'top-players' || t === 'wallet' || t === 'profile') {
+          return t;
+        }
+      } catch (e) {}
+    }
+    return 'home';
+  });
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [categoryTab, setCategoryTab] = useState<'PLAY' | 'RESULT'>('PLAY');
 
@@ -979,6 +992,9 @@ export default function MobileAppViewPage(props: any) {
 
   // Booked matches list (hydrated from persistent storage, starts 0)
   const [bookedMatchesList, setBookedMatchesList] = useState<UserBookedMatch[]>([]);
+  const [playedMatchesHistory, setPlayedMatchesHistory] = useState<UserBookedMatch[]>([]);
+  const [myMatchesSubTab, setMyMatchesSubTab] = useState<'active' | 'played'>('active');
+  const [selectedMatchForHistoryDetails, setSelectedMatchForHistoryDetails] = useState<any | null>(null);
   const [currentTickTime, setCurrentTickTime] = useState<number>(() => Date.now());
   const [botToast, setBotToast] = useState<string | null>(null);
 
@@ -988,15 +1004,21 @@ export default function MobileAppViewPage(props: any) {
   };
 
   useEffect(() => {
-    // Hydrate user booked matches from persistent storage
+    // Hydrate user booked matches and played history from persistent storage
     const storedBookings = getUserBookedMatches();
     setBookedMatchesList(storedBookings);
+    setPlayedMatchesHistory(getUserPlayedMatchesHistory());
 
     const handleBookingsUpdated = (e: any) => {
       setBookedMatchesList(e.detail || getUserBookedMatches());
+      setPlayedMatchesHistory(getUserPlayedMatchesHistory());
+    };
+    const handleHistoryUpdated = (e: any) => {
+      setPlayedMatchesHistory(e.detail || getUserPlayedMatchesHistory());
     };
     const handleCredentialsDelivered = () => {
       setBookedMatchesList(getUserBookedMatches());
+      setPlayedMatchesHistory(getUserPlayedMatchesHistory());
     };
 
     const onBotCmsTrigger = () => {
@@ -1004,6 +1026,7 @@ export default function MobileAppViewPage(props: any) {
     };
 
     window.addEventListener('ff_user_bookings_updated', handleBookingsUpdated);
+    window.addEventListener('ff_user_played_history_updated', handleHistoryUpdated);
     window.addEventListener('ff_room_credentials_delivered', handleCredentialsDelivered);
     window.addEventListener('ff_cms_updated', onBotCmsTrigger);
     window.addEventListener('ff_match_added', onBotCmsTrigger);
@@ -1016,6 +1039,7 @@ export default function MobileAppViewPage(props: any) {
 
     return () => {
       window.removeEventListener('ff_user_bookings_updated', handleBookingsUpdated);
+      window.removeEventListener('ff_user_played_history_updated', handleHistoryUpdated);
       window.removeEventListener('ff_room_credentials_delivered', handleCredentialsDelivered);
       window.removeEventListener('ff_cms_updated', onBotCmsTrigger);
       window.removeEventListener('ff_match_added', onBotCmsTrigger);
@@ -2418,8 +2442,103 @@ export default function MobileAppViewPage(props: any) {
                       return `${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
                     };
 
+                    // Compile permanent played matches list
+                    const participantMatches = matches.filter((m) => {
+                      if (!currentUser) return false;
+                      return m.participants?.some(
+                        (p: any) =>
+                          (p.userId && p.userId === currentUser.id) ||
+                          (p.userPhone && p.userPhone === currentUser.phone) ||
+                          (p.uid && p.uid === currentUser.uid) ||
+                          (p.ign && currentUser.ign && p.ign.toUpperCase().trim() === currentUser.ign.toUpperCase().trim())
+                      );
+                    });
+
+                    const extraFromCms: UserBookedMatch[] = participantMatches.map((m) => {
+                      const p: any = m.participants?.find(
+                        (part: any) =>
+                          (part.userId && part.userId === currentUser?.id) ||
+                          (part.userPhone && part.userPhone === currentUser?.phone) ||
+                          (part.uid && part.uid === currentUser?.uid) ||
+                          (part.ign && currentUser?.ign && part.ign.toUpperCase().trim() === currentUser?.ign.toUpperCase().trim())
+                      );
+                      return {
+                        id: `cms-${m.id}-${p?.slot || 1}`,
+                        matchId: m.id,
+                        title: m.title,
+                        time: m.time,
+                        slot: p?.slot || 1,
+                        ign: p?.ign || currentUser?.ign || 'Player',
+                        uid: p?.uid || currentUser?.uid,
+                        categorySlug: m.categorySlug,
+                        type: m.type,
+                        map: m.map,
+                        entryFee: m.entryFee,
+                        prizePool: m.prizePool,
+                        bookedAt: (m as any).createdAt ? new Date((m as any).createdAt).toISOString() : new Date().toISOString(),
+                        team: p?.team,
+                      };
+                    });
+
+                    const combinedPlayedMap = new Map<string, any>();
+                    [...playedMatchesHistory, ...extraFromCms, ...bookedMatchesList].forEach((item) => {
+                      if (!item) return;
+                      if (currentUser) {
+                        if (item.userId && item.userId !== currentUser.id) return;
+                        if (item.userPhone && item.userPhone !== currentUser.phone) return;
+                        if (item.uid && item.uid !== currentUser.uid && !item.userId) return;
+                      }
+                      const key = item.matchId || item.id;
+                      if (!combinedPlayedMap.has(key)) {
+                        combinedPlayedMap.set(key, item);
+                      }
+                    });
+
+                    const allPlayedMatches = Array.from(combinedPlayedMap.values());
+
                     return (
                       <div className="space-y-3">
+                        {/* Upper Side Option Selector */}
+                        <div className="grid grid-cols-2 gap-2 p-1 rounded-2xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10">
+                          <button
+                            type="button"
+                            onClick={() => setMyMatchesSubTab('active')}
+                            className={`py-2 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+                              myMatchesSubTab === 'active'
+                                ? 'bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-md shadow-red-600/30'
+                                : 'text-gray-600 dark:text-gray-300 hover:text-gray-900'
+                            }`}
+                          >
+                            <Clock className="w-3.5 h-3.5" />
+                            <span>{tPhone('বুক করা ম্যাচ (চলমান)', 'Active Bookings')}</span>
+                            {activeBookedMatches.length > 0 && (
+                              <span className="w-4 h-4 rounded-full bg-white text-red-600 text-[10px] inline-flex items-center justify-center font-black">
+                                {activeBookedMatches.length}
+                              </span>
+                            )}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setMyMatchesSubTab('played')}
+                            className={`py-2 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+                              myMatchesSubTab === 'played'
+                                ? 'bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-md shadow-red-600/30'
+                                : 'text-gray-600 dark:text-gray-300 hover:text-gray-900'
+                            }`}
+                          >
+                            <Trophy className="w-3.5 h-3.5" />
+                            <span>{tPhone('আমার খেলা ম্যাচ (হিস্ট্রি)', 'Played Matches')}</span>
+                            {allPlayedMatches.length > 0 && (
+                              <span className={`w-4 h-4 rounded-full text-[10px] inline-flex items-center justify-center font-black ${myMatchesSubTab === 'played' ? 'bg-white text-red-600' : 'bg-red-500 text-white'}`}>
+                                {allPlayedMatches.length}
+                              </span>
+                            )}
+                          </button>
+                        </div>
+
+                        {myMatchesSubTab === 'active' && (
+                          <>
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-black uppercase tracking-wider text-red-600">
                             {tPhone(`আপনার বুক করা ম্যাচ (${activeBookedMatches.length})`, `Your Booked Matches (${activeBookedMatches.length})`)}
@@ -2654,6 +2773,169 @@ export default function MobileAppViewPage(props: any) {
                             'Warning: Sharing Room ID & Password with outsiders will result in an instant permanent ban. Room closes 8 minutes after release.'
                           )}
                         </div>
+                          </>
+                        )}
+
+                        {/* SUBTAB 2: PLAYED MATCHES & DETAILS (USER'S MATCH HISTORY) */}
+                        {myMatchesSubTab === 'played' && (
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-black uppercase tracking-wider text-amber-500 flex items-center gap-1.5">
+                                <Trophy className="w-3.5 h-3.5" />
+                                {tPhone(`আমার খেলা ম্যাচসমূহ (${allPlayedMatches.length})`, `My Played Matches History (${allPlayedMatches.length})`)}
+                              </span>
+                              <span className="text-[10px] font-bold text-gray-500 bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded-full border border-gray-200 dark:border-white/10">
+                                📊 Full History & Details
+                              </span>
+                            </div>
+
+                            {allPlayedMatches.length === 0 ? (
+                              <div className="p-8 text-center text-gray-500 bg-white dark:bg-[#181824] border border-dashed border-gray-300 dark:border-white/10 rounded-2xl space-y-2">
+                                <Trophy className="w-8 h-8 mx-auto text-amber-500/50 animate-pulse" />
+                                <p className="text-xs font-bold text-gray-800 dark:text-white">
+                                  {tPhone('আপনি এখনও কোনো ম্যাচ খেলেননি', 'No played matches recorded yet')}
+                                </p>
+                                <p className="text-[10px] text-gray-500 max-w-xs mx-auto">
+                                  {tPhone(
+                                    'হোম পেজ থেকে যেকোনো টুর্নামেন্টে অংশ নিন। ম্যাচ শেষ হলে আপনি কোন ম্যাচ খেলেছেন, কোন সময় খেলেছেন এবং তার রেজাল্ট ও বিস্তারিত এখানে দেখতে পাবেন।',
+                                    'Join tournaments from Home. After match finishes, details of which match you played, what time, and results will appear here.'
+                                  )}
+                                </p>
+                              </div>
+                            ) : (
+                              allPlayedMatches.map((pm: any) => {
+                                const liveMatch = matches.find((m) => m.id === pm.matchId || m.title === pm.title);
+                                const category = categories[pm.categorySlug || liveMatch?.categorySlug || ''] || null;
+                                const categoryName = category?.name || pm.categorySlug || 'Free Fire Match';
+                                const playTime = pm.time || liveMatch?.time || 'Tournament Scheduled Time';
+                                const matchMap = pm.map || liveMatch?.map || 'Bermuda';
+                                const matchType = pm.type || liveMatch?.type || '1 vs 1';
+                                const entryFee = pm.entryFee ?? liveMatch?.entryFee ?? 0;
+                                const prizePool = pm.prizePool ?? liveMatch?.prizePool ?? 0;
+
+                                // Check results for this player
+                                const results = liveMatch?.results || [];
+                                const userResult = results.find(
+                                  (r: any) =>
+                                    r.ign &&
+                                    ((pm.ign && r.ign.toUpperCase().trim() === pm.ign.toUpperCase().trim()) ||
+                                      (currentUser?.ign && r.ign.toUpperCase().trim() === currentUser.ign.toUpperCase().trim()))
+                                );
+
+                                return (
+                                  <div
+                                    key={pm.id}
+                                    className="p-4 rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#181824] space-y-3 shadow-md"
+                                  >
+                                    {/* Header: Title & Status */}
+                                    <div className="flex items-center justify-between gap-2">
+                                      <div className="min-w-0">
+                                        <span className="text-[10px] font-black px-2 py-0.5 rounded bg-red-100 dark:bg-red-950/60 text-red-600 uppercase inline-block mb-1">
+                                          {categoryName}
+                                        </span>
+                                        <h4 className="text-xs font-black text-gray-900 dark:text-white truncate">
+                                          {pm.title}
+                                        </h4>
+                                      </div>
+                                      <span className="text-[10px] px-2 py-0.5 rounded-full font-black bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800 flex-shrink-0">
+                                        COMPLETED
+                                      </span>
+                                    </div>
+
+                                    {/* Time & Game Details */}
+                                    <div className="grid grid-cols-2 gap-2 p-2.5 rounded-xl bg-gray-50 dark:bg-black/30 border border-gray-200/60 dark:border-white/5 text-[11px]">
+                                      <div>
+                                        <span className="text-gray-400 block text-[9px] uppercase font-bold flex items-center gap-1">
+                                          <Clock className="w-2.5 h-2.5 text-amber-500" /> {tPhone('খেলার সময়', 'Play Time')}
+                                        </span>
+                                        <span className="font-extrabold text-gray-800 dark:text-gray-200">{playTime}</span>
+                                      </div>
+                                      <div>
+                                        <span className="text-gray-400 block text-[9px] uppercase font-bold">
+                                          {tPhone('মোড ও ম্যাপ', 'Mode & Map')}
+                                        </span>
+                                        <span className="font-bold text-gray-700 dark:text-gray-300">
+                                          {matchType} • {matchMap}
+                                        </span>
+                                      </div>
+                                    </div>
+
+                                    {/* Player Participation Info */}
+                                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200/70 dark:border-white/5 text-xs">
+                                      <div>
+                                        <span className="text-gray-400 block text-[9px] font-bold">
+                                          {tPhone('প্লেয়ার IGN', 'Player IGN')}
+                                        </span>
+                                        <span className="font-black text-gray-900 dark:text-white">{pm.ign || 'Player'}</span>
+                                      </div>
+                                      <div className="text-right">
+                                        <span className="text-gray-400 block text-[9px] font-bold">
+                                          {tPhone('স্লট নম্বর', 'Slot #')}
+                                        </span>
+                                        <span className="font-black text-emerald-600 dark:text-emerald-400">#{pm.slot}</span>
+                                      </div>
+                                    </div>
+
+                                    {/* Fee & Prize summary */}
+                                    <div className="flex items-center justify-between text-[11px] px-1 font-semibold text-gray-500 dark:text-gray-400">
+                                      <span>{tPhone('এন্ট্রি ফি:', 'Entry Fee:')} <strong className="text-red-500">৳{entryFee}</strong></span>
+                                      <span>{tPhone('প্রাইজ পুল:', 'Prize Pool:')} <strong className="text-emerald-500">৳{prizePool}</strong></span>
+                                    </div>
+
+                                    {/* Result / Payout Status */}
+                                    {userResult ? (
+                                      <div className="p-2.5 rounded-xl bg-gradient-to-r from-amber-500/10 via-amber-500/20 to-slate-900/30 border border-amber-500/40 flex items-center justify-between text-xs shadow-xs">
+                                        <div className="flex items-center gap-1.5">
+                                          <Trophy className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                                          <div>
+                                            <span className="font-black text-amber-600 dark:text-amber-400 block leading-tight">
+                                              {userResult.rank === 1 ? '👑 ১ম স্থান (উইনার!)' : `${userResult.rank}ম স্থান`}
+                                            </span>
+                                            <span className="text-[10px] text-gray-500 dark:text-gray-400">
+                                              {userResult.kills || 0} টি কিল
+                                            </span>
+                                          </div>
+                                        </div>
+                                        <div className="text-right">
+                                          <span className="text-[9px] text-gray-400 uppercase font-bold block">জিতেছেন</span>
+                                          <span className="font-black text-emerald-600 dark:text-emerald-400 text-sm">
+                                            ৳{userResult.prize || 0}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    ) : results.length > 0 ? (
+                                      <div className="p-2 rounded-xl bg-gray-50 dark:bg-white/[0.02] border border-gray-200 dark:border-white/5 flex items-center justify-between text-xs text-gray-600 dark:text-gray-400">
+                                        <span className="flex items-center gap-1.5 font-bold">
+                                          <CheckCircle2 className="w-3.5 h-3.5 text-blue-500" />
+                                          {tPhone('ম্যাচ খেলা সম্পন্ন হয়েছে', 'Match Participation Completed')}
+                                        </span>
+                                        <span className="text-[10px] text-gray-500 font-semibold">ফলাফল প্রকাশিত</span>
+                                      </div>
+                                    ) : (
+                                      <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/30 flex items-center justify-between text-xs text-blue-700 dark:text-blue-300">
+                                        <span className="flex items-center gap-1.5 font-bold">
+                                          <Clock className="w-3.5 h-3.5 text-blue-500 animate-spin" />
+                                          {tPhone('ম্যাচ সমাপ্ত • ফলাফল প্রক্রিয়াধীন', 'Match Finished • Result Pending')}
+                                        </span>
+                                        <span className="text-[10px] text-blue-500 font-semibold">অ্যাডমিন রিভিউ</span>
+                                      </div>
+                                    )}
+
+                                    {/* Details Modal Trigger */}
+                                    <button
+                                      type="button"
+                                      onClick={() => setSelectedMatchForHistoryDetails({ ...liveMatch, ...pm })}
+                                      className="w-full py-2 rounded-xl bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/15 text-gray-800 dark:text-white font-black text-xs transition-all flex items-center justify-center gap-1.5"
+                                    >
+                                      <Eye className="w-3.5 h-3.5 text-amber-500" />
+                                      <span>{tPhone('ম্যাচ ডিটেইলস ও ফলাফল দেখুন', 'View Match Details & Scorecard')}</span>
+                                    </button>
+                                  </div>
+                                );
+                              })
+                            )}
+                          </div>
+                        )}
                       </div>
                     );
                   })()}
@@ -3436,6 +3718,136 @@ export default function MobileAppViewPage(props: any) {
           language={phoneLang}
           onClose={() => setSelectedPlayerForDetails(null)}
         />
+      )}
+
+      {/* 3.1. PLAYED MATCH & SCORECARD DETAILS MODAL */}
+      {selectedMatchForHistoryDetails && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+          <div className="relative w-full max-w-sm rounded-3xl bg-white dark:bg-[#12121a] border border-gray-200 dark:border-white/10 shadow-2xl overflow-hidden p-5 space-y-4 max-h-[85vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-white/10">
+              <div className="flex items-center gap-2">
+                <Trophy className="w-5 h-5 text-amber-500" />
+                <h3 className="text-sm font-black text-gray-900 dark:text-white">
+                  {tPhone('ম্যাচ ও রেজাল্ট ডিটেইলস', 'Match & Result Details')}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedMatchForHistoryDetails(null)}
+                className="w-7 h-7 rounded-full bg-gray-100 dark:bg-white/10 flex items-center justify-center text-gray-500 hover:text-gray-900 text-xs font-black"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div>
+                <span className="text-[10px] font-black px-2 py-0.5 rounded bg-red-100 dark:bg-red-950/60 text-red-600 uppercase inline-block mb-1">
+                  {categories[selectedMatchForHistoryDetails.categorySlug]?.name || selectedMatchForHistoryDetails.categorySlug || 'Free Fire'}
+                </span>
+                <h4 className="text-sm font-black text-gray-900 dark:text-white">
+                  {selectedMatchForHistoryDetails.title}
+                </h4>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 p-2.5 rounded-xl bg-gray-50 dark:bg-black/40 border border-gray-200 dark:border-white/5 text-[11px]">
+                <div>
+                  <span className="text-gray-400 block text-[9px] font-bold">ম্যাচ খেলার সময়</span>
+                  <span className="font-extrabold text-gray-800 dark:text-gray-200">{selectedMatchForHistoryDetails.time}</span>
+                </div>
+                <div>
+                  <span className="text-gray-400 block text-[9px] font-bold">ম্যাপ ও মোড</span>
+                  <span className="font-bold text-gray-700 dark:text-gray-300">
+                    {selectedMatchForHistoryDetails.type || '1 vs 1'} • {selectedMatchForHistoryDetails.map || 'Bermuda'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-gray-400 block text-[9px] font-bold">আপনার স্লট</span>
+                  <span className="font-black text-emerald-600">#{selectedMatchForHistoryDetails.slot}</span>
+                </div>
+                <div>
+                  <span className="text-gray-400 block text-[9px] font-bold">আপনার IGN</span>
+                  <span className="font-black text-gray-900 dark:text-white">{selectedMatchForHistoryDetails.ign}</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 p-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 text-[11px]">
+                <div>
+                  <span className="text-gray-400 block text-[9px] font-bold">এন্ট্রি ফি</span>
+                  <span className="font-black text-red-600">৳{selectedMatchForHistoryDetails.entryFee || 0}</span>
+                </div>
+                <div>
+                  <span className="text-gray-400 block text-[9px] font-bold">টোটাল প্রাইজ পুল</span>
+                  <span className="font-black text-emerald-600">৳{selectedMatchForHistoryDetails.prizePool || 0}</span>
+                </div>
+              </div>
+
+              {/* Scoreboard Results */}
+              <div className="space-y-1.5 pt-1">
+                <span className="text-[10px] font-black uppercase tracking-wider text-gray-400 flex items-center gap-1">
+                  <Award className="w-3.5 h-3.5 text-amber-500" />
+                  {tPhone('ফলাফল ও স্কোরবোর্ড (Scoreboard)', 'Match Scoreboard')}
+                </span>
+
+                {Array.isArray(selectedMatchForHistoryDetails.results) && selectedMatchForHistoryDetails.results.length > 0 ? (
+                  <div className="space-y-1.5">
+                    {selectedMatchForHistoryDetails.results.map((r: any, idx: number) => (
+                      <div
+                        key={idx}
+                        className={`p-2 rounded-xl border flex items-center justify-between text-xs ${
+                          r.rank === 1
+                            ? 'bg-amber-500/10 border-amber-500/30'
+                            : 'bg-gray-50 dark:bg-white/[0.02] border-gray-200 dark:border-white/5'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`w-5 h-5 rounded-full inline-flex items-center justify-center text-[10px] font-black ${
+                              r.rank === 1
+                                ? 'bg-amber-400 text-black'
+                                : r.rank === 2
+                                ? 'bg-slate-300 text-black'
+                                : 'bg-amber-700/60 text-white'
+                            }`}
+                          >
+                            {r.rank}
+                          </span>
+                          <span className="font-black text-gray-900 dark:text-white">{r.ign}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-red-500 font-bold text-[11px]">{r.kills || 0} কিল</span>
+                          <span className="font-black text-emerald-600 text-xs">৳{r.prize || 0}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-3 rounded-xl bg-gray-50 dark:bg-white/[0.02] border border-gray-200 dark:border-white/5 text-center text-[11px] text-gray-500">
+                    ম্যাচটি সম্পন্ন হয়েছে। অ্যাডমিন শীঘ্রই অফিসিয়াল ফলাফল পাবলিশ করবেন।
+                  </div>
+                )}
+              </div>
+
+              {/* Rules info */}
+              {selectedMatchForHistoryDetails.rules && (
+                <div className="p-2.5 rounded-xl bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-white/5 space-y-1">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase block">ম্যাচের নিয়মাবলী</span>
+                  <p className="text-[11px] text-gray-600 dark:text-gray-300 whitespace-pre-line leading-relaxed">
+                    {selectedMatchForHistoryDetails.rules}
+                  </p>
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={() => setSelectedMatchForHistoryDetails(null)}
+                className="w-full py-2.5 rounded-xl bg-gray-900 dark:bg-white text-white dark:text-black font-black text-xs transition-all shadow-md active:scale-95"
+              >
+                বন্ধ করুন (Close)
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* 4. TOTAL PRIZE DETAILS MODAL (EXACT USER IMAGE 2) */}

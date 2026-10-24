@@ -33,6 +33,7 @@ import {
   Clock,
   Zap,
   Cpu,
+  Award,
 } from 'lucide-react';
 import { useCMS, MatchItem, BannerSlide, INITIAL_CATEGORIES } from '@/lib/cms-store';
 import { getUpcomingScheduleTime } from '@/components/LiveMatchCountdown';
@@ -1325,6 +1326,20 @@ export default function AdminMasterPage() {
                         <Zap className="w-3.5 h-3.5" />
                         <span>{m.roomId ? '⚡ Deliver Room ID' : '⚡ সেট ও ডেলিভার'}</span>
                       </button>
+
+                      {/* 🏆 PUBLISH RESULT BUTTON */}
+                      <Link
+                        href={`/admin/tournaments?category=${m.categorySlug || 'ALL'}`}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all ${
+                          m.status === 'COMPLETED'
+                            ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 border border-emerald-300'
+                            : 'bg-amber-100 dark:bg-amber-950/40 hover:bg-amber-200 text-amber-700'
+                        }`}
+                        title="Publish match winner results and update leaderboard"
+                      >
+                        <Award className="w-3.5 h-3.5 text-amber-600" />
+                        <span>{m.status === 'COMPLETED' ? 'রেজাল্ট এডিট' : '🏆 রেজাল্ট দিন'}</span>
+                      </Link>
 
                       <button
                         onClick={() => {

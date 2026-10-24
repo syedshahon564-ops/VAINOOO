@@ -16,6 +16,7 @@ import {
   Download,
   Smartphone,
   Headphones,
+  Clock,
 } from 'lucide-react';
 import { ApiClient } from '@/lib/api-client';
 import { useTheme } from '@/components/ThemeProvider';
@@ -121,13 +122,20 @@ export default function Navbar() {
           </div>
         </Link>
 
-        {/* Clean Nav Links (Home, Leaderboard, Deposit & Withdraw) */}
+        {/* Clean Nav Links (Home, My Matches, Leaderboard, Deposit & Withdraw) */}
         <nav className="hidden md:flex items-center gap-2.5 text-xs font-bold uppercase tracking-wider">
           <Link
             href="/"
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-gray-700 dark:text-gray-300 hover:text-red-600 hover:bg-gray-100 dark:hover:bg-white/5 transition-all"
           >
             <Home className="w-4 h-4" /> {t('হোম', 'Home')}
+          </Link>
+
+          <Link
+            href="/mobile-app-view?tab=my-matches"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-gray-700 dark:text-gray-300 hover:text-red-600 hover:bg-gray-100 dark:hover:bg-white/5 transition-all font-bold"
+          >
+            <Clock className="w-4 h-4 text-red-600" /> {t('মাই ম্যাচ', 'My Matches')}
           </Link>
 
           <Link

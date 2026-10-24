@@ -93,6 +93,53 @@ export async function GET() {
         });
       }
 
+      // Auto-heal topPlayers if matches have results
+      const currentValidTop = Array.isArray(result.topPlayers)
+        ? result.topPlayers.filter((p: any) => p && !p.id?.startsWith('tp-') && p.ign)
+        : [];
+      if (currentValidTop.length === 0 && Array.isArray(result.matches)) {
+        const playerMap = new Map<string, any>();
+        for (const m of result.matches) {
+          if (Array.isArray(m.results)) {
+            for (const r of m.results) {
+              const ign = String(r.ign || '').trim();
+              if (!ign) continue;
+              const kills = Number(r.kills || 0);
+              const prize = Number(r.prize || 0);
+              const isWin = Number(r.rank) === 1;
+
+              const key = ign.toLowerCase();
+              const existing = playerMap.get(key);
+              if (existing) {
+                existing.kills = Math.max(existing.kills, existing.kills + kills);
+                existing.earnings = Math.max(existing.earnings, existing.earnings + prize);
+                existing.matchesPlayed = (existing.matchesPlayed || 1) + 1;
+                if (isWin) existing.booyahs = (existing.booyahs || 0) + 1;
+                existing.winRate = `${Math.round(((existing.booyahs || 0) / existing.matchesPlayed) * 100)}%`;
+              } else {
+                playerMap.set(key, {
+                  id: `result-${key}`,
+                  rank: 0,
+                  ign: ign.toUpperCase(),
+                  uid: '',
+                  avatar: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=120',
+                  kills,
+                  earnings: prize,
+                  matchesPlayed: 1,
+                  booyahs: isWin ? 1 : 0,
+                  winRate: isWin ? '100%' : '0%',
+                });
+              }
+            }
+          }
+        }
+        const aggregated = Array.from(playerMap.values());
+        if (aggregated.length > 0) {
+          aggregated.sort((a, b) => (Number(b.earnings) || 0) - (Number(a.earnings) || 0) || (Number(b.kills) || 0) - (Number(a.kills) || 0));
+          result.topPlayers = aggregated.map((p, idx) => ({ ...p, rank: idx + 1 }));
+        }
+      }
+
       inMemoryServerCache = result;
     }
 
@@ -212,6 +259,58 @@ export async function POST(req: Request) {
       });
     }
 
+    // Calculate valid top players: either from incoming payload or dynamically from matches with results
+    let nextTopPlayers: any[] = [];
+    const incomingTop = Array.isArray(body.topPlayers) ? body.topPlayers : [];
+    const validIncomingTop = incomingTop.filter((p: any) => p && !p.id?.startsWith('tp-') && p.ign);
+
+    if (validIncomingTop.length > 0) {
+      nextTopPlayers = validIncomingTop;
+    } else {
+      const playerMap = new Map<string, any>();
+      for (const m of mergedMatches) {
+        if (Array.isArray(m.results)) {
+          for (const r of m.results) {
+            const ign = String(r.ign || '').trim();
+            if (!ign) continue;
+            const kills = Number(r.kills || 0);
+            const prize = Number(r.prize || 0);
+            const isWin = Number(r.rank) === 1;
+
+            const key = ign.toLowerCase();
+            const existing = playerMap.get(key);
+            if (existing) {
+              existing.kills = Math.max(existing.kills, existing.kills + kills);
+              existing.earnings = Math.max(existing.earnings, existing.earnings + prize);
+              existing.matchesPlayed = (existing.matchesPlayed || 1) + 1;
+              if (isWin) existing.booyahs = (existing.booyahs || 0) + 1;
+              existing.winRate = `${Math.round(((existing.booyahs || 0) / existing.matchesPlayed) * 100)}%`;
+            } else {
+              playerMap.set(key, {
+                id: `result-${key}`,
+                rank: 0,
+                ign: ign.toUpperCase(),
+                uid: '',
+                avatar: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=120',
+                kills,
+                earnings: prize,
+                matchesPlayed: 1,
+                booyahs: isWin ? 1 : 0,
+                winRate: isWin ? '100%' : '0%',
+              });
+            }
+          }
+        }
+      }
+      const aggregated = Array.from(playerMap.values());
+      if (aggregated.length > 0) {
+        aggregated.sort((a, b) => (Number(b.earnings) || 0) - (Number(a.earnings) || 0) || (Number(b.kills) || 0) - (Number(a.kills) || 0));
+        nextTopPlayers = aggregated.map((p, idx) => ({ ...p, rank: idx + 1 }));
+      } else {
+        nextTopPlayers = Array.isArray(body.topPlayers) && body.topPlayers.length > 0 ? body.topPlayers : (current.topPlayers || []);
+      }
+    }
+
     const nextData = {
       ...current,
       ...body,
@@ -222,7 +321,7 @@ export async function POST(req: Request) {
       },
       deletedCategories: Array.isArray(body.deletedCategories) ? body.deletedCategories : (current.deletedCategories || []),
       matches: mergedMatches,
-      topPlayers: Array.isArray(body.topPlayers) ? body.topPlayers : (current.topPlayers || []),
+      topPlayers: nextTopPlayers,
       matchesUpdatedAt: body.matchesUpdatedAt || Date.now(),
     };
 

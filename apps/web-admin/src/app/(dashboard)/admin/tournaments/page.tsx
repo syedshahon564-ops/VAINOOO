@@ -17,7 +17,8 @@ import {
   Bot,
   Zap,
 } from 'lucide-react';
-import { useCMS, MatchItem, getEffectiveMatchRules, INITIAL_CATEGORIES } from '@/lib/cms-store';
+import { useCMS, MatchItem, getEffectiveMatchRules, INITIAL_CATEGORIES, getLiveTopPlayers, getCMSData } from '@/lib/cms-store';
+import { getUsers, processMatchPrizePayout } from '@/lib/user-store';
 import { getUpcomingScheduleTime } from '@/components/LiveMatchCountdown';
 import ImageUploadInput from '@/components/ImageUploadInput';
 import {
@@ -156,12 +157,39 @@ export default function AdminTournamentsPage() {
       return;
     }
 
+    // Process payouts & player profile stats if matching registered user accounts exist
+    try {
+      const allUsers = getUsers();
+      const winners = validResults.map((r) => {
+        const u = allUsers.find(
+          (usr) => (usr.ign && usr.ign.toUpperCase().trim() === r.ign.toUpperCase().trim())
+        );
+        return {
+          userId: u?.id,
+          ign: r.ign,
+          uid: u?.uid,
+          rank: r.rank,
+          kills: r.kills,
+          prize: r.prize,
+        };
+      });
+      processMatchPrizePayout(resultMatch.id, resultMatch.title, winners);
+    } catch (e) {}
+
     updateMatch(resultMatch.id, {
       status: 'COMPLETED',
       results: validResults,
     });
 
-    showNotification(`Results published for match "${resultMatch.title}"!`);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('ff_match_results_published', {
+          detail: { matchId: resultMatch.id, results: validResults },
+        })
+      );
+    }
+
+    showNotification(`⚡ ম্যাচ "${resultMatch.title}"-এর রেজাল্ট সফলভাবে পাবলিশ হয়েছে এবং লিডারবোর্ড আপডেট হয়েছে!`);
     setResultMatch(null);
   };
 

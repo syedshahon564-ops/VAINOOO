@@ -30,7 +30,7 @@ export interface MatchItem {
   status?: 'UPCOMING' | 'ROOM_OPEN' | 'LIVE' | 'COMPLETED';
   /** Published after the match ends: who placed where, kills and prize won. */
   results?: Array<{ rank: number; ign: string; kills: number; prize: number }>;
-  participants?: Array<{ ign: string; uid?: string; slot?: number; team?: number }>;
+  participants?: Array<{ ign: string; uid?: string; slot?: number; team?: number; userId?: string; userPhone?: string }>;
   createdAt?: number;
   updatedAt?: number;
 }
@@ -40,6 +40,8 @@ export interface MatchParticipant {
   uid?: string;
   slot?: number;
   team?: number;
+  userId?: string;
+  userPhone?: string;
 }
 
 export interface CategoryItem {
@@ -630,6 +632,13 @@ export function updateMatch(matchId: string, updated: Partial<MatchItem>): void 
     const now = Date.now();
     data.matches[index] = { ...existing, ...updated, ...(roomDeliveredAt ? { roomDeliveredAt } : {}), updatedAt: now };
     data.matchesUpdatedAt = now;
+
+    // Auto-update topPlayers when results are added or updated
+    const liveTop = getLiveTopPlayers(data);
+    if (liveTop && liveTop.length > 0) {
+      data.topPlayers = liveTop;
+    }
+
     saveCMSData(data);
   }
 }
@@ -1048,7 +1057,7 @@ export function getLiveTopPlayers(cmsData?: CMSData): TopPlayerItem[] {
   // Dynamically aggregate all completed matches from CMS matches:
   if (Array.isArray(currentCMS?.matches)) {
     currentCMS.matches.forEach((m) => {
-      if (Array.isArray(m.results)) {
+      if (Array.isArray(m.results) && m.results.length > 0) {
         m.results.forEach((r) => {
           const ign = String(r.ign || '').trim();
           if (!ign) return;
@@ -1061,7 +1070,9 @@ export function getLiveTopPlayers(cmsData?: CMSData): TopPlayerItem[] {
             rawList[existingIdx].kills = Math.max(rawList[existingIdx].kills, rawList[existingIdx].kills + kills);
             rawList[existingIdx].earnings = Math.max(rawList[existingIdx].earnings, rawList[existingIdx].earnings + prize);
             rawList[existingIdx].matchesPlayed = Math.max(rawList[existingIdx].matchesPlayed, rawList[existingIdx].matchesPlayed + 1);
-            if (isWin) rawList[existingIdx].booyahs = Math.max(rawList[existingIdx].booyahs, rawList[existingIdx].booyahs + 1);
+            if (isWin) rawList[existingIdx].booyahs = (rawList[existingIdx].booyahs || 0) + 1;
+            const matches = rawList[existingIdx].matchesPlayed || 1;
+            rawList[existingIdx].winRate = `${Math.round(((rawList[existingIdx].booyahs || 0) / matches) * 100)}%`;
           } else {
             rawList.push({
               id: `result-${ign.toLowerCase()}`,

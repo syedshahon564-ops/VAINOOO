@@ -869,6 +869,28 @@ export function runBotRoomManagerCycle(): number {
 /*  User Booked Matches Persistent Helpers                            */
 /* ------------------------------------------------------------------ */
 
+export const USER_PLAYED_MATCHES_HISTORY_KEY = 'ff_user_played_matches_history_v1';
+
+export function getUserPlayedMatchesHistory(): UserBookedMatch[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(USER_PLAYED_MATCHES_HISTORY_KEY);
+    if (!raw) return [];
+    const list = JSON.parse(raw);
+    return Array.isArray(list) ? list : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+export function saveUserPlayedMatchesHistory(list: UserBookedMatch[]): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(USER_PLAYED_MATCHES_HISTORY_KEY, JSON.stringify(list));
+    window.dispatchEvent(new CustomEvent('ff_user_played_history_updated', { detail: list }));
+  } catch (e) {}
+}
+
 export function getUserBookedMatches(): UserBookedMatch[] {
   if (typeof window === 'undefined') return [];
   try {
@@ -876,6 +898,22 @@ export function getUserBookedMatches(): UserBookedMatch[] {
     if (!raw) return [];
     const list = JSON.parse(raw);
     if (!Array.isArray(list)) return [];
+
+    // Ensure all existing bookings are safely preserved in played history before any upcoming expiry
+    const history = getUserPlayedMatchesHistory();
+    const historyMap = new Map(history.map((h) => [h.matchId || h.id, h]));
+    let historyModified = false;
+    list.forEach((b: any) => {
+      const key = b.matchId || b.id;
+      if (key && !historyMap.has(key)) {
+        history.push(b);
+        historyMap.set(key, b);
+        historyModified = true;
+      }
+    });
+    if (historyModified) {
+      saveUserPlayedMatchesHistory(history);
+    }
 
     const now = Date.now();
     const EIGHT_MINUTES_MS = 8 * 60 * 1000;
@@ -891,7 +929,7 @@ export function getUserBookedMatches(): UserBookedMatch[] {
       if (b.roomDeliveredAt) {
         const deliveredMs = new Date(b.roomDeliveredAt).getTime();
         if (!isNaN(deliveredMs) && now - deliveredMs >= EIGHT_MINUTES_MS) {
-          return false; // Auto expired after 8 minutes!
+          return false; // Auto expired after 8 minutes from upcoming queue!
         }
       }
 
@@ -899,7 +937,6 @@ export function getUserBookedMatches(): UserBookedMatch[] {
       const matchDate = parseScheduleTimeToDate(b.time);
       if (matchDate) {
         const elapsedSinceMatch = now - matchDate.getTime();
-        // If match schedule start time + 2 minutes has passed, match has ended -> auto-expire!
         if (elapsedSinceMatch >= 2 * 60 * 1000) {
           return false;
         }
@@ -957,6 +994,12 @@ export function addUserBooking(booking: Omit<UserBookedMatch, 'id' | 'bookedAt'>
   };
   const updated = [newEntry, ...current];
   saveUserBookedMatches(updated);
+
+  // Also ensure it is persisted permanently in played match history
+  const history = getUserPlayedMatchesHistory();
+  const updatedHistory = [newEntry, ...history.filter((h) => h.matchId !== newEntry.matchId && h.id !== newEntry.id)];
+  saveUserPlayedMatchesHistory(updatedHistory);
+
   return newEntry;
 }
 
