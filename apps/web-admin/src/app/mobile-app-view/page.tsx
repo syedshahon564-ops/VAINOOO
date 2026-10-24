@@ -137,17 +137,28 @@ export default function MobileAppViewPage(props: any) {
   useEffect(() => {
     setMounted(true);
 
-    // Fast, ultra-responsive esports splash loading sequence
-    const t1 = setTimeout(() => setSplashProgress(70), 50);
-    const t2 = setTimeout(() => setSplashProgress(100), 120);
-    const t3 = setTimeout(() => setSplashFading(true), 200);
-    const t4 = setTimeout(() => setSplashVisible(false), 350);
+    // Smooth, premium esports splash loading sequence (~1.6s)
+    const t1 = setTimeout(() => setSplashProgress(38), 200);
+    const t2 = setTimeout(() => setSplashProgress(68), 500);
+    const t3 = setTimeout(() => setSplashProgress(88), 900);
+    const t4 = setTimeout(() => setSplashProgress(100), 1300);
+    const t5 = setTimeout(() => setSplashFading(true), 1550);
+    const t6 = setTimeout(() => {
+      setSplashVisible(false);
+      // Immediately after splash loading finishes, prompt Sign In / Login modal if not logged in
+      const cur = getCurrentUser();
+      if (!cur) {
+        setShowAuthModal(true);
+      }
+    }, 1850);
 
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);
       clearTimeout(t3);
       clearTimeout(t4);
+      clearTimeout(t5);
+      clearTimeout(t6);
     };
   }, []);
 
@@ -220,18 +231,19 @@ export default function MobileAppViewPage(props: any) {
   const [updateSuccess, setUpdateSuccess] = useState(false);
   const [updateProgress, setUpdateProgress] = useState(0);
 
-  // Auto-prompt login/register on first entry for new visitors
+  // Auth modal prompt is triggered automatically upon splash screen completion (t6)
   useEffect(() => {
-    const cur = getCurrentUser();
-    if (!cur) {
-      const hasPrompted = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('ff_auth_prompted_once') : null;
-      if (!hasPrompted) {
-        setShowAuthModal(true);
-        if (typeof sessionStorage !== 'undefined') {
-          sessionStorage.setItem('ff_auth_prompted_once', '1');
-        }
-      }
-    }
+    // Keep user state in sync on storage events
+    const syncCur = () => {
+      const cur = getCurrentUser();
+      setCurrentUser(cur);
+    };
+    window.addEventListener('storage', syncCur);
+    window.addEventListener('ff_users_updated', syncCur);
+    return () => {
+      window.removeEventListener('storage', syncCur);
+      window.removeEventListener('ff_users_updated', syncCur);
+    };
   }, []);
 
   // Pull-to-refresh state
