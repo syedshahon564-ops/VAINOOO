@@ -259,6 +259,32 @@ export default function MobileAppViewPage(props: any) {
     };
   }, []);
 
+  // Automatic In-App Update Prompt: if client runs an older APK version (< 50 or < v5.0.0), prompt update
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlVer = urlParams.get('v');
+        const nativeVerCode = (window as any)?.AndroidBridge?.getAppVersionCode?.() ?? null;
+        const nativeVerName = (window as any)?.AndroidBridge?.getAppVersionName?.() ?? null;
+        const dismissed = sessionStorage.getItem('ff_update_dismissed_session');
+
+        // Check if APK is outdated (version code < 50 or URL param < 5.0.0)
+        const isOutdatedCode = nativeVerCode !== null && nativeVerCode < 50;
+        const isOutdatedUrl = urlVer && urlVer !== '5.0.0';
+        const isOutdatedName = nativeVerName && nativeVerName !== '5.0.0';
+
+        if ((isOutdatedCode || isOutdatedUrl || isOutdatedName) && dismissed !== 'true') {
+          // Delay display until after initial splash screen completes
+          const updateTimer = setTimeout(() => {
+            setShowUpdateModal(true);
+          }, 2400);
+          return () => clearTimeout(updateTimer);
+        }
+      }
+    } catch {}
+  }, []);
+
   // Pull-to-refresh state
   const [isPulling, setIsPulling] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
@@ -4518,13 +4544,13 @@ export default function MobileAppViewPage(props: any) {
             <div className="space-y-1">
               <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-red-500/20 border border-red-500/40 text-red-400 text-[10px] font-black uppercase tracking-wider mb-1">
                 <ShieldAlert className="w-3 h-3 text-red-400" />
-                অফিসিয়াল Android অ্যাপ
+                অফিসিয়াল Android অ্যাপ আপডেট
               </div>
               <h3 className="text-xl font-black tracking-wide text-white">
-                FF RIVALS অ্যাপ ডাউনলোড করুন! 🚀
+                নতুন আপডেট v5.0.0 উপলব্ধ! 🚀
               </h3>
               <p className="text-xs text-gray-300 leading-relaxed pt-1">
-                সুপারফাস্ট টুর্নামেন্ট অভিজ্ঞতা ও নোটিফিকেশন পেতে আমাদের <span className="text-amber-400 font-bold">৩০ MB</span> অফিশিয়াল অ্যাপটি ফোনে ইনস্টল করুন।
+                সুপারফাস্ট টুর্নামেন্ট অভিজ্ঞতা, ম্যাচ রুম আইডি ও পুশ নোটিফিকেশন পেতে আমাদের <span className="text-amber-400 font-bold">৩০ MB</span> অফিশিয়াল অ্যাপের লেটেস্ট ভার্সন ইনস্টল করুন।
               </p>
             </div>
 
@@ -4534,7 +4560,7 @@ export default function MobileAppViewPage(props: any) {
                 📦 সাইজ: ৩০ এমবি (30 MB)
               </span>
               <span className="px-3 py-1 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                ⚡ ভার্সন: v3.5.0 Latest
+                ⚡ ভার্সন: v5.0.0 Latest
               </span>
             </div>
 
@@ -4641,7 +4667,7 @@ export default function MobileAppViewPage(props: any) {
                     type="button"
                     onClick={() => {
                       try {
-                        localStorage.setItem('ff_app_installed_version_v350', 'v3.5.0');
+                        localStorage.setItem('ff_app_installed_version_v500', 'v5.0.0');
                       } catch {}
                       setShowUpdateModal(false);
                     }}
@@ -4678,7 +4704,7 @@ export default function MobileAppViewPage(props: any) {
                 type="button"
                 onClick={() => {
                   try {
-                    localStorage.setItem('ff_app_installed_version_v350', 'v3.5.0');
+                    localStorage.setItem('ff_app_installed_version_v500', 'v5.0.0');
                   } catch {}
                   setShowUpdateModal(false);
                 }}

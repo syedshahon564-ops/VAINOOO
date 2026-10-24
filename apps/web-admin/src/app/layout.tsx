@@ -41,7 +41,7 @@ export default function RootLayout({
             __html: `
               (function() {
                 try {
-                  var CURRENT_VERSION = '4.0.0';
+                  var CURRENT_VERSION = '5.0.0';
                   var storedVer = localStorage.getItem('ff_app_build_version');
 
                   // Register production Service Worker for Push Notifications
@@ -53,7 +53,7 @@ export default function RootLayout({
                   if (storedVer !== CURRENT_VERSION && 'caches' in window) {
                     caches.keys().then(function(keys) {
                       for (var j = 0; j < keys.length; j++) {
-                        if (keys[j] !== 'ff-rivals-v4') {
+                        if (keys[j] !== 'ff-rivals-v5-0-0') {
                           caches.delete(keys[j]);
                         }
                       }

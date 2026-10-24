@@ -114,6 +114,24 @@ public class MainActivity extends BridgeActivity {
 
     public class WebAppInterface {
         @android.webkit.JavascriptInterface
+        public int getAppVersionCode() {
+            try {
+                return getPackageManager().getPackageInfo(getPackageName(), 0).versionCode;
+            } catch (Exception e) {
+                return 4;
+            }
+        }
+
+        @android.webkit.JavascriptInterface
+        public String getAppVersionName() {
+            try {
+                return getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+            } catch (Exception e) {
+                return "1.0.3";
+            }
+        }
+
+        @android.webkit.JavascriptInterface
         public void requestNotificationPermission() {
             runOnUiThread(new Runnable() {
                 @Override

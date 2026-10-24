@@ -1,5 +1,5 @@
 // Production Service Worker for FF Rivals: Web Push Notifications & Offline Support
-const CACHE_NAME = 'ff-rivals-v4';
+const CACHE_NAME = 'ff-rivals-v5-0-0';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();

@@ -142,7 +142,7 @@ export default function AppUpdateModal({ forceOpen = false }: AppUpdateModalProp
             অফিসিয়াল Android অ্যাপ
           </div>
           <h3 className="text-xl font-black tracking-wide text-white">
-            FF RIVALS অ্যাপ ডাউনলোড করুন! 🚀
+            FF RIVALS v5.0.0 নতুন আপডেট ডাউনলোড করুন! 🚀
           </h3>
           <p className="text-xs text-gray-300 leading-relaxed pt-1">
             সুপারফাস্ট টুর্নামেন্ট অভিজ্ঞতা, ম্যাচ রুম আইডি ও পুশ নোটিফিকেশন পেতে আমাদের <span className="text-amber-400 font-bold">৩০ MB</span> অফিশিয়াল অ্যাপটি ফোনে ইনস্টল করুন।

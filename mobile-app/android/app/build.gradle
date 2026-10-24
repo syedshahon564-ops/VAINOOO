@@ -16,8 +16,8 @@ android {
         applicationId "com.ffrivalstour.app"
         minSdkVersion rootProject.ext.minSdkVersion       // 24 = Android 7.0+
         targetSdkVersion rootProject.ext.targetSdkVersion // 34
-        versionCode 4
-        versionName "1.0.3"
+        versionCode 50
+        versionName "5.0.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.

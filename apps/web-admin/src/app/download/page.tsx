@@ -53,7 +53,7 @@ export default function DownloadAppPage() {
     const downloadUrl =
       settings?.apkDownloadUrl && settings.apkDownloadUrl.trim() !== ''
         ? settings.apkDownloadUrl
-        : '/ffrivals.apk';
+        : '/downloads/ffrivals.apk';
 
     window.location.href = downloadUrl;
   };
@@ -73,7 +73,7 @@ export default function DownloadAppPage() {
 
           <div className="space-y-2 text-center sm:text-left flex-1">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-amber-300 text-xs font-black uppercase tracking-wider">
-              <Sparkles className="w-3.5 h-3.5" /> Official Android Client v1.0.0
+              <Sparkles className="w-3.5 h-3.5" /> Official Android Client v5.0.0 (Latest Update)
             </div>
             <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-wide">
               {settings?.siteName || 'FF RIVAL TOUR BD'} APP
