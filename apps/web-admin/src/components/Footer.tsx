@@ -22,7 +22,7 @@ export default function Footer() {
   }
 
   return (
-    <footer className="border-t border-gray-200 dark:border-white/[0.08] bg-white dark:bg-[#07070a] pt-16 pb-12 mt-20 transition-colors">
+    <footer className="hidden lg:block border-t border-gray-200 dark:border-white/[0.08] bg-white dark:bg-[#07070a] pt-16 pb-12 mt-20 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10 pb-12 border-b border-gray-200 dark:border-white/[0.06]">
           {/* Col 1 */}

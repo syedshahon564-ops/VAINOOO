@@ -146,7 +146,9 @@ export default function HomePage() {
   }
 
   return (
-    <main className="w-full pb-16 space-y-8">
+    <>
+      <div className="hidden lg:block">
+        <main className="w-full pb-16 space-y-8">
       {/* Top Small Announcement Notice Bar (Dynamic from Admin) */}
       {showNotice && (
         <div className="bg-red-600 text-white py-3 px-4 shadow-sm">
@@ -486,5 +488,12 @@ export default function HomePage() {
         onClose={() => setShowDownloadModal(false)}
       />
     </main>
+      </div>
+
+      {/* Direct Mobile App View fallback for mobile / tablets on smaller viewports */}
+      <div className="block lg:hidden">
+        <MobileAppViewPage standalone={true} />
+      </div>
+    </>
   );
 }

@@ -100,7 +100,7 @@ export default function Navbar() {
   }
 
   return (
-    <header className="sticky top-0 z-50 backdrop-blur-md bg-white/95 dark:bg-[#07070a]/90 border-b border-gray-200 dark:border-white/10 transition-colors">
+    <header className="hidden lg:block sticky top-0 z-50 backdrop-blur-md bg-white/95 dark:bg-[#07070a]/90 border-b border-gray-200 dark:border-white/10 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
         {/* Brand Logo with User-uploaded Logo */}
         <Link href="/" onClick={handleSecretLogoClick} className="flex items-center gap-3 group select-none flex-shrink-0">

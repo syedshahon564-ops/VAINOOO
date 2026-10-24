@@ -342,8 +342,10 @@ export default function AdminMasterPage() {
   };
 
   // 1. HANDLE CREATE MATCH
-  const isMatchLoneWolf = matchCategory === 'lone-wolf';
-  const isMatchClashSquad = matchCategory === 'clash-squad' || matchCategory === 'cs-only-headshot';
+  const isMatchLostToWin = matchCategory === 'lost-to-win' || (matchCategory || '').toLowerCase().includes('lost');
+  const isMatchLoneWolf = matchCategory === 'lone-wolf' || (matchCategory || '').toLowerCase().includes('lone') || (matchCategory || '').toLowerCase().includes('wolf');
+  const isMatchHeadshot = matchCategory === 'cs-only-headshot' || (matchCategory || '').toLowerCase().includes('headshot');
+  const isMatchClashSquad = matchCategory === 'clash-squad' || (matchCategory || '').toLowerCase().includes('clash');
 
   const handleSelectMatchCategory = (slug: string) => {
     setMatchCategory(slug);
@@ -352,7 +354,8 @@ export default function AdminMasterPage() {
     if (catImg) {
       setMatchBannerImage(catImg);
     }
-    if (slug === 'lone-wolf') {
+    const slugLower = slug.toLowerCase();
+    if (slugLower === 'lost-to-win' || slugLower.includes('lost')) {
       setMatchType('1 vs 1');
       setMatchTotalSlots(2);
       setMatchMap('Iron Cage');
@@ -362,7 +365,27 @@ export default function AdminMasterPage() {
       const pool = Math.max(10, Math.round(matchEntryFee * 2 * 0.85));
       setMatchPrizePool(pool);
       setMatchFirstPrize(pool);
-    } else if (slug === 'clash-squad' || slug === 'cs-only-headshot') {
+    } else if (slugLower === 'lone-wolf' || slugLower.includes('lone') || slugLower.includes('wolf')) {
+      setMatchType('1 vs 1');
+      setMatchTotalSlots(2);
+      setMatchMap('Iron Cage');
+      setMatchPerKill(0);
+      setMatchSecondPrize(0);
+      setMatchThirdPrize(0);
+      const pool = Math.max(10, Math.round(matchEntryFee * 2 * 0.85));
+      setMatchPrizePool(pool);
+      setMatchFirstPrize(pool);
+    } else if (slugLower === 'cs-only-headshot' || slugLower.includes('headshot')) {
+      setMatchType('1 vs 1');
+      setMatchTotalSlots(2);
+      setMatchMap('Iron Cage');
+      setMatchPerKill(0);
+      setMatchSecondPrize(0);
+      setMatchThirdPrize(0);
+      const pool = Math.max(10, Math.round(matchEntryFee * 2 * 0.85));
+      setMatchPrizePool(pool);
+      setMatchFirstPrize(pool);
+    } else if (slugLower === 'clash-squad' || slugLower.includes('clash')) {
       setMatchType('4 vs 4');
       setMatchTotalSlots(8);
       setMatchMap('Bermuda');
@@ -381,8 +404,17 @@ export default function AdminMasterPage() {
 
   const handleSelectMatchType = (newType: string) => {
     setMatchType(newType);
-    if (matchCategory === 'lone-wolf') {
-      const isDuo = newType === '2 vs 2' || newType === '2v2' || newType.toLowerCase() === 'duo' || newType.includes('2 vs 2');
+    if (isMatchLostToWin) {
+      setMatchTotalSlots(2);
+      setMatchType('1 vs 1');
+      const pool = Math.max(10, Math.round(matchEntryFee * 2 * 0.85));
+      setMatchPrizePool(pool);
+      setMatchFirstPrize(pool);
+      setMatchSecondPrize(0);
+      setMatchThirdPrize(0);
+      setMatchPerKill(0);
+    } else if (isMatchLoneWolf) {
+      const isDuo = newType === '2 vs 2' || newType === '2v2' || newType.toLowerCase().includes('duo');
       const slots = isDuo ? 4 : 2;
       setMatchTotalSlots(slots);
       setMatchType(isDuo ? '2 vs 2' : '1 vs 1');
@@ -392,9 +424,13 @@ export default function AdminMasterPage() {
       setMatchSecondPrize(0);
       setMatchThirdPrize(0);
       setMatchPerKill(0);
-    } else if (matchCategory === 'clash-squad' || matchCategory === 'cs-only-headshot') {
-      const slots = newType === '1 vs 1' ? 2 : (newType.includes('2') || newType.includes('Duo')) ? 4 : 8;
+    } else if (isMatchClashSquad || isMatchHeadshot) {
+      const is1v1 = newType === '1 vs 1' || newType === 'Solo' || newType.toLowerCase().includes('solo');
+      const is2v2 = newType === '2 vs 2' || newType === 'Duo' || newType.toLowerCase().includes('duo');
+      const slots = is1v1 ? 2 : is2v2 ? 4 : 8;
+      const normalizedType = is1v1 ? '1 vs 1' : is2v2 ? '2 vs 2' : '4 vs 4';
       setMatchTotalSlots(slots);
+      setMatchType(normalizedType);
       const pool = Math.max(10, Math.round(matchEntryFee * slots * 0.8));
       setMatchPrizePool(pool);
       setMatchFirstPrize(pool);
@@ -418,21 +454,47 @@ export default function AdminMasterPage() {
       return;
     }
 
-    const isSingle = matchCategory === 'lone-wolf' || matchCategory === 'clash-squad' || matchCategory === 'cs-only-headshot';
+    const slugLower = (matchCategory || '').toLowerCase();
+    const isLW = slugLower === 'lone-wolf' || slugLower.includes('lone') || slugLower.includes('wolf');
+    const isLTW = slugLower === 'lost-to-win' || slugLower.includes('lost');
+    const isCSorHS = slugLower === 'clash-squad' || slugLower === 'cs-only-headshot' || slugLower.includes('headshot');
+
+    const isSingle = isLW || isLTW || isCSorHS;
     const finalPerKill = isSingle ? 0 : Number(matchPerKill);
     const finalFirstPrize = isSingle ? Number(matchPrizePool) : Number(matchFirstPrize);
     const finalSecondPrize = isSingle ? 0 : Number(matchSecondPrize);
     const finalThirdPrize = isSingle ? 0 : Number(matchThirdPrize);
     let finalSlots = Number(matchTotalSlots);
     let finalType = matchType;
-    if (matchCategory === 'lone-wolf') {
+
+    if (isLTW) {
+      finalSlots = 2;
+      finalType = '1 vs 1';
+    } else if (isLW) {
       const isDuo = finalSlots === 4 || matchType === '2 vs 2' || matchType === '2v2' || matchType.toLowerCase().includes('duo');
       finalSlots = isDuo ? 4 : 2;
       finalType = isDuo ? '2 vs 2' : '1 vs 1';
-    } else if (matchCategory === 'clash-squad' || matchCategory === 'cs-only-headshot') {
-      finalSlots = matchType === '1 vs 1' ? 2 : (matchType.includes('2') || matchType.includes('Duo')) ? 4 : 8;
-    } else if (matchType === 'Duo' && finalSlots > 24) {
-      finalSlots = 24;
+    } else if (isCSorHS) {
+      const typeLow = matchType.toLowerCase();
+      if (typeLow === '1 vs 1' || typeLow === 'solo' || typeLow.includes('solo') || finalSlots === 2) {
+        finalSlots = 2;
+        finalType = '1 vs 1';
+      } else if (typeLow === '2 vs 2' || typeLow === 'duo' || typeLow.includes('duo') || finalSlots === 4) {
+        finalSlots = 4;
+        finalType = '2 vs 2';
+      } else {
+        finalSlots = 8;
+        finalType = '4 vs 4';
+      }
+    } else {
+      const typeLow = matchType.toLowerCase();
+      if (typeLow === 'solo' || typeLow === '1 vs 1') {
+        finalType = 'Solo';
+      } else if (typeLow === 'duo' || typeLow === '2 vs 2') {
+        finalType = 'Duo';
+      } else {
+        finalType = 'Squad';
+      }
     }
 
     addMatch({
@@ -464,18 +526,47 @@ export default function AdminMasterPage() {
       return;
     }
 
-    const isSingle = matchCategory === 'lone-wolf' || matchCategory === 'clash-squad' || matchCategory === 'cs-only-headshot';
+    const slugLower = (matchCategory || '').toLowerCase();
+    const isLW = slugLower === 'lone-wolf' || slugLower.includes('lone') || slugLower.includes('wolf');
+    const isLTW = slugLower === 'lost-to-win' || slugLower.includes('lost');
+    const isCSorHS = slugLower === 'clash-squad' || slugLower === 'cs-only-headshot' || slugLower.includes('headshot');
+
+    const isSingle = isLW || isLTW || isCSorHS;
     const finalPerKill = isSingle ? 0 : Number(matchPerKill);
     const finalFirstPrize = isSingle ? Number(matchPrizePool) : Number(matchFirstPrize);
     const finalSecondPrize = isSingle ? 0 : Number(matchSecondPrize);
     const finalThirdPrize = isSingle ? 0 : Number(matchThirdPrize);
     let finalSlots = Number(matchTotalSlots);
-    if (matchCategory === 'lone-wolf') {
-      finalSlots = (matchType === '2 vs 2' || matchType === '2v2' || matchType.toLowerCase() === 'duo' || matchType.includes('2 vs 2')) ? 4 : 2;
-    } else if (matchCategory === 'clash-squad' || matchCategory === 'cs-only-headshot') {
-      finalSlots = matchType === '1 vs 1' ? 2 : (matchType.includes('2') || matchType.includes('Duo')) ? 4 : 8;
-    } else if (matchType === 'Duo' && finalSlots > 24) {
-      finalSlots = 24;
+    let finalType = matchType;
+
+    if (isLTW) {
+      finalSlots = 2;
+      finalType = '1 vs 1';
+    } else if (isLW) {
+      const isDuo = finalSlots === 4 || matchType === '2 vs 2' || matchType === '2v2' || matchType.toLowerCase().includes('duo');
+      finalSlots = isDuo ? 4 : 2;
+      finalType = isDuo ? '2 vs 2' : '1 vs 1';
+    } else if (isCSorHS) {
+      const typeLow = matchType.toLowerCase();
+      if (typeLow === '1 vs 1' || typeLow === 'solo' || typeLow.includes('solo') || finalSlots === 2) {
+        finalSlots = 2;
+        finalType = '1 vs 1';
+      } else if (typeLow === '2 vs 2' || typeLow === 'duo' || typeLow.includes('duo') || finalSlots === 4) {
+        finalSlots = 4;
+        finalType = '2 vs 2';
+      } else {
+        finalSlots = 8;
+        finalType = '4 vs 4';
+      }
+    } else {
+      const typeLow = matchType.toLowerCase();
+      if (typeLow === 'solo' || typeLow === '1 vs 1') {
+        finalType = 'Solo';
+      } else if (typeLow === 'duo' || typeLow === '2 vs 2') {
+        finalType = 'Duo';
+      } else {
+        finalType = 'Squad';
+      }
     }
 
     const cat = categories[matchCategory];
@@ -486,7 +577,7 @@ export default function AdminMasterPage() {
       categorySlug: matchCategory,
       title: matchTitle.trim(),
       map: matchMap,
-      type: matchType,
+      type: finalType,
       version: 'MOBILE',
       entryFee: Number(matchEntryFee),
       prizePool: Number(matchPrizePool),
@@ -939,16 +1030,17 @@ export default function AdminMasterPage() {
                     onChange={(e) => handleSelectMatchType(e.target.value)}
                     className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/30 text-xs font-bold focus:outline-none focus:border-red-500"
                   >
-                    {isMatchLoneWolf ? (
+                    {isMatchLostToWin ? (
+                      <option value="1 vs 1">1 vs 1 (Solo)</option>
+                    ) : isMatchLoneWolf ? (
                       <>
                         <option value="1 vs 1">1 vs 1 (Solo)</option>
                         <option value="2 vs 2">2 vs 2 (Duo)</option>
-                        <option value="Duo">Duo (2 vs 2)</option>
                       </>
-                    ) : isMatchClashSquad ? (
+                    ) : (isMatchClashSquad || isMatchHeadshot) ? (
                       <>
-                        <option value="1 vs 1">1 vs 1</option>
-                        <option value="2 vs 2">2 vs 2</option>
+                        <option value="1 vs 1">1 vs 1 (Solo)</option>
+                        <option value="2 vs 2">2 vs 2 (Duo)</option>
                         <option value="4 vs 4">4 vs 4 (Squad)</option>
                       </>
                     ) : (
@@ -974,25 +1066,36 @@ export default function AdminMasterPage() {
                     onChange={(e) => {
                       const val = Number(e.target.value);
                       setMatchTotalSlots(val);
-                      if (isMatchLoneWolf) {
+                      if (isMatchLostToWin) {
+                        setMatchType('1 vs 1');
+                        setMatchTotalSlots(2);
+                      } else if (isMatchLoneWolf) {
                         const isDuo = val === 4;
                         setMatchType(isDuo ? '2 vs 2' : '1 vs 1');
                         const pool = Math.max(10, Math.round(matchEntryFee * val * 0.85));
+                        setMatchPrizePool(pool);
+                        setMatchFirstPrize(pool);
+                      } else if (isMatchClashSquad || isMatchHeadshot) {
+                        const newType = val === 2 ? '1 vs 1' : val === 4 ? '2 vs 2' : '4 vs 4';
+                        setMatchType(newType);
+                        const pool = Math.max(10, Math.round(matchEntryFee * val * 0.8));
                         setMatchPrizePool(pool);
                         setMatchFirstPrize(pool);
                       }
                     }}
                     className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/30 text-xs font-bold focus:outline-none focus:border-red-500"
                   >
-                    {isMatchLoneWolf ? (
+                    {isMatchLostToWin ? (
+                      <option value="2">2 Slots (1 vs 1 Solo)</option>
+                    ) : isMatchLoneWolf ? (
                       <>
                         <option value="2">2 Slots (1 vs 1 Solo)</option>
                         <option value="4">4 Slots (2 vs 2 Duo)</option>
                       </>
-                    ) : isMatchClashSquad ? (
+                    ) : (isMatchClashSquad || isMatchHeadshot) ? (
                       <>
-                        <option value="2">2 Slots (1 vs 1)</option>
-                        <option value="4">4 Slots (2 vs 2)</option>
+                        <option value="2">2 Slots (1 vs 1 Solo)</option>
+                        <option value="4">4 Slots (2 vs 2 Duo)</option>
                         <option value="8">8 Slots (4 vs 4 Squad)</option>
                       </>
                     ) : (

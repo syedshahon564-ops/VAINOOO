@@ -3,10 +3,46 @@
 import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 
+export function detectIsAppClient(pathname?: string): boolean {
+  if (pathname === '/mobile-app-view') return true;
+  if (typeof window === 'undefined') return false;
+  try {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('app') === 'true' || params.get('view') === 'app' || params.get('mode') === 'app') {
+      return true;
+    }
+    if (params.get('view') === 'web' && window.innerWidth >= 1024) {
+      return false;
+    }
+    const session = sessionStorage.getItem('ff_manual_view_mode');
+    if (session === 'app') return true;
+    if (session === 'web' && window.innerWidth >= 1024) return false;
+
+    // Hardware and Device auto-detection:
+    // 1. Mobile User Agent string (Android, iPhone, iPad, etc.)
+    // 2. Mobile / tablet screen width (< 1024px)
+    // 3. Standalone PWA / native WebView mode
+    const isMobileUA =
+      typeof navigator !== 'undefined' &&
+      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const isSmall = window.innerWidth < 1024;
+    const isStandalone =
+      Boolean(window.matchMedia?.('(display-mode: standalone)')?.matches) ||
+      (window.navigator as any)?.standalone === true ||
+      Boolean((window as any).AndroidApp || (window as any).AndroidBridge);
+
+    return isMobileUA || isSmall || isStandalone;
+  } catch (e) {
+    return false;
+  }
+}
+
 export function useViewMode() {
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
-  const [viewMode, setViewModeState] = useState<'app' | 'web' | null>(null);
+  const [viewMode, setViewModeState] = useState<'app' | 'web'>(() => {
+    return detectIsAppClient(pathname) ? 'app' : 'web';
+  });
 
   useEffect(() => {
     setMounted(true);
@@ -16,49 +52,8 @@ export function useViewMode() {
     } catch (e) {}
 
     const checkMobile = () => {
-      // Direct navigation to /mobile-app-view is always app
-      if (pathname === '/mobile-app-view') {
-        setViewModeState('app');
-        return;
-      }
-
-      // Check URL query param ?view=app or ?view=web
-      try {
-        if (typeof window !== 'undefined') {
-          const params = new URLSearchParams(window.location.search);
-          const v = params.get('view') || params.get('mode');
-          if (v === 'app' || v === 'web') {
-            setViewModeState(v);
-            return;
-          }
-        }
-      } catch (e) {}
-
-      // Check session manual switch if user explicitly toggled during this active session
-      try {
-        const sessionChoice = sessionStorage.getItem('ff_manual_view_mode') as 'app' | 'web' | null;
-        if (sessionChoice === 'app' || sessionChoice === 'web') {
-          setViewModeState(sessionChoice);
-          return;
-        }
-      } catch (e) {}
-
-      // Hardware and Device auto-detection:
-      // 1. Mobile User Agent string (Android, iPhone, etc.)
-      // 2. Mobile screen width (< 768px)
-      // 3. Standalone PWA mode
-      const isMobileUA =
-        typeof navigator !== 'undefined' &&
-        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      const isSmall = typeof window !== 'undefined' && window.innerWidth < 768;
-      const isStandalone =
-        typeof window !== 'undefined' &&
-        (Boolean(window.matchMedia?.('(display-mode: standalone)')?.matches) ||
-          (window.navigator as any)?.standalone === true);
-
-      // Desktop gets 'web' by default; Mobile gets 'app' by default
-      const detected = isMobileUA || isSmall || isStandalone ? 'app' : 'web';
-      setViewModeState(detected);
+      const isMobile = detectIsAppClient(pathname);
+      setViewModeState(isMobile ? 'app' : 'web');
     };
 
     checkMobile();
@@ -78,7 +73,7 @@ export function useViewMode() {
     window.dispatchEvent(new CustomEvent('ff_view_mode_changed', { detail: mode }));
   };
 
-  const isApp = pathname === '/mobile-app-view' || (mounted && viewMode === 'app');
+  const isApp = pathname === '/mobile-app-view' || viewMode === 'app';
 
   return { viewMode, isApp, mounted, setViewMode };
 }

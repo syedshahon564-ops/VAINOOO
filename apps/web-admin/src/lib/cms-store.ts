@@ -255,18 +255,33 @@ export function getEffectiveMatchRules(
   categories?: Record<string, CategoryItem>,
   settings?: SiteSettings
 ): string {
+  const slugLower = (match.categorySlug || '').toLowerCase();
+  const titleLower = (match.title || '').toLowerCase();
   const isLoneWolf =
-    (match.categorySlug || '').toLowerCase().includes('lone') ||
-    (match.title || '').toLowerCase().includes('lone');
+    slugLower.includes('lone') ||
+    slugLower.includes('wolf') ||
+    titleLower.includes('lone') ||
+    titleLower.includes('wolf');
 
-  if (isLoneWolf) {
-    const typeStr = (match.type || (match as any).matchType || '').toLowerCase();
-    const isDuo =
-      typeStr.includes('duo') ||
-      typeStr.includes('2v2') ||
-      typeStr.includes('2 vs 2') ||
-      match.totalSlots === 4;
+  const isHeadshot =
+    slugLower.includes('headshot') ||
+    slugLower === 'cs-only-headshot' ||
+    titleLower.includes('headshot');
 
+  const typeStr = (match.type || (match as any).matchType || '').toLowerCase();
+  const isDuo =
+    typeStr.includes('duo') ||
+    typeStr.includes('2v2') ||
+    typeStr.includes('2 vs 2') ||
+    match.totalSlots === 4;
+
+  const isSolo =
+    typeStr.includes('solo') ||
+    typeStr.includes('1v1') ||
+    typeStr.includes('1 vs 1') ||
+    match.totalSlots === 2;
+
+  if (isLoneWolf || (isHeadshot && (isSolo || isDuo))) {
     if (isDuo) {
       if (settings?.categoryRules?.['lone-wolf-duo'] && settings.categoryRules['lone-wolf-duo'].trim() !== '') {
         return settings.categoryRules['lone-wolf-duo'];
@@ -279,7 +294,7 @@ export function getEffectiveMatchRules(
       if (settings?.categoryRules?.['lone-wolf'] && settings.categoryRules['lone-wolf'].trim() !== '') {
         return settings.categoryRules['lone-wolf'];
       }
-      const cat = categories?.['lone-wolf'];
+      const cat = categories?.[match.categorySlug] || categories?.['lone-wolf'];
       if (cat?.customRules && cat.customRules.trim() !== '') {
         return cat.customRules;
       }

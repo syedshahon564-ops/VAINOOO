@@ -1,9 +1,10 @@
-export const LONE_WOLF_1V1_RULES = `FF RIVALS TOUR BD [ Lone Wolf 1vs1 Rules]
+export const LONE_WOLF_1V1_RULES = `FF RIVALS TOUR BD [ Lone Wolf 1vs1 Rules(Headshot)]
 
 1.GAME ID RULE
 
 👉ম্যাচে জয়েন করার সময় Game Uid  দিলেই অটোমেটিক Game id name চলে আসবে✅
 👉 ভুল Uid/Name দিয়ে জয়েন দিলে ম্যাচ খেলতে দেওয়া হবে না❌
+
 
 2. LEVEL RULE
 
@@ -12,7 +13,8 @@ export const LONE_WOLF_1V1_RULES = `FF RIVALS TOUR BD [ Lone Wolf 1vs1 Rules]
 
 3.Allowence Rules
 
-👉ম্যাচে সকল প্রকার Flash Grenade ও Bomb জাতীয় Utility Item ব্যবহার করা Allowed এবং সকল প্রকার gun ব্যবহার করা যাবে✅
+👉 সকল প্রকার gun ব্যবহার করা যাবে✅
+**Headshot On**থাকবে
 Character Skill off.
 Gloo wall Limited (3 ta)
 
@@ -22,7 +24,7 @@ Gloo wall Limited (3 ta)
 
 তবে আপনি যদি একবার Room-এ Join করার পর বের হয়ে যান বা Network সমস্যা হয়, তাহলে কোনো প্রকার Refund দেওয়া হবে না❌
 
-5. match leave rules
+5.Leave Rules
 
 👉যে প্লেয়ার back দিবে সে কোনো রিওয়ার্ড বা রিফান্ড পাবে না,❌ তার opponent কে রিওয়ার্ড দেওয়া হবে।✅
 
@@ -41,14 +43,13 @@ Gloo wall Limited (3 ta)
 
 সবশেষে এডমিনের সিদ্ধান্তই চূড়ান্ত সিদ্ধান্ত..`;
 
-export const LONE_WOLF_2V2_RULES = `FF RIVALS TOUR BD [ Lone Wolf 2vs2 Rules]
+export const LONE_WOLF_2V2_RULES = `FF RIVALS TOUR BD [ Lone Wolf 2vs2 Rules(Headshot)]
 
 
 1.GAME ID RULE
 
 👉ম্যাচে জয়েন করার সময় Game Uid  দিলেই অটোমেটিক Game id name চলে আসবে✅
 👉 ভুল Uid/Name দিয়ে জয়েন দিলে ম্যাচ খেলতে দেওয়া হবে না❌
-
 
 2. LEVEL RULE
 
@@ -57,7 +58,8 @@ export const LONE_WOLF_2V2_RULES = `FF RIVALS TOUR BD [ Lone Wolf 2vs2 Rules]
 
 3.Allowence Rules
 
-👉ম্যাচে সকল প্রকার Flash Grenade ও Bomb জাতীয় Utility Item ব্যবহার করা Allowed এবং সকল প্রকার gun ব্যবহার করা যাবে✅
+👉  সকল প্রকার gun ব্যবহার করা যাবে✅
+**Headshot On** থাকবে
 Character Skill off.
 Gloo wall Limited(3 ta)
 
@@ -104,7 +106,7 @@ Gloo wall Limited(3 ta)
 👉Hack / Panel / Config / glitchব্যবহার করলে ⛔ Account + Balance Permanent Ban🚫
 
 #ম্যাচে solo,duo দুইভাবেই জয়েন দিতে পারবেন।
-তবে যদি চারটা আলাদা আলাদা প্লেয়ার সবাই (solo) জয়েন দেয় তাহলে ম্যাচে ১,৩ vs ২,৪ এইভাবে  হবে। 
+তবে যদি চারটা আলাদা আলাদা প্লেয়ার সবাই (solo) জয়েন দেয় তাহলে ম্যাচে ১,৩ vs ২,৪ হবে। 
 
 সবশেষে এডমিনের সিদ্ধান্তই চূড়ান্ত সিদ্ধান্ত..`;
 

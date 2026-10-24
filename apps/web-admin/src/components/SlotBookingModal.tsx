@@ -49,18 +49,13 @@ export default function SlotBookingModal({
 }: SlotBookingModalProps) {
   // Mode configuration
   const matchTypeLower = (match.type || '').toLowerCase();
-  const isSquad =
-    matchTypeLower.includes('squad') ||
-    matchTypeLower.includes('4 vs 4') ||
-    matchTypeLower.includes('4v4') ||
-    (match.totalSlots === 48 && matchTypeLower.includes('squad')) ||
-    match.type === 'Squad';
-
   const is1v1 =
     matchTypeLower === '1 vs 1' ||
     matchTypeLower === '1v1' ||
+    matchTypeLower === 'solo' ||
     matchTypeLower.includes('1 vs 1') ||
     matchTypeLower.includes('1v1') ||
+    matchTypeLower.includes('solo') ||
     match.totalSlots === 2;
 
   const isDuo =
@@ -69,9 +64,19 @@ export default function SlotBookingModal({
       matchTypeLower.includes('2 vs 2') ||
       matchTypeLower.includes('2v2') ||
       match.totalSlots === 4 ||
-      (match.totalSlots === 24 && !isSquad));
+      (match.totalSlots === 24 && !matchTypeLower.includes('squad')));
 
-  const isSolo = !isSquad && !isDuo;
+  const isSquad =
+    !is1v1 &&
+    !isDuo &&
+    (matchTypeLower.includes('squad') ||
+      matchTypeLower.includes('4 vs 4') ||
+      matchTypeLower.includes('4v4') ||
+      match.totalSlots === 48 ||
+      match.totalSlots === 8 ||
+      match.type === 'Squad');
+
+  const isSolo = is1v1 || (!isSquad && !isDuo);
 
   const isClassicMatch =
     (match.categorySlug || '').toLowerCase().includes('classic') ||
@@ -80,10 +85,8 @@ export default function SlotBookingModal({
 
   const isClashSquad =
     (match.categorySlug || '').toLowerCase().includes('clash') ||
-    (match.categorySlug || '').toLowerCase().includes('cs') ||
     ((match as any).category || '').toLowerCase().includes('clash') ||
-    (match.title || '').toLowerCase().includes('clash') ||
-    (match.title || '').toLowerCase().includes('cs ');
+    (match.title || '').toLowerCase().includes('clash');
 
   const isLoneWolf =
     (match.categorySlug || '').toLowerCase().includes('lone') ||
@@ -461,7 +464,7 @@ export default function SlotBookingModal({
         return;
       }
 
-      if (isClashSquad) {
+      if (isSquad && isClashSquad) {
         // Clash Squad requires 4 player entries (name or UID)
         for (let i = 0; i < 4; i++) {
           const p = squadPlayers[i];
@@ -483,7 +486,7 @@ export default function SlotBookingModal({
             slotInTeam: idx + 1,
           };
         })
-        .filter((p, idx) => (isClashSquad ? true : idx === 0 || Boolean(squadPlayers[idx].ign?.trim() || cleanUid(squadPlayers[idx].uid))));
+        .filter((p, idx) => ((isSquad && isClashSquad) ? true : idx === 0 || Boolean(squadPlayers[idx].ign?.trim() || cleanUid(squadPlayers[idx].uid))));
 
       for (const p of validSquadPlayers) {
         if (isPlayerBlacklisted(p.uid) || isPlayerBlacklisted(p.ign)) {
