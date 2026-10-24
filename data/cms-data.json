@@ -130,82 +130,9 @@
     "howToJoinGuide": "১. আপনার পছন্দের ক্যাটাগরি বেছে নিন এবং সক্রিয় টুর্নামেন্টে ক্লিক করুন।\n২. খালি স্লট থেকে আপনার পছন্দের স্লট সিলেক্ট করে 'স্লট বুক করুন' বাটনে ক্লিক করুন।\n৩. ম্যাচ শুরুর ১৫ মিনিট আগে এই পেজে রুম আইডি ও পাসওয়ার্ড চলে আসবে।\n৪. ফ্রি ফায়ার গেমে গিয়ে Custom Room-এ আইডি ও পাসওয়ার্ড দিয়ে আপনার নির্দিষ্ট স্লটে জয়েন করুন।",
     "updatedAt": 1792820506626
   },
-  "topPlayers": [
-    {
-      "id": "tp-1",
-      "rank": 1,
-      "ign": "OP_NINJA_99",
-      "uid": "748291034",
-      "avatar": "https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=120",
-      "kills": 184,
-      "earnings": 14500,
-      "matchesPlayed": 42,
-      "booyahs": 24,
-      "winRate": "57.1%"
-    },
-    {
-      "id": "tp-2",
-      "rank": 2,
-      "ign": "VAMPIRE_FF",
-      "uid": "839201948",
-      "avatar": "https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=120",
-      "kills": 156,
-      "earnings": 11200,
-      "matchesPlayed": 38,
-      "booyahs": 18,
-      "winRate": "47.3%"
-    },
-    {
-      "id": "tp-3",
-      "rank": 3,
-      "ign": "BDX_STRIKER",
-      "uid": "192837465",
-      "avatar": "https://images.unsplash.com/photo-1563089145-599997674d42?q=80&w=120",
-      "kills": 142,
-      "earnings": 8600,
-      "matchesPlayed": 35,
-      "booyahs": 15,
-      "winRate": "42.8%"
-    },
-    {
-      "id": "tp-4",
-      "rank": 4,
-      "ign": "KING_HEADSHOT",
-      "uid": "610293847",
-      "avatar": "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=120",
-      "kills": 118,
-      "earnings": 6400,
-      "matchesPlayed": 29,
-      "booyahs": 12,
-      "winRate": "41.3%"
-    },
-    {
-      "id": "tp-5",
-      "rank": 5,
-      "ign": "RIVAL_BOSS_BD",
-      "uid": "920182746",
-      "avatar": "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?q=80&w=120",
-      "kills": 97,
-      "earnings": 4800,
-      "matchesPlayed": 24,
-      "booyahs": 9,
-      "winRate": "37.5%"
-    },
-    {
-      "id": "tp-6",
-      "rank": 6,
-      "ign": "CYBER_SNIPER",
-      "uid": "501928374",
-      "avatar": "https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=120",
-      "kills": 85,
-      "earnings": 3900,
-      "matchesPlayed": 20,
-      "booyahs": 8,
-      "winRate": "40.0%"
-    }
-  ],
+  "topPlayers": [],
   "deletedCategories": [
     "br-survival"
   ],
-  "matchesUpdatedAt": 1792696119538
+  "matchesUpdatedAt": 1792862685931
 }

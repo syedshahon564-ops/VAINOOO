@@ -25,7 +25,7 @@ import { useCMS, MatchItem } from '@/lib/cms-store';
 import {
   parseScoreboardText,
   getOcrAuditLogs,
-  saveOcrAuditLog,
+  saveOcrAuditLog, clearOcrAuditLogs,
   ParsedScoreboardRow,
   OcrAuditLog,
 } from '@/lib/ocr-service';
@@ -238,6 +238,22 @@ export default function MatchResultsOCRPage() {
     setParsedRows(updated);
   };
 
+    const handleResetAllResults = () => {
+    if (!confirm('আপনি কি নিশ্চিত যে সকল ম্যাচের রেজাল্ট এবং পেআউট হিস্ট্রি রিসেট করতে চান?')) return;
+    matches.forEach((m) => {
+      if (m.results && m.results.length > 0 || m.status === 'COMPLETED') {
+        updateMatch(m.id, { results: [], status: 'UPCOMING' });
+      }
+    });
+    clearOcrAuditLogs();
+    setAuditLogs([]);
+    setParsedRows([]);
+    setPayoutDone(false);
+    setImagePreview(null);
+    setLastPayoutSummary(null);
+    showToast('সকল ম্যাচ রেজাল্ট ও অডিট হিস্ট্রি সফলভাবে রিসেট করা হয়েছে!', 'success');
+  };
+
   const handleProcessInstantPayout = () => {
     if (!selectedMatch || parsedRows.length === 0) {
       showToast('No scoreboard results to process payout', 'error');
@@ -326,13 +342,22 @@ export default function MatchResultsOCRPage() {
           </p>
         </div>
 
-        {selectedMatch && (
-          <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2">
+          {selectedMatch && (
             <span className="text-xs font-bold px-3 py-1.5 rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/20">
               Pool: ৳{selectedMatch.prizePool} | Per Kill: ৳{selectedMatch.perKill}
             </span>
-          </div>
-        )}
+          )}
+          <button
+            type="button"
+            onClick={handleResetAllResults}
+            className="px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-black transition-all flex items-center gap-1.5 shadow-sm active:scale-95"
+            title="সকল ম্যাচের ফলাফল ও পেআউট হিস্ট্রি রিসেট করুন"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>রেজাল্ট রিসেট</span>
+          </button>
+        </div>
       </div>
 
       {/* Match Selector & Screenshot Upload */}

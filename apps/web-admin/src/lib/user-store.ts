@@ -90,7 +90,7 @@ export const INITIAL_USERS: UserAccount[] = [
     ign: 'OWNER_MAIN',
     uid: '100000000',
     password: 'admin123',
-    walletBalance: 50000.0,
+    walletBalance: 0.0,
     role: 'ADMIN',
     status: 'ACTIVE',
     matchesPlayed: 0,
@@ -108,7 +108,7 @@ export const INITIAL_USERS: UserAccount[] = [
     ign: 'VAINO_OWNER',
     uid: '200000000',
     password: 'owner123',
-    walletBalance: 25000.0,
+    walletBalance: 0.0,
     role: 'ADMIN',
     status: 'ACTIVE',
     matchesPlayed: 0,
@@ -126,7 +126,7 @@ export const INITIAL_USERS: UserAccount[] = [
     ign: 'TOUR_OWNER',
     uid: '300000000',
     password: 'owner123',
-    walletBalance: 15000.0,
+    walletBalance: 0.0,
     role: 'ADMIN',
     status: 'ACTIVE',
     matchesPlayed: 0,
@@ -419,6 +419,33 @@ export function getUsers(): UserAccount[] {
     }
     const parsed: UserAccount[] = rawParsed.filter((u: any) => u && typeof u === 'object');
     let updated = parsed.length !== rawParsed.length;
+
+    // Strict Request: Reset all users' balance, stats and earnings to 0
+    const ZERO_BALANCE_KEY = 'ff_zero_balance_reset_v10';
+    if (localStorage.getItem(ZERO_BALANCE_KEY) !== 'done') {
+      parsed.forEach((u) => {
+        u.walletBalance = 0;
+        u.matchesPlayed = 0;
+        u.totalKills = 0;
+        u.totalWins = 0;
+        u.totalEarnings = 0;
+      });
+      localStorage.setItem(ZERO_BALANCE_KEY, 'done');
+      localStorage.removeItem('ff_esports_balance_tx_v2');
+      const curStr = localStorage.getItem('ff_user');
+      if (curStr) {
+        try {
+          const cur = JSON.parse(curStr);
+          cur.walletBalance = 0;
+          cur.matchesPlayed = 0;
+          cur.totalKills = 0;
+          cur.totalWins = 0;
+          cur.totalEarnings = 0;
+          localStorage.setItem('ff_user', JSON.stringify(cur));
+        } catch {}
+      }
+      updated = true;
+    }
     INITIAL_USERS.forEach((initUser) => {
       const idx = parsed.findIndex(
         (u) =>

@@ -8,7 +8,7 @@ import { useCMS } from '@/lib/cms-store';
 export default function WalletPage() {
   const { settings } = useCMS();
   const [activeTab, setActiveTab] = useState<'DEPOSIT' | 'WITHDRAW'>('DEPOSIT');
-  const [method, setMethod] = useState<'BKASH' | 'NAGAD' | 'ROCKET'>('BKASH');
+  const [method, setMethod] = useState<'BKASH' | 'NAGAD' | 'ROCKET'>('NAGAD');
   const [amount, setAmount] = useState<number>(100);
   const [phone, setPhone] = useState('');
   const [trxId, setTrxId] = useState('');
@@ -258,6 +258,18 @@ export default function WalletPage() {
             <label className="text-xs font-bold text-gray-300 uppercase">Select Payment Provider</label>
             <div className="grid grid-cols-3 gap-3">
               {(['BKASH', 'NAGAD', 'ROCKET'] as const).map((m) => {
+                if (m === 'BKASH' && activeTab === 'DEPOSIT') {
+                  return (
+                    <div
+                      key={m}
+                      className="py-3 rounded-xl text-xs font-bold border border-dashed border-rose-500/30 text-gray-500 bg-rose-500/5 opacity-70 cursor-not-allowed flex flex-col items-center justify-center gap-0.5 select-none"
+                      title="বিকাশ বন্ধ আছে"
+                    >
+                      <span className="line-through text-rose-400">bKash</span>
+                      <span className="text-[9px] font-black text-rose-400 bg-rose-500/10 px-1.5 py-0.5 rounded">বিকাশ বন্ধ আছে</span>
+                    </div>
+                  );
+                }
                 if (m === 'ROCKET') {
                   return (
                     <div
@@ -290,6 +302,11 @@ export default function WalletPage() {
 
           {activeTab === 'DEPOSIT' ? (
             <form onSubmit={handleDeposit} className="space-y-4">
+              {/* Notice: bKash is closed */}
+              <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-amber-400 flex-shrink-0" />
+                <span><strong>বিকাশ বন্ধ আছে:</strong> বর্তমানে বিকাশ ডিপোজিট সাময়িক বন্ধ রাখা হয়েছে। ডিপোজিট করতে নগদ (Nagad) ব্যবহার করুন।</span>
+              </div>
               {/* Payment Instructions Box */}
               <div className="p-4 rounded-xl bg-black/40 border border-white/5 space-y-2 text-xs text-gray-300">
                 <div className="font-bold text-white flex items-center justify-between">

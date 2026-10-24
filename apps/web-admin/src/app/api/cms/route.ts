@@ -97,6 +97,7 @@ export async function GET() {
       const currentValidTop = Array.isArray(result.topPlayers)
         ? result.topPlayers.filter((p: any) => p && !p.id?.startsWith('tp-') && p.ign)
         : [];
+      result.topPlayers = currentValidTop;
       if (currentValidTop.length === 0 && Array.isArray(result.matches)) {
         const playerMap = new Map<string, any>();
         for (const m of result.matches) {
@@ -122,7 +123,7 @@ export async function GET() {
                   rank: 0,
                   ign: ign.toUpperCase(),
                   uid: '',
-                  avatar: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=120',
+                  avatar: '/avatars/avatar-1.png',
                   kills,
                   earnings: prize,
                   matchesPlayed: 1,
@@ -291,7 +292,7 @@ export async function POST(req: Request) {
                 rank: 0,
                 ign: ign.toUpperCase(),
                 uid: '',
-                avatar: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=120',
+                avatar: '/avatars/avatar-1.png',
                 kills,
                 earnings: prize,
                 matchesPlayed: 1,
@@ -307,7 +308,7 @@ export async function POST(req: Request) {
         aggregated.sort((a, b) => (Number(b.earnings) || 0) - (Number(a.earnings) || 0) || (Number(b.kills) || 0) - (Number(a.kills) || 0));
         nextTopPlayers = aggregated.map((p, idx) => ({ ...p, rank: idx + 1 }));
       } else {
-        nextTopPlayers = Array.isArray(body.topPlayers) && body.topPlayers.length > 0 ? body.topPlayers : (current.topPlayers || []);
+        nextTopPlayers = validIncomingTop;
       }
     }
 

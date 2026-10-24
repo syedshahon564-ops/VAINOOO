@@ -2987,34 +2987,21 @@ export default function MobileAppViewPage(props: any) {
                             <div>
                               <h3 className="text-sm font-black">{topPlayers[0].ign}</h3>
                               <p className="text-[10px] text-amber-200">
-                                {topPlayers[0].booyahs} Booyahs • Win Rate: {topPlayers[0].winRate}
+                                {tPhone('ভেরিফায়েড অফিসিয়াল প্লেয়ার', 'Verified Esports Player')}
                               </p>
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-3 gap-1.5 pt-1 text-center bg-black/30 rounded-xl p-1.5 text-[10px]">
+                          <div className="grid grid-cols-2 gap-2 pt-1 text-center bg-black/30 rounded-xl p-2 text-xs">
                             <div>
-                              <span className="text-gray-300 block text-[9px]">{tPhone('মোট কিল', 'Total Kills')}</span>
-                              <span className="font-black text-red-400">{topPlayers[0].kills} Kills</span>
+                              <span className="text-gray-300 block text-[9px] uppercase font-bold">{tPhone('ম্যাচ প্লেড', 'Matches Played')}</span>
+                              <span className="font-black text-amber-300 text-sm">{topPlayers[0].matchesPlayed}</span>
                             </div>
                             <div>
-                              <span className="text-gray-300 block text-[9px]">{tPhone('মোট আয়', 'Total Won')}</span>
-                              <span className="font-black text-emerald-400">৳{topPlayers[0].earnings}</span>
-                            </div>
-                            <div>
-                              <span className="text-gray-300 block text-[9px]">{tPhone('ম্যাচ খেলা', 'Matches')}</span>
-                              <span className="font-black text-amber-300">{topPlayers[0].matchesPlayed}</span>
+                              <span className="text-gray-300 block text-[9px] uppercase font-bold">{tPhone('উইনিং', 'Winnings')}</span>
+                              <span className="font-black text-emerald-400 text-sm">৳{topPlayers[0].earnings.toLocaleString()}</span>
                             </div>
                           </div>
-
-                          {/* ACTION BUTTON: VIEW PLAYER DETAILS */}
-                          <button
-                            onClick={() => setSelectedPlayerForDetails(topPlayers[0])}
-                            className="w-full py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-black font-black text-[11px] transition-all flex items-center justify-center gap-1.5 shadow-md active:scale-95"
-                          >
-                            <Eye className="w-3.5 h-3.5" />
-                            <span>{tPhone('প্লেয়ার ডিটেইলস দেখুন', 'View Full Player Details')}</span>
-                          </button>
                         </div>
                       )}
 
@@ -3057,24 +3044,14 @@ export default function MobileAppViewPage(props: any) {
                               </div>
                             </div>
 
-                            {/* Stats Columns & Details Trigger */}
-                            <div className="flex items-center gap-2">
-                              <div className="text-right">
-                                <div className="text-xs font-black text-emerald-500">
-                                  ৳{p.earnings.toLocaleString()}
-                                </div>
-                                <div className="text-[9px] text-gray-400">
-                                  <span className="text-red-500 font-bold">{p.kills} K</span> • {p.matchesPlayed} M
-                                </div>
+                            {/* Stats Columns: Winnings & Matches Played Only */}
+                            <div className="text-right">
+                              <div className="text-xs font-black text-emerald-500">
+                                ৳{p.earnings.toLocaleString()}
                               </div>
-
-                              <button
-                                onClick={() => setSelectedPlayerForDetails(p)}
-                                className="p-1.5 rounded-lg bg-amber-500/10 text-amber-500 border border-amber-500/20 hover:bg-amber-500 hover:text-black transition-all"
-                                title={tPhone('প্লেয়ার ডিটেইলস', 'Player Details')}
-                              >
-                                <Eye className="w-3.5 h-3.5" />
-                              </button>
+                              <div className="text-[9px] text-gray-400 font-bold">
+                                {p.matchesPlayed} {tPhone('ম্যাচ প্লেড', 'Matches')}
+                              </div>
                             </div>
                           </div>
                         ))}
@@ -3381,34 +3358,44 @@ export default function MobileAppViewPage(props: any) {
                             </div>
                           </div>
 
-                          {/* 2. 3-COLUMN STATS GRID (EXACT SCREENSHOT: 0 MATCHES, 0 WINS, 0 BDT) */}
-                          <div className="grid grid-cols-3 gap-2.5">
+                          {/* 2. 4-COLUMN STATS GRID: MATCHES, KILLS, WINS, BDT BALANCE */}
+                          <div className="grid grid-cols-4 gap-2">
                             {/* MATCHES */}
-                            <div className="bg-white rounded-2xl border border-slate-200/80 p-3.5 text-center shadow-xs">
-                              <span className="text-2xl font-black text-[#5850ec] block">
+                            <div className="bg-white rounded-2xl border border-slate-200/80 p-2.5 text-center shadow-xs">
+                              <span className="text-xl font-black text-[#5850ec] block">
                                 {currentUser?.matchesPlayed || 0}
                               </span>
-                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mt-0.5">
+                              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mt-0.5">
                                 {tPhone('ম্যাচ', 'MATCHES')}
                               </span>
                             </div>
 
+                            {/* KILLS */}
+                            <div className="bg-white rounded-2xl border border-slate-200/80 p-2.5 text-center shadow-xs">
+                              <span className="text-xl font-black text-red-500 block">
+                                {currentUser?.totalKills || 0}
+                              </span>
+                              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mt-0.5">
+                                {tPhone('কিল', 'KILLS')}
+                              </span>
+                            </div>
+
                             {/* WINS */}
-                            <div className="bg-white rounded-2xl border border-slate-200/80 p-3.5 text-center shadow-xs">
-                              <span className="text-2xl font-black text-[#5850ec] block">
+                            <div className="bg-white rounded-2xl border border-slate-200/80 p-2.5 text-center shadow-xs">
+                              <span className="text-xl font-black text-amber-500 block">
                                 {currentUser?.totalWins || 0}
                               </span>
-                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mt-0.5">
+                              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mt-0.5">
                                 {tPhone('জয়', 'WINS')}
                               </span>
                             </div>
 
                             {/* BDT */}
-                            <div className="bg-white rounded-2xl border border-slate-200/80 p-3.5 text-center shadow-xs">
-                              <span className="text-2xl font-black text-[#5850ec] block">
+                            <div className="bg-white rounded-2xl border border-slate-200/80 p-2.5 text-center shadow-xs">
+                              <span className="text-xl font-black text-emerald-600 block">
                                 {Math.floor(userBalance || 0)}
                               </span>
-                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mt-0.5">
+                              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mt-0.5">
                                 BDT
                               </span>
                             </div>

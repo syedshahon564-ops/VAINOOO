@@ -32,7 +32,8 @@
     "totalEarnings": 0,
     "createdAt": "2026-09-01T00:00:00Z",
     "avatar": "/logo.png",
-    "notes": "Official Vaino Esports Owner Account."
+    "notes": "Official Vaino Esports Owner Account.",
+    "balance": 0
   },
   {
     "id": "u-owner-tourbd",
@@ -49,7 +50,8 @@
     "totalEarnings": 0,
     "createdAt": "2026-09-01T00:00:00Z",
     "avatar": "/logo.png",
-    "notes": "FF Rival Tour BD Operations Owner."
+    "notes": "FF Rival Tour BD Operations Owner.",
+    "balance": 0
   },
   {
     "id": "u-paybot-01",
@@ -68,7 +70,8 @@
     "avatar": "/logo.png",
     "username": "01799000001",
     "email": "paybot1@ffrivaltourbd.com",
-    "totalEarnings": 0
+    "totalEarnings": 0,
+    "balance": 0
   },
   {
     "id": "u-paybot-02",
@@ -87,7 +90,8 @@
     "avatar": "/logo.png",
     "username": "01799000002",
     "email": "paybot2@ffrivaltourbd.com",
-    "totalEarnings": 0
+    "totalEarnings": 0,
+    "balance": 0
   },
   {
     "id": "u-paybot-03",
@@ -106,7 +110,8 @@
     "avatar": "/logo.png",
     "username": "01799000003",
     "email": "paybot3@ffrivaltourbd.com",
-    "totalEarnings": 0
+    "totalEarnings": 0,
+    "balance": 0
   },
   {
     "id": "u-paybot-04",
@@ -125,6 +130,7 @@
     "avatar": "/logo.png",
     "username": "01799000004",
     "email": "paybot4@ffrivaltourbd.com",
-    "totalEarnings": 0
+    "totalEarnings": 0,
+    "balance": 0
   }
 ]

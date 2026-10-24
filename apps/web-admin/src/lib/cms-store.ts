@@ -340,6 +340,20 @@ export function getCMSData(): CMSData {
       }
     }
 
+    const LEADERBOARD_RESET_KEY = 'ff_leaderboard_fresh_reset_v10';
+    if (!localStorage.getItem(LEADERBOARD_RESET_KEY)) {
+      if (parsed) {
+        parsed.topPlayers = [];
+        if (Array.isArray(parsed.matches)) {
+          parsed.matches = parsed.matches.map((m: any) => ({ ...m, results: [], status: m.status === 'COMPLETED' ? 'UPCOMING' : m.status }));
+        }
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+        } catch (e) {}
+      }
+      localStorage.setItem(LEADERBOARD_RESET_KEY, '1');
+    }
+
     const merged: CMSData = normalizeCMSData({
       categories: parsed?.categories ? parsed.categories : INITIAL_CATEGORIES,
       matches,
@@ -476,7 +490,7 @@ export function normalizeCMSData(input: Partial<CMSData> | null | undefined): CM
       importantNoticeEnabled: src.settings?.importantNoticeEnabled ?? INITIAL_SETTINGS.importantNoticeEnabled,
     },
     topPlayers: Array.isArray(src.topPlayers)
-      ? src.topPlayers.filter((p: any) => p && typeof p === 'object')
+      ? src.topPlayers.filter((p: any) => p && typeof p === 'object' && !p.id?.startsWith('tp-') && p.ign)
       : INITIAL_TOP_PLAYERS,
     deletedCategories,
     matchesClearedAt: typeof src.matchesClearedAt === 'number' ? src.matchesClearedAt : undefined,

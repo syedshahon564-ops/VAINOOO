@@ -335,3 +335,12 @@ export function saveOcrAuditLog(log: Omit<OcrAuditLog, 'id' | 'processedAt'>): O
 
   return newEntry;
 }
+
+export function clearOcrAuditLogs(): void {
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.removeItem(OCR_AUDIT_LOGS_KEY);
+      window.dispatchEvent(new CustomEvent('ff_ocr_logs_updated', { detail: [] }));
+    } catch (e) {}
+  }
+}

@@ -392,7 +392,7 @@ export default function DepositWithdrawModal({
                           title="বিকাশ ডিপোজিট সাময়িকভাবে বন্ধ রয়েছে"
                         >
                           <span className="line-through font-bold text-rose-400">বিকাশ</span>
-                          <span className="text-[9px] font-black text-rose-500 bg-rose-500/10 px-1.5 py-0.5 rounded">সাময়িক বন্ধ</span>
+                          <span className="text-[9px] font-black text-rose-500 bg-rose-500/10 px-1.5 py-0.5 rounded">বিকাশ বন্ধ আছে</span>
                         </div>
                       );
                     }
@@ -435,10 +435,10 @@ export default function DepositWithdrawModal({
               <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-2.5 text-xs text-amber-800 dark:text-amber-300">
                 <AlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
                 <div>
-                  <span className="font-black block">{t('বিকাশ সার্ভিস সাময়িক বন্ধ', 'bKash Temporarily Closed')}</span>
+                  <span className="font-black block">{t('বিকাশ বন্ধ আছে', 'bKash is Closed')}</span>
                   <p className="text-[11px] text-gray-600 dark:text-gray-300">
                     {t(
-                      'বর্তমানে বিকাশ ডিপোজিট সাময়িকভাবে বন্ধ আছে। ডিপোজিট করতে নিচে দেওয়া অফিসিয়াল নগদ (Nagad) নম্বরে সেন্ড মানি করুন।',
+                      'বিকাশটা বন্ধ আছে। ডিপোজিট করার জন্য নিচে দেওয়া অফিসিয়াল নগদ (Nagad) নম্বরে সেন্ড মানি করুন।',
                       'bKash deposit is temporarily offline. Please send money using the official Nagad number below.'
                     )}
                   </p>
