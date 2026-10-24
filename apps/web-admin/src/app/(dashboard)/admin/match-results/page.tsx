@@ -212,13 +212,27 @@ export default function MatchResultsOCRPage() {
       const killPrize = effectiveKills * perKillRate;
 
       let rankPrize = 0;
-      if (rank === 1) rankPrize = selectedMatch.firstPrize || Math.round(selectedMatch.prizePool * 0.5);
-      else if (rank === 2) rankPrize = selectedMatch.secondPrize || Math.round(selectedMatch.prizePool * 0.25);
-      else if (rank === 3) rankPrize = selectedMatch.thirdPrize || Math.round(selectedMatch.prizePool * 0.15);
+      if (rank === 1) {
+        rankPrize = selectedMatch.firstPrize !== undefined && selectedMatch.firstPrize !== null
+          ? Number(selectedMatch.firstPrize)
+          : Number(selectedMatch.prizePool || 0);
+      } else if (rank === 2) {
+        rankPrize = selectedMatch.secondPrize !== undefined && selectedMatch.secondPrize !== null
+          ? Number(selectedMatch.secondPrize)
+          : 0;
+      } else if (rank === 3) {
+        rankPrize = selectedMatch.thirdPrize !== undefined && selectedMatch.thirdPrize !== null
+          ? Number(selectedMatch.thirdPrize)
+          : 0;
+      }
+
+      // Hard safety cap: Total prize cannot exceed selectedMatch.prizePool
+      const maxAllowed = Number(selectedMatch.prizePool) || (rankPrize + killPrize);
+      const computedTotal = Math.min(maxAllowed, rankPrize + killPrize);
 
       updated[index].killPrize = killPrize;
       updated[index].rankPrize = rankPrize;
-      updated[index].totalPrize = killPrize + rankPrize;
+      updated[index].totalPrize = computedTotal;
     }
 
     setParsedRows(updated);

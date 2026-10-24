@@ -344,7 +344,7 @@ export default function CategoryDetailPage() {
                 : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
             }`}
           >
-            <Play className="w-4 h-4" /> {t('সক্রিয় ম্যাচ', 'Active Matches')} ({categoryMatches.length})
+            <Play className="w-4 h-4" /> Active Matches ({categoryMatches.length})
           </button>
           <button
             onClick={() => setActiveTab('RESULT')}
@@ -354,30 +354,32 @@ export default function CategoryDetailPage() {
                 : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
             }`}
           >
-            <Award className="w-4 h-4" /> {t('ম্যাচ ফলাফল', 'Match Results')}
+            <Award className="w-4 h-4" /> Match Results
           </button>
         </div>
 
           {/* Tab 1: PLAY (Match Cards) */}
         {activeTab === 'PLAY' && (
           <div className="pt-6 space-y-6">
-            {/* Top Match Type Sub-Filter (Solo, Duo, Squad) */}
+            {/* Top Match Type Sub-Filter (All Category Options strictly in English) */}
             {(() => {
-              const isLostToWin = slug === 'lost-to-win';
-              const isLoneWolf = slug === 'lone-wolf';
+              const slugStr = (slug || '').toLowerCase();
+              const isLostToWin = slugStr === 'lost-to-win' || slugStr.includes('lost');
+              const isLoneWolf = slugStr === 'lone-wolf' || slugStr.includes('lone') || slugStr.includes('wolf');
 
               let items = [
-                { key: 'SOLO', labelBn: 'সোলো (Solo)', labelEn: 'Solo' },
-                { key: 'DUO', labelBn: 'ডুও (Duo)', labelEn: 'Duo' },
-                { key: 'SQUAD', labelBn: 'স্কোয়াড (Squad)', labelEn: 'Squad' },
+                { key: 'SOLO', label: 'Solo' },
+                { key: 'DUO', label: 'Duo' },
+                { key: 'SQUAD', label: 'Squad' },
               ];
 
               if (isLostToWin) {
-                items = [{ key: 'SOLO', labelBn: 'সোলো (Solo)', labelEn: 'Solo' }];
+                items = [{ key: 'SOLO', label: 'Solo' }];
               } else if (isLoneWolf) {
+                // Squad completely removed from all Lone Wolf variants
                 items = [
-                  { key: 'SOLO', labelBn: 'সোলো (Solo)', labelEn: 'Solo' },
-                  { key: 'DUO', labelBn: 'ডুও (Duo)', labelEn: 'Duo' },
+                  { key: 'SOLO', label: 'Solo' },
+                  { key: 'DUO', label: 'Duo' },
                 ];
               }
 
@@ -388,13 +390,13 @@ export default function CategoryDetailPage() {
                       key={item.key}
                       type="button"
                       onClick={() => setMatchTypeFilter(item.key as any)}
-                      className={`flex-1 py-2 px-3 rounded-xl text-xs font-black transition-all text-center ${
+                      className={`flex-1 py-2 px-3 rounded-xl text-xs font-black transition-all text-center cursor-pointer ${
                         matchTypeFilter === item.key
                           ? 'bg-red-600 text-white shadow-md shadow-red-600/30'
                           : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                       }`}
                     >
-                      {t(item.labelBn, item.labelEn)}
+                      {item.label}
                     </button>
                   ))}
                 </div>

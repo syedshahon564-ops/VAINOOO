@@ -377,8 +377,8 @@ export default function AdminTournamentsPage() {
     }
   };
 
-  const isLostToWin = categorySlug === 'lost-to-win';
-  const isLoneWolf = categorySlug === 'lone-wolf';
+  const isLostToWin = categorySlug === 'lost-to-win' || (categorySlug || '').toLowerCase().includes('lost');
+  const isLoneWolf = categorySlug === 'lone-wolf' || (categorySlug || '').toLowerCase().includes('lone') || (categorySlug || '').toLowerCase().includes('wolf');
   const isClashSquad = categorySlug === 'clash-squad' || categorySlug === 'cs-only-headshot';
 
   const handleEntryFeeChange = (fee: number, currentType: string) => {

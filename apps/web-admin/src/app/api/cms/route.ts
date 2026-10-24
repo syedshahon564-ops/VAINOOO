@@ -137,6 +137,42 @@ export async function POST(req: Request) {
       }
     }
 
+    let mergedMatches = current.matches || [];
+    if (Array.isArray(body.matches)) {
+      const existingMap = new Map((current.matches || []).map((m: any) => [m.id, m]));
+      mergedMatches = body.matches.map((incoming: any) => {
+        const existing: any = existingMap.get(incoming.id);
+        if (!existing) return incoming;
+
+        // Smart merge participants to avoid race conditions between simultaneous players
+        const incParts = Array.isArray(incoming.participants) ? incoming.participants : [];
+        const exParts = Array.isArray(existing.participants) ? existing.participants : [];
+
+        const seenKeys = new Set<string>();
+        const combinedParts: any[] = [];
+        for (const p of [...incParts, ...exParts]) {
+          const key = `${p.slot || 0}_${String(p.uid || '').trim().toLowerCase()}_${String(p.ign || '').trim().toLowerCase()}`;
+          if (!seenKeys.has(key)) {
+            seenKeys.add(key);
+            combinedParts.push(p);
+          }
+        }
+
+        const safeFilled = Math.max(
+          incoming.filledSlots || 0,
+          existing.filledSlots || 0,
+          combinedParts.length
+        );
+
+        return {
+          ...existing,
+          ...incoming,
+          participants: combinedParts,
+          filledSlots: safeFilled,
+        };
+      });
+    }
+
     const nextData = {
       ...current,
       ...body,
@@ -146,8 +182,7 @@ export async function POST(req: Request) {
         ...(body.settings || {}),
       },
       deletedCategories: Array.isArray(body.deletedCategories) ? body.deletedCategories : (current.deletedCategories || []),
-      // If matches array is provided in body, update matches
-      matches: Array.isArray(body.matches) ? body.matches : (current.matches || []),
+      matches: mergedMatches,
       topPlayers: Array.isArray(body.topPlayers) ? body.topPlayers : (current.topPlayers || []),
       matchesUpdatedAt: body.matchesUpdatedAt || Date.now(),
     };

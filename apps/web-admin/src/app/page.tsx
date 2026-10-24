@@ -246,15 +246,8 @@ export default function HomePage() {
           )}
         </div>
 
-        {/* SECTION 1: FREE FIRE MATCHES (From User Screenshot) */}
+        {/* SECTION 1: FREE FIRE MATCHES */}
         <section className="space-y-6">
-          <div className="flex items-center justify-center gap-4 text-center">
-            <div className="flex-1 h-px bg-gray-200 dark:bg-white/10" />
-            <h2 className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white uppercase tracking-wider">
-              {catClassic?.section || 'FREE FIRE MATCHES'}
-            </h2>
-            <div className="flex-1 h-px bg-gray-200 dark:bg-white/10" />
-          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {freeFireMatches.map((cat) => {

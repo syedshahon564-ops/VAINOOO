@@ -1772,7 +1772,7 @@ export default function MobileAppViewPage(props: any) {
                               }`}
                             >
                               <span>
-                                {tPhone('সক্রিয় ম্যাচ', 'Active Matches')} ({filteredCurrentMatches.length})
+                                Active Matches ({filteredCurrentMatches.length})
                               </span>
                             </button>
                             <button
@@ -1785,28 +1785,29 @@ export default function MobileAppViewPage(props: any) {
                             >
                               <Award className="w-3.5 h-3.5 text-amber-500" />
                               <span>
-                                {tPhone('ম্যাচ ফলাফল', 'Match Results')} ({completedCategoryMatches.length})
+                                Match Results ({completedCategoryMatches.length})
                               </span>
                             </button>
                           </div>
 
-                          {/* Match Sub-Type Switcher (Solo, Duo, Squad) */}
+                          {/* Match Sub-Type Switcher (All Category Options strictly in English) */}
                           {(() => {
-                            const isLostToWin = selectedCategory === 'lost-to-win';
-                            const isLoneWolf = selectedCategory === 'lone-wolf';
+                            const isLostToWin = selectedCategory === 'lost-to-win' || (selectedCategory || '').toLowerCase().includes('lost');
+                            const isLoneWolf = selectedCategory === 'lone-wolf' || (selectedCategory || '').toLowerCase().includes('lone') || (selectedCategory || '').toLowerCase().includes('wolf');
 
                             let items = [
-                              { key: 'SOLO', labelBn: 'সোলো (Solo)', labelEn: 'Solo' },
-                              { key: 'DUO', labelBn: 'ডুও (Duo)', labelEn: 'Duo' },
-                              { key: 'SQUAD', labelBn: 'স্কোয়াড (Squad)', labelEn: 'Squad' },
+                              { key: 'SOLO', label: 'Solo' },
+                              { key: 'DUO', label: 'Duo' },
+                              { key: 'SQUAD', label: 'Squad' },
                             ];
 
                             if (isLostToWin) {
-                              items = [{ key: 'SOLO', labelBn: 'সোলো (Solo)', labelEn: 'Solo' }];
+                              items = [{ key: 'SOLO', label: 'Solo' }];
                             } else if (isLoneWolf) {
+                              // Squad completely removed from all Lone Wolf variants!
                               items = [
-                                { key: 'SOLO', labelBn: 'সোলো (Solo)', labelEn: 'Solo' },
-                                { key: 'DUO', labelBn: 'ডুও (Duo)', labelEn: 'Duo' },
+                                { key: 'SOLO', label: 'Solo' },
+                                { key: 'DUO', label: 'Duo' },
                               ];
                             }
 
@@ -1817,13 +1818,13 @@ export default function MobileAppViewPage(props: any) {
                                     key={item.key}
                                     type="button"
                                     onClick={() => setSubTypeFilter(item.key as any)}
-                                    className={`flex-1 py-1.5 rounded-lg text-[10px] font-black transition-all text-center ${
+                                    className={`flex-1 py-1.5 rounded-lg text-[10px] font-black transition-all text-center cursor-pointer ${
                                       subTypeFilter === item.key
                                         ? 'bg-red-600 text-white shadow font-black'
                                         : 'text-gray-600 hover:text-gray-900 font-bold'
                                     }`}
                                   >
-                                    {tPhone(item.labelBn, item.labelEn)}
+                                    {item.label}
                                   </button>
                                 ))}
                               </div>
@@ -1844,9 +1845,9 @@ export default function MobileAppViewPage(props: any) {
                           ) : (
                             filteredCurrentMatches.map((m) => {
                               const matchBookings = bookedMatchesList
-                                .filter((bm) => bm.title === m.title)
+                                .filter((bm) => bm.title === m.title || bm.matchId === m.id)
                                 .map((bm) => bm.ign);
-                              const filled = m.filledSlots || matchBookings.length || 0;
+                              const filled = Math.max(m.filledSlots || 0, Array.isArray(m.participants) ? m.participants.length : 0, matchBookings.length);
                               const spotsLeft = Math.max(0, m.totalSlots - filled);
 
                               return (
@@ -2285,13 +2286,9 @@ export default function MobileAppViewPage(props: any) {
 
                             return (
                               <div className="space-y-4">
-                                {/* SECTION 1: FREE FIRE MATCHES */}
+                                {/* SECTION 1: FREE FIRE MATCHES (Header removed as requested) */}
                                 {ffMatches.length > 0 && (
                                   <div className="space-y-2">
-                                    <div className="text-[11px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 px-1 flex items-center justify-between border-b border-gray-100 dark:border-white/5 pb-1">
-                                      <span>🔥 {tPhone('ফ্রি ফায়ার ম্যাচ (FREE FIRE MATCHES)', 'FREE FIRE MATCHES')}</span>
-                                      <span className="text-[9px] text-gray-400 font-bold">{ffMatches.length} Categories</span>
-                                    </div>
                                     <div className="grid grid-cols-2 gap-2">
                                       {ffMatches.map(renderCard)}
                                     </div>
@@ -2386,8 +2383,8 @@ export default function MobileAppViewPage(props: any) {
                       }
 
                       // 8 minutes = 8 * 60 * 1000 = 480,000 ms
-                      const EIGHT_MIN_MS = 8 * 60 * 1000;
-                      if (deliveredMs && currentTickTime - deliveredMs >= EIGHT_MIN_MS) {
+                      const FIVE_MIN_MS = 5 * 60 * 1000;
+                      if (deliveredMs && currentTickTime - deliveredMs >= FIVE_MIN_MS) {
                         return false; // Auto expired after 8 minutes ("৮ মিনিট এর পরে অটো চলে যাবে")
                       }
 
@@ -2449,8 +2446,8 @@ export default function MobileAppViewPage(props: any) {
                               deliveredMs = currentTickTime;
                             }
 
-                            const EIGHT_MIN_MS = 8 * 60 * 1000;
-                            const remainingSeconds = deliveredMs ? Math.max(0, Math.floor((deliveredMs + EIGHT_MIN_MS - currentTickTime) / 1000)) : null;
+                            const FIVE_MIN_MS = 5 * 60 * 1000;
+                            const remainingSeconds = deliveredMs ? Math.max(0, Math.floor((deliveredMs + FIVE_MIN_MS - currentTickTime) / 1000)) : null;
 
                             return (
                               <div

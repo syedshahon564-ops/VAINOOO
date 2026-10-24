@@ -143,7 +143,8 @@ export function isMatchFinished(match: {
     s === 'FINISHED' ||
     s === 'ENDED' ||
     s === 'RESULT_PUBLISHED' ||
-    s === 'CANCELLED'
+    s === 'CANCELLED' ||
+    s === 'LIVE'
   ) {
     return true;
   }
@@ -151,40 +152,33 @@ export function isMatchFinished(match: {
     return true;
   }
 
-  // After Room ID & password delivery, match auto-finishes after 30 minutes
+  // User specification: As soon as match scheduled time has arrived/passed, it immediately leaves active category lobbies
+  if (match.time) {
+    try {
+      const d = parseScheduleTimeToDate(match.time, match.startTimeIso);
+      if (d && !isNaN(d.getTime())) {
+        const diffMs = Date.now() - d.getTime();
+        // If match scheduled time has arrived (0 ms or more elapsed), match leaves active lobby
+        if (diffMs >= 0) {
+          return true;
+        }
+      }
+    } catch (e) {}
+  }
+
   const deliveredIso = (match as any)?.roomDeliveredAt || (match as any)?.deliveredAt;
   if (deliveredIso) {
     try {
       const deliveredTime = new Date(deliveredIso).getTime();
       if (!isNaN(deliveredTime)) {
         const elapsedMins = (Date.now() - deliveredTime) / (60 * 1000);
-        if (elapsedMins >= 30) {
+        if (elapsedMins >= 5) {
           return true;
         }
       }
     } catch (e) {}
   }
 
-  // Never auto-finish a newly created match that is still UPCOMING
-  const createdAt = (match as any)?.createdAt;
-  if (typeof createdAt === 'number' && Date.now() - createdAt < 48 * 3600 * 1000) {
-    if (s === 'UPCOMING' || s === '') {
-      return false;
-    }
-  }
-
-  if (match.time) {
-    try {
-      const d = parseScheduleTimeToDate(match.time, match.startTimeIso);
-      if (d && !isNaN(d.getTime())) {
-        const elapsedMins = (Date.now() - d.getTime()) / (60 * 1000);
-        // If 6 hours have elapsed since the scheduled start time, consider concluded
-        if (elapsedMins > 360) {
-          return true;
-        }
-      }
-    } catch (e) {}
-  }
   return false;
 }
 

@@ -1030,6 +1030,42 @@ export function getLiveTopPlayers(cmsData?: CMSData): TopPlayerItem[] {
     } catch (e) {}
   }
 
+  // Dynamically aggregate all completed matches from CMS matches:
+  if (Array.isArray(currentCMS?.matches)) {
+    currentCMS.matches.forEach((m) => {
+      if (Array.isArray(m.results)) {
+        m.results.forEach((r) => {
+          const ign = String(r.ign || '').trim();
+          if (!ign) return;
+          const kills = Number(r.kills || 0);
+          const prize = Number(r.prize || 0);
+          const isWin = Number(r.rank) === 1;
+
+          const existingIdx = rawList.findIndex((p) => p.ign.toLowerCase() === ign.toLowerCase());
+          if (existingIdx !== -1) {
+            rawList[existingIdx].kills = Math.max(rawList[existingIdx].kills, rawList[existingIdx].kills + kills);
+            rawList[existingIdx].earnings = Math.max(rawList[existingIdx].earnings, rawList[existingIdx].earnings + prize);
+            rawList[existingIdx].matchesPlayed = Math.max(rawList[existingIdx].matchesPlayed, rawList[existingIdx].matchesPlayed + 1);
+            if (isWin) rawList[existingIdx].booyahs = Math.max(rawList[existingIdx].booyahs, rawList[existingIdx].booyahs + 1);
+          } else {
+            rawList.push({
+              id: `result-${ign.toLowerCase()}`,
+              rank: 0,
+              ign: ign.toUpperCase(),
+              uid: '',
+              avatar: DEFAULT_PLAYER_AVATAR,
+              kills,
+              earnings: prize,
+              matchesPlayed: 1,
+              booyahs: isWin ? 1 : 0,
+              winRate: isWin ? '100%' : '0%',
+            });
+          }
+        });
+      }
+    });
+  }
+
   // Filter out any entries without an IGN
   const validPlayers = rawList.filter((p) => p && p.ign && p.ign.trim().length > 0);
 
