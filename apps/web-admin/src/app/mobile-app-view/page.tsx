@@ -2292,32 +2292,59 @@ export default function MobileAppViewPage(props: any) {
                             )}
                           </div>
 
-                          {/* Category Cards Grouped by Parent Section */}
+                          {/* Category Cards Grouped by Parent Section - Exactly matching User Screenshot & Website */}
                           {(() => {
                             const allCats = categoriesList;
                             const norm = (s: string = '') => (s || '').trim().toUpperCase();
 
-                            const ffMatches = allCats.filter((c) => {
-                              const s = norm(c.section);
-                              return s === 'FREE FIRE MATCHES' || (!c.section && ['classic-match', 'clash-squad', 'lone-wolf', 'special-match'].includes(c.slug));
-                            });
+                            // 1. SECTION 1: TOP 4 TOURNAMENTS (2x2 grid, NO section header)
+                            // Exactly: CLASSIC MATCH, CLASH SQUAD, LONE WOLF, LOST TO WIN
+                            const main4Slugs = ['classic-match', 'clash-squad', 'lone-wolf', 'lost-to-win'];
+                            const mainTournaments: any[] = [];
+                            for (const slug of main4Slugs) {
+                              const found = allCats.find((c) => c.slug === slug);
+                              if (found) {
+                                mainTournaments.push(found);
+                              } else if (INITIAL_CATEGORIES[slug]) {
+                                mainTournaments.push(INITIAL_CATEGORIES[slug]);
+                              }
+                            }
 
-                            const match1v1 = allCats.filter((c) => {
+                            // 2. SECTION 2: ONLY HEADSHOT
+                            // Exactly: CS ONLY HEADSHOT, LONE WOLF HEADSHOT (and any custom headshot tournaments)
+                            const headshotCats = allCats.filter((c) => {
+                              if (main4Slugs.includes(c.slug)) return false;
                               const s = norm(c.section);
-                              return s === 'FREE FIRE MATCH 1 VS 1' || s.includes('1 VS 1') || s.includes('1V1') || (!c.section && c.slug === 'lost-to-win');
+                              const slug = (c.slug || '').toLowerCase();
+                              const name = (c.name || '').toUpperCase();
+                              return s.includes('HEADSHOT') || slug.includes('headshot') || name.includes('HEADSHOT');
                             });
+                            // Deduplicate lone-wolf-headshot / lone-walf-headshot variants:
+                            const seenHeadshot = new Set<string>();
+                            const cleanHeadshot: any[] = [];
+                            for (const c of headshotCats) {
+                              const key = c.slug === 'lone-walf-headshot' ? 'lone-wolf-headshot' : c.slug;
+                              if (!seenHeadshot.has(key)) {
+                                seenHeadshot.add(key);
+                                cleanHeadshot.push(c);
+                              }
+                            }
+                            if (!cleanHeadshot.some((c) => (c.slug || '').includes('lone')) && INITIAL_CATEGORIES['lone-wolf-headshot']) {
+                              cleanHeadshot.push(INITIAL_CATEGORIES['lone-wolf-headshot']);
+                            }
 
-                            const headshot = allCats.filter((c) => {
-                              const s = norm(c.section);
-                              return s === 'ONLY HEADSHOT' || s.includes('HEADSHOT') || (!c.section && c.slug === 'cs-only-headshot');
-                            });
-
-                            const placedSlugs = new Set([
-                              ...ffMatches.map((c) => c.slug),
-                              ...match1v1.map((c) => c.slug),
-                              ...headshot.map((c) => c.slug),
+                            // 3. SECTION 3: OTHER TOURNAMENTS
+                            // Exactly: SPECIAL MATCH, FREE MATCH, and any other custom tournaments
+                            const handledSlugs = new Set([
+                              ...mainTournaments.map((c) => c.slug),
+                              ...headshotCats.map((c) => c.slug),
+                              'lone-walf-headshot',
+                              'lone-wolf-headshot',
                             ]);
-                            const customCats = allCats.filter((c) => !placedSlugs.has(c.slug));
+                            const otherCats = allCats.filter((c) => !handledSlugs.has(c.slug));
+                            if (!otherCats.some((c) => c.slug === 'free-match') && INITIAL_CATEGORIES['free-match']) {
+                              otherCats.push(INITIAL_CATEGORIES['free-match']);
+                            }
 
                             const renderCard = (cat: any) => {
                               const count = matches.filter((m) => m.categorySlug === cat.slug && !isMatchFinished(m)).length;
@@ -2357,50 +2384,37 @@ export default function MobileAppViewPage(props: any) {
 
                             return (
                               <div className="space-y-4">
-                                {/* SECTION 1: FREE FIRE MATCHES (Header removed as requested) */}
-                                {ffMatches.length > 0 && (
+                                {/* SECTION 1: TOP 4 TOURNAMENTS (Header removed as in user screenshot) */}
+                                {mainTournaments.length > 0 && (
                                   <div className="space-y-2">
                                     <div className="grid grid-cols-2 gap-2">
-                                      {ffMatches.map(renderCard)}
+                                      {mainTournaments.map(renderCard)}
                                     </div>
                                   </div>
                                 )}
 
-                                {/* SECTION 2: FREE FIRE MATCH 1 VS 1 */}
-                                {match1v1.length > 0 && (
-                                  <div className="space-y-2">
-                                    <div className="text-[11px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 px-1 flex items-center justify-between border-b border-gray-100 dark:border-white/5 pb-1">
-                                      <span>⚔️ {tPhone('ফ্রি ফায়ার ম্যাচ ১ VS ১ (FREE FIRE MATCH 1 VS 1)', 'FREE FIRE MATCH 1 VS 1')}</span>
-                                      <span className="text-[9px] text-gray-400 font-bold">{match1v1.length} Categories</span>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-2">
-                                      {match1v1.map(renderCard)}
-                                    </div>
-                                  </div>
-                                )}
-
-                                {/* SECTION 3: ONLY HEADSHOT */}
-                                {headshot.length > 0 && (
+                                {/* SECTION 2: ONLY HEADSHOT */}
+                                {cleanHeadshot.length > 0 && (
                                   <div className="space-y-2">
                                     <div className="text-[11px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 px-1 flex items-center justify-between border-b border-gray-100 dark:border-white/5 pb-1">
                                       <span>🎯 {tPhone('ওনলি হেডশট (ONLY HEADSHOT)', 'ONLY HEADSHOT')}</span>
-                                      <span className="text-[9px] text-gray-400 font-bold">{headshot.length} Categories</span>
+                                      <span className="text-[9px] text-gray-400 font-bold">{cleanHeadshot.length} Categories</span>
                                     </div>
                                     <div className="grid grid-cols-2 gap-2">
-                                      {headshot.map(renderCard)}
+                                      {cleanHeadshot.map(renderCard)}
                                     </div>
                                   </div>
                                 )}
 
-                                {/* SECTION 4: OTHER CUSTOM CATEGORIES */}
-                                {customCats.length > 0 && (
+                                {/* SECTION 3: OTHER TOURNAMENTS */}
+                                {otherCats.length > 0 && (
                                   <div className="space-y-2">
                                     <div className="text-[11px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 px-1 flex items-center justify-between border-b border-gray-100 dark:border-white/5 pb-1">
                                       <span>⭐ {tPhone('অন্যান্য টুর্নামেন্ট (OTHER TOURNAMENTS)', 'OTHER TOURNAMENTS')}</span>
-                                      <span className="text-[9px] text-gray-400 font-bold">{customCats.length} Categories</span>
+                                      <span className="text-[9px] text-gray-400 font-bold">{otherCats.length} Categories</span>
                                     </div>
                                     <div className="grid grid-cols-2 gap-2">
-                                      {customCats.map(renderCard)}
+                                      {otherCats.map(renderCard)}
                                     </div>
                                   </div>
                                 )}

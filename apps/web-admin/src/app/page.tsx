@@ -17,7 +17,7 @@ import {
   ChevronRight,
   Headphones,
 } from 'lucide-react';
-import { useCMS, isMatchFinished } from '@/lib/cms-store';
+import { useCMS, isMatchFinished, INITIAL_CATEGORIES } from '@/lib/cms-store';
 import { useLanguage } from '@/components/LanguageProvider';
 import AppDownloadModal from '@/components/AppDownloadModal';
 import MobileAppViewPage from './mobile-app-view/page';
@@ -119,27 +119,51 @@ export default function HomePage() {
   const allCats = Object.values(categories || {});
   const norm = (s: string = '') => (s || '').trim().toUpperCase();
 
-  const freeFireMatches = allCats.filter((c) => {
-    const s = norm(c.section);
-    return s === 'FREE FIRE MATCHES' || (!c.section && ['classic-match', 'clash-squad', 'lone-wolf', 'special-match'].includes(c.slug));
-  });
+  // Top 4 Tournament Cards:
+  // 1. CLASSIC MATCH, 2. CLASH SQUAD, 3. LONE WOLF, 4. LOST TO WIN
+  const main4Slugs = ['classic-match', 'clash-squad', 'lone-wolf', 'lost-to-win'];
+  const freeFireMatches: any[] = [];
+  for (const slug of main4Slugs) {
+    const found = allCats.find((c) => c.slug === slug);
+    if (found) {
+      freeFireMatches.push(found);
+    } else if (INITIAL_CATEGORIES[slug]) {
+      freeFireMatches.push(INITIAL_CATEGORIES[slug]);
+    }
+  }
 
-  const match1vs1 = allCats.filter((c) => {
+  // Section 2: ONLY HEADSHOT
+  const onlyHeadshotCats = allCats.filter((c) => {
+    if (main4Slugs.includes(c.slug)) return false;
     const s = norm(c.section);
-    return s === 'FREE FIRE MATCH 1 VS 1' || s.includes('1 VS 1') || s.includes('1V1') || (!c.section && c.slug === 'lost-to-win');
+    const slug = (c.slug || '').toLowerCase();
+    const name = (c.name || '').toUpperCase();
+    return s.includes('HEADSHOT') || slug.includes('headshot') || name.includes('HEADSHOT');
   });
+  const seenHeadshotDesktop = new Set<string>();
+  const onlyHeadshot: any[] = [];
+  for (const c of onlyHeadshotCats) {
+    const key = c.slug === 'lone-walf-headshot' ? 'lone-wolf-headshot' : c.slug;
+    if (!seenHeadshotDesktop.has(key)) {
+      seenHeadshotDesktop.add(key);
+      onlyHeadshot.push(c);
+    }
+  }
+  if (!onlyHeadshot.some((c) => (c.slug || '').includes('lone')) && INITIAL_CATEGORIES['lone-wolf-headshot']) {
+    onlyHeadshot.push(INITIAL_CATEGORIES['lone-wolf-headshot']);
+  }
 
-  const onlyHeadshot = allCats.filter((c) => {
-    const s = norm(c.section);
-    return s === 'ONLY HEADSHOT' || s.includes('HEADSHOT') || (!c.section && c.slug === 'cs-only-headshot');
-  });
-
+  // Section 3: OTHER TOURNAMENTS (SPECIAL MATCH, FREE MATCH, etc.)
   const placedSlugs = new Set([
     ...freeFireMatches.map((c) => c.slug),
-    ...match1vs1.map((c) => c.slug),
-    ...onlyHeadshot.map((c) => c.slug),
+    ...onlyHeadshotCats.map((c) => c.slug),
+    'lone-walf-headshot',
+    'lone-wolf-headshot',
   ]);
   const customCategories = allCats.filter((c) => !placedSlugs.has(c.slug));
+  if (!customCategories.some((c) => c.slug === 'free-match') && INITIAL_CATEGORIES['free-match']) {
+    customCategories.push(INITIAL_CATEGORIES['free-match']);
+  }
 
   if (isApp) {
     return <MobileAppViewPage standalone={true} />;
@@ -302,71 +326,12 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* SECTION 2: FREE FIRE MATCH 1 VS 1 (From User Screenshot) */}
+        {/* SECTION 2: ONLY HEADSHOT */}
         <section className="space-y-6">
           <div className="flex items-center justify-center gap-4 text-center">
             <div className="flex-1 h-px bg-gray-200 dark:bg-white/10" />
             <h2 className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white uppercase tracking-wider">
-              {catLostToWin?.section || 'FREE FIRE MATCH 1 VS 1'}
-            </h2>
-            <div className="flex-1 h-px bg-gray-200 dark:bg-white/10" />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {match1vs1.map((cat) => {
-              const count = getMatchCount(cat.slug);
-              return (
-                <Link
-                  key={cat.slug}
-                  href={`/category/${cat.slug}`}
-                  prefetch={true}
-                  className="category-card-red p-5 flex items-center justify-between group cursor-pointer active:scale-[0.98] transition-transform duration-100"
-                >
-                  <div className="flex items-center gap-4 z-10">
-                    <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-white/30 bg-black/40 shadow-xl flex-shrink-0">
-                      <img
-                        src={cat.avatarImage || cat.bannerImage || '/logo.png'}
-                        alt={cat.name}
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = '/logo.png';
-                        }}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                      />
-                    </div>
-                    <div className="text-white">
-                      <h3 className="text-lg sm:text-xl font-black tracking-wide group-hover:text-amber-300 transition-colors">
-                        {cat.name}
-                      </h3>
-                      <p className="text-xs text-gray-200 font-medium mt-0.5">
-                        {count} {t('টি ম্যাচ উপলব্ধ', 'Matches Available')}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="w-10 h-10 rounded-full bg-white/15 flex items-center justify-center text-white group-hover:translate-x-1.5 transition-transform z-10">
-                    <ArrowRight className="w-5 h-5" />
-                  </div>
-
-                  <div
-                    className="absolute right-0 top-0 bottom-0 w-1/2 sm:w-2/3 bg-cover bg-center opacity-70 group-hover:opacity-90 transition-opacity pointer-events-none"
-                    style={{
-                      backgroundImage: `url(${cat.bannerImage || cat.avatarImage || '/logo.png'})`,
-                      maskImage: 'linear-gradient(to left, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 100%)',
-                      WebkitMaskImage: 'linear-gradient(to left, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 100%)',
-                    }}
-                  />
-                </Link>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* SECTION 3: ONLY HEADSHOT (From User Screenshot) */}
-        <section className="space-y-6">
-          <div className="flex items-center justify-center gap-4 text-center">
-            <div className="flex-1 h-px bg-gray-200 dark:bg-white/10" />
-            <h2 className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white uppercase tracking-wider">
-              {catHeadshot?.section || 'ONLY HEADSHOT'}
+              {t('🎯 ওনলি হেডশট (ONLY HEADSHOT)', '🎯 ONLY HEADSHOT')}
             </h2>
             <div className="flex-1 h-px bg-gray-200 dark:bg-white/10" />
           </div>
@@ -420,13 +385,13 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* SECTION 4: CUSTOM / MORE CATEGORIES */}
+        {/* SECTION 3: OTHER TOURNAMENTS */}
         {customCategories.length > 0 && (
           <section className="space-y-6">
             <div className="flex items-center justify-center gap-4 text-center">
               <div className="flex-1 h-px bg-gray-200 dark:bg-white/10" />
               <h2 className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white uppercase tracking-wider">
-                {t('অন্যান্য টুর্নামেন্ট', 'MORE TOURNAMENTS')}
+                {t('⭐ অন্যান্য টুর্নামেন্ট (OTHER TOURNAMENTS)', '⭐ OTHER TOURNAMENTS')}
               </h2>
               <div className="flex-1 h-px bg-gray-200 dark:bg-white/10" />
             </div>

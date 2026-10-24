@@ -62,6 +62,9 @@ export async function GET() {
       if (!result.categories || typeof result.categories !== 'object') {
         result.categories = { ...INITIAL_CATEGORIES };
       } else {
+        if (result.categories['special-match']) {
+          result.categories['special-match'].section = 'OTHER TOURNAMENTS';
+        }
         for (const [slug, initCat] of Object.entries(INITIAL_CATEGORIES)) {
           const cat = result.categories[slug];
           if (!cat || !cat.bannerImage || cat.bannerImage.includes('unsplash.com') || cat.bannerImage === '/logo.png' || cat.bannerImage === '/banners/default.png' || cat.bannerImage.startsWith('/uploads/')) {

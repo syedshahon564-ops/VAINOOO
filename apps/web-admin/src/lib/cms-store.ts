@@ -340,7 +340,7 @@ export function getCMSData(): CMSData {
       }
     }
 
-    const LEADERBOARD_RESET_KEY = 'ff_leaderboard_fresh_reset_v10';
+    const LEADERBOARD_RESET_KEY = 'ff_leaderboard_fresh_reset_v20';
     if (!localStorage.getItem(LEADERBOARD_RESET_KEY)) {
       if (parsed) {
         parsed.topPlayers = [];

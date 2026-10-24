@@ -387,6 +387,45 @@ export function initUserSync() {
     }
   } catch (e) {}
 
+  // Comprehensive fresh leaderboard and zero balance reset
+  const LEADERBOARD_USER_RESET_V20 = 'ff_leaderboard_user_reset_v20';
+  try {
+    if (!localStorage.getItem(LEADERBOARD_USER_RESET_V20)) {
+      localStorage.setItem(LEADERBOARD_USER_RESET_V20, '1');
+      const rawUsers = localStorage.getItem(USERS_STORAGE_KEY);
+      if (rawUsers) {
+        const uArr = JSON.parse(rawUsers);
+        if (Array.isArray(uArr)) {
+          uArr.forEach((u: any) => {
+            if (u.role !== 'ADMIN') {
+              u.walletBalance = 0;
+              u.matchesPlayed = 0;
+              u.totalKills = 0;
+              u.totalWins = 0;
+              u.totalEarnings = 0;
+              u.matchHistory = [];
+            }
+          });
+          localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(uArr));
+        }
+      }
+      const curUser = localStorage.getItem('ff_user');
+      if (curUser) {
+        const u = JSON.parse(curUser);
+        if (u.role !== 'ADMIN') {
+          u.walletBalance = 0;
+          u.matchesPlayed = 0;
+          u.totalKills = 0;
+          u.totalWins = 0;
+          u.totalEarnings = 0;
+          u.matchHistory = [];
+          localStorage.setItem('ff_user', JSON.stringify(u));
+        }
+      }
+      localStorage.removeItem('ff_esports_users_db_v1');
+    }
+  } catch (e) {}
+
   fetchUsersFromServer();
   // 1-second rapid server sync for immediate cross-device balance & user updates
   setInterval(fetchUsersFromServer, 1000);
