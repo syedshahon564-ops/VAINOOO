@@ -12,14 +12,8 @@ const nextConfig = {
         source: '/admin.html',
         destination: '/admin-portal',
       },
-      {
-        source: '/downloads/:file*.apk',
-        destination: '/ffrivals.apk',
-      },
-      {
-        source: '/api/download',
-        destination: '/ffrivals.apk',
-      },
+      
+      
     ];
   },
   async headers() {
