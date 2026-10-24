@@ -4,13 +4,15 @@ import path from 'path';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(
+  request: Request,
+  { params }: { params: { filename: string } }
+) {
   const candidatePaths = [
     path.join(process.cwd(), 'public', 'downloads', 'ffrivals.apk'),
     path.join(process.cwd(), 'apps', 'web-admin', 'public', 'downloads', 'ffrivals.apk'),
     path.join(process.cwd(), 'public', 'ffrivals.apk'),
     path.join(process.cwd(), 'apps', 'web-admin', 'public', 'ffrivals.apk'),
-    path.resolve(__dirname, '..', '..', '..', '..', 'public', 'downloads', 'ffrivals.apk'),
   ];
 
   for (const p of candidatePaths) {
@@ -29,13 +31,10 @@ export async function GET() {
             },
           });
         }
-      } catch (e) {
-        // continue to fallback
-      }
+      } catch (e) {}
     }
   }
 
-  // Fallback to high-speed raw GitHub release CDN
   return NextResponse.redirect(
     'https://raw.githubusercontent.com/syedshahon564-ops/VAINOOO/main/public/downloads/ffrivals.apk',
     302
