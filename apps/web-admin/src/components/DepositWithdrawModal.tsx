@@ -41,7 +41,7 @@ export default function DepositWithdrawModal({
   const [liveSettings, setLiveSettings] = useState<any>(null);
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<'DEPOSIT' | 'WITHDRAW'>(initialTab);
-  const [method, setMethod] = useState<'BKASH' | 'NAGAD' | 'ROCKET'>('BKASH');
+  const [method, setMethod] = useState<'BKASH' | 'NAGAD' | 'ROCKET'>('NAGAD');
   const [amount, setAmount] = useState<number>(100);
   const [phone, setPhone] = useState('');
   const [trxId, setTrxId] = useState('');
@@ -384,6 +384,18 @@ export default function DepositWithdrawModal({
                 </label>
                 <div className="grid grid-cols-3 gap-2">
                   {(['BKASH', 'NAGAD', 'ROCKET'] as const).map((m) => {
+                    if (m === 'BKASH') {
+                      return (
+                        <div
+                          key={m}
+                          className="py-2.5 px-3 rounded-xl border border-dashed border-rose-300 dark:border-rose-900/40 text-gray-400 dark:text-gray-500 bg-rose-50/40 dark:bg-rose-950/10 opacity-70 cursor-not-allowed flex flex-col items-center gap-0.5 select-none"
+                          title="বিকাশ ডিপোজিট সাময়িকভাবে বন্ধ রয়েছে"
+                        >
+                          <span className="line-through font-bold text-rose-400">বিকাশ</span>
+                          <span className="text-[9px] font-black text-rose-500 bg-rose-500/10 px-1.5 py-0.5 rounded">সাময়িক বন্ধ</span>
+                        </div>
+                      );
+                    }
                     if (m === 'ROCKET') {
                       return (
                         <div
@@ -397,11 +409,6 @@ export default function DepositWithdrawModal({
                       );
                     }
                     const isSel = method === m;
-                    const colors = {
-                      BKASH: 'border-pink-500 text-pink-600 bg-pink-50/50 dark:bg-pink-950/20',
-                      NAGAD: 'border-orange-500 text-orange-600 bg-orange-50/50 dark:bg-orange-950/20',
-                      ROCKET: 'border-purple-500 text-purple-600 bg-purple-50/50 dark:bg-purple-950/20',
-                    };
                     return (
                       <button
                         key={m}
@@ -409,15 +416,32 @@ export default function DepositWithdrawModal({
                         onClick={() => setMethod(m)}
                         className={`py-2.5 px-3 rounded-xl border-2 text-xs font-black transition-all flex flex-col items-center gap-0.5 ${
                           isSel
-                            ? colors[m]
+                            ? 'border-orange-500 text-orange-600 bg-orange-50/50 dark:bg-orange-950/20 shadow-sm'
                             : 'border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-400 hover:border-gray-300'
                         }`}
                       >
-                        <span>{m === 'BKASH' ? 'বিকাশ' : 'নগদ'}</span>
-                        <span className="text-[10px] font-normal opacity-80">{m}</span>
+                        <div className="flex items-center gap-1">
+                          <span>নগদ</span>
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        </div>
+                        <span className="text-[9px] font-bold text-emerald-600">অনলাইন সক্রিয়</span>
                       </button>
                     );
                   })}
+                </div>
+              </div>
+
+              {/* Temporary Notice: bKash Closed, Nagad Active */}
+              <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-2.5 text-xs text-amber-800 dark:text-amber-300">
+                <AlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-black block">{t('বিকাশ সার্ভিস সাময়িক বন্ধ', 'bKash Temporarily Closed')}</span>
+                  <p className="text-[11px] text-gray-600 dark:text-gray-300">
+                    {t(
+                      'বর্তমানে বিকাশ ডিপোজিট সাময়িকভাবে বন্ধ আছে। ডিপোজিট করতে নিচে দেওয়া অফিসিয়াল নগদ (Nagad) নম্বরে সেন্ড মানি করুন।',
+                      'bKash deposit is temporarily offline. Please send money using the official Nagad number below.'
+                    )}
+                  </p>
                 </div>
               </div>
 

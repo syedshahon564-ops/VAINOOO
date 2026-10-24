@@ -146,13 +146,28 @@ export function calculatePlayerPrize(
   const effectiveKills = Math.min(7, Math.max(0, kills));
   const killPrize = Math.max(0, effectiveKills * perKillRate);
 
+  const isCSOrTeam =
+    match.matchType === 'CS_4V4' ||
+    match.matchType === 'SQUAD' ||
+    match.matchType === 'DUO' ||
+    (match.categorySlug === 'clash-squad' || match.type === '4 vs 4') ||
+    match.categorySlug?.includes('clash') ||
+    match.categorySlug?.includes('4v4') ||
+    match.title?.toLowerCase().includes('4v4') ||
+    match.title?.toLowerCase().includes('cs');
+
+  const teamSize = match.matchType === 'DUO' || (match.categorySlug?.includes('duo') || match.type === 'Duo') ? 2 : (isCSOrTeam ? 4 : 1);
+
   let rankPrize = 0;
   if (rank === 1) {
-    rankPrize = match.firstPrize || Math.round(match.prizePool * 0.5);
+    const rawFirst = match.firstPrize !== undefined && match.firstPrize !== null ? Number(match.firstPrize) : Math.round(match.prizePool * 0.5);
+    rankPrize = teamSize > 1 ? Math.round(rawFirst / teamSize) : rawFirst;
   } else if (rank === 2) {
-    rankPrize = match.secondPrize || Math.round(match.prizePool * 0.25);
+    const rawSecond = match.secondPrize !== undefined && match.secondPrize !== null ? Number(match.secondPrize) : Math.round(match.prizePool * 0.25);
+    rankPrize = teamSize > 1 ? Math.round(rawSecond / teamSize) : rawSecond;
   } else if (rank === 3) {
-    rankPrize = match.thirdPrize || Math.round(match.prizePool * 0.15);
+    const rawThird = match.thirdPrize !== undefined && match.thirdPrize !== null ? Number(match.thirdPrize) : Math.round(match.prizePool * 0.15);
+    rankPrize = teamSize > 1 ? Math.round(rawThird / teamSize) : rawThird;
   }
 
   return {
@@ -182,6 +197,18 @@ export function parseScoreboardText(
   const parsedRows: ParsedScoreboardRow[] = [];
   let currentRank = 1;
 
+  const isCSOrTeam =
+    match.matchType === 'CS_4V4' ||
+    match.matchType === 'SQUAD' ||
+    match.matchType === 'DUO' ||
+    (match.categorySlug === 'clash-squad' || match.type === '4 vs 4') ||
+    match.categorySlug?.includes('clash') ||
+    match.categorySlug?.includes('4v4') ||
+    match.title?.toLowerCase().includes('4v4') ||
+    match.title?.toLowerCase().includes('cs');
+
+  const isVictoryScreen = /victory|booyah/i.test(rawText) && !/defeat/i.test(rawText);
+
   for (const line of lines) {
     // Ignore common scoreboard headers
     if (
@@ -201,6 +228,9 @@ export function parseScoreboardText(
     const rankMatch = line.match(/^#?(\d{1,2})[\.\s\:\-]/);
     if (rankMatch) {
       rank = parseInt(rankMatch[1], 10);
+    } else if (isCSOrTeam && isVictoryScreen) {
+      // Free Fire Clash Squad 4v4: all 4 winning team players on the Victory screen are Rank 1
+      rank = 1;
     }
 
     const killsMatch = line.match(/(\d{1,2})\s*(?:kills?|k|kll)?$/i) || line.match(/\b(\d{1,2})\b$/);

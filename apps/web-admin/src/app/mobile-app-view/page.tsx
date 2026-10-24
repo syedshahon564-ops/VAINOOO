@@ -2605,19 +2605,22 @@ export default function MobileAppViewPage(props: any) {
 
                                 {/* Player IGN & Slot Info */}
                                 <div
-                                  onClick={() =>
+                                  onClick={() => {
+                                    const matchStats = topPlayers.find(
+                                      (tp) => tp.ign.toLowerCase().trim() === bm.ign.toLowerCase().trim()
+                                    );
+                                    const isCurrent = currentUser?.ign && currentUser.ign.toLowerCase().trim() === bm.ign.toLowerCase().trim();
+                                    const avatar = matchStats?.avatar || (isCurrent ? currentUser?.avatar : undefined) || '/avatars/avatar-1.png';
                                     setSelectedPlayerForDetails({
                                       ign: bm.ign,
-                                      uid: bm.uid,
-                                      kills: 142,
-                                      earnings: 8600,
-                                      matchesPlayed: 38,
-                                      booyahs: 12,
-                                      winRate: '42.8%',
-                                      level: 72,
-                                      guild: 'BD_RIVALS_ELITE',
-                                    })
-                                  }
+                                      uid: '',
+                                      avatar,
+                                      kills: matchStats ? matchStats.kills : 0,
+                                      earnings: matchStats ? matchStats.earnings : 0,
+                                      matchesPlayed: matchStats ? matchStats.matchesPlayed : 1,
+                                      booyahs: matchStats ? matchStats.booyahs : 0,
+                                    });
+                                  }}
                                   className="p-2.5 rounded-xl bg-gray-50 hover:bg-gray-100 cursor-pointer border border-gray-200 flex items-center justify-between text-xs transition-all"
                                   title={tPhone('প্লেয়ার ডিটেইলস দেখুন', 'Click to view player details')}
                                 >

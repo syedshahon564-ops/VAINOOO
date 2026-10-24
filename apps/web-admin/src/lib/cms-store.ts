@@ -1003,7 +1003,7 @@ export function syncCMSWithServer(): void {
     });
 }
 
-const DEFAULT_PLAYER_AVATAR = 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=120';
+const DEFAULT_PLAYER_AVATAR = '/avatars/avatar-1.png';
 
 export function getLiveTopPlayers(cmsData?: CMSData): TopPlayerItem[] {
   const currentCMS = cmsData || getCMSData();

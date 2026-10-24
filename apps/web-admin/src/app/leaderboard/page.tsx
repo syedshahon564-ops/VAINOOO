@@ -207,17 +207,15 @@ export default function LeaderboardPage() {
             <tr>
               <th className="p-4 text-center">{t('র‍্যাংক', 'Rank')}</th>
               <th className="p-4">{t('প্লেয়ারের নাম', 'Player Name')}</th>
-              <th className="p-4 text-center">{t('মোট কিল', 'Total Kills')}</th>
-              <th className="p-4 text-center">{t('মোট আয়', 'Total Earnings')}</th>
-              <th className="p-4 text-center">{t('ম্যাচ খেলেছে', 'Matches Played')}</th>
-              <th className="p-4 text-center">{t('Booyah সংখ্যা', 'Booyahs')}</th>
-              <th className="p-4 text-right">{t('উইন রেট', 'Win Rate')}</th>
+              <th className="p-4 text-center">{t('ম্যাচ খেলা', 'Matches')}</th>
+              <th className="p-4 text-center">{t('টোটাল কিল', 'Total Kills')}</th>
+              <th className="p-4 text-right">{t('টোটাল জয়', 'Total Won')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 dark:divide-white/5 text-gray-700 dark:text-gray-300">
             {filteredPlayers.length === 0 ? (
               <tr>
-                <td colSpan={7} className="p-8 text-center text-gray-400 font-bold">
+                <td colSpan={5} className="p-8 text-center text-gray-400 font-bold">
                   {t('কোনো প্লেয়ার পাওয়া যায়নি', 'No players found')}
                 </td>
               </tr>
@@ -257,20 +255,14 @@ export default function LeaderboardPage() {
                       </div>
                     </div>
                   </td>
-                  <td className="p-4 text-center font-black text-red-600 text-sm">
-                    {p.kills} {t('কিল', 'Kills')}
-                  </td>
-                  <td className="p-4 text-center font-black text-emerald-600 text-sm">
-                    ৳{p.earnings.toLocaleString()}
-                  </td>
                   <td className="p-4 text-center font-bold text-gray-800 dark:text-gray-200">
                     {p.matchesPlayed} {t('ম্যাচ', 'Matches')}
                   </td>
-                  <td className="p-4 text-center font-black text-amber-500">
-                    {p.booyahs} {t('বুইয়া', 'Booyahs')}
+                  <td className="p-4 text-center font-black text-red-600 text-sm">
+                    {p.kills} {t('কিল', 'Kills')}
                   </td>
-                  <td className="p-4 text-right font-black text-blue-500">
-                    {p.winRate}
+                  <td className="p-4 text-right font-black text-emerald-600 text-sm">
+                    ৳{p.earnings.toLocaleString()}
                   </td>
                 </tr>
               ))
