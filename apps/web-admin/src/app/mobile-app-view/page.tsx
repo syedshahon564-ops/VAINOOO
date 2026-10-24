@@ -370,6 +370,11 @@ export default function MobileAppViewPage(props: any) {
   }, []);
 
   const handleEnablePushNotification = async () => {
+    if (typeof window !== 'undefined' && (window as any).AndroidBridge?.requestNotificationPermission) {
+      try {
+        (window as any).AndroidBridge.requestNotificationPermission();
+      } catch (e) {}
+    }
     const granted = await requestNotificationPermission();
     if (granted) {
       setShowPushBanner(false);

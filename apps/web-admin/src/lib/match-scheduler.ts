@@ -153,25 +153,33 @@ export async function requestNotificationPermission(): Promise<boolean> {
 export function dispatchDevicePushNotification(
   title: string,
   message: string,
-  categorySlug?: string
+  categorySlug?: string,
+  targetUrl: string = '/matches'
 ): AppNotification {
-  // 1. In-app notification
+  // 1. In-app notification stored in browser
   const notif = sendBroadcastNotification(title, message, categorySlug);
 
-  // 2. Real Browser / OS Notification
+  // 2. Android Native Heads-up Notification (APK)
+  if (typeof window !== 'undefined' && (window as any).AndroidBridge?.showNativeNotification) {
+    try {
+      (window as any).AndroidBridge.showNativeNotification(title, message, targetUrl);
+    } catch (e) {}
+  }
+
+  // 3. Real Browser / OS Notification (Web)
   if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
     try {
       new Notification(title, {
         body: message,
-        icon: '/logo.png',
-        badge: '/logo.png',
+        icon: '/icon-192.png',
+        badge: '/icon-192.png',
       });
     } catch (e) {
       // In mobile WebViews Notification constructor might require Service Worker
     }
   }
 
-  // 3. Audio chime if supported
+  // 4. Audio chime if supported
   if (typeof window !== 'undefined') {
     try {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
@@ -189,6 +197,22 @@ export function dispatchDevicePushNotification(
         osc.start();
         osc.stop(audioCtx.currentTime + 0.35);
       }
+    } catch (e) {}
+  }
+
+  // 5. SERVER-SIDE PUSH BROADCAST TO ALL PHONES & USERS VIA WEB-PUSH & FEED!
+  if (typeof window !== 'undefined') {
+    try {
+      fetch('/api/notifications/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title,
+          message,
+          url: targetUrl || (categorySlug ? `/category/${categorySlug}` : '/matches'),
+          icon: '/icon-192.png',
+        }),
+      }).catch(() => {});
     } catch (e) {}
   }
 

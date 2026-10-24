@@ -335,7 +335,7 @@ export default function AdminMasterPage() {
   const handleSendCustomBroadcast = (e: React.FormEvent) => {
     e.preventDefault();
     if (!broadcastTitle.trim() || !broadcastMessage.trim()) return;
-    sendBroadcastNotification(broadcastTitle, broadcastMessage);
+    dispatchDevicePushNotification(broadcastTitle, broadcastMessage, undefined, '/');
     showToast('Push alert broadcast dispatched to mobile players!');
     setBroadcastTitle('');
     setBroadcastMessage('');

@@ -36,6 +36,9 @@ export default function PayBotConnectPage() {
   const [testResult, setTestResult] = useState<any>(null);
   const [isTesting, setIsTesting] = useState<boolean>(false);
   const pingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const lastScannedSmsRef = useRef<string>('');
+  const isScanningSmsRef = useRef<boolean>(false);
+  const [detectedCount, setDetectedCount] = useState<number>(0);
 
   // Quick Login State for PayBot
   const [selectedDevicePhone, setSelectedDevicePhone] = useState('01799000001');
@@ -221,6 +224,103 @@ export default function PayBotConnectPage() {
       if (pingIntervalRef.current) clearInterval(pingIntervalRef.current);
     };
   }, []);
+
+
+  // Auto-Detect SMS & Payments from Android Clipboard / Notifications 24/7
+  useEffect(() => {
+    if (!isConnected) return;
+
+    const playSuccessChime = () => {
+      try {
+        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+        if (AudioCtx) {
+          const ctx = new AudioCtx();
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
+          osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.1); // E5
+          osc.frequency.setValueAtTime(783.99, ctx.currentTime + 0.2); // G5
+          gain.gain.setValueAtTime(0.2, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.5);
+        }
+      } catch (e) {}
+    };
+
+    const scanForPaymentMessage = async () => {
+      if (isScanningSmsRef.current) return;
+      try {
+        let rawText = '';
+        if (typeof window !== 'undefined' && (window as any).AndroidBridge?.getClipboardText) {
+          try {
+            rawText = (window as any).AndroidBridge.getClipboardText() || '';
+          } catch (e) {}
+        }
+
+        if (!rawText || rawText === lastScannedSmsRef.current) return;
+
+        // Check if message looks like a payment SMS from bKash or Nagad
+        const hasPaymentKeyword = /(?:bKash|Nagad|received|cash in|deposit|money received|টাকা এসেছে|টাকা পেয়েছি)/i.test(rawText);
+        const trxMatch = rawText.match(/(?:TrxID|TxnID|Trx|Transaction ID)\s*[:.]?\s*([A-Z0-9]{8,14})/i);
+
+        if (hasPaymentKeyword || trxMatch) {
+          isScanningSmsRef.current = true;
+          lastScannedSmsRef.current = rawText;
+          const detectedTrx = trxMatch ? trxMatch[1] : '';
+
+          // Auto-submit to payment webhook
+          const res = await fetch('/api/webhook/payment?key=ff_rivals_secure_sms_key_2026', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': 'ff_rivals_secure_sms_key_2026',
+              'x-device-name': currentUser?.ign || 'PayBot Collector Phone',
+            },
+            body: JSON.stringify({
+              raw_message: rawText,
+              sender: currentUser?.phone || '01799000001',
+            }),
+          });
+
+          const data = await res.json();
+          if (data.success && data.status !== 'DUPLICATE') {
+            playSuccessChime();
+            setDetectedCount((c) => c + 1);
+
+            // Native notification on the collector phone
+            if (typeof window !== 'undefined' && (window as any).AndroidBridge?.showNativeNotification) {
+              (window as any).AndroidBridge.showNativeNotification(
+                '⚡ এসএমএস অটো-ডিটেক্ট হয়েছে!',
+                `TrxID ${detectedTrx || data.trx_id || ''} সফলভাবে প্রসেস হয়েছে এবং ব্যালেন্স যোগ হয়েছে।`,
+                '/paybot-connect'
+              );
+            }
+
+            setRecentLogs((prev) => [
+              {
+                id: Date.now(),
+                text: `⚡ এসএমএস অটো-ডিটেক্ট: ${detectedTrx || 'Payment'} (৳${data.data?.amount || ''}) ক্রেডিট সম্পন্ন!`,
+                time: new Date().toLocaleTimeString(),
+                type: 'PAYMENT',
+              },
+              ...prev,
+            ]);
+          }
+        }
+      } catch (err) {
+        // Silently skip
+      } finally {
+        isScanningSmsRef.current = false;
+      }
+    };
+
+    const interval = setInterval(scanForPaymentMessage, 2500);
+    return () => clearInterval(interval);
+  }, [isConnected, currentUser]);
 
   // Instant Test Deposit Simulation
   const handleTestDeposit = async () => {
@@ -512,7 +612,8 @@ export default function PayBotConnectPage() {
               </div>
               <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 space-y-0.5">
                 <span className="text-[10px] font-bold text-slate-500 uppercase">অটো-ক্রেডিট ইঞ্জিন</span>
-                <div className="font-bold text-teal-300">১০০% সক্রিয় (1s Auto)</div>
+                <div className="font-bold text-teal-300">১০০% সক্রিয় (SMS Auto-Detect)</div>
+                {detectedCount > 0 && <span className="text-[10px] text-emerald-400 font-bold block mt-0.5">মোট ডিটেক্টেড: {detectedCount} টি</span>}
               </div>
               <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 space-y-0.5 col-span-2 sm:col-span-1">
                 <span className="text-[10px] font-bold text-slate-500 uppercase">পিসি সিঙ্ক (PC Sync)</span>

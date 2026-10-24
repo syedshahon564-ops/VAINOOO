@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
+import { sendServerPushNotification } from '@/lib/push-config';
 
 function getPaymentsFilePath(): string {
   const possiblePaths = [
@@ -378,6 +379,15 @@ export async function POST(req: Request) {
     }
 
     writePaymentsDb(db);
+
+    // Broadcast push notification for deposit
+    sendServerPushNotification(
+      '🎉 পেমেন্ট রিসিভ ও ব্যালেন্স আপডেট!',
+      autoClaimedUser
+        ? `প্লেয়ার "${autoClaimedUser.username || autoClaimedUser.ign}"-এর ওয়ালেটে ৳${amountNum} সফলভাবে যোগ হয়েছে!`
+        : `বিকাশ/নগদে ৳${amountNum} নতুন পেমেন্ট পাওয়া গেছে (TrxID: ${rawTrx})।`,
+      '/wallet'
+    ).catch(() => {});
 
     // Asynchronously forward to external webhook bridge if enabled (e.g. WebhookFlow)
     if (db.webhookBridge?.enabled && db.webhookBridge?.externalUrl) {

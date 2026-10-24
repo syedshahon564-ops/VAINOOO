@@ -51,6 +51,13 @@ export default function ProfilePage() {
           (window as any).AndroidBridge.requestNotificationPermission();
         }
         localStorage.setItem('ff_notif_permission_state', 'granted');
+        if (typeof window !== 'undefined' && (window as any).AndroidBridge?.showNativeNotification) {
+          (window as any).AndroidBridge.showNativeNotification(
+            '🔔 নোটিফিকেশন চালু হয়েছে!',
+            'এখন থেকে সকল ম্যাচ ও রুম আইডির আপডেট আপনার ফোনে সরাসরি আসবে।',
+            '/'
+          );
+        }
       } catch {}
     } else {
       try {

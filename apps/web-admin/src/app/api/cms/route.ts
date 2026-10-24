@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 import { INITIAL_CATEGORIES, INITIAL_BANNERS } from '@/lib/initial-categories';
+import { sendServerPushNotification } from '@/lib/push-config';
 
 let inMemoryServerCache: any = null;
 
@@ -140,6 +141,22 @@ export async function POST(req: Request) {
     let mergedMatches = current.matches || [];
     if (Array.isArray(body.matches)) {
       const existingMap = new Map((current.matches || []).map((m: any) => [m.id, m]));
+
+      // Auto-broadcast push notification if Room ID & Password was newly added or changed
+      for (const inc of body.matches) {
+        if (inc && inc.roomId) {
+          const ex: any = existingMap.get(inc.id);
+          const wasDelivered = ex && ex.roomId && ex.roomId === inc.roomId;
+          if (!wasDelivered) {
+            sendServerPushNotification(
+              '🔑 রুম আইডি ও পাসওয়ার্ড উন্মুক্ত!',
+              `ম্যাচ: "${inc.title || 'টুর্নামেন্ট'}" | Room ID: ${inc.roomId} | Password: ${inc.roomPass || '1234'}। দ্রুত ফ্রি ফায়ারে প্রবেশ করুন!`,
+              '/matches'
+            ).catch(() => {});
+          }
+        }
+      }
+
       mergedMatches = body.matches.map((incoming: any) => {
         const existing: any = existingMap.get(incoming.id);
         if (!existing) return incoming;
