@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { subscription, userId } = body;
+    const { subscription, userId, userPhone, userUid, userIgn } = body;
 
     if (!subscription || !subscription.endpoint || !subscription.keys) {
       return NextResponse.json(
@@ -34,6 +34,9 @@ export async function POST(req: NextRequest) {
       subscribedAt: new Date().toISOString(),
       userAgent: req.headers.get('user-agent') || undefined,
       userId: userId || undefined,
+      userPhone: userPhone || undefined,
+      userUid: userUid || undefined,
+      userIgn: userIgn || undefined,
     };
 
     if (existingIndex >= 0) {

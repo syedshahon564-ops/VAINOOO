@@ -770,16 +770,19 @@ export function autoDeliverRoomCredentials(matchId: string, customRoomId?: strin
   // 3. Update User Bookings storage if user has booked this match
   updateUserBookingsWithRoomCredentials(matchId, roomId, roomPass, deliveryIso);
 
-  // 4. Dispatch notification to all users (both in-app and browser/device push)
-  dispatchDevicePushNotification(
-    '🔑 রুম আইডি ও পাসওয়ার্ড ডেলিভারি!',
-    `"${match.title}" ম্যাচের রুম আইডি: ${roomId} এবং পাসওয়ার্ড: ${roomPass} উন্মুক্ত করা হয়েছে। দ্রুত ফ্রি ফায়ারে জয়েন করুন!`,
-    match.categorySlug
-  );
+  // 4. Dispatch notification ONLY to players who bought/joined this match!
+  const isJoined = isUserJoinedInMatch(matchId);
+  if (isJoined) {
+    dispatchDevicePushNotification(
+      '🔑 রুম আইডি ও পাসওয়ার্ড ডেলিভারি!',
+      `"${match.title}" ম্যাচের রুম আইডি: ${roomId} এবং পাসওয়ার্ড: ${roomPass} উন্মুক্ত করা হয়েছে। দ্রুত ফ্রি ফায়ারে জয়েন করুন!`,
+      match.categorySlug
+    );
+  }
 
   window.dispatchEvent(
     new CustomEvent('ff_room_credentials_delivered', {
-      detail: { matchId, roomId, roomPass, roomDeliveredAt: deliveryIso },
+      detail: { matchId, roomId, roomPass, roomDeliveredAt: deliveryIso, isParticipant: isJoined },
     })
   );
 
@@ -929,6 +932,20 @@ export function saveUserBookedMatches(list: UserBookedMatch[]): void {
     localStorage.setItem(USER_BOOKINGS_STORAGE_KEY, JSON.stringify(list));
     window.dispatchEvent(new CustomEvent('ff_user_bookings_updated', { detail: list }));
   } catch (e) {}
+}
+
+export function isUserJoinedInMatch(matchId: string): boolean {
+  if (typeof window === 'undefined' || !matchId) return false;
+  try {
+    const booked = getUserBookedMatches();
+    if (booked.some((b) => b.matchId === matchId || b.id === matchId)) return true;
+    const rawJoined = localStorage.getItem('ff_user_joined_matches_v2');
+    if (rawJoined) {
+      const map = JSON.parse(rawJoined);
+      if (map && map[matchId]) return true;
+    }
+  } catch (e) {}
+  return false;
 }
 
 export function addUserBooking(booking: Omit<UserBookedMatch, 'id' | 'bookedAt'>): UserBookedMatch {

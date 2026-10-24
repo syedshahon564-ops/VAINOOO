@@ -178,6 +178,8 @@ export default function CategoryDetailPage() {
             uid: p.uid,
             slot: slotInfo.slotNumber,
             team: slotInfo.teamNumber,
+            userId: cur?.id,
+            userPhone: cur?.phone,
           }))
         : [
             {
@@ -185,6 +187,8 @@ export default function CategoryDetailPage() {
               uid: slotInfo.uid,
               slot: slotInfo.slotNumber,
               team: slotInfo.teamNumber,
+              userId: cur?.id,
+              userPhone: cur?.phone,
             },
           ];
 

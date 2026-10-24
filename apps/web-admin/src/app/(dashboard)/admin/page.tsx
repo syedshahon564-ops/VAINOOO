@@ -611,11 +611,7 @@ export default function AdminMasterPage() {
       roomDeliveredAt: new Date().toISOString(),
     });
     autoDeliverRoomCredentials(m.id, m.roomId, currentPass);
-    dispatchDevicePushNotification(
-      '🎮 কাস্টম রুম আইডি ও পাসওয়ার্ড ডেলিভারি!',
-      `ম্যাচ: "${m.title}" | Room ID: ${m.roomId} | Password: ${currentPass}। এখনই নির্দিষ্ট স্লটে বসুন!`
-    );
-    showToast(`⚡ ম্যাচ "${m.title}"-এর Room ID (${m.roomId}) সফলভাবে সকল প্লেয়ারকে ডেলিভার করা হয়েছে!`);
+    showToast(`⚡ ম্যাচ "${m.title}"-এর Room ID (${m.roomId}) সফলভাবে শুধুমাত্র জয়েন করা প্লেয়ারদের নোটিফিকেশনে পাঠানো হয়েছে!`);
   };
 
   const handleSaveOnlyRoomPass = (matchId: string) => {
@@ -650,14 +646,10 @@ export default function AdminMasterPage() {
       roomDeliveredAt: new Date().toISOString(),
     });
     autoDeliverRoomCredentials(matchId, cleanId, cleanPass);
-    dispatchDevicePushNotification(
-      '🎮 কাস্টম রুম আইডি ও পাসওয়ার্ড ডেলিভারি!',
-      `ম্যাচ: "${targetMatch?.title || 'Custom Match'}" | Room ID: ${cleanId} | Password: ${cleanPass}। এখনই নির্দিষ্ট স্লটে বসুন!`
-    );
     setEditingRoomMatchId(null);
     setRoomIdInput('');
     setRoomPassInput('');
-    showToast(`⚡ Room ID (${cleanId}) সেভ এবং সফলভাবে সকল প্লেয়ারকে ডেলিভার করা হয়েছে!`);
+    showToast(`⚡ Room ID (${cleanId}) সেভ এবং সফলভাবে শুধুমাত্র জয়েন করা প্লেয়ারদের নোটিফিকেশনে পাঠানো হয়েছে!`);
   };
 
   const handleSaveRoomPass = (matchId: string) => {

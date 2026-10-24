@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useCMS } from '@/lib/cms-store';
+import { getCurrentUser } from '@/lib/user-store';
 import { useRouter } from 'next/navigation';
 import { Bell, X, ExternalLink, ShieldCheck } from 'lucide-react';
 
@@ -54,10 +55,17 @@ export default function NotificationPermissionModal() {
           }
         }
         if (sub) {
+          const user = getCurrentUser();
           await fetch('/api/notifications/subscribe', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ subscription: sub }),
+            body: JSON.stringify({
+              subscription: sub,
+              userId: user?.id,
+              userPhone: user?.phone,
+              userUid: user?.uid,
+              userIgn: user?.ign,
+            }),
           });
         }
       }

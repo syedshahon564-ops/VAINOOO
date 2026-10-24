@@ -33,6 +33,9 @@ export interface PushSubscriptionRecord {
   subscribedAt: string;
   userAgent?: string;
   userId?: string;
+  userPhone?: string;
+  userUid?: string;
+  userIgn?: string;
 }
 
 export interface NotificationRecord {
@@ -136,7 +139,14 @@ export async function sendServerPushNotification(
   title: string,
   message: string,
   url: string = '/',
-  icon: string = '/icon-192.png'
+  icon: string = '/icon-192.png',
+  options?: {
+    isRoomCredential?: boolean;
+    targetUserIds?: string[];
+    targetPhones?: string[];
+    targetUids?: string[];
+    targetIgns?: string[];
+  }
 ): Promise<{ success: boolean; totalSubscribers: number; successCount: number; failureCount: number; notification: NotificationRecord }> {
   const cleanTitle = (title || 'FF Rivals').trim();
   const cleanBody = (message || '').trim();
@@ -153,11 +163,58 @@ export async function sendServerPushNotification(
   });
 
   const subscriptions = getSubscriptions();
+
+  // If this is a Room ID / Password notification, STRICTLY filter only to joined participants!
+  let targetedSubscriptions = subscriptions;
+  if (options?.isRoomCredential) {
+    const validIds = new Set((options.targetUserIds || []).filter(Boolean).map((s) => String(s).trim().toLowerCase()));
+    const validPhones = new Set((options.targetPhones || []).filter(Boolean).map((s) => String(s).trim().toLowerCase()));
+    const validUids = new Set((options.targetUids || []).filter(Boolean).map((s) => String(s).trim().toLowerCase()));
+    const validIgns = new Set((options.targetIgns || []).filter(Boolean).map((s) => String(s).trim().toLowerCase()));
+
+    // If nobody joined the match, strictly send to NO ONE!
+    if (validIds.size === 0 && validPhones.size === 0 && validUids.size === 0 && validIgns.size === 0) {
+      console.log('Room credential notification: No registered participants found for match. Broadcast suppressed.');
+      const emptyRecord: NotificationRecord = {
+        id: 'notif-room-empty-' + Date.now(),
+        title: cleanTitle,
+        body: cleanBody,
+        url: cleanUrl,
+        icon: cleanIcon,
+        sentAt: new Date().toISOString(),
+        totalSubscribers: 0,
+        successCount: 0,
+        failureCount: 0,
+      };
+      return {
+        success: true,
+        totalSubscribers: 0,
+        successCount: 0,
+        failureCount: 0,
+        notification: emptyRecord,
+      };
+    }
+
+    targetedSubscriptions = subscriptions.filter((sub) => {
+      const sId = String(sub.userId || '').trim().toLowerCase();
+      const sPhone = String(sub.userPhone || '').trim().toLowerCase();
+      const sUid = String(sub.userUid || '').trim().toLowerCase();
+      const sIgn = String(sub.userIgn || '').trim().toLowerCase();
+
+      return (
+        (sId && validIds.has(sId)) ||
+        (sPhone && validPhones.has(sPhone)) ||
+        (sUid && validUids.has(sUid)) ||
+        (sIgn && validIgns.has(sIgn))
+      );
+    });
+  }
+
   let successCount = 0;
   let failureCount = 0;
-  const remainingSubscriptions: PushSubscriptionRecord[] = [];
+  const expiredEndpoints = new Set<string>();
 
-  const sendPromises = subscriptions.map(async (sub) => {
+  const sendPromises = targetedSubscriptions.map(async (sub) => {
     try {
       await webpush.sendNotification(
         {
@@ -171,13 +228,10 @@ export async function sendServerPushNotification(
         }
       );
       successCount++;
-      remainingSubscriptions.push(sub);
     } catch (err: any) {
       failureCount++;
       if (err.statusCode === 404 || err.statusCode === 410) {
-        // Expired subscription, remove
-      } else {
-        remainingSubscriptions.push(sub);
+        expiredEndpoints.add(sub.endpoint);
       }
     }
   });
@@ -186,8 +240,9 @@ export async function sendServerPushNotification(
     await Promise.all(sendPromises);
   }
 
-  if (remainingSubscriptions.length !== subscriptions.length) {
-    saveSubscriptions(remainingSubscriptions);
+  if (expiredEndpoints.size > 0) {
+    const remaining = subscriptions.filter((s) => !expiredEndpoints.has(s.endpoint));
+    saveSubscriptions(remaining);
   }
 
   const historyRecord: NotificationRecord = {
@@ -197,18 +252,21 @@ export async function sendServerPushNotification(
     url: cleanUrl,
     icon: cleanIcon,
     sentAt: new Date().toISOString(),
-    totalSubscribers: subscriptions.length,
+    totalSubscribers: targetedSubscriptions.length,
     successCount,
     failureCount,
   };
 
-  const currentHistory = getNotificationHistory();
-  const updatedHistory = [historyRecord, ...currentHistory.filter((h) => h.id !== historyRecord.id)].slice(0, 50);
-  saveNotificationHistory(updatedHistory);
+  // Only record in public history if it is a general announcement (not private room ID & password)
+  if (!options?.isRoomCredential) {
+    const currentHistory = getNotificationHistory();
+    const updatedHistory = [historyRecord, ...currentHistory.filter((h) => h.id !== historyRecord.id)].slice(0, 50);
+    saveNotificationHistory(updatedHistory);
+  }
 
   return {
     success: true,
-    totalSubscribers: subscriptions.length,
+    totalSubscribers: targetedSubscriptions.length,
     successCount,
     failureCount,
     notification: historyRecord,

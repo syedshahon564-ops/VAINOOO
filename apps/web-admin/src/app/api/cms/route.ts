@@ -142,16 +142,38 @@ export async function POST(req: Request) {
     if (Array.isArray(body.matches)) {
       const existingMap = new Map((current.matches || []).map((m: any) => [m.id, m]));
 
-      // Auto-broadcast push notification if Room ID & Password was newly added or changed
+      // Auto-deliver push notification if Room ID & Password was newly added or changed
+      // STRICT REQUIREMENT: Only send to players who bought/joined this match!
       for (const inc of body.matches) {
         if (inc && inc.roomId) {
           const ex: any = existingMap.get(inc.id);
           const wasDelivered = ex && ex.roomId && ex.roomId === inc.roomId;
           if (!wasDelivered) {
+            const parts = [...(inc.participants || []), ...(ex?.participants || [])];
+            const targetUserIds: string[] = [];
+            const targetPhones: string[] = [];
+            const targetUids: string[] = [];
+            const targetIgns: string[] = [];
+
+            parts.forEach((p: any) => {
+              if (p.userId) targetUserIds.push(p.userId);
+              if (p.userPhone) targetPhones.push(p.userPhone);
+              if (p.uid) targetUids.push(p.uid);
+              if (p.ign) targetIgns.push(p.ign);
+            });
+
             sendServerPushNotification(
               '🔑 রুম আইডি ও পাসওয়ার্ড উন্মুক্ত!',
               `ম্যাচ: "${inc.title || 'টুর্নামেন্ট'}" | Room ID: ${inc.roomId} | Password: ${inc.roomPass || '1234'}। দ্রুত ফ্রি ফায়ারে প্রবেশ করুন!`,
-              '/matches'
+              '/matches',
+              '/icon-192.png',
+              {
+                isRoomCredential: true,
+                targetUserIds,
+                targetPhones,
+                targetUids,
+                targetIgns,
+              }
             ).catch(() => {});
           }
         }

@@ -334,12 +334,7 @@ export default function AdminTournamentsPage() {
     });
 
     autoDeliverRoomCredentials(m.id, m.roomId, currentPass);
-    dispatchDevicePushNotification(
-      '🎮 কাস্টম রুম আইডি ও পাসওয়ার্ড ডেলিভারি!',
-      `ম্যাচ: "${m.title}" | Room ID: ${m.roomId} | Password: ${currentPass}। এখনই নির্দিষ্ট স্লটে বসুন!`
-    );
-
-    showNotification(`⚡ ম্যাচ "${m.title}"-এর Room ID (${m.roomId}) সফলভাবে সকল প্লেয়ারকে ডেলিভার করা হয়েছে!`);
+    showNotification(`⚡ ম্যাচ "${m.title}"-এর Room ID (${m.roomId}) সফলভাবে জয়েনকৃত প্লেয়ারদের কাছে ডেলিভার করা হয়েছে!`);
   };
 
   const handleSaveOnlyRoomPass = (e: React.FormEvent) => {
@@ -376,12 +371,7 @@ export default function AdminTournamentsPage() {
     });
 
     autoDeliverRoomCredentials(editingRoomMatch.id, cleanId, cleanPass);
-    dispatchDevicePushNotification(
-      '🎮 কাস্টম রুম আইডি ও পাসওয়ার্ড ডেলিভারি!',
-      `ম্যাচ: "${editingRoomMatch.title}" | Room ID: ${cleanId} | Password: ${cleanPass}। এখনই নির্দিষ্ট স্লটে বসুন!`
-    );
-
-    showNotification(`⚡ Room ID (${cleanId}) সেভ এবং সফলভাবে সকল প্লেয়ারকে ডেলিভার করা হয়েছে!`);
+    showNotification(`⚡ Room ID (${cleanId}) সেভ এবং সফলভাবে জয়েনকৃত প্লেয়ারদের কাছে ডেলিভার করা হয়েছে!`);
     setEditingRoomMatch(null);
     setRoomId('');
     setRoomPass('');
@@ -410,13 +400,9 @@ export default function AdminTournamentsPage() {
     });
 
     autoDeliverRoomCredentials(target.id, botRoomId.trim(), botRoomPass.trim());
-    dispatchDevicePushNotification(
-      '🎮 কাস্টম রুম আইডি ও পাসওয়ার্ড ডেলিভারি!',
-      `ম্যাচ: "${target.title}" | Room ID: ${botRoomId.trim()} | Password: ${botRoomPass.trim()}। এখনই নির্দিষ্ট স্লটে বসুন!`
-    );
 
     showNotification(
-      `ম্যাচ "${target.title}"-এর রুম আইডি ও পাসওয়ার্ড বটের মাধ্যমে পাঠানো হয়েছে এবং প্লেয়ারদের পুশ নোটিফিকেশন ডেলিভারি দেওয়া হয়েছে!`
+      `ম্যাচ "${target.title}"-এর রুম আইডি ও পাসওয়ার্ড বটের মাধ্যমে শুধু জয়েনকৃত প্লেয়ারদের পুশ নোটিফিকেশন ডেলিভারি দেওয়া হয়েছে!`
     );
     setBotRoomId('');
     setBotRoomPass('');

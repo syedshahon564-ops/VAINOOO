@@ -1169,6 +1169,8 @@ export default function MobileAppViewPage(props: any) {
               uid: p.uid,
               slot: slotInfo.slotNumber,
               team: slotInfo.teamNumber,
+              userId: current?.id,
+              userPhone: current?.phone,
             }))
           : [
               {
@@ -1176,6 +1178,8 @@ export default function MobileAppViewPage(props: any) {
                 uid: slotInfo.uid,
                 slot: slotInfo.slotNumber,
                 team: slotInfo.teamNumber,
+                userId: current?.id,
+                userPhone: current?.phone,
               },
             ];
 
