@@ -719,7 +719,7 @@ export default function DepositWithdrawModal({
           {/* Telegram Support Link */}
           <div className="pt-2 border-t border-gray-100 dark:border-white/10 text-center">
             <a
-              href={settings?.telegramUrl || 'https://t.me/ffrivaltourbd'}
+              href={settings?.telegramUrl || 'https://t.me/ffrivalstourbdofficial'}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center justify-center gap-1.5 text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline"

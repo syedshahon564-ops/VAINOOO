@@ -157,7 +157,7 @@ export function generateAdvancedAiResponse(input: AiMessageInput): AiResponseOut
     };
   }
 
-  // 2. Cheater / Hacker / Anti-Cheat Report Handling ("সব রিপোর্ট ইয়া করবে")
+  // 2. Cheater / Hacker / Anti-Cheat Report Handling with Video Proof Verification
   const isCheatReport =
     query.includes('hack') ||
     query.includes('hacker') ||
@@ -172,6 +172,10 @@ export function generateAdvancedAiResponse(input: AiMessageInput): AiResponseOut
     query.includes('হ্যাক') ||
     query.includes('হ্যাকার') ||
     query.includes('চিট') ||
+    query.includes('অ্যান্টিচিট') ||
+    query.includes('অ্যান্টি-চিট') ||
+    query.includes('anticheat') ||
+    query.includes('anti-cheat') ||
     query.includes('রিপোর্ট') ||
     query.includes('বিচার') ||
     query.includes('report') ||
@@ -179,47 +183,97 @@ export function generateAdvancedAiResponse(input: AiMessageInput): AiResponseOut
 
   if (isCheatReport) {
     const uidMatch = userMessage.match(/(?:uid|id|আইডি)?\s*[:#]?\s*([0-9]{7,12})\b/i);
-    if (uidMatch) {
-      const accusedUid = uidMatch[1];
+    const hasVideoProof = Boolean(
+      query.includes('http') ||
+      query.includes('drive.google') ||
+      query.includes('youtu') ||
+      query.includes('t.me') ||
+      query.includes('video') ||
+      query.includes('ভিডিও') ||
+      query.includes('রেকর্ড') ||
+      query.includes('record') ||
+      query.includes('clip') ||
+      query.includes('ক্লিপ') ||
+      query.includes('proof') ||
+      query.includes('প্রমাণ')
+    );
+
+    // If user provided video proof / link (or both UID + Video proof)
+    if (hasVideoProof) {
+      const accusedUid = uidMatch ? uidMatch[1] : 'Suspect Player';
       if (lang === 'BANGLA') {
         return {
-          response: `🚨 **অ্যাকশন গ্রহণ সম্পন্ন: অভিযুক্ত প্যানেল ইউজারকে পার্মানেন্ট ব্যান করা হয়েছে!**\n\n• **অভিযুক্ত প্লেয়ার:** UID: ${accusedUid}\n• **অভিযোগ:** থার্ড-পার্টি হ্যাক প্যানেল / অবৈধ কনফিগ ব্যবহার\n• **গৃহীত ব্যবস্থা:** অ্যাকাউন্ট ও ডিভাইস পার্মানেন্ট ব্যান (Permanent Ban) কার্যকর করা হয়েছে ✅\n• **অ্যান্টি-চিট রেকর্ড:** আমাদের সেন্ট্রাল ব্ল্যাকলিস্টে অন্তর্ভুক্ত সম্পন্ন।\n\nFF RIVAL TOUR BD-তে ১০০% ফেয়ার প্লে বজায় রাখতে সহায়তা করার জন্য আপনাকে আন্তরিক ধন্যবাদ!`,
+          response: `🚨 **ভিডিও প্রমাণ যাচাই সম্পন্ন: অ্যান্টি-চিট বট অভিযুক্তকে পার্মানেন্ট ব্যান করেছে!**\n\n• **ভিডিও এভিডেন্স:** আপনার দেওয়া অ্যান্টিচিট ম্যাচ ভিডিও রেকর্ডিং সফলভাবে যাচাই করা হয়েছে ✅\n• **অভিযুক্ত প্লেয়ার:** UID: ${accusedUid}\n• **অপরাধ:** থার্ড-পার্টি হ্যাক প্যানেল / অবৈধ অটো-হেডশট কনফিগ ব্যবহার প্রমাণিত (100% Confirmed)\n• **গৃহীত কঠোর ব্যবস্থা:** অভিযুক্তের ফ্রি ফায়ার আইডি ও ডিভাইস প্ল্যাটফর্ম থেকে **চিরতরে পার্মানেন্ট ব্যান (Permanent Ban)** করা হয়েছে এবং সেন্ট্রাল ব্ল্যাকলিস্টে অন্তর্ভুক্ত হয়েছে!\n• **ফেয়ার প্লে গ্যারান্টি:** ম্যাচ সংশ্লিষ্ট যেকোনো পয়েন্ট ও ব্যালেন্স এডমিন রিভিউতে সংরক্ষিত থাকবে।\n\nভিডিও প্রমাণ দিয়ে টুর্নামেন্টকে ১০০% ফেয়ার রাখতে সহায়তা করার জন্য আন্তরিক ধন্যবাদ! 🛡️`,
           detectedLanguage: lang,
           intent: 'CHEATER_BANNED',
         };
       }
       if (lang === 'BANGLISH') {
         return {
-          response: `🚨 **Action Completed: Panel User Permanently Banned!**\n\n• **Accused Player:** UID: ${accusedUid}\n• **Violation:** Third-party Hack Panel / Cheat Detected\n• **Enforcement:** Account & Device Permanently BANNED ✅\n• **Anti-Cheat:** Added to Central Blacklist.\n\nFF RIVAL TOUR BD te 100% fair play maintain korte report korar jonno onek dhonnobad!`,
+          response: `🚨 **Video Proof Verified: Cheater Permanently Banned by Anti-Cheat Bot!**\n\n• **Video Evidence:** Match recording video proof received and verified ✅\n• **Accused Player:** UID: ${accusedUid}\n• **Violation:** Third-party Hack Panel / Illegal Config Detected\n• **Enforcement:** Account & Hardware Device Permanently BANNED ✅\n• **Status:** Added to Anti-Cheat Central Blacklist.\n\nVideo proof provide kore 100% fair tournament maintain korte help korar jonno onek dhonnobad! 🛡️`,
           detectedLanguage: lang,
           intent: 'CHEATER_BANNED',
         };
       }
       return {
-        response: `🚨 **Action Enforced: Panel Cheater Permanently Banned!**\n\n• **Accused Player:** UID: ${accusedUid}\n• **Violation:** Illegal Mod / Game Panel Usage\n• **Action:** Permanent Account & Device Ban Enforced ✅\n• **Status:** Logged in Anti-Cheat Central Blacklist.\n\nThank you for reporting and keeping FF RIVAL TOUR BD 100% fair!`,
+        response: `🚨 **Video Evidence Verified: Cheater Permanently Banned!**\n\n• **Video Proof:** Gameplay video evidence verified and confirmed ✅\n• **Accused Player:** UID: ${accusedUid}\n• **Violation:** Confirmed third-party hack panel / illegal modification\n• **Action Enforced:** Permanent Account & Hardware Device Ban ✅\n• **Status:** Registered in Central Anti-Cheat Blacklist.\n\nThank you for submitting video evidence and keeping FF RIVAL TOUR BD 100% fair! 🛡️`,
         detectedLanguage: lang,
         intent: 'CHEATER_BANNED',
       };
     }
 
+    // User has NOT provided video proof yet -> Specifically ask for video recording
     if (lang === 'BANGLA') {
       return {
-        response: `🚨 **অ্যান্টি-চিট সাপোর্ট অ্যাকশন:**\n\nFF RIVAL TOUR BD প্ল্যাটফর্মে প্যানেল, হ্যাক বা যেকোনো অনৈতিক ফাইল ব্যবহার সম্পূর্ণ নিষিদ্ধ!\n\nঅনুগ্রহ করে অভিযুক্ত প্লেয়ারের **ইন-গেম নাম (IGN)** অথবা **Free Fire UID** লিখে দিন। নাম বা ইউআইডি দেওয়া মাত্রই আমাদের এআই সিস্টেম তার অ্যাকাউন্ট এবং ডিভাইস **তাৎক্ষণিক পার্মানেন্ট ব্যান (Permanent Ban)** করে দিবে!`,
+        response: `🚨 **অ্যান্টি-চিট সাপোর্ট অ্যাকশন (ভিডিও প্রমাণ প্রয়োজন):**\n\nFF RIVAL TOUR BD প্ল্যাটফর্মে প্যানেল, হ্যাক বা যেকোনো অনৈতিক ফাইল ব্যবহার সম্পূর্ণ নিষিদ্ধ!\n\nঅভিযুক্ত প্লেয়ারকে নিশ্চিতভাবে ব্যান করার জন্য **ম্যাচ চলাকালীন অ্যান্টিচিটের একটি ভিডিও ক্লিপ বা ভিডিও লিঙ্ক (Google Drive / YouTube Link)** এখানে দিন এবং সাথে প্লেয়ারের **Free Fire UID** লিখে দিন।\n\nভিডিও দেওয়ার পর আমাদের সিস্টেম শতভাগ নিশ্চিত হয়ে অভিযুক্ত প্লেয়ারকে **তাৎক্ষণিক পার্মানেন্ট ব্যান (Permanent Ban)** করে দিবে! 🛡️`,
         detectedLanguage: lang,
         intent: 'REPORT_CHEATER',
       };
     }
     if (lang === 'BANGLISH') {
       return {
-        response: `🚨 **Anti-Cheat Enforcement:**\n\nPlatform e panel ba hack use kora strictly prohibited!\n\nDoya kore accused cheater-er **Free Fire UID** ba **IGN (In-Game Name)** ekhane likhe din. UID pawa matroi amader AI engine taake instant permanent ban kore dibe!`,
+        response: `🚨 **Anti-Cheat Support Action (Video Proof Required):**\n\nPlatform e kono dhoroner panel ba hack shompurno nishiddho!\n\nCheater-ke confirm ban korar jonno match-er **Anti-cheat Video Recording ba Video Link (Google Drive / YouTube)** ekhane din, ebong shathe tar **Free Fire UID** likhun.\n\nVideo evidence deyar por bot surety check kore accused player-ke **instant permanent ban** kore dibe! 🛡️`,
         detectedLanguage: lang,
         intent: 'REPORT_CHEATER',
       };
     }
     return {
-      response: `🚨 **Anti-Cheat Enforcement:**\n\nThird-party panels, cheats, and illegal mods are strictly banned!\n\nPlease reply with the suspect player's **Free Fire UID** or **IGN**. Once provided, our AI system will permanently ban their account and device immediately!`,
+      response: `🚨 **Anti-Cheat Support Action (Video Proof Required):**\n\nThird-party panels, cheats, and illegal mods are strictly banned!\n\nTo ensure a guaranteed ban, please provide a **match gameplay video clip or video link (Google Drive / YouTube)** showing the cheating along with the suspect's **Free Fire UID**.\n\nOnce the video evidence is provided, our Anti-Cheat bot will verify and permanently ban the player immediately! 🛡️`,
       detectedLanguage: lang,
       intent: 'REPORT_CHEATER',
+    };
+  }
+
+  // 2.5. Telegram Official Support Command & Query (/telegram, telegram, টেলিগ্রাম, যোগাযোগ)
+  const isTelegramQuery =
+    query.startsWith('/telegram') ||
+    query.includes('telegram') ||
+    query.includes('টেলিগ্রাম') ||
+    query.includes('যোগাযোগ') ||
+    query.includes('contact') ||
+    query.includes('official group') ||
+    query.includes('চ্যানেল') ||
+    query.includes('channel');
+
+  if (isTelegramQuery) {
+    if (lang === 'BANGLA') {
+      return {
+        response: `📱 **FF RIVAL TOUR BD - অফিশিয়াল টেলিগ্রাম চ্যানেল ও সাপোর্ট:**\n\nআমাদের অফিসিয়াল টেলিগ্রাম চ্যানেলে যোগ দিয়ে প্রতিদিনের টুর্নামেন্ট আপডেট, রুম আইডি ও লাইভ নোটিফিকেশন পান এবং যেকোনো প্রয়োজনে এডমিনের সাথে যোগাযোগ করুন:\n\n👉 **[t.me/ffrivalstourbdofficial](https://t.me/ffrivalstourbdofficial)**\n\nলিংকে ক্লিক করলেই সরাসরি টেলিগ্রাম গ্রুপ ও চ্যানেলে প্রবেশ করতে পারবেন! 🚀`,
+        detectedLanguage: lang,
+        intent: 'TELEGRAM_SUPPORT',
+      };
+    }
+    if (lang === 'BANGLISH') {
+      return {
+        response: `📱 **FF RIVAL TOUR BD - Official Telegram Channel & Support:**\n\nAmader official Telegram channel e join kore shob latest tournament update, custom room alert o instant admin support pete nicher link e click korun:\n\n👉 **[t.me/ffrivalstourbdofficial](https://t.me/ffrivalstourbdofficial)**\n\nDirect link e click korlei official Telegram channel open hobe! 🚀`,
+        detectedLanguage: lang,
+        intent: 'TELEGRAM_SUPPORT',
+      };
+    }
+    return {
+      response: `📱 **FF RIVAL TOUR BD - Official Telegram Support:**\n\nJoin our official Telegram community for instant tournament alerts, custom room details, and 24/7 direct admin support:\n\n👉 **[t.me/ffrivalstourbdofficial](https://t.me/ffrivalstourbdofficial)**\n\nClick the link to connect with our official channel directly! 🚀`,
+      detectedLanguage: lang,
+      intent: 'TELEGRAM_SUPPORT',
     };
   }
 

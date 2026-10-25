@@ -1245,6 +1245,7 @@ export default function MobileAppViewPage(props: any) {
               team: slotInfo.teamNumber,
               userId: current?.id,
               userPhone: current?.phone,
+              username: current?.username || current?.ign || 'Guest',
             }))
           : [
               {
@@ -1254,6 +1255,7 @@ export default function MobileAppViewPage(props: any) {
                 team: slotInfo.teamNumber,
                 userId: current?.id,
                 userPhone: current?.phone,
+                username: current?.username || current?.ign || 'Guest',
               },
             ];
 
@@ -1287,6 +1289,7 @@ export default function MobileAppViewPage(props: any) {
                 roomDeliveredAt: bookingModalMatch.status === 'ROOM_OPEN' ? (bookingModalMatch.roomDeliveredAt || new Date().toISOString()) : undefined,
                 userId: current?.id,
                 userPhone: current?.phone,
+                username: current?.username || current?.ign || 'Guest',
               })
             )
           : [
@@ -1306,6 +1309,7 @@ export default function MobileAppViewPage(props: any) {
                 roomDeliveredAt: bookingModalMatch.status === 'ROOM_OPEN' ? (bookingModalMatch.roomDeliveredAt || new Date().toISOString()) : undefined,
                 userId: current?.id,
                 userPhone: current?.phone,
+                username: current?.username || current?.ign || 'Guest',
               }),
             ];
 
@@ -2280,12 +2284,18 @@ export default function MobileAppViewPage(props: any) {
                                 </div>
                               );
 
-                              if (slide.actionUrl) {
+                              // First slider strictly links to official Telegram as requested by user
+                              const targetUrl =
+                                (idx === 0 || slide.id === 'slide-1')
+                                  ? 'https://t.me/ffrivalstourbdofficial'
+                                  : (slide.actionUrl || null);
+
+                              if (targetUrl) {
                                 return (
                                   <a
                                     key={slide.id || idx}
-                                    href={slide.actionUrl}
-                                    target={slide.actionUrl.startsWith('http') ? '_blank' : '_self'}
+                                    href={targetUrl}
+                                    target={targetUrl.startsWith('http') ? '_blank' : '_self'}
                                     rel="noreferrer"
                                     className="cursor-pointer"
                                   >

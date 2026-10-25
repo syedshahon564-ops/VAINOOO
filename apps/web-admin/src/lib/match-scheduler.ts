@@ -620,6 +620,7 @@ export interface UserBookedMatch {
   bookedAt: string;
   userId?: string;
   userPhone?: string;
+  username?: string;
 }
 
 const BOT_MONITORED_STORAGE_KEY = 'ff_bot_monitored_matches_v2';

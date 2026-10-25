@@ -44,7 +44,7 @@ export default function HomePage() {
       ),
       image: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1400',
       actionText: 'Telegram Community',
-      actionUrl: settings?.telegramUrl || 'https://t.me/ffrivaltourbd',
+      actionUrl: settings?.telegramUrl || 'https://t.me/ffrivalstourbdofficial',
     },
     {
       id: 'slide-2',
@@ -56,7 +56,7 @@ export default function HomePage() {
       ),
       image: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?q=80&w=1400',
       actionText: 'Join Community',
-      actionUrl: settings?.telegramUrl || 'https://t.me/ffrivaltourbd',
+      actionUrl: settings?.telegramUrl || 'https://t.me/ffrivalstourbdofficial',
     },
     {
       id: 'slide-3',
@@ -68,7 +68,7 @@ export default function HomePage() {
       ),
       image: 'https://images.unsplash.com/photo-1538481199705-c710c4e965fc?q=80&w=1400',
       actionText: 'Telegram Support',
-      actionUrl: settings?.telegramUrl || 'https://t.me/ffrivaltourbd',
+      actionUrl: settings?.telegramUrl || 'https://t.me/ffrivalstourbdofficial',
     },
   ];
 

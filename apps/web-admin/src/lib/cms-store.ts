@@ -30,7 +30,7 @@ export interface MatchItem {
   status?: 'UPCOMING' | 'ROOM_OPEN' | 'LIVE' | 'COMPLETED';
   /** Published after the match ends: who placed where, kills and prize won. */
   results?: Array<{ rank: number; ign: string; kills: number; prize: number }>;
-  participants?: Array<{ ign: string; uid?: string; slot?: number; team?: number; userId?: string; userPhone?: string }>;
+  participants?: Array<{ ign: string; uid?: string; slot?: number; team?: number; userId?: string; userPhone?: string; username?: string }>;
   createdAt?: number;
   updatedAt?: number;
 }
@@ -42,6 +42,7 @@ export interface MatchParticipant {
   team?: number;
   userId?: string;
   userPhone?: string;
+  username?: string;
 }
 
 export interface CategoryItem {
@@ -134,7 +135,7 @@ export const INITIAL_SETTINGS: SiteSettings = {
   logoUrl: '/logo.png',
   noticeText:
     '🔥 FF RIVAL TOUR BD-তে স্বাগতম! প্রতিদিন গেম খেলে জিতে নিন আসল টাকা! 💰 টপ প্লেয়ার লিডারবোর্ডে নিজের নাম তুলুন এবং জিতে নিন মেগা প্রাইজপুল! যেকোনো সহায়তার জন্য টেলিগ্রামে যোগাযোগ করুন 🎯',
-  telegramUrl: 'https://t.me/ffrivaltourbd',
+  telegramUrl: 'https://t.me/ffrivalstourbdofficial',
   whatsappNumber: '8801700000000',
   bkashNumber: '01712345678',
   nagadNumber: '01812345678',

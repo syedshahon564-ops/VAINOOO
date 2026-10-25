@@ -251,6 +251,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { label: '📊 Dashboard', href: '/admin', icon: LayoutDashboard },
     { label: '🖼️ Slider Banners', href: '/admin/banners', icon: ImageIcon },
     { label: '🎮 Match Management', href: '/admin/tournaments', icon: Trophy },
+    { label: '📋 Match Players Audit', href: '/admin#match-participants-section', icon: Users },
     { label: '🏆 Match OCR Payout', href: '/admin/match-results', icon: Scan },
     { label: '🔔 Push Notifications', href: '/admin/notifications', icon: Bell },
     { label: '🎧 Support Desk', href: '/admin/support', icon: LifeBuoy, badge: openTicketsCount },
