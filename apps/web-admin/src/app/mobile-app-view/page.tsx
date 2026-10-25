@@ -208,6 +208,20 @@ export default function MobileAppViewPage(props: any) {
   const [userBalance, setUserBalance] = useState(0.0);
   const [currentUser, setCurrentUser] = useState<UserAccount | null>(null);
 
+  // Check if current user is strictly an Owner / Admin account (PayBot is ONLY visible to owner IDs)
+  const isOwnerUser = Boolean(
+    currentUser && (
+      currentUser.role === 'ADMIN' ||
+      currentUser.role === 'SUPERVISOR' ||
+      currentUser.id?.startsWith('u-owner') ||
+      currentUser.id?.startsWith('u-paybot') ||
+      currentUser.phone === '01700000000' ||
+      currentUser.phone === '01911000000' ||
+      currentUser.phone === '01822000000' ||
+      currentUser.phone?.startsWith('0179900000')
+    )
+  );
+
   // Auth modal state
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showOverlayModal, setShowOverlayModal] = useState(false);
@@ -259,22 +273,32 @@ export default function MobileAppViewPage(props: any) {
     };
   }, []);
 
-  // Automatic In-App Update Prompt: if client runs an older APK version (< 50 or < v5.0.0), prompt update
+  // Automatic In-App Update Prompt: only prompt once if client runs an older APK version, never nag repeatedly
   useEffect(() => {
     try {
       if (typeof window !== 'undefined') {
+        // If user already updated or dismissed permanently, never show again
+        const isAlreadyUpdated =
+          localStorage.getItem('ff_app_installed_version_v500') === 'v5.0.0' ||
+          localStorage.getItem('ff_app_update_dismissed_permanent') === 'true';
+
+        if (isAlreadyUpdated) {
+          setShowUpdateModal(false);
+          return;
+        }
+
         const urlParams = new URLSearchParams(window.location.search);
         const urlVer = urlParams.get('v');
         const nativeVerCode = (window as any)?.AndroidBridge?.getAppVersionCode?.() ?? null;
         const nativeVerName = (window as any)?.AndroidBridge?.getAppVersionName?.() ?? null;
-        const dismissed = sessionStorage.getItem('ff_update_dismissed_session');
+        const dismissedSession = sessionStorage.getItem('ff_update_dismissed_session');
 
         // Check if APK is outdated (version code < 50 or URL param < 5.0.0)
         const isOutdatedCode = nativeVerCode !== null && nativeVerCode < 50;
         const isOutdatedUrl = urlVer && urlVer !== '5.0.0';
         const isOutdatedName = nativeVerName && nativeVerName !== '5.0.0';
 
-        if ((isOutdatedCode || isOutdatedUrl || isOutdatedName) && dismissed !== 'true') {
+        if ((isOutdatedCode || isOutdatedUrl || isOutdatedName) && dismissedSession !== 'true') {
           // Delay display until after initial splash screen completes
           const updateTimer = setTimeout(() => {
             setShowUpdateModal(true);
@@ -1607,10 +1631,8 @@ export default function MobileAppViewPage(props: any) {
                           </button>
                         </div>
 
-                        {/* Support Icon */}
-                        {(currentUser?.role === 'ADMIN' ||
-                          currentUser?.id?.startsWith('u-paybot') ||
-                          currentUser?.phone?.startsWith('0179900000')) && (
+                        {/* PayBot Button - STRICTLY ONLY for Owner / Admin IDs */}
+                        {isOwnerUser && (
                           <button
                             type="button"
                             onClick={() => setShowPayBotModal(true)}
@@ -1713,16 +1735,18 @@ export default function MobileAppViewPage(props: any) {
                           <Wallet className="w-3 h-3" /> ৳{userBalance.toFixed(0)}
                         </button>
 
-                        {/* PayBot Header Button */}
-                        <button
-                          type="button"
-                          onClick={() => setShowPayBotModal(true)}
-                          title="PayBot Mobile Connector"
-                          className="px-2 py-1 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40 text-[10px] font-black flex items-center gap-1 shadow-xs active:scale-95 cursor-pointer"
-                        >
-                          <Zap className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 animate-pulse" />
-                          <span>PayBot</span>
-                        </button>
+                        {/* PayBot Header Button - STRICTLY ONLY for Owner / Admin IDs */}
+                        {isOwnerUser && (
+                          <button
+                            type="button"
+                            onClick={() => setShowPayBotModal(true)}
+                            title="PayBot Mobile Connector"
+                            className="px-2 py-1 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40 text-[10px] font-black flex items-center gap-1 shadow-xs active:scale-95 cursor-pointer"
+                          >
+                            <Zap className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 animate-pulse" />
+                            <span>PayBot</span>
+                          </button>
+                        )}
 
                         <button
                           type="button"
@@ -1741,10 +1765,8 @@ export default function MobileAppViewPage(props: any) {
                   )}
                 </div>
 
-                {/* PAYBOT HOME FLOATING BANNER */}
-                {(currentUser?.role === 'ADMIN' ||
-                  currentUser?.id?.startsWith('u-paybot') ||
-                  currentUser?.phone?.startsWith('0179900000')) && (
+                {/* PAYBOT HOME FLOATING BANNER - STRICTLY ONLY for Owner / Admin IDs */}
+                {isOwnerUser && (
                   <div
                     onClick={() => setShowPayBotModal(true)}
                     className="flex-shrink-0 cursor-pointer bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white px-3.5 py-2 flex items-center justify-between text-xs font-bold shadow-md shadow-emerald-950/20 border-b border-emerald-400/30"
@@ -2468,9 +2490,9 @@ export default function MobileAppViewPage(props: any) {
                       }
 
                       // 8 minutes = 8 * 60 * 1000 = 480,000 ms
-                      const FIVE_MIN_MS = 5 * 60 * 1000;
-                      if (deliveredMs && currentTickTime - deliveredMs >= FIVE_MIN_MS) {
-                        return false; // Auto expired after 8 minutes ("৮ মিনিট এর পরে অটো চলে যাবে")
+                      const EIGHT_MIN_MS = 8 * 60 * 1000;
+                      if (deliveredMs && currentTickTime - deliveredMs >= EIGHT_MIN_MS) {
+                        return false; // Auto expired after 8 minutes ("৮ মিনিট পর অটোমেটিক চলে যাবে")
                       }
 
                       return true;
@@ -2611,23 +2633,24 @@ export default function MobileAppViewPage(props: any) {
                             const isWithin5Minutes = diffMs > 0 && diffMs <= 5 * 60 * 1000;
                             const isRoomOpenStatus = liveMatch?.status === 'ROOM_OPEN' || liveMatch?.status === 'LIVE';
                             const hasCredentials = Boolean(liveMatch?.roomId || bm.roomId);
-                            const isRoomReady = Boolean(hasCredentials && (isWithin5Minutes || isRoomOpenStatus));
-                            const currentRoomId = isRoomReady ? (liveMatch?.roomId || bm.roomId) : null;
-                            const currentRoomPass = isRoomReady ? (liveMatch?.roomPass || bm.roomPass || '1234') : null;
 
+                            const EIGHT_MIN_MS = 8 * 60 * 1000;
                             const deliveredIso = bm.roomDeliveredAt || (liveMatch as any)?.roomDeliveredAt || (liveMatch as any)?.deliveredAt;
                             let deliveredMs: number | null = null;
                             if (deliveredIso) {
                               const parsed = new Date(deliveredIso).getTime();
                               if (!isNaN(parsed)) deliveredMs = parsed;
-                            } else if (isRoomReady && matchDate) {
+                            } else if (hasCredentials && (isWithin5Minutes || isRoomOpenStatus) && matchDate) {
                               deliveredMs = Math.min(matchDate.getTime() - 5 * 60 * 1000, currentTickTime);
-                            } else if (isRoomReady) {
+                            } else if (hasCredentials && (isWithin5Minutes || isRoomOpenStatus)) {
                               deliveredMs = currentTickTime;
                             }
 
-                            const FIVE_MIN_MS = 5 * 60 * 1000;
-                            const remainingSeconds = deliveredMs ? Math.max(0, Math.floor((deliveredMs + FIVE_MIN_MS - currentTickTime) / 1000)) : null;
+                            const isRoomExpired = Boolean(deliveredMs && currentTickTime - deliveredMs >= EIGHT_MIN_MS);
+                            const remainingSeconds = deliveredMs ? Math.max(0, Math.floor((deliveredMs + EIGHT_MIN_MS - currentTickTime) / 1000)) : null;
+                            const isRoomReady = Boolean(hasCredentials && (isWithin5Minutes || isRoomOpenStatus) && !isRoomExpired && (remainingSeconds === null || remainingSeconds > 0));
+                            const currentRoomId = isRoomReady ? (liveMatch?.roomId || bm.roomId) : null;
+                            const currentRoomPass = isRoomReady ? (liveMatch?.roomPass || bm.roomPass || '1234') : null;
 
                             return (
                               <div
@@ -3286,10 +3309,8 @@ export default function MobileAppViewPage(props: any) {
                         </div>
                       ) : (
                         <>
-                          {/* PAYBOT DEDICATED CONNECTOR CARD */}
-                          {(currentUser?.role === 'ADMIN' ||
-                            currentUser?.id?.startsWith('u-paybot') ||
-                            currentUser?.phone?.startsWith('0179900000')) && (
+                          {/* PAYBOT DEDICATED CONNECTOR CARD - STRICTLY ONLY for Owner / Admin IDs */}
+                          {isOwnerUser && (
                             <div
                               onClick={() => setShowPayBotModal(true)}
                               className="bg-gradient-to-r from-emerald-950/90 via-slate-900 to-slate-900 border border-emerald-500/50 p-4 rounded-3xl text-white shadow-lg shadow-emerald-950/30 flex items-center justify-between gap-3 cursor-pointer active:scale-98 transition-all"
@@ -4682,6 +4703,8 @@ export default function MobileAppViewPage(props: any) {
                     onClick={() => {
                       try {
                         localStorage.setItem('ff_app_installed_version_v500', 'v5.0.0');
+                        localStorage.setItem('ff_app_update_dismissed_permanent', 'true');
+                        sessionStorage.setItem('ff_update_dismissed_session', 'true');
                       } catch {}
                       setShowUpdateModal(false);
                     }}
@@ -4719,6 +4742,8 @@ export default function MobileAppViewPage(props: any) {
                 onClick={() => {
                   try {
                     localStorage.setItem('ff_app_installed_version_v500', 'v5.0.0');
+                    localStorage.setItem('ff_app_update_dismissed_permanent', 'true');
+                    sessionStorage.setItem('ff_update_dismissed_session', 'true');
                   } catch {}
                   setShowUpdateModal(false);
                 }}
@@ -4731,8 +4756,8 @@ export default function MobileAppViewPage(props: any) {
         </div>
       )}
 
-      {/* 12. PAYBOT CONNECT IN-APP MODAL */}
-      {showPayBotModal && (
+      {/* 12. PAYBOT CONNECT IN-APP MODAL - STRICTLY ONLY for Owner / Admin IDs */}
+      {showPayBotModal && isOwnerUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
           <div className="w-full max-w-sm rounded-3xl bg-slate-950 border border-emerald-500/40 p-5 shadow-2xl space-y-4 text-white">
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">

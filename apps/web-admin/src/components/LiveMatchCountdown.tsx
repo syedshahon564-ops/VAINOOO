@@ -172,7 +172,7 @@ export function isMatchFinished(match: {
       const deliveredTime = new Date(deliveredIso).getTime();
       if (!isNaN(deliveredTime)) {
         const elapsedMins = (Date.now() - deliveredTime) / (60 * 1000);
-        if (elapsedMins >= 5) {
+        if (elapsedMins >= 8) {
           return true;
         }
       }
