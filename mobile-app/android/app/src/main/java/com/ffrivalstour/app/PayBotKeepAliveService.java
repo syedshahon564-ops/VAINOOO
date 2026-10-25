@@ -163,7 +163,7 @@ public class PayBotKeepAliveService extends Service {
         HttpURLConnection conn = null;
         try {
             int battery = getBatteryPercentage();
-            URL url = new URL("https://hospitable-perception-production-d721.up.railway.app/api/webhook/payment?key=ff_rivals_secure_sms_key_2026");
+            URL url = new URL("https://ffrivalstourbd.com/api/webhook/payment?key=ff_rivals_secure_sms_key_2026");
             conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("POST");
             conn.setRequestProperty("Content-Type", "application/json; charset=UTF-8");

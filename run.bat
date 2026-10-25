@@ -77,8 +77,8 @@ cls
 echo ================================================================
 echo   📱 Opening Live Railway Website and App in Browser...
 echo ================================================================
-start "" "https://hospitable-perception-production-d721.up.railway.app/"
-start "" "https://hospitable-perception-production-d721.up.railway.app/mobile-app-view"
+start "" "https://ffrivalstourbd.com/"
+start "" "https://ffrivalstourbd.com/mobile-app-view"
 echo.
 echo Done! Opened live URLs in your default browser.
 echo.
