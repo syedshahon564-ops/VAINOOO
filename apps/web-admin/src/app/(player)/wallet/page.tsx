@@ -1,7 +1,9 @@
 'use client';
 
+import Link from 'next/link';
+
 import React, { useState, useEffect } from 'react';
-import { Wallet, ArrowDownRight, ArrowUpRight, Check, AlertCircle, Copy, CheckCircle2, Loader2 } from 'lucide-react';
+import { Wallet, ArrowDownRight, ArrowUpRight, Check, AlertCircle, Copy, CheckCircle2, Loader2, History } from 'lucide-react';
 import { getCurrentUser, addBalance, deductBalance, getTransactions, submitDepositRequest } from '@/lib/user-store';
 import { useCMS } from '@/lib/cms-store';
 
@@ -200,12 +202,21 @@ export default function WalletPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
-      <div>
-        <h1 className="text-3xl font-extrabold text-white">bKash & Nagad Wallet</h1>
-        <p className="text-sm text-gray-400 mt-1">
-          Deposit funds to join matches or withdraw your verified tournament earnings.
-        </p>
-      </div>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-extrabold text-white">bKash & Nagad Wallet</h1>
+            <p className="text-sm text-gray-400 mt-1">
+              Deposit funds to join matches or withdraw your verified tournament earnings.
+            </p>
+          </div>
+          <Link
+            href="/history"
+            className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black flex items-center gap-2 shadow-md shadow-amber-500/20 active:scale-95 transition-all self-start sm:self-auto"
+          >
+            <History className="w-4 h-4" />
+            <span>📜 মাই হিস্ট্রি (My History)</span>
+          </Link>
+        </div>
 
       {/* Tabs */}
       <div className="flex border-b border-white/10 gap-6">

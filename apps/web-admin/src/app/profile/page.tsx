@@ -18,6 +18,7 @@ import {
   Bell,
   Zap,
   Smartphone,
+  History,
 } from 'lucide-react';
 
 import { getCurrentUser, updateUser } from '@/lib/user-store';
@@ -195,24 +196,25 @@ export default function ProfilePage() {
             ৳ {Number(user.walletBalance ?? 0).toFixed(2)}
           </div>
           <div className="flex gap-2 justify-center sm:justify-end pt-1 flex-wrap">
-            <button
-              onClick={() => {
-                setFinanceModalTab('DEPOSIT');
-                setShowFinanceModal(true);
-              }}
+            <Link
+              href="/deposit"
               className="px-3 py-1.5 rounded-lg btn-red text-[11px] font-bold flex items-center gap-1 shadow-sm"
             >
               <ArrowDownRight className="w-3.5 h-3.5" /> ডিপোজিট (Deposit)
-            </button>
-            <button
-              onClick={() => {
-                setFinanceModalTab('WITHDRAW');
-                setShowFinanceModal(true);
-              }}
+            </Link>
+            <Link
+              href="/withdraw"
               className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold flex items-center gap-1 shadow-sm"
             >
               <ArrowUpRight className="w-3.5 h-3.5 text-white" /> উইথড্র (Withdraw)
-            </button>
+            </Link>
+            <Link
+              href="/history"
+              className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black text-[11px] font-black flex items-center gap-1 shadow-sm"
+            >
+              <History className="w-3.5 h-3.5" /> মাই হিস্ট্রি (My History)
+            </Link>
+            
             {user.role === 'ADMIN' && (
               <Link
                 href="/admin"

@@ -57,6 +57,7 @@ import {
   Home,
   Clipboard,
   ShieldCheck,
+  History as HistoryIcon,
 } from 'lucide-react';
 import { useCMS, MatchItem, TopPlayerItem, INITIAL_SETTINGS, INITIAL_CATEGORIES, INITIAL_BANNERS } from '@/lib/cms-store';
 import { checkFreeFireUID } from '@/lib/ff-uid-checker';
@@ -73,6 +74,7 @@ import LiveMatchCountdown, {
 } from '@/components/LiveMatchCountdown';
 import DepositWithdrawModal from '@/components/DepositWithdrawModal';
 import SupportChatScreen from '@/components/SupportChatScreen';
+import MyHistoryComponent from '@/components/MyHistoryComponent';
 import { SupportTicket, getOrCreateUserConversation } from '@/lib/support-store';
 import { useLanguage } from '@/components/LanguageProvider';
 import { readClipboardText, toEnDigits } from '@/lib/clipboard';
@@ -251,6 +253,8 @@ export default function MobileAppViewPage(props: any) {
   const [confirmPassInput, setConfirmPassInput] = useState('');
   const [passMessage, setPassMessage] = useState<{ text: string; isError: boolean } | null>(null);
   const [showRulesModal, setShowRulesModal] = useState(false);
+  const [showMyHistory, setShowMyHistory] = useState(false);
+  const [historyInitialTab, setHistoryInitialTab] = useState<"ADD_MONEY" | "MATCH_ENTRY" | "WITHDRAW" | "MATCH_WINNINGS">("ADD_MONEY");
   const [showDevInfoModal, setShowDevInfoModal] = useState(false);
   // App Download / Update Modal state (defaults to false so users are never blocked)
   const [showUpdateModal, setShowUpdateModal] = useState<boolean>(false);
@@ -3153,7 +3157,7 @@ export default function MobileAppViewPage(props: any) {
                           <span>{tPhone('ম্যাচ বোনাস: ৳', 'Bonus: ৳')} {(userBalance * 0.15).toFixed(2)}</span>
                         </div>
 
-                        {/* Direct Withdraw & Deposit Buttons inside Wallet */}
+                        {/* Direct Withdraw & Deposit Buttons inside Wallet - Navigates to dedicated fresh pages */}
                         <div className="grid grid-cols-2 gap-2 pt-2">
                           <button
                             onClick={() => {
@@ -3161,8 +3165,7 @@ export default function MobileAppViewPage(props: any) {
                                 setShowAuthModal(true);
                                 return;
                               }
-                              setFinanceModalTab('WITHDRAW');
-                              setShowFinanceModal(true);
+                              window.location.href = '/withdraw';
                             }}
                             className="py-2.5 px-3 rounded-xl bg-white text-gray-900 hover:bg-gray-100 font-black text-xs flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-all"
                           >
@@ -3176,13 +3179,27 @@ export default function MobileAppViewPage(props: any) {
                                 setShowAuthModal(true);
                                 return;
                               }
-                              setFinanceModalTab('DEPOSIT');
-                              setShowFinanceModal(true);
+                              window.location.href = '/deposit';
                             }}
                             className="py-2.5 px-3 rounded-xl bg-black/40 hover:bg-black/60 text-white font-black text-xs flex items-center justify-center gap-1.5 border border-white/30 active:scale-95 transition-all"
                           >
                             <ArrowDownRight className="w-4 h-4 text-amber-400" />
                             <span>{tPhone('ডিপোজিট (টাকা যোগ)', 'Add Money')}</span>
+                          </button>
+                        </div>
+
+                        {/* View My History Button inside Wallet */}
+                        <div className="pt-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setHistoryInitialTab('ADD_MONEY');
+                              setShowMyHistory(true);
+                            }}
+                            className="w-full py-2 px-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-black text-[11px] flex items-center justify-center gap-1.5 border border-white/20 active:scale-95 transition-all"
+                          >
+                            <HistoryIcon className="w-3.5 h-3.5 text-amber-300" />
+                            <span>{tPhone('📜 লেনদেন ও ম্যাচ হিস্ট্রি দেখুন (My History)', '📜 View My History')}</span>
                           </button>
                         </div>
                       </div>
@@ -3474,6 +3491,26 @@ export default function MobileAppViewPage(props: any) {
 
                           {/* 3. MENU ITEMS LIST (EXACT SCREENSHOT WITH COLORFUL SQUARE ICONS) */}
                           <div className="space-y-2">
+                            {/* 0. My History (User Requested) */}
+                            <div
+                              onClick={() => {
+                                setHistoryInitialTab('ADD_MONEY');
+                                setShowMyHistory(true);
+                              }}
+                              className="bg-white rounded-2xl border border-amber-300 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-white p-3 flex items-center justify-between shadow-xs hover:border-amber-400 transition-all cursor-pointer active:scale-[0.99]"
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-[#fef9c3] text-[#ca8a04] flex items-center justify-center border border-amber-200 shadow-2xs">
+                                  <HistoryIcon className="w-5 h-5 text-[#ca8a04]" />
+                                </div>
+                                <div>
+                                  <span className="font-black text-slate-900 text-sm block">{tPhone('মাই হিস্ট্রি', 'My History')}</span>
+                                  <span className="text-[10px] text-slate-500 font-bold block">{tPhone('অ্যাড মানি, ম্যাচ এন্ট্রি ও উইথড্র হিস্ট্রি', 'Add Money, Entry & Withdraw')}</span>
+                                </div>
+                              </div>
+                              <ChevronRight className="w-4 h-4 text-amber-500" />
+                            </div>
+
                             {/* 1. Rules */}
                             <div
                               onClick={() => setShowRulesModal(true)}
@@ -4519,6 +4556,17 @@ export default function MobileAppViewPage(props: any) {
               </button>
             </form>
           </div>
+        </div>
+      )}
+
+      
+      {/* 9.9. MY HISTORY FULL-SCREEN VIEW (USER REQUESTED) */}
+      {showMyHistory && (
+        <div className="fixed inset-0 z-50 bg-[#faf5ff] overflow-y-auto no-scrollbar animate-fadeIn">
+          <MyHistoryComponent
+            initialTab={historyInitialTab}
+            onBack={() => setShowMyHistory(false)}
+          />
         </div>
       )}
 
