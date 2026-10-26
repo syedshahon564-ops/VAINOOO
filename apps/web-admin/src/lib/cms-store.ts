@@ -839,16 +839,26 @@ export function resetCMS(): void {
 
 let globalSyncInitialized = false;
 let isSyncInProgress = false;
+let lastKnownCmsVersion: string = '';
 
 export function syncCMSWithServer(): void {
   if (typeof window === 'undefined' || isSyncInProgress) return;
   isSyncInProgress = true;
 
-  fetch(`/api/cms?t=${Date.now()}`, { cache: 'no-store' })
+  const vParam = lastKnownCmsVersion ? `&v=${lastKnownCmsVersion}` : '';
+  fetch(`/api/cms?t=${Date.now()}${vParam}`, { cache: 'no-store' })
     .then((res) => (res.ok ? res.json() : null))
     .then((serverData) => {
       isSyncInProgress = false;
-      if (serverData && typeof serverData === 'object' && !serverData.error) {
+      if (!serverData) return;
+      if (serverData.unchanged) {
+        // Data is 100% identical, skip parsing & disk writes
+        return;
+      }
+      if (serverData._v) {
+        lastKnownCmsVersion = String(serverData._v);
+      }
+      if (typeof serverData === 'object' && !serverData.error) {
         const current = getCMSData();
         const serverMatches = Array.isArray(serverData.matches) ? serverData.matches : null;
         const serverCategories =
@@ -1126,8 +1136,8 @@ function initGlobalCmsSync(): void {
   globalSyncInitialized = true;
 
   syncCMSWithServer();
-  // 1.5-second rapid sync so Owner panel changes go live immediately to all devices
-  setInterval(syncCMSWithServer, 1500);
+  // 6-second smart sync so Owner panel changes go live to all devices
+  setInterval(syncCMSWithServer, 6000);
 
   const onVisibilityChange = () => {
     if (document.visibilityState === 'visible') {
@@ -1137,7 +1147,6 @@ function initGlobalCmsSync(): void {
   window.addEventListener('visibilitychange', onVisibilityChange);
   window.addEventListener('focus', syncCMSWithServer);
   window.addEventListener('online', syncCMSWithServer);
-  window.addEventListener('touchstart', () => { syncCMSWithServer(); }, { passive: true });
 }
 
 // React Hook for Reactive CMS Sync across pages

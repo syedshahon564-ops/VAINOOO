@@ -3,6 +3,7 @@ const nextConfig = {
   reactStrictMode: true,
   compress: true,
   poweredByHeader: false,
+  swcMinify: true,
   images: {
     unoptimized: true,
   },
@@ -12,8 +13,6 @@ const nextConfig = {
         source: '/admin.html',
         destination: '/admin-portal',
       },
-      
-      
     ];
   },
   async headers() {
@@ -28,11 +27,33 @@ const nextConfig = {
         ],
       },
       {
-        source: '/(icons|images)/:path*',
+        source: '/(icons|images|banners|avatars)/:path*',
         headers: [
           {
             key: 'Cache-Control',
-            value: 'public, max-age=86400, stale-while-revalidate=604800',
+            value: 'public, max-age=2592000, stale-while-revalidate=86400',
+          },
+        ],
+      },
+      {
+        source: '/(logo.png|icon-192.png|icon-512.png|favicon.ico)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=2592000, stale-while-revalidate=86400',
+          },
+        ],
+      },
+      {
+        source: '/sw.js',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=0, must-revalidate',
+          },
+          {
+            key: 'Service-Worker-Allowed',
+            value: '/',
           },
         ],
       },
@@ -71,7 +92,7 @@ const nextConfig = {
         ],
       },
       {
-        source: '/:path*',
+        source: '/api/:path*',
         headers: [
           {
             key: 'Cache-Control',
@@ -85,6 +106,11 @@ const nextConfig = {
             key: 'Expires',
             value: '0',
           },
+        ],
+      },
+      {
+        source: '/:path*',
+        headers: [
           {
             key: 'X-Frame-Options',
             value: 'SAMEORIGIN',

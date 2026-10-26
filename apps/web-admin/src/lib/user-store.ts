@@ -266,16 +266,31 @@ function notifyUsersChange(users: UserAccount[]) {
 }
 
 let hasInitializedUserSync = false;
+let isFetchingUsers = false;
+let lastKnownUsersVersion = '';
 
 export async function fetchUsersFromServer(): Promise<UserAccount[]> {
   if (typeof window === 'undefined') return getUsers();
+  if (isFetchingUsers) return getUsers();
+  isFetchingUsers = true;
   try {
-    const res = await fetch(`/api/users?t=${Date.now()}`, {
+    const vParam = lastKnownUsersVersion ? `&v=${lastKnownUsersVersion}` : '';
+    const res = await fetch(`/api/users?t=${Date.now()}${vParam}`, {
       cache: 'no-store',
       headers: { 'Cache-Control': 'no-cache' },
     });
-    if (!res.ok) return getUsers();
+    if (!res.ok) {
+      isFetchingUsers = false;
+      return getUsers();
+    }
     const data = await res.json();
+    if (data.unchanged) {
+      isFetchingUsers = false;
+      return getUsers();
+    }
+    if (data._v) {
+      lastKnownUsersVersion = String(data._v);
+    }
     if (data.ok && Array.isArray(data.users)) {
       const serverUsers: UserAccount[] = data.users;
       const localUsers = getUsers();
@@ -366,10 +381,13 @@ export async function fetchUsersFromServer(): Promise<UserAccount[]> {
         }).catch(() => {});
       }
 
+      isFetchingUsers = false;
       return merged;
     }
   } catch (err) {
     console.warn('Failed to fetch users from server database:', err);
+  } finally {
+    isFetchingUsers = false;
   }
   return getUsers();
 }
@@ -427,15 +445,15 @@ export function initUserSync() {
   } catch (e) {}
 
   fetchUsersFromServer();
-  // 1-second rapid server sync for immediate cross-device balance & user updates
-  setInterval(fetchUsersFromServer, 1000);
+  // 8-second smart server sync for cross-device balance & user updates
+  setInterval(fetchUsersFromServer, 8000);
 
   window.addEventListener('focus', () => {
     fetchUsersFromServer();
   });
-  window.addEventListener('touchstart', () => {
+  window.addEventListener('online', () => {
     fetchUsersFromServer();
-  }, { passive: true });
+  });
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
       fetchUsersFromServer();

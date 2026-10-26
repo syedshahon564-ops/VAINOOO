@@ -33,17 +33,19 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 let inMemoryUsersCache: any[] | null = null;
+let usersVersion: number = Date.now();
 
 function readUsersFromFile(): any[] {
+  if (inMemoryUsersCache && inMemoryUsersCache.length > 0) {
+    return inMemoryUsersCache;
+  }
   const dataFile = getUsersFilePath();
   try {
     if (fs.existsSync(dataFile)) {
       const content = fs.readFileSync(dataFile, 'utf-8');
       const parsed = JSON.parse(content);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        if (!inMemoryUsersCache || parsed.length >= inMemoryUsersCache.length) {
-          inMemoryUsersCache = parsed;
-        }
+        inMemoryUsersCache = parsed;
       }
     }
   } catch (err) {
@@ -54,6 +56,7 @@ function readUsersFromFile(): any[] {
 
 function writeUsersToFile(users: any[]): boolean {
   inMemoryUsersCache = users;
+  usersVersion = Date.now();
   const payload = JSON.stringify(users, null, 2);
   let anyWritten = false;
   for (const p of getCandidatePaths()) {
@@ -66,16 +69,40 @@ function writeUsersToFile(users: any[]): boolean {
   return anyWritten;
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
+    const url = new URL(req.url);
+    const clientV = url.searchParams.get('v');
+
+    if (clientV && inMemoryUsersCache && String(clientV) === String(usersVersion)) {
+      return NextResponse.json(
+        { ok: true, unchanged: true, v: usersVersion },
+        {
+          headers: {
+            'Cache-Control': 'no-cache, must-revalidate',
+          },
+        }
+      );
+    }
+
     const users = readUsersFromFile();
+
+    if (clientV && String(clientV) === String(usersVersion)) {
+      return NextResponse.json(
+        { ok: true, unchanged: true, v: usersVersion },
+        {
+          headers: {
+            'Cache-Control': 'no-cache, must-revalidate',
+          },
+        }
+      );
+    }
+
     return NextResponse.json(
-      { ok: true, users },
+      { ok: true, users, _v: usersVersion },
       {
         headers: {
-          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
-          'Pragma': 'no-cache',
-          'Expires': '0',
+          'Cache-Control': 'no-cache, must-revalidate',
         },
       }
     );

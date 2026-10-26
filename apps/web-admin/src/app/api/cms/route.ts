@@ -6,6 +6,7 @@ import { INITIAL_CATEGORIES, INITIAL_BANNERS } from '@/lib/initial-categories';
 import { sendServerPushNotification } from '@/lib/push-config';
 
 let inMemoryServerCache: any = null;
+let serverCmsVersion: number = Date.now();
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -40,22 +41,51 @@ function ensureDataFile(targetPath: string) {
   } catch {}
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    const dataFile = getDataFilePath();
-    let fileData: any = null;
-    if (dataFile && fs.existsSync(dataFile)) {
-      try {
-        const content = fs.readFileSync(dataFile, 'utf-8');
-        fileData = JSON.parse(content);
-      } catch (e) {}
+    const url = new URL(req.url);
+    const clientV = url.searchParams.get('v');
+
+    if (clientV && inMemoryServerCache && String(clientV) === String(serverCmsVersion)) {
+      return NextResponse.json(
+        { ok: true, unchanged: true, v: serverCmsVersion },
+        {
+          headers: {
+            'Cache-Control': 'no-cache, must-revalidate',
+          },
+        }
+      );
     }
 
-    if (!inMemoryServerCache && fileData) {
-      inMemoryServerCache = fileData;
+    if (!inMemoryServerCache) {
+      const dataFile = getDataFilePath();
+      let fileData: any = null;
+      if (dataFile && fs.existsSync(dataFile)) {
+        try {
+          const content = fs.readFileSync(dataFile, 'utf-8');
+          fileData = JSON.parse(content);
+        } catch (e) {}
+      }
+      if (fileData) {
+        inMemoryServerCache = fileData;
+        if (fileData.matchesUpdatedAt) {
+          serverCmsVersion = fileData.matchesUpdatedAt;
+        }
+      }
     }
 
-    const result = inMemoryServerCache || fileData || { ok: true, data: null };
+    if (clientV && inMemoryServerCache && String(clientV) === String(serverCmsVersion)) {
+      return NextResponse.json(
+        { ok: true, unchanged: true, v: serverCmsVersion },
+        {
+          headers: {
+            'Cache-Control': 'no-cache, must-revalidate',
+          },
+        }
+      );
+    }
+
+    const result = inMemoryServerCache || { ok: true, data: null };
 
     // Auto-heal categories to ensure real user base64 images are always present
     if (result && typeof result === 'object') {
@@ -144,14 +174,13 @@ export async function GET() {
         }
       }
 
+      result._v = serverCmsVersion;
       inMemoryServerCache = result;
     }
 
     return NextResponse.json(result, {
       headers: {
-        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
-        'Pragma': 'no-cache',
-        'Expires': '0',
+        'Cache-Control': 'no-cache, must-revalidate',
       },
     });
   } catch (error: any) {
@@ -329,6 +358,8 @@ export async function POST(req: Request) {
       matchesUpdatedAt: body.matchesUpdatedAt || Date.now(),
     };
 
+    serverCmsVersion = nextData.matchesUpdatedAt;
+    nextData._v = serverCmsVersion;
     inMemoryServerCache = nextData;
     const payload = JSON.stringify(nextData);
     const candidatePaths = getCandidatePaths();
