@@ -14,12 +14,22 @@ export interface VerifiedPlayerProfile {
   error?: string;
 }
 
+function cleanIgnString(raw: string): string {
+  if (!raw) return '';
+  const cleaned = raw
+    .replace(/[\u1160\u3164\uFFA0]/g, ' ')
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return cleaned || raw.trim();
+}
+
 // Known verified tournament players database
 const VERIFIED_FF_PLAYERS: Record<string, VerifiedPlayerProfile> = {
   '14494277064': {
     isValid: true,
     uid: '14494277064',
-    ign: 'ᎬᴡʀᅠᎫɪʜᴀᴅᅠ!',
+    ign: 'Ꭼᴡʀ Ꭻɪʜᴀᴅ !',
     level: 51,
     region: 'Bangladesh (BD)',
     likeCount: 985,
@@ -29,7 +39,7 @@ const VERIFIED_FF_PLAYERS: Record<string, VerifiedPlayerProfile> = {
   '6095997543': {
     isValid: true,
     uid: '6095997543',
-    ign: 'TS! ᎬDȺƝ☯',
+    ign: 'TS! ᎬDȺƝ☯',
     level: 70,
     region: 'Bangladesh (BD)',
     likeCount: 10883,
@@ -39,7 +49,7 @@ const VERIFIED_FF_PLAYERS: Record<string, VerifiedPlayerProfile> = {
   '12116725180': {
     isValid: true,
     uid: '12116725180',
-    ign: 'TS! JARIF☯',
+    ign: 'TS! JARIF☯',
     level: 69,
     region: 'Bangladesh (BD)',
     likeCount: 5054,
@@ -49,7 +59,7 @@ const VERIFIED_FF_PLAYERS: Record<string, VerifiedPlayerProfile> = {
   '5725906539': {
     isValid: true,
     uid: '5725906539',
-    ign: 'TS! ᏒꫝFƗ☯',
+    ign: 'TS! ᏒꫝFƗ☯',
     level: 73,
     region: 'Bangladesh (BD)',
     likeCount: 26125,
@@ -59,8 +69,8 @@ const VERIFIED_FF_PLAYERS: Record<string, VerifiedPlayerProfile> = {
   '2312730961': {
     isValid: true,
     uid: '2312730961',
-    ign: 'মহারাণীㅤ!¡',
-    level: 83,
+    ign: '亗ＳＡＩＦＵＬض',
+    level: 71,
     region: 'Bangladesh (BD)',
     likeCount: 59467,
     avatarUrl: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=120',
@@ -69,7 +79,7 @@ const VERIFIED_FF_PLAYERS: Record<string, VerifiedPlayerProfile> = {
   '413478467': {
     isValid: true,
     uid: '413478467',
-    ign: '★ＢＨＡＢＩＪＩ★',
+    ign: 'A᷈N᷈I᷈K᷈',
     level: 77,
     region: 'Bangladesh (BD)',
     likeCount: 101927,
@@ -141,7 +151,7 @@ const VERIFIED_FF_PLAYERS: Record<string, VerifiedPlayerProfile> = {
 export function saveUIDIgnCache(uid: string, ign: string): void {
   if (typeof window === 'undefined' || !uid || !ign) return;
   const clean = toEnDigits(uid);
-  const cleanIgn = ign.trim();
+  const cleanIgn = cleanIgnString(ign);
   if (clean && cleanIgn && cleanIgn.length >= 2) {
     try {
       localStorage.setItem('ff_uid_ign_' + clean, cleanIgn);

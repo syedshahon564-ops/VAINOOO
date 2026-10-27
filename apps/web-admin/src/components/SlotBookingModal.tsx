@@ -298,12 +298,22 @@ export default function SlotBookingModal({
   }
 
   const handleSquadUidChange = (idx: number, rawVal: string) => {
+    const clean = cleanUid(rawVal);
     setSquadPlayers((prev) =>
-      prev.map((p, i) => (i === idx ? { ...p, uid: rawVal, verified: false } : p))
+      prev.map((p, i) =>
+        i === idx
+          ? {
+              ...p,
+              uid: rawVal,
+              ign: clean !== cleanUid(p.uid) ? '' : p.ign,
+              verified: false,
+              checking: clean.length >= 8 && clean.length <= 12,
+            }
+          : p
+      )
     );
     if (errorMessage) setErrorMessage(null);
 
-    const clean = cleanUid(rawVal);
     const key = `squad_${idx}`;
     if (debounceTimersRef.current[key]) {
       clearTimeout(debounceTimersRef.current[key]);
@@ -312,17 +322,27 @@ export default function SlotBookingModal({
     if (clean.length >= 8 && clean.length <= 12) {
       debounceTimersRef.current[key] = setTimeout(() => {
         handleVerifySquadPlayer(idx, clean);
-      }, 400);
+      }, 350);
     }
   };
 
   const handleDuoUidChange = (idx: number, rawVal: string) => {
+    const clean = cleanUid(rawVal);
     setDuoPlayers((prev) =>
-      prev.map((p, i) => (i === idx ? { ...p, uid: rawVal, verified: false } : p))
+      prev.map((p, i) =>
+        i === idx
+          ? {
+              ...p,
+              uid: rawVal,
+              ign: clean !== cleanUid(p.uid) ? '' : p.ign,
+              verified: false,
+              checking: clean.length >= 8 && clean.length <= 12,
+            }
+          : p
+      )
     );
     if (errorMessage) setErrorMessage(null);
 
-    const clean = cleanUid(rawVal);
     const key = `duo_${idx}`;
     if (debounceTimersRef.current[key]) {
       clearTimeout(debounceTimersRef.current[key]);
@@ -331,15 +351,21 @@ export default function SlotBookingModal({
     if (clean.length >= 8 && clean.length <= 12) {
       debounceTimersRef.current[key] = setTimeout(() => {
         handleVerifyDuoPlayer(idx, clean);
-      }, 400);
+      }, 350);
     }
   };
 
   const handleSoloUidChange = (rawVal: string) => {
-    setSoloPlayer((prev) => ({ ...prev, uid: rawVal, verified: false }));
+    const clean = cleanUid(rawVal);
+    setSoloPlayer((prev) => ({
+      ...prev,
+      uid: rawVal,
+      ign: clean !== cleanUid(prev.uid) ? '' : prev.ign,
+      verified: false,
+      checking: clean.length >= 8 && clean.length <= 12,
+    }));
     if (errorMessage) setErrorMessage(null);
 
-    const clean = cleanUid(rawVal);
     const key = 'solo';
     if (debounceTimersRef.current[key]) {
       clearTimeout(debounceTimersRef.current[key]);
@@ -348,7 +374,7 @@ export default function SlotBookingModal({
     if (clean.length >= 8 && clean.length <= 12) {
       debounceTimersRef.current[key] = setTimeout(() => {
         handleVerifySoloPlayer(clean);
-      }, 400);
+      }, 350);
     }
   };
 
@@ -486,7 +512,7 @@ export default function SlotBookingModal({
           const cUid = cleanUid(p.uid);
           const pName = p.ign?.trim();
           return {
-            ign: pName || (idx === 0 ? p1Name || `Player 1` : cUid ? `FF_${cUid.slice(-4)}` : `Player ${idx + 1}`),
+            ign: pName || (idx === 0 ? p1Name || `Player 1` : `Player ${idx + 1}`),
             uid: cUid || (idx === 0 ? p1Uid || '---' : `P${idx + 1}`),
             slotInTeam: idx + 1,
           };
@@ -548,7 +574,7 @@ export default function SlotBookingModal({
           return;
         }
 
-        const myIgn = p2 || (p2Uid ? `FF_${p2Uid.slice(-4)}` : 'Player 2');
+        const myIgn = p2 || 'Player 2';
         const myUid = p2Uid || '---';
 
         // Add 2nd player to slot: now it has 2 players, locking the slot (2/2)!
@@ -598,7 +624,7 @@ export default function SlotBookingModal({
 
       const registeredPlayers: RegisteredPlayerEntry[] = [
         {
-          ign: p1Name || (p1Uid ? `FF_${p1Uid.slice(-4)}` : 'Player 1'),
+          ign: p1Name || 'Player 1',
           uid: p1Uid || '---',
           slotInTeam: 1,
         },
@@ -606,7 +632,7 @@ export default function SlotBookingModal({
 
       if (hasPlayer2) {
         registeredPlayers.push({
-          ign: p2Name || (p2Uid ? `FF_${p2Uid.slice(-4)}` : 'Player 2'),
+          ign: p2Name || 'Player 2',
           uid: p2Uid || '---',
           slotInTeam: 2,
         });
@@ -659,7 +685,7 @@ export default function SlotBookingModal({
       return;
     }
 
-    const finalSoloName = soloName || (soloUid ? `FF_${soloUid.slice(-4)}` : 'Player');
+    const finalSoloName = soloName || 'Player';
     const finalSoloUid = soloUid || '---';
 
     if (isPlayerBlacklisted(finalSoloUid) || isPlayerBlacklisted(finalSoloName)) {
@@ -1127,9 +1153,7 @@ export default function SlotBookingModal({
                               placeholder="আপনার ফ্রি ফায়ার UID (যেমন: 123456789)"
                               value={player.uid}
                               onChange={(e) => {
-                                const val = e.target.value;
-                                handleDuoUidChange(0, val);
-                                handleDuoUidChange(1, val);
+                                handleDuoUidChange(1, e.target.value);
                               }}
                               className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-xs font-bold text-gray-900 focus:outline-none focus:border-red-500 shadow-xs"
                             />
@@ -1147,12 +1171,12 @@ export default function SlotBookingModal({
                             </div>
                             <input
                               type="text"
-                              placeholder="আপনার ফ্রি ফায়ার নাম (যেমন: BD_SNIPER)"
+                              placeholder="আপনার ফ্রি ফায়ার নাম (যেমন: ABU NUMAN)"
                               value={player.ign}
                               onChange={(e) => {
                                 const val = e.target.value;
                                 setDuoPlayers((prev) =>
-                                  prev.map((p) => ({ ...p, ign: val }))
+                                  prev.map((p, i) => (i === 1 ? { ...p, ign: val } : p))
                                 );
                                 if (player.uid) saveUIDIgnCache(player.uid, val);
                                 if (errorMessage) setErrorMessage(null);

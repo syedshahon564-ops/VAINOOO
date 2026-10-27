@@ -410,7 +410,7 @@ export default function MobileAppViewPage(props: any) {
   const handleUidChange = async (val: string) => {
     setAuthUid(val);
     const clean = toEnDigits(val);
-    if (clean.length >= 8 && (!authIgn || authIgn.startsWith('OP_') || authIgn.startsWith('BD_') || authIgn.startsWith('RIVAL_'))) {
+    if (clean.length >= 8 && clean.length <= 12) {
       try {
         const profile = await checkFreeFireUID(clean);
         if (profile.isValid && profile.ign) {

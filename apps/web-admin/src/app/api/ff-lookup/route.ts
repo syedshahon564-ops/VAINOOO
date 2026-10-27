@@ -62,14 +62,26 @@ function checkMatchParticipants(uid: string): { ign: string; level: number; regi
 
 const API_KEY = process.env.FF_API_KEY || '092iUTN11rRbEDNCFKQmPW4fuWlUnHMp3oR_LMf-H1c';
 
+function cleanIgnString(raw: string): string {
+  if (!raw) return '';
+  // Normalize Free Fire invisible space characters (\u1160, \u3164, \uFFA0, \u200B-\u200F, \uFEFF)
+  // to regular spaces so they display cleanly without broken squares or font corruptions
+  const cleaned = raw
+    .replace(/[\u1160\u3164\uFFA0]/g, ' ')
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return cleaned || raw.trim();
+}
+
 // In-memory verified accounts cache for instant response & offline resilience
 const VERIFIED_PLAYERS_CACHE = new Map<string, { ign: string; level: number; region: string; likes: number }>([
-  ['14494277064', { ign: 'ᎬᴡʀᅠᎫɪʜᴀᴅᅠ!', level: 51, region: 'BD', likes: 985 }],
-  ['6095997543', { ign: 'TS! ᎬDȺƝ☯', level: 70, region: 'BD', likes: 10883 }],
-  ['12116725180', { ign: 'TS! JARIF☯', level: 69, region: 'BD', likes: 5054 }],
-  ['5725906539', { ign: 'TS! ᏒꫝFƗ☯', level: 73, region: 'BD', likes: 26125 }],
+  ['14494277064', { ign: 'Ꭼᴡʀ Ꭻɪʜᴀᴅ !', level: 51, region: 'BD', likes: 985 }],
+  ['6095997543', { ign: 'TS! ᎬDȺƝ☯', level: 70, region: 'BD', likes: 10883 }],
+  ['12116725180', { ign: 'TS! JARIF☯', level: 69, region: 'BD', likes: 5054 }],
+  ['5725906539', { ign: 'TS! ᏒꫝFƗ☯', level: 73, region: 'BD', likes: 26125 }],
   ['2312730961', { ign: '亗ＳＡＩＦＵＬض', level: 71, region: 'BD', likes: 59467 }],
-  ['413478467', { ign: '★ＢＨＡＢＩＪＩ★', level: 77, region: 'BD', likes: 101927 }],
+  ['413478467', { ign: 'A᷈N᷈I᷈K᷈', level: 77, region: 'BD', likes: 101927 }],
   ['192837465', { ign: 'BDX_STRIKER', level: 74, region: 'BD', likes: 14200 }],
   ['748291034', { ign: 'OP_NINJA_99', level: 78, region: 'BD', likes: 22400 }],
   ['839201948', { ign: 'VAMPIRE_FF', level: 71, region: 'BD', likes: 9800 }],
@@ -99,10 +111,11 @@ async function queryLiveFreeFireServer(cleanUid: string): Promise<{ ign: string;
 
     if (res.ok) {
       const data = await res.json().catch(() => ({}));
-      const ign = data?.AccountInfo?.AccountName || data?.basicInfo?.nickname || data?.nickname;
-      if (ign && typeof ign === 'string' && ign.trim().length > 0) {
+      const rawIgn = data?.AccountInfo?.AccountName || data?.basicInfo?.nickname || data?.nickname;
+      if (rawIgn && typeof rawIgn === 'string' && rawIgn.trim().length > 0) {
+        const ign = cleanIgnString(rawIgn);
         return {
-          ign: ign.trim(),
+          ign,
           level: Number(data?.AccountInfo?.AccountLevel || data?.basicInfo?.level || 60),
           region: String(data?.AccountInfo?.AccountRegion || data?.basicInfo?.region || 'BD'),
           likes: Number(data?.AccountInfo?.AccountLikes || data?.basicInfo?.liked || 0),
