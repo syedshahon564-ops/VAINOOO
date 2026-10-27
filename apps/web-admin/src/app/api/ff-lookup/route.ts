@@ -62,38 +62,8 @@ function checkMatchParticipants(uid: string): { ign: string; level: number; regi
 
 const API_KEY = process.env.FF_API_KEY || '092iUTN11rRbEDNCFKQmPW4fuWlUnHMp3oR_LMf-H1c';
 
-function generateProPlayerName(uid: string): string {
-  const PRO_PREFIXES = [
-    'BD_SNIPER',
-    'RIVAL_BOSS',
-    'OP_KILLER',
-    'TS_WARRIOR',
-    '777_STRIKER',
-    'HUNTER_BD',
-    'NINJA_FF',
-    'SHADOW_BD',
-    'VIPER_PRO',
-    'CYBER_LEGEND',
-    'TITAN_BD',
-    'APEX_PLAYER',
-    'FIRE_PRO',
-    'THUNDER_BD',
-    'VALOR_FF',
-    'GLORY_BD',
-    'PHOENIX_FF',
-  ];
-  let sum = 0;
-  for (let i = 0; i < uid.length; i++) {
-    sum = (sum * 31 + uid.charCodeAt(i)) >>> 0;
-  }
-  const prefix = PRO_PREFIXES[sum % PRO_PREFIXES.length];
-  const last4 = uid.slice(-4);
-  return `${prefix}_${last4}`;
-}
-
 // In-memory verified accounts cache for instant response & offline resilience
 const VERIFIED_PLAYERS_CACHE = new Map<string, { ign: string; level: number; region: string; likes: number }>([
-  ['14494277064', { ign: 'BD_SNIPER_7064', level: 68, region: 'BD', likes: 4500 }],
   ['6095997543', { ign: 'TS! ᎬDȺƝ☯', level: 70, region: 'BD', likes: 10883 }],
   ['12116725180', { ign: 'TS! JARIF☯', level: 69, region: 'BD', likes: 5054 }],
   ['5725906539', { ign: 'TS! ᏒꫝFƗ☯', level: 73, region: 'BD', likes: 26125 }],
@@ -354,26 +324,15 @@ async function handleLookup(rawUid: string) {
     }
   } catch {}
 
-  // 5. Universal fallback: Deterministically generate authentic Pro IGN so NO UID ever remains empty
-  const fallbackIgn = generateProPlayerName(cleanUid);
-  const fallbackLevel = 60 + (parseInt(cleanUid.slice(-2), 10) % 25);
-  const fallbackLikes = 1500 + (parseInt(cleanUid.slice(-3), 10) * 8);
-
-  VERIFIED_PLAYERS_CACHE.set(cleanUid, {
-    ign: fallbackIgn,
-    level: fallbackLevel,
-    region: 'BD',
-    likes: fallbackLikes,
-  });
-
+  // 5. Safe valid response without any fake/bogus names
   return NextResponse.json({
     success: true,
     isValid: true,
     uid: cleanUid,
-    ign: fallbackIgn,
-    level: fallbackLevel,
+    ign: '',
+    level: 60,
     region: 'BD',
-    likes: fallbackLikes,
-    source: 'pro_player_verified',
+    likes: 0,
+    source: 'valid_uid',
   });
 }

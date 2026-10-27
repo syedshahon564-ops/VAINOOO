@@ -13,7 +13,7 @@ import {
   Clipboard,
 } from 'lucide-react';
 import { MatchItem } from '@/lib/cms-store';
-import { checkFreeFireUID, saveUIDIgnCache, generateProPlayerName } from '@/lib/ff-uid-checker';
+import { checkFreeFireUID, saveUIDIgnCache } from '@/lib/ff-uid-checker';
 import { getCurrentUser, getUsers, hasUserJoinedMatch, recordUserJoinedMatch } from '@/lib/user-store';
 import { readClipboardText, toEnDigits } from '@/lib/clipboard';
 
@@ -196,22 +196,17 @@ export default function SlotBookingModal({
 
     try {
       const profile = await checkFreeFireUID(cleanId);
-      const existingIgn = squadPlayersRef.current[index]?.ign;
-      const resolvedIgn = (existingIgn && !existingIgn.startsWith('BD_') && !existingIgn.startsWith('RIVAL_'))
-        ? existingIgn
-        : (profile?.ign || generateProPlayerName(cleanId));
-
-      saveUIDIgnCache(cleanId, resolvedIgn);
-
+      // If live API or cache found the real name, use it; otherwise keep whatever user typed
+      const realIgn = profile?.ign && !profile.ign.startsWith('FF_PLAYER_') ? profile.ign : squadPlayersRef.current[index]?.ign || '';
+      
       setSquadPlayers((prev) =>
         prev.map((p, i) =>
           i === index
             ? {
                 ...p,
-                ign: resolvedIgn,
+                ign: realIgn,
                 checking: false,
                 verified: true,
-                manualRequired: false,
                 uid: cleanId,
               }
             : p
@@ -219,12 +214,10 @@ export default function SlotBookingModal({
       );
       if (errorMessage) setErrorMessage(null);
     } catch {
-      const fallbackIgn = squadPlayersRef.current[index]?.ign || generateProPlayerName(cleanId);
-      saveUIDIgnCache(cleanId, fallbackIgn);
       setSquadPlayers((prev) =>
         prev.map((p, i) =>
           i === index
-            ? { ...p, ign: fallbackIgn, checking: false, verified: true, manualRequired: false, uid: cleanId }
+            ? { ...p, checking: false, verified: true, uid: cleanId }
             : p
         )
       );
@@ -245,22 +238,16 @@ export default function SlotBookingModal({
 
     try {
       const profile = await checkFreeFireUID(cleanId);
-      const existingIgn = duoPlayersRef.current[index]?.ign;
-      const resolvedIgn = (existingIgn && !existingIgn.startsWith('BD_') && !existingIgn.startsWith('RIVAL_'))
-        ? existingIgn
-        : (profile?.ign || generateProPlayerName(cleanId));
-
-      saveUIDIgnCache(cleanId, resolvedIgn);
+      const realIgn = profile?.ign && !profile.ign.startsWith('FF_PLAYER_') ? profile.ign : duoPlayersRef.current[index]?.ign || '';
 
       setDuoPlayers((prev) =>
         prev.map((p, i) =>
           i === index
             ? {
                 ...p,
-                ign: resolvedIgn,
+                ign: realIgn,
                 checking: false,
                 verified: true,
-                manualRequired: false,
                 uid: cleanId,
               }
             : p
@@ -268,12 +255,10 @@ export default function SlotBookingModal({
       );
       if (errorMessage) setErrorMessage(null);
     } catch {
-      const fallbackIgn = duoPlayersRef.current[index]?.ign || generateProPlayerName(cleanId);
-      saveUIDIgnCache(cleanId, fallbackIgn);
       setDuoPlayers((prev) =>
         prev.map((p, i) =>
           i === index
-            ? { ...p, ign: fallbackIgn, checking: false, verified: true, manualRequired: false, uid: cleanId }
+            ? { ...p, checking: false, verified: true, uid: cleanId }
             : p
         )
       );
@@ -292,31 +277,21 @@ export default function SlotBookingModal({
 
     try {
       const profile = await checkFreeFireUID(cleanId);
-      const existingIgn = soloPlayerRef.current?.ign;
-      const resolvedIgn = (existingIgn && !existingIgn.startsWith('BD_') && !existingIgn.startsWith('RIVAL_'))
-        ? existingIgn
-        : (profile?.ign || generateProPlayerName(cleanId));
-
-      saveUIDIgnCache(cleanId, resolvedIgn);
+      const realIgn = profile?.ign && !profile.ign.startsWith('FF_PLAYER_') ? profile.ign : soloPlayerRef.current?.ign || '';
 
       setSoloPlayer((prev) => ({
         ...prev,
-        ign: resolvedIgn,
+        ign: realIgn,
         checking: false,
         verified: true,
-        manualRequired: false,
         uid: cleanId,
       }));
       if (errorMessage) setErrorMessage(null);
     } catch {
-      const fallbackIgn = soloPlayerRef.current?.ign || generateProPlayerName(cleanId);
-      saveUIDIgnCache(cleanId, fallbackIgn);
       setSoloPlayer((prev) => ({
         ...prev,
-        ign: fallbackIgn,
         checking: false,
         verified: true,
-        manualRequired: false,
         uid: cleanId,
       }));
     }
