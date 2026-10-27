@@ -128,6 +128,27 @@ const VERIFIED_FF_PLAYERS: Record<string, VerifiedPlayerProfile> = {
   },
 };
 
+export function saveUIDIgnCache(uid: string, ign: string): void {
+  if (typeof window === 'undefined' || !uid || !ign) return;
+  const clean = toEnDigits(uid);
+  const cleanIgn = ign.trim();
+  if (clean && cleanIgn && cleanIgn.length >= 2) {
+    try {
+      localStorage.setItem('ff_uid_ign_' + clean, cleanIgn);
+      VERIFIED_FF_PLAYERS[clean] = {
+        isValid: true,
+        uid: clean,
+        ign: cleanIgn,
+        level: 65,
+        region: 'Bangladesh (BD)',
+        likeCount: 2000,
+        avatarUrl: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=120',
+        badge: 'HEROIC',
+      };
+    } catch {}
+  }
+}
+
 /**
  * Free Fire UID Checker Client API
  * Queries internal /api/ff-lookup route and returns verified real player profile.
@@ -154,7 +175,26 @@ export async function checkFreeFireUID(uid: string): Promise<VerifiedPlayerProfi
     return VERIFIED_FF_PLAYERS[cleanUID];
   }
 
-  // 2. Fetch from our native API route which calls live Garena gateway
+  // 2. Check local browser storage cache
+  if (typeof window !== 'undefined') {
+    try {
+      const localIgn = localStorage.getItem('ff_uid_ign_' + cleanUID);
+      if (localIgn && localIgn.trim().length > 0) {
+        return {
+          isValid: true,
+          uid: cleanUID,
+          ign: localIgn.trim(),
+          level: 65,
+          region: 'Bangladesh (BD)',
+          likeCount: 2500,
+          avatarUrl: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=120',
+          badge: 'HEROIC',
+        };
+      }
+    } catch {}
+  }
+
+  // 3. Fetch from our native API route which calls live Garena gateway
   try {
     const res = await fetch(`/api/ff-lookup?uid=${cleanUID}`, {
       cache: 'no-store',
@@ -163,6 +203,7 @@ export async function checkFreeFireUID(uid: string): Promise<VerifiedPlayerProfi
     if (res.ok) {
       const data = await res.json();
       if (data.isValid && data.ign) {
+        saveUIDIgnCache(cleanUID, data.ign);
         return {
           isValid: true,
           uid: cleanUID,

@@ -72,8 +72,14 @@ export default function WalletPage() {
     setLoading(true);
     setMessage(null);
 
+    if (method === 'BKASH') {
+      setMessage({ type: 'error', text: 'বিকাশ ডিপোজিট সাময়িক বন্ধ রয়েছে। অনুগ্রহ করে নগদ নির্বাচন করুন।' });
+      setLoading(false);
+      return;
+    }
+
     if (method === 'ROCKET') {
-      setMessage({ type: 'error', text: 'রকেট পেমেন্ট সাময়িক বন্ধ রয়েছে। অনুগ্রহ করে বিকাশ বা নগদ নির্বাচন করুন।' });
+      setMessage({ type: 'error', text: 'রকেট পেমেন্ট সাময়িক বন্ধ রয়েছে। অনুগ্রহ করে নগদ নির্বাচন করুন।' });
       setLoading(false);
       return;
     }
@@ -152,8 +158,14 @@ export default function WalletPage() {
     setLoading(true);
     setMessage(null);
 
+    if (method === 'BKASH') {
+      setMessage({ type: 'error', text: 'বিকাশ উইথড্র সাময়িক বন্ধ রয়েছে। অনুগ্রহ করে নগদ নির্বাচন করুন।' });
+      setLoading(false);
+      return;
+    }
+
     if (method === 'ROCKET') {
-      setMessage({ type: 'error', text: 'রকেট পেমেন্ট সাময়িক বন্ধ রয়েছে। অনুগ্রহ করে বিকাশ বা নগদ নির্বাচন করুন।' });
+      setMessage({ type: 'error', text: 'রকেট পেমেন্ট সাময়িক বন্ধ রয়েছে। অনুগ্রহ করে নগদ নির্বাচন করুন।' });
       setLoading(false);
       return;
     }
@@ -269,7 +281,7 @@ export default function WalletPage() {
             <label className="text-xs font-bold text-gray-300 uppercase">Select Payment Provider</label>
             <div className="grid grid-cols-3 gap-3">
               {(['BKASH', 'NAGAD', 'ROCKET'] as const).map((m) => {
-                if (m === 'BKASH' && activeTab === 'DEPOSIT') {
+                if (m === 'BKASH') {
                   return (
                     <div
                       key={m}
@@ -277,7 +289,7 @@ export default function WalletPage() {
                       title="বিকাশ বন্ধ আছে"
                     >
                       <span className="line-through text-rose-400">bKash</span>
-                      <span className="text-[9px] font-black text-rose-400 bg-rose-500/10 px-1.5 py-0.5 rounded">বিকাশ বন্ধ আছে</span>
+                      <span className="text-[9px] font-black text-rose-400 bg-rose-500/10 px-1.5 py-0.5 rounded">বন্ধ আছে</span>
                     </div>
                   );
                 }
@@ -304,7 +316,7 @@ export default function WalletPage() {
                         : 'bg-white/[0.03] border-white/10 text-gray-400 hover:bg-white/[0.06]'
                     }`}
                   >
-                    {m === 'BKASH' ? 'bKash' : 'Nagad'}
+                    Nagad (নগদ)
                   </button>
                 );
               })}

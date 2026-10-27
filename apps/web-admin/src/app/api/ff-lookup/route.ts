@@ -1,4 +1,64 @@
 import { NextRequest, NextResponse } from 'next/server';
+import fs from 'fs';
+import path from 'path';
+
+function checkLocalUsersDb(uid: string): { ign: string; level: number; region: string; likes: number } | null {
+  try {
+    const list = [
+      path.join(process.cwd(), 'data', 'users-db.json'),
+      path.join(process.cwd(), 'apps', 'web-admin', 'data', 'users-db.json'),
+      path.join('/tmp', 'users-db.json'),
+    ];
+    for (const p of list) {
+      if (fs.existsSync(p)) {
+        const users = JSON.parse(fs.readFileSync(p, 'utf-8'));
+        if (Array.isArray(users)) {
+          const found = users.find((u: any) => String(u.uid || '').trim() === uid || String(u.ffUid || '').trim() === uid);
+          if (found && (found.ign || found.username)) {
+            return {
+              ign: String(found.ign || found.username).trim(),
+              level: Number(found.level) || 65,
+              region: 'BD',
+              likes: Number(found.likes) || 1200,
+            };
+          }
+        }
+      }
+    }
+  } catch {}
+  return null;
+}
+
+function checkMatchParticipants(uid: string): { ign: string; level: number; region: string; likes: number } | null {
+  try {
+    const list = [
+      path.join(process.cwd(), 'data', 'cms-data.json'),
+      path.join(process.cwd(), 'apps', 'web-admin', 'data', 'cms-data.json'),
+      path.join('/tmp', 'cms-data.json'),
+    ];
+    for (const p of list) {
+      if (fs.existsSync(p)) {
+        const cms = JSON.parse(fs.readFileSync(p, 'utf-8'));
+        if (Array.isArray(cms?.matches)) {
+          for (const m of cms.matches) {
+            if (Array.isArray(m.participants)) {
+              const found = m.participants.find((pt: any) => String(pt.uid || '').trim() === uid);
+              if (found && found.ign && !found.ign.startsWith('FF_')) {
+                return {
+                  ign: String(found.ign).trim(),
+                  level: 65,
+                  region: 'BD',
+                  likes: 1500,
+                };
+              }
+            }
+          }
+        }
+      }
+    }
+  } catch {}
+  return null;
+}
 
 const API_KEY = process.env.FF_API_KEY || '092iUTN11rRbEDNCFKQmPW4fuWlUnHMp3oR_LMf-H1c';
 
@@ -173,6 +233,38 @@ async function handleLookup(rawUid: string) {
       region: cached.region,
       likes: cached.likes,
       source: 'verified_cache',
+    });
+  }
+
+  // Check registered users database for this UID
+  const localUser = checkLocalUsersDb(cleanUid);
+  if (localUser && localUser.ign) {
+    VERIFIED_PLAYERS_CACHE.set(cleanUid, localUser);
+    return NextResponse.json({
+      success: true,
+      isValid: true,
+      uid: cleanUid,
+      ign: localUser.ign,
+      level: localUser.level,
+      region: localUser.region,
+      likes: localUser.likes,
+      source: 'users_db',
+    });
+  }
+
+  // Check tournament matches history for this UID
+  const participantUser = checkMatchParticipants(cleanUid);
+  if (participantUser && participantUser.ign) {
+    VERIFIED_PLAYERS_CACHE.set(cleanUid, participantUser);
+    return NextResponse.json({
+      success: true,
+      isValid: true,
+      uid: cleanUid,
+      ign: participantUser.ign,
+      level: participantUser.level,
+      region: participantUser.region,
+      likes: participantUser.likes,
+      source: 'matches_history',
     });
   }
 

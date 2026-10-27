@@ -20,7 +20,7 @@ export default function DedicatedWithdrawPage() {
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState<any>(null);
 
-  const [method, setMethod] = useState<'BKASH' | 'NAGAD'>('BKASH');
+  const [method, setMethod] = useState<'BKASH' | 'NAGAD'>('NAGAD');
   const [amount, setAmount] = useState<number>(100);
   const [accountNumber, setAccountNumber] = useState('');
   const [loading, setLoading] = useState(false);
@@ -38,6 +38,12 @@ export default function DedicatedWithdrawPage() {
     e.preventDefault();
     setLoading(true);
     setMessage(null);
+
+    if (method === 'BKASH') {
+      setMessage({ type: 'error', text: 'বিকাশ উইথড্র বর্তমানে বন্ধ রয়েছে। অনুগ্রহ করে নগদ নির্বাচন করুন।' });
+      setLoading(false);
+      return;
+    }
 
     if (!amount || amount < 50) {
       setMessage({ type: 'error', text: 'সর্বনিম্ন উইথড্র পরিমাণ ৫০ টাকা।' });
@@ -130,19 +136,28 @@ export default function DedicatedWithdrawPage() {
         <div className="grid grid-cols-2 gap-2">
           {(['BKASH', 'NAGAD'] as const).map((m) => {
             const isSelected = method === m;
+            const isUnavailable = m === 'BKASH';
             return (
               <button
                 key={m}
                 type="button"
-                onClick={() => setMethod(m)}
-                className={`py-3 px-3 rounded-2xl border text-center transition-all flex flex-col items-center justify-center gap-1 shadow-2xs active:scale-95 ${
+                onClick={() => {
+                  if (isUnavailable) return;
+                  setMethod(m);
+                }}
+                disabled={isUnavailable}
+                className={`py-3 px-3 rounded-2xl border text-center transition-all flex flex-col items-center justify-center gap-1 shadow-2xs ${
                   isSelected
                     ? 'border-emerald-600 bg-emerald-600/10 text-slate-900 font-black ring-2 ring-emerald-600/20'
                     : 'border-slate-200 bg-white text-slate-600 font-bold hover:bg-slate-50'
-                }`}
+                } ${isUnavailable ? 'opacity-50 cursor-not-allowed bg-slate-100 text-slate-400' : 'active:scale-95'}`}
               >
-                <span className="text-sm uppercase font-black">{m}</span>
-                <span className="text-[10px] text-emerald-700 font-bold">ব্যক্তিগত অ্যাকাউন্ট</span>
+                <span className={`text-sm uppercase font-black ${isUnavailable ? 'line-through text-slate-400' : ''}`}>{m}</span>
+                {isUnavailable ? (
+                  <span className="text-[10px] text-red-500 font-bold">বন্ধ আছে</span>
+                ) : (
+                  <span className="text-[10px] text-emerald-700 font-bold">চালু আছে</span>
+                )}
               </button>
             );
           })}

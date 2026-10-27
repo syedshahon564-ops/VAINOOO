@@ -13,7 +13,7 @@ import {
   Clipboard,
 } from 'lucide-react';
 import { MatchItem } from '@/lib/cms-store';
-import { checkFreeFireUID } from '@/lib/ff-uid-checker';
+import { checkFreeFireUID, saveUIDIgnCache } from '@/lib/ff-uid-checker';
 import { getCurrentUser, getUsers, hasUserJoinedMatch, recordUserJoinedMatch } from '@/lib/user-store';
 import { readClipboardText, toEnDigits } from '@/lib/clipboard';
 
@@ -110,15 +110,15 @@ export default function SlotBookingModal({
 
   // Player state: 4 for Squad, 2 for Duo, 1 for Solo
   const [squadPlayers, setSquadPlayers] = useState([
-    { ign: '', uid: '', checking: false, verified: false },
-    { ign: '', uid: '', checking: false, verified: false },
-    { ign: '', uid: '', checking: false, verified: false },
-    { ign: '', uid: '', checking: false, verified: false },
+    { ign: '', uid: '', checking: false, verified: false, manualRequired: false },
+    { ign: '', uid: '', checking: false, verified: false, manualRequired: false },
+    { ign: '', uid: '', checking: false, verified: false, manualRequired: false },
+    { ign: '', uid: '', checking: false, verified: false, manualRequired: false },
   ]);
 
   const [duoPlayers, setDuoPlayers] = useState([
-    { ign: '', uid: '', checking: false, verified: false },
-    { ign: '', uid: '', checking: false, verified: false },
+    { ign: '', uid: '', checking: false, verified: false, manualRequired: false },
+    { ign: '', uid: '', checking: false, verified: false, manualRequired: false },
   ]);
 
   const [soloPlayer, setSoloPlayer] = useState({
@@ -126,6 +126,7 @@ export default function SlotBookingModal({
     uid: '',
     checking: false,
     verified: false,
+    manualRequired: false,
   });
 
   const squadPlayersRef = useRef(squadPlayers);
@@ -196,14 +197,16 @@ export default function SlotBookingModal({
     try {
       const profile = await checkFreeFireUID(cleanId);
       const isRealName = profile && profile.isValid && profile.ign && !profile.ign.startsWith('FF_PLAYER_');
+      const resolvedIgn = isRealName ? profile.ign : squadPlayersRef.current[index]?.ign || '';
       setSquadPlayers((prev) =>
         prev.map((p, i) =>
           i === index
             ? {
                 ...p,
-                ign: isRealName ? profile.ign : p.ign,
+                ign: resolvedIgn,
                 checking: false,
-                verified: true,
+                verified: Boolean(isRealName),
+                manualRequired: !isRealName,
                 uid: cleanId,
               }
             : p
@@ -214,7 +217,7 @@ export default function SlotBookingModal({
       setSquadPlayers((prev) =>
         prev.map((p, i) =>
           i === index
-            ? { ...p, checking: false, verified: true, uid: cleanId }
+            ? { ...p, checking: false, verified: false, manualRequired: true, uid: cleanId }
             : p
         )
       );
@@ -236,14 +239,16 @@ export default function SlotBookingModal({
     try {
       const profile = await checkFreeFireUID(cleanId);
       const isRealName = profile && profile.isValid && profile.ign && !profile.ign.startsWith('FF_PLAYER_');
+      const resolvedIgn = isRealName ? profile.ign : duoPlayersRef.current[index]?.ign || '';
       setDuoPlayers((prev) =>
         prev.map((p, i) =>
           i === index
             ? {
                 ...p,
-                ign: isRealName ? profile.ign : p.ign,
+                ign: resolvedIgn,
                 checking: false,
-                verified: true,
+                verified: Boolean(isRealName),
+                manualRequired: !isRealName,
                 uid: cleanId,
               }
             : p
@@ -254,7 +259,7 @@ export default function SlotBookingModal({
       setDuoPlayers((prev) =>
         prev.map((p, i) =>
           i === index
-            ? { ...p, checking: false, verified: true, uid: cleanId }
+            ? { ...p, checking: false, verified: false, manualRequired: true, uid: cleanId }
             : p
         )
       );
@@ -274,11 +279,13 @@ export default function SlotBookingModal({
     try {
       const profile = await checkFreeFireUID(cleanId);
       const isRealName = profile && profile.isValid && profile.ign && !profile.ign.startsWith('FF_PLAYER_');
+      const resolvedIgn = isRealName ? profile.ign : soloPlayerRef.current?.ign || '';
       setSoloPlayer((prev) => ({
         ...prev,
-        ign: isRealName ? profile.ign : prev.ign,
+        ign: resolvedIgn,
         checking: false,
-        verified: true,
+        verified: Boolean(isRealName),
+        manualRequired: !isRealName,
         uid: cleanId,
       }));
       if (errorMessage) setErrorMessage(null);
@@ -286,7 +293,8 @@ export default function SlotBookingModal({
       setSoloPlayer((prev) => ({
         ...prev,
         checking: false,
-        verified: true,
+        verified: false,
+        manualRequired: true,
         uid: cleanId,
       }));
     }
@@ -990,6 +998,11 @@ export default function SlotBookingModal({
                               {player.checking && (
                                 <span className="text-[10px] text-blue-600 font-semibold">অটো আসছে...</span>
                               )}
+                              {player.manualRequired && !player.ign && (
+                                <span className="text-[10px] text-amber-600 font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                                  ✍️ নাম নিজে লিখে দিন
+                                </span>
+                              )}
                             </label>
                             <button
                               type="button"
@@ -1000,6 +1013,7 @@ export default function SlotBookingModal({
                                     setSquadPlayers((prev) =>
                                       prev.map((p, i) => (i === idx ? { ...p, ign: text.trim() } : p))
                                     );
+                                    if (player.uid) saveUIDIgnCache(player.uid, text.trim());
                                     if (errorMessage) setErrorMessage(null);
                                   }
                                 } catch {}
@@ -1019,6 +1033,7 @@ export default function SlotBookingModal({
                               setSquadPlayers((prev) =>
                                 prev.map((p, i) => (i === idx ? { ...p, ign: val } : p))
                               );
+                              if (player.uid) saveUIDIgnCache(player.uid, val);
                               if (errorMessage) setErrorMessage(null);
                             }}
                             className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-xs font-bold text-gray-900 focus:outline-none focus:border-red-500 shadow-xs"
@@ -1136,6 +1151,11 @@ export default function SlotBookingModal({
                                 {player.checking && (
                                   <span className="text-[10px] text-blue-600 font-semibold">অটো আসছে...</span>
                                 )}
+                                {player.manualRequired && !player.ign && (
+                                  <span className="text-[10px] text-amber-600 font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                                    ✍️ নাম নিজে লিখে দিন
+                                  </span>
+                                )}
                               </label>
                             </div>
                             <input
@@ -1147,6 +1167,7 @@ export default function SlotBookingModal({
                                 setDuoPlayers((prev) =>
                                   prev.map((p) => ({ ...p, ign: val }))
                                 );
+                                if (player.uid) saveUIDIgnCache(player.uid, val);
                                 if (errorMessage) setErrorMessage(null);
                               }}
                               className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-xs font-bold text-gray-900 focus:outline-none focus:border-red-500 shadow-xs"
@@ -1239,6 +1260,11 @@ export default function SlotBookingModal({
                                 {player.checking && (
                                   <span className="text-[10px] text-blue-600 font-semibold">অটো আসছে...</span>
                                 )}
+                                {player.manualRequired && !player.ign && (
+                                  <span className="text-[10px] text-amber-600 font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                                    ✍️ নাম নিজে লিখে দিন
+                                  </span>
+                                )}
                               </label>
                               <button
                                 type="button"
@@ -1249,6 +1275,7 @@ export default function SlotBookingModal({
                                       setDuoPlayers((prev) =>
                                         prev.map((p, i) => (i === idx ? { ...p, ign: text.trim() } : p))
                                       );
+                                      if (player.uid) saveUIDIgnCache(player.uid, text.trim());
                                       if (errorMessage) setErrorMessage(null);
                                     }
                                   } catch {}
@@ -1268,6 +1295,7 @@ export default function SlotBookingModal({
                                 setDuoPlayers((prev) =>
                                   prev.map((p, i) => (i === idx ? { ...p, ign: val } : p))
                                 );
+                                if (player.uid) saveUIDIgnCache(player.uid, val);
                                 if (errorMessage) setErrorMessage(null);
                               }}
                               className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-xs font-bold text-gray-900 focus:outline-none focus:border-red-500 shadow-xs"
@@ -1341,6 +1369,11 @@ export default function SlotBookingModal({
                           {soloPlayer.checking && (
                             <span className="text-[10px] text-blue-600 font-semibold">অটো আসছে...</span>
                           )}
+                          {soloPlayer.manualRequired && !soloPlayer.ign && (
+                            <span className="text-[10px] text-amber-600 font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                              ✍️ নাম নিজে লিখে দিন
+                            </span>
+                          )}
                         </label>
                         <button
                           type="button"
@@ -1349,6 +1382,7 @@ export default function SlotBookingModal({
                               const text = await readClipboardText();
                               if (text) {
                                 setSoloPlayer((prev) => ({ ...prev, ign: text.trim() }));
+                                if (soloPlayer.uid) saveUIDIgnCache(soloPlayer.uid, text.trim());
                                 if (errorMessage) setErrorMessage(null);
                               }
                             } catch {}
@@ -1364,7 +1398,9 @@ export default function SlotBookingModal({
                         placeholder="আপনার ফ্রি ফায়ার নাম (যেমন: ABU NUMAN)"
                         value={soloPlayer.ign}
                         onChange={(e) => {
-                          setSoloPlayer((prev) => ({ ...prev, ign: e.target.value }));
+                          const val = e.target.value;
+                          setSoloPlayer((prev) => ({ ...prev, ign: val }));
+                          if (soloPlayer.uid) saveUIDIgnCache(soloPlayer.uid, val);
                           if (errorMessage) setErrorMessage(null);
                         }}
                         className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 bg-white text-xs font-bold text-gray-900 focus:outline-none focus:border-red-500 shadow-xs"

@@ -24,7 +24,7 @@ export default function DedicatedDepositPage() {
   const { settings } = useCMS();
   const [currentUser, setCurrentUser] = useState<any>(null);
 
-  const [method, setMethod] = useState<'BKASH' | 'NAGAD' | 'ROCKET'>('BKASH');
+  const [method, setMethod] = useState<'BKASH' | 'NAGAD' | 'ROCKET'>('NAGAD');
   const [amount, setAmount] = useState<number>(100);
   const [phone, setPhone] = useState('');
   const [trxId, setTrxId] = useState('');
@@ -41,7 +41,7 @@ export default function DedicatedDepositPage() {
   const paymentNumbers: Record<string, { label: string; number: string; type: string; color: string }> = {
     BKASH: {
       label: 'bKash (বিকাশ)',
-      number: settings?.bkashNumber || '01712-345678',
+      number: 'সাময়িক বন্ধ (Unavailable)',
       type: 'Personal (Send Money)',
       color: 'from-pink-500 to-rose-600',
     },
@@ -62,7 +62,7 @@ export default function DedicatedDepositPage() {
   const currentPayment = paymentNumbers[method];
 
   const handleCopy = () => {
-    if (method === 'ROCKET') return;
+    if (method === 'ROCKET' || method === 'BKASH') return;
     navigator.clipboard.writeText(currentPayment.number);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -73,8 +73,14 @@ export default function DedicatedDepositPage() {
     setLoading(true);
     setMessage(null);
 
+    if (method === 'BKASH') {
+      setMessage({ type: 'error', text: 'বিকাশ পেমেন্ট বর্তমানে বন্ধ রয়েছে। অনুগ্রহ করে নগদ নির্বাচন করুন।' });
+      setLoading(false);
+      return;
+    }
+
     if (method === 'ROCKET') {
-      setMessage({ type: 'error', text: 'রকেট পেমেন্ট সাময়িক বন্ধ রয়েছে। অনুগ্রহ করে বিকাশ বা নগদ নির্বাচন করুন।' });
+      setMessage({ type: 'error', text: 'রকেট পেমেন্ট সাময়িক বন্ধ রয়েছে। অনুগ্রহ করে নগদ নির্বাচন করুন।' });
       setLoading(false);
       return;
     }
@@ -155,19 +161,23 @@ export default function DedicatedDepositPage() {
         <div className="grid grid-cols-3 gap-2">
           {(['BKASH', 'NAGAD', 'ROCKET'] as const).map((m) => {
             const isSelected = method === m;
-            const isUnavailable = m === 'ROCKET';
+            const isUnavailable = m === 'ROCKET' || m === 'BKASH';
             return (
               <button
                 key={m}
                 type="button"
-                onClick={() => setMethod(m)}
+                onClick={() => {
+                  if (isUnavailable) return;
+                  setMethod(m);
+                }}
+                disabled={isUnavailable}
                 className={`py-3 px-2 rounded-2xl border text-center transition-all flex flex-col items-center justify-center gap-1 shadow-2xs ${
                   isSelected
                     ? 'border-amber-500 bg-amber-500/10 text-slate-900 font-black ring-2 ring-amber-500/20'
                     : 'border-slate-200 bg-white text-slate-600 font-bold hover:bg-slate-50'
-                } ${isUnavailable ? 'opacity-60 cursor-not-allowed' : 'active:scale-95'}`}
+                } ${isUnavailable ? 'opacity-50 cursor-not-allowed bg-slate-100 text-slate-400' : 'active:scale-95'}`}
               >
-                <span className="text-xs uppercase">{m}</span>
+                <span className={`text-xs uppercase ${isUnavailable ? 'line-through text-slate-400' : ''}`}>{m}</span>
                 {isUnavailable ? (
                   <span className="text-[9px] text-red-500 font-bold">বন্ধ আছে</span>
                 ) : (
