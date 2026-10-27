@@ -407,16 +407,23 @@ export default function MobileAppViewPage(props: any) {
     touchStartYRef.current = 0;
   };
 
-  const handleUidChange = async (val: string) => {
+  const uidDebounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleUidChange = (val: string) => {
     setAuthUid(val);
+    if (uidDebounceTimerRef.current) {
+      clearTimeout(uidDebounceTimerRef.current);
+    }
     const clean = toEnDigits(val);
     if (clean.length >= 8 && clean.length <= 12) {
-      try {
-        const profile = await checkFreeFireUID(clean);
-        if (profile.isValid && profile.ign) {
-          setAuthIgn(profile.ign);
-        }
-      } catch {}
+      uidDebounceTimerRef.current = setTimeout(async () => {
+        try {
+          const profile = await checkFreeFireUID(clean);
+          if (profile.isValid && profile.ign) {
+            setAuthIgn(profile.ign);
+          }
+        } catch {}
+      }, 400);
     }
   };
 

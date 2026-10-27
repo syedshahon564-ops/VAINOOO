@@ -196,28 +196,36 @@ export default function SlotBookingModal({
 
     try {
       const profile = await checkFreeFireUID(cleanId);
-      // If live API or cache found the real name, use it; otherwise keep whatever user typed
-      const realIgn = profile?.ign && !profile.ign.startsWith('FF_PLAYER_') ? profile.ign : squadPlayersRef.current[index]?.ign || '';
-      
-      setSquadPlayers((prev) =>
-        prev.map((p, i) =>
-          i === index
-            ? {
-                ...p,
-                ign: realIgn,
-                checking: false,
-                verified: true,
-                uid: cleanId,
-              }
-            : p
-        )
-      );
-      if (errorMessage) setErrorMessage(null);
+      if (profile.isValid && profile.ign) {
+        setSquadPlayers((prev) =>
+          prev.map((p, i) =>
+            i === index
+              ? {
+                  ...p,
+                  ign: profile.ign,
+                  checking: false,
+                  verified: true,
+                  uid: cleanId,
+                }
+              : p
+          )
+        );
+        if (errorMessage) setErrorMessage(null);
+      } else {
+        setSquadPlayers((prev) =>
+          prev.map((p, i) =>
+            i === index
+              ? { ...p, checking: false, verified: false, uid: cleanId }
+              : p
+          )
+        );
+        if (profile.error) setErrorMessage(profile.error);
+      }
     } catch {
       setSquadPlayers((prev) =>
         prev.map((p, i) =>
           i === index
-            ? { ...p, checking: false, verified: true, uid: cleanId }
+            ? { ...p, checking: false, verified: false, uid: cleanId }
             : p
         )
       );
@@ -238,27 +246,36 @@ export default function SlotBookingModal({
 
     try {
       const profile = await checkFreeFireUID(cleanId);
-      const realIgn = profile?.ign && !profile.ign.startsWith('FF_PLAYER_') ? profile.ign : duoPlayersRef.current[index]?.ign || '';
-
-      setDuoPlayers((prev) =>
-        prev.map((p, i) =>
-          i === index
-            ? {
-                ...p,
-                ign: realIgn,
-                checking: false,
-                verified: true,
-                uid: cleanId,
-              }
-            : p
-        )
-      );
-      if (errorMessage) setErrorMessage(null);
+      if (profile.isValid && profile.ign) {
+        setDuoPlayers((prev) =>
+          prev.map((p, i) =>
+            i === index
+              ? {
+                  ...p,
+                  ign: profile.ign,
+                  checking: false,
+                  verified: true,
+                  uid: cleanId,
+                }
+              : p
+          )
+        );
+        if (errorMessage) setErrorMessage(null);
+      } else {
+        setDuoPlayers((prev) =>
+          prev.map((p, i) =>
+            i === index
+              ? { ...p, checking: false, verified: false, uid: cleanId }
+              : p
+          )
+        );
+        if (profile.error) setErrorMessage(profile.error);
+      }
     } catch {
       setDuoPlayers((prev) =>
         prev.map((p, i) =>
           i === index
-            ? { ...p, checking: false, verified: true, uid: cleanId }
+            ? { ...p, checking: false, verified: false, uid: cleanId }
             : p
         )
       );
@@ -277,21 +294,29 @@ export default function SlotBookingModal({
 
     try {
       const profile = await checkFreeFireUID(cleanId);
-      const realIgn = profile?.ign && !profile.ign.startsWith('FF_PLAYER_') ? profile.ign : soloPlayerRef.current?.ign || '';
-
-      setSoloPlayer((prev) => ({
-        ...prev,
-        ign: realIgn,
-        checking: false,
-        verified: true,
-        uid: cleanId,
-      }));
-      if (errorMessage) setErrorMessage(null);
+      if (profile.isValid && profile.ign) {
+        setSoloPlayer((prev) => ({
+          ...prev,
+          ign: profile.ign,
+          checking: false,
+          verified: true,
+          uid: cleanId,
+        }));
+        if (errorMessage) setErrorMessage(null);
+      } else {
+        setSoloPlayer((prev) => ({
+          ...prev,
+          checking: false,
+          verified: false,
+          uid: cleanId,
+        }));
+        if (profile.error) setErrorMessage(profile.error);
+      }
     } catch {
       setSoloPlayer((prev) => ({
         ...prev,
         checking: false,
-        verified: true,
+        verified: false,
         uid: cleanId,
       }));
     }
@@ -475,6 +500,19 @@ export default function SlotBookingModal({
 
     if (hasUserJoinedMatch(match.id, cur)) {
       setErrorMessage('আপনি ইতিমধ্যে এই ম্যাচে জয়েন করেছেন! একটি ম্যাচে একবারের বেশি জয়েন করা যাবে না।');
+      return;
+    }
+
+    if (isSolo && soloPlayer.checking) {
+      setErrorMessage('Free Fire ইন-গেম নাম লোড হচ্ছে, দয়া করে এক মুহূর্ত অপেক্ষা করুন...');
+      return;
+    }
+    if (isDuo && duoPlayers.some((p) => p.checking)) {
+      setErrorMessage('Free Fire ইন-গেম নাম লোড হচ্ছে, দয়া করে এক মুহূর্ত অপেক্ষা করুন...');
+      return;
+    }
+    if (isSquad && squadPlayers.some((p) => p.checking)) {
+      setErrorMessage('Free Fire ইন-গেম নাম লোড হচ্ছে, দয়া করে এক মুহূর্ত অপেক্ষা করুন...');
       return;
     }
 

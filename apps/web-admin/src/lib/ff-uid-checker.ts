@@ -24,155 +24,21 @@ function cleanIgnString(raw: string): string {
   return cleaned || raw.trim();
 }
 
-// Known verified tournament players database
-const VERIFIED_FF_PLAYERS: Record<string, VerifiedPlayerProfile> = {
-  '14494277064': {
-    isValid: true,
-    uid: '14494277064',
-    ign: 'Ꭼᴡʀ Ꭻɪʜᴀᴅ !',
-    level: 51,
-    region: 'Bangladesh (BD)',
-    likeCount: 985,
-    avatarUrl: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=120',
-    badge: 'HEROIC',
-  },
-  '6095997543': {
-    isValid: true,
-    uid: '6095997543',
-    ign: 'TS! ᎬDȺƝ☯',
-    level: 70,
-    region: 'Bangladesh (BD)',
-    likeCount: 10883,
-    avatarUrl: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=120',
-    badge: 'GRANDMASTER',
-  },
-  '12116725180': {
-    isValid: true,
-    uid: '12116725180',
-    ign: 'TS! JARIF☯',
-    level: 69,
-    region: 'Bangladesh (BD)',
-    likeCount: 5054,
-    avatarUrl: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=120',
-    badge: 'HEROIC',
-  },
-  '5725906539': {
-    isValid: true,
-    uid: '5725906539',
-    ign: 'TS! ᏒꫝFƗ☯',
-    level: 73,
-    region: 'Bangladesh (BD)',
-    likeCount: 26125,
-    avatarUrl: 'https://images.unsplash.com/photo-1563089145-599997674d42?q=80&w=120',
-    badge: 'GRANDMASTER',
-  },
-  '2312730961': {
-    isValid: true,
-    uid: '2312730961',
-    ign: '亗ＳＡＩＦＵＬض',
-    level: 71,
-    region: 'Bangladesh (BD)',
-    likeCount: 59467,
-    avatarUrl: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=120',
-    badge: 'GRANDMASTER',
-  },
-  '413478467': {
-    isValid: true,
-    uid: '413478467',
-    ign: 'A᷈N᷈I᷈K᷈',
-    level: 77,
-    region: 'Bangladesh (BD)',
-    likeCount: 101927,
-    avatarUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=120',
-    badge: 'GRANDMASTER',
-  },
-  '192837465': {
-    isValid: true,
-    uid: '192837465',
-    ign: 'BDX_STRIKER',
-    level: 74,
-    region: 'Bangladesh (BD)',
-    likeCount: 14200,
-    avatarUrl: 'https://images.unsplash.com/photo-1563089145-599997674d42?q=80&w=120',
-    badge: 'GRANDMASTER',
-  },
-  '748291034': {
-    isValid: true,
-    uid: '748291034',
-    ign: 'OP_NINJA_99',
-    level: 78,
-    region: 'Bangladesh (BD)',
-    likeCount: 22400,
-    avatarUrl: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=120',
-    badge: 'ESPORTS_PRO',
-  },
-  '839201948': {
-    isValid: true,
-    uid: '839201948',
-    ign: 'VAMPIRE_FF',
-    level: 71,
-    region: 'Bangladesh (BD)',
-    likeCount: 9800,
-    avatarUrl: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=120',
-    badge: 'HEROIC',
-  },
-  '610293847': {
-    isValid: true,
-    uid: '610293847',
-    ign: 'KING_HEADSHOT',
-    level: 69,
-    region: 'Bangladesh (BD)',
-    likeCount: 8400,
-    avatarUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=120',
-    badge: 'HEROIC',
-  },
-  '920182746': {
-    isValid: true,
-    uid: '920182746',
-    ign: 'RIVAL_BOSS_BD',
-    level: 76,
-    region: 'Bangladesh (BD)',
-    likeCount: 16500,
-    avatarUrl: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?q=80&w=120',
-    badge: 'GRANDMASTER',
-  },
-  '501928374': {
-    isValid: true,
-    uid: '501928374',
-    ign: 'CYBER_SNIPER',
-    level: 67,
-    region: 'Bangladesh (BD)',
-    likeCount: 6700,
-    avatarUrl: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=120',
-    badge: 'DIAMOND_IV',
-  },
-};
-
 export function saveUIDIgnCache(uid: string, ign: string): void {
   if (typeof window === 'undefined' || !uid || !ign) return;
   const clean = toEnDigits(uid);
   const cleanIgn = cleanIgnString(ign);
   if (clean && cleanIgn && cleanIgn.length >= 2) {
     try {
-      localStorage.setItem('ff_uid_ign_' + clean, cleanIgn);
-      VERIFIED_FF_PLAYERS[clean] = {
-        isValid: true,
-        uid: clean,
-        ign: cleanIgn,
-        level: 65,
-        region: 'Bangladesh (BD)',
-        likeCount: 2000,
-        avatarUrl: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=120',
-        badge: 'HEROIC',
-      };
+      sessionStorage.setItem('ff_live_ign_' + clean, cleanIgn);
     } catch {}
   }
 }
 
 /**
  * Free Fire UID Checker Client API
- * Queries internal /api/ff-lookup route and returns verified real player profile.
- * Rejects non-numeric UIDs and nonexistent IDs strictly.
+ * Calls /api/ff-lookup directly to fetch the real in-game player name from Garena.
+ * No hardcoded database or static fake names.
  */
 export async function checkFreeFireUID(uid: string): Promise<VerifiedPlayerProfile> {
   const cleanUID = toEnDigits(uid);
@@ -190,23 +56,18 @@ export async function checkFreeFireUID(uid: string): Promise<VerifiedPlayerProfi
     };
   }
 
-  // 1. Check known verified players
-  if (VERIFIED_FF_PLAYERS[cleanUID]) {
-    return VERIFIED_FF_PLAYERS[cleanUID];
-  }
-
-  // 2. Check local browser storage cache
+  // Check current session memory
   if (typeof window !== 'undefined') {
     try {
-      const localIgn = localStorage.getItem('ff_uid_ign_' + cleanUID);
-      if (localIgn && localIgn.trim().length > 0) {
+      const sessionIgn = sessionStorage.getItem('ff_live_ign_' + cleanUID);
+      if (sessionIgn && sessionIgn.trim().length > 0) {
         return {
           isValid: true,
           uid: cleanUID,
-          ign: localIgn.trim(),
-          level: 65,
+          ign: sessionIgn.trim(),
+          level: 60,
           region: 'Bangladesh (BD)',
-          likeCount: 2500,
+          likeCount: 1000,
           avatarUrl: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=120',
           badge: 'HEROIC',
         };
@@ -214,7 +75,7 @@ export async function checkFreeFireUID(uid: string): Promise<VerifiedPlayerProfi
     } catch {}
   }
 
-  // 3. Fetch from our native API route which calls live Garena gateway
+  // Fetch live from server
   try {
     const res = await fetch(`/api/ff-lookup?uid=${cleanUID}`, {
       cache: 'no-store',
@@ -230,40 +91,46 @@ export async function checkFreeFireUID(uid: string): Promise<VerifiedPlayerProfi
           ign: data.ign,
           level: data.level || 60,
           region: data.region || 'Bangladesh (BD)',
-          likeCount: data.likes || 5000,
+          likeCount: data.likes || 0,
           avatarUrl: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=120',
-          badge: (data.level || 60) > 70 ? 'GRANDMASTER' : 'HEROIC',
+          badge: (data.level || 60) >= 70 ? 'GRANDMASTER' : 'HEROIC',
         };
       }
-      return {
-        isValid: true,
-        uid: cleanUID,
-        ign: '',
-        level: 60,
-        region: 'Bangladesh (BD)',
-        likeCount: 0,
-        avatarUrl: '',
-      };
+
+      if (data.error) {
+        return {
+          isValid: false,
+          uid: cleanUID,
+          ign: '',
+          level: 0,
+          region: '',
+          likeCount: 0,
+          avatarUrl: '',
+          error: data.error,
+        };
+      }
     }
 
     return {
-      isValid: true,
+      isValid: false,
       uid: cleanUID,
       ign: '',
-      level: 60,
-      region: 'Bangladesh (BD)',
+      level: 0,
+      region: '',
       likeCount: 0,
       avatarUrl: '',
+      error: '❌ ফ্রি ফায়ার প্লেয়ার তথ্য পাওয়া যায়নি। অনুগ্রহ করে সঠিক UID দিন।',
     };
-  } catch {
+  } catch (err) {
     return {
-      isValid: true,
+      isValid: false,
       uid: cleanUID,
       ign: '',
-      level: 60,
-      region: 'Bangladesh (BD)',
+      level: 0,
+      region: '',
       likeCount: 0,
       avatarUrl: '',
+      error: '⚠️ নেটওয়ার্ক সমস্যা হয়েছে। আবার চেষ্টা করুন।',
     };
   }
 }
