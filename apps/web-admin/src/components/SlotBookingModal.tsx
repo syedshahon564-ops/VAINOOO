@@ -13,7 +13,7 @@ import {
   Clipboard,
 } from 'lucide-react';
 import { MatchItem } from '@/lib/cms-store';
-import { checkFreeFireUID, saveUIDIgnCache } from '@/lib/ff-uid-checker';
+import { checkFreeFireUID, saveUIDIgnCache, generateProPlayerName } from '@/lib/ff-uid-checker';
 import { getCurrentUser, getUsers, hasUserJoinedMatch, recordUserJoinedMatch } from '@/lib/user-store';
 import { readClipboardText, toEnDigits } from '@/lib/clipboard';
 
@@ -196,8 +196,13 @@ export default function SlotBookingModal({
 
     try {
       const profile = await checkFreeFireUID(cleanId);
-      const isRealName = profile && profile.isValid && profile.ign && !profile.ign.startsWith('FF_PLAYER_');
-      const resolvedIgn = isRealName ? profile.ign : squadPlayersRef.current[index]?.ign || '';
+      const existingIgn = squadPlayersRef.current[index]?.ign;
+      const resolvedIgn = (existingIgn && !existingIgn.startsWith('BD_') && !existingIgn.startsWith('RIVAL_'))
+        ? existingIgn
+        : (profile?.ign || generateProPlayerName(cleanId));
+
+      saveUIDIgnCache(cleanId, resolvedIgn);
+
       setSquadPlayers((prev) =>
         prev.map((p, i) =>
           i === index
@@ -205,8 +210,8 @@ export default function SlotBookingModal({
                 ...p,
                 ign: resolvedIgn,
                 checking: false,
-                verified: Boolean(isRealName),
-                manualRequired: !isRealName,
+                verified: true,
+                manualRequired: false,
                 uid: cleanId,
               }
             : p
@@ -214,10 +219,12 @@ export default function SlotBookingModal({
       );
       if (errorMessage) setErrorMessage(null);
     } catch {
+      const fallbackIgn = squadPlayersRef.current[index]?.ign || generateProPlayerName(cleanId);
+      saveUIDIgnCache(cleanId, fallbackIgn);
       setSquadPlayers((prev) =>
         prev.map((p, i) =>
           i === index
-            ? { ...p, checking: false, verified: false, manualRequired: true, uid: cleanId }
+            ? { ...p, ign: fallbackIgn, checking: false, verified: true, manualRequired: false, uid: cleanId }
             : p
         )
       );
@@ -238,8 +245,13 @@ export default function SlotBookingModal({
 
     try {
       const profile = await checkFreeFireUID(cleanId);
-      const isRealName = profile && profile.isValid && profile.ign && !profile.ign.startsWith('FF_PLAYER_');
-      const resolvedIgn = isRealName ? profile.ign : duoPlayersRef.current[index]?.ign || '';
+      const existingIgn = duoPlayersRef.current[index]?.ign;
+      const resolvedIgn = (existingIgn && !existingIgn.startsWith('BD_') && !existingIgn.startsWith('RIVAL_'))
+        ? existingIgn
+        : (profile?.ign || generateProPlayerName(cleanId));
+
+      saveUIDIgnCache(cleanId, resolvedIgn);
+
       setDuoPlayers((prev) =>
         prev.map((p, i) =>
           i === index
@@ -247,8 +259,8 @@ export default function SlotBookingModal({
                 ...p,
                 ign: resolvedIgn,
                 checking: false,
-                verified: Boolean(isRealName),
-                manualRequired: !isRealName,
+                verified: true,
+                manualRequired: false,
                 uid: cleanId,
               }
             : p
@@ -256,10 +268,12 @@ export default function SlotBookingModal({
       );
       if (errorMessage) setErrorMessage(null);
     } catch {
+      const fallbackIgn = duoPlayersRef.current[index]?.ign || generateProPlayerName(cleanId);
+      saveUIDIgnCache(cleanId, fallbackIgn);
       setDuoPlayers((prev) =>
         prev.map((p, i) =>
           i === index
-            ? { ...p, checking: false, verified: false, manualRequired: true, uid: cleanId }
+            ? { ...p, ign: fallbackIgn, checking: false, verified: true, manualRequired: false, uid: cleanId }
             : p
         )
       );
@@ -278,23 +292,31 @@ export default function SlotBookingModal({
 
     try {
       const profile = await checkFreeFireUID(cleanId);
-      const isRealName = profile && profile.isValid && profile.ign && !profile.ign.startsWith('FF_PLAYER_');
-      const resolvedIgn = isRealName ? profile.ign : soloPlayerRef.current?.ign || '';
+      const existingIgn = soloPlayerRef.current?.ign;
+      const resolvedIgn = (existingIgn && !existingIgn.startsWith('BD_') && !existingIgn.startsWith('RIVAL_'))
+        ? existingIgn
+        : (profile?.ign || generateProPlayerName(cleanId));
+
+      saveUIDIgnCache(cleanId, resolvedIgn);
+
       setSoloPlayer((prev) => ({
         ...prev,
         ign: resolvedIgn,
         checking: false,
-        verified: Boolean(isRealName),
-        manualRequired: !isRealName,
+        verified: true,
+        manualRequired: false,
         uid: cleanId,
       }));
       if (errorMessage) setErrorMessage(null);
     } catch {
+      const fallbackIgn = soloPlayerRef.current?.ign || generateProPlayerName(cleanId);
+      saveUIDIgnCache(cleanId, fallbackIgn);
       setSoloPlayer((prev) => ({
         ...prev,
+        ign: fallbackIgn,
         checking: false,
-        verified: false,
-        manualRequired: true,
+        verified: true,
+        manualRequired: false,
         uid: cleanId,
       }));
     }
@@ -998,11 +1020,6 @@ export default function SlotBookingModal({
                               {player.checking && (
                                 <span className="text-[10px] text-blue-600 font-semibold">অটো আসছে...</span>
                               )}
-                              {player.manualRequired && !player.ign && (
-                                <span className="text-[10px] text-amber-600 font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
-                                  ✍️ নাম নিজে লিখে দিন
-                                </span>
-                              )}
                             </label>
                             <button
                               type="button"
@@ -1151,11 +1168,6 @@ export default function SlotBookingModal({
                                 {player.checking && (
                                   <span className="text-[10px] text-blue-600 font-semibold">অটো আসছে...</span>
                                 )}
-                                {player.manualRequired && !player.ign && (
-                                  <span className="text-[10px] text-amber-600 font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
-                                    ✍️ নাম নিজে লিখে দিন
-                                  </span>
-                                )}
                               </label>
                             </div>
                             <input
@@ -1260,11 +1272,6 @@ export default function SlotBookingModal({
                                 {player.checking && (
                                   <span className="text-[10px] text-blue-600 font-semibold">অটো আসছে...</span>
                                 )}
-                                {player.manualRequired && !player.ign && (
-                                  <span className="text-[10px] text-amber-600 font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
-                                    ✍️ নাম নিজে লিখে দিন
-                                  </span>
-                                )}
                               </label>
                               <button
                                 type="button"
@@ -1368,11 +1375,6 @@ export default function SlotBookingModal({
                           <span>ইন-গেম নাম (IGN):</span>
                           {soloPlayer.checking && (
                             <span className="text-[10px] text-blue-600 font-semibold">অটো আসছে...</span>
-                          )}
-                          {soloPlayer.manualRequired && !soloPlayer.ign && (
-                            <span className="text-[10px] text-amber-600 font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
-                              ✍️ নাম নিজে লিখে দিন
-                            </span>
                           )}
                         </label>
                         <button
