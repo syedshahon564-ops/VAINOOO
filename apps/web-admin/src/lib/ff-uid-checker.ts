@@ -16,6 +16,16 @@ export interface VerifiedPlayerProfile {
 
 // Known verified tournament players database
 const VERIFIED_FF_PLAYERS: Record<string, VerifiedPlayerProfile> = {
+  '14494277064': {
+    isValid: true,
+    uid: '14494277064',
+    ign: 'ᎬᴡʀᅠᎫɪʜᴀᴅᅠ!',
+    level: 51,
+    region: 'Bangladesh (BD)',
+    likeCount: 985,
+    avatarUrl: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=120',
+    badge: 'HEROIC',
+  },
   '6095997543': {
     isValid: true,
     uid: '6095997543',

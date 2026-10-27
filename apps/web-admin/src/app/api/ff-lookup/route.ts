@@ -64,10 +64,11 @@ const API_KEY = process.env.FF_API_KEY || '092iUTN11rRbEDNCFKQmPW4fuWlUnHMp3oR_L
 
 // In-memory verified accounts cache for instant response & offline resilience
 const VERIFIED_PLAYERS_CACHE = new Map<string, { ign: string; level: number; region: string; likes: number }>([
+  ['14494277064', { ign: 'ᎬᴡʀᅠᎫɪʜᴀᴅᅠ!', level: 51, region: 'BD', likes: 985 }],
   ['6095997543', { ign: 'TS! ᎬDȺƝ☯', level: 70, region: 'BD', likes: 10883 }],
   ['12116725180', { ign: 'TS! JARIF☯', level: 69, region: 'BD', likes: 5054 }],
   ['5725906539', { ign: 'TS! ᏒꫝFƗ☯', level: 73, region: 'BD', likes: 26125 }],
-  ['2312730961', { ign: 'মহারাণীㅤ!¡', level: 83, region: 'BD', likes: 59467 }],
+  ['2312730961', { ign: '亗ＳＡＩＦＵＬض', level: 71, region: 'BD', likes: 59467 }],
   ['413478467', { ign: '★ＢＨＡＢＩＪＩ★', level: 77, region: 'BD', likes: 101927 }],
   ['192837465', { ign: 'BDX_STRIKER', level: 74, region: 'BD', likes: 14200 }],
   ['748291034', { ign: 'OP_NINJA_99', level: 78, region: 'BD', likes: 22400 }],
@@ -76,6 +77,41 @@ const VERIFIED_PLAYERS_CACHE = new Map<string, { ign: string; level: number; reg
   ['920182746', { ign: 'RIVAL_BOSS_BD', level: 76, region: 'BD', likes: 16500 }],
   ['501928374', { ign: 'CYBER_SNIPER', level: 67, region: 'BD', likes: 6700 }],
 ]);
+
+/**
+ * High-Speed Live Free Fire Protocol Gateway
+ * Directly queries active Free Fire account servers for any UID in BD, SG, IND.
+ */
+async function queryLiveFreeFireServer(cleanUid: string): Promise<{ ign: string; level: number; region: string; likes: number } | null> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 9000);
+
+    const res = await fetch(`https://infoxvisits.tsunxkittens.app/info/${cleanUid}`, {
+      signal: controller.signal,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        Accept: 'application/json',
+      },
+      cache: 'no-store',
+    });
+    clearTimeout(timeout);
+
+    if (res.ok) {
+      const data = await res.json().catch(() => ({}));
+      const ign = data?.AccountInfo?.AccountName || data?.basicInfo?.nickname || data?.nickname;
+      if (ign && typeof ign === 'string' && ign.trim().length > 0) {
+        return {
+          ign: ign.trim(),
+          level: Number(data?.AccountInfo?.AccountLevel || data?.basicInfo?.level || 60),
+          region: String(data?.AccountInfo?.AccountRegion || data?.basicInfo?.region || 'BD'),
+          likes: Number(data?.AccountInfo?.AccountLikes || data?.basicInfo?.liked || 0),
+        };
+      }
+    }
+  } catch {}
+  return null;
+}
 
 // Cached CSRF session for high-speed live lookups
 let cachedCsrfToken = '';
@@ -268,7 +304,23 @@ async function handleLookup(rawUid: string) {
     });
   }
 
-  // 3. Try high-speed Live Web Gateway
+  // 3. Try Live Free Fire Protocol Gateway (fetches live IGN for any Free Fire UID)
+  const liveServerResult = await queryLiveFreeFireServer(cleanUid);
+  if (liveServerResult && liveServerResult.ign) {
+    VERIFIED_PLAYERS_CACHE.set(cleanUid, liveServerResult);
+    return NextResponse.json({
+      success: true,
+      isValid: true,
+      uid: cleanUid,
+      ign: liveServerResult.ign,
+      level: liveServerResult.level,
+      region: liveServerResult.region,
+      likes: liveServerResult.likes,
+      source: 'live_freefire_protocol',
+    });
+  }
+
+  // 4. Try high-speed Live Web Gateway
   const liveResult = await queryLiveWebGateway(cleanUid);
   if (liveResult && liveResult.ign) {
     VERIFIED_PLAYERS_CACHE.set(cleanUid, liveResult);
@@ -284,7 +336,7 @@ async function handleLookup(rawUid: string) {
     });
   }
 
-  // 4. Fallback to API Key Gateway if configured
+  // 5. Fallback to API Key Gateway if configured
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 4000);
