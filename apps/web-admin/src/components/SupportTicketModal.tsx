@@ -358,6 +358,27 @@ export default function SupportTicketModal({
                 />
               </div>
 
+              {/* Telegram Channel Info Banner */}
+              <div className="p-3 rounded-2xl bg-sky-50 border border-sky-200 text-sky-900 text-xs flex items-center justify-between gap-3">
+                <div className="space-y-0.5">
+                  <div className="font-bold text-sky-900 flex items-center gap-1.5">
+                    <span>📢 আমাদের অফিসিয়াল টেলিগ্রাম চ্যানেল:</span>
+                  </div>
+                  <p className="text-[11px] text-sky-700">
+                    চিটারদের বড় ভিডিও প্রুফ ও সরাসরি সাপোর্টের জন্য টেলিগ্রামে যুক্ত হোন।
+                  </p>
+                </div>
+                <a
+                  href="https://t.me/ffrivalstourbdofficial"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-black text-[11px] whitespace-nowrap shadow-sm shadow-sky-600/30 flex items-center gap-1 active:scale-95 transition-all"
+                >
+                  <span>Telegram</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </a>
+              </div>
+
               {/* Screenshot Upload */}
               <div>
                 <label className="font-bold text-gray-700 block mb-1">

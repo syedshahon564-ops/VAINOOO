@@ -75,7 +75,7 @@ import LiveMatchCountdown, {
 import DepositWithdrawModal from '@/components/DepositWithdrawModal';
 import SupportChatScreen from '@/components/SupportChatScreen';
 import MyHistoryComponent from '@/components/MyHistoryComponent';
-import { SupportTicket, getOrCreateUserConversation } from '@/lib/support-store';
+import { SupportTicket, getOrCreateUserConversation, createSupportTicket } from '@/lib/support-store';
 import { useLanguage } from '@/components/LanguageProvider';
 import { readClipboardText, toEnDigits } from '@/lib/clipboard';
 import {
@@ -253,6 +253,10 @@ export default function MobileAppViewPage(props: any) {
   const [confirmPassInput, setConfirmPassInput] = useState('');
   const [passMessage, setPassMessage] = useState<{ text: string; isError: boolean } | null>(null);
   const [showRulesModal, setShowRulesModal] = useState(false);
+  const [showAntiCheatModal, setShowAntiCheatModal] = useState(false);
+  const [suspectIgn, setSuspectIgn] = useState('');
+  const [cheatProof, setCheatProof] = useState('');
+  const [cheatReportSent, setCheatReportSent] = useState(false);
   const [showMyHistory, setShowMyHistory] = useState(false);
   const [historyInitialTab, setHistoryInitialTab] = useState<"ADD_MONEY" | "MATCH_ENTRY" | "WITHDRAW" | "MATCH_WINNINGS">("ADD_MONEY");
   const [showDevInfoModal, setShowDevInfoModal] = useState(false);
@@ -3546,6 +3550,28 @@ export default function MobileAppViewPage(props: any) {
                               <ChevronRight className="w-4 h-4 text-slate-400" />
                             </div>
 
+                            {/* 2.5. Anti-Cheat Report */}
+                            <div
+                              onClick={() => {
+                                setSuspectIgn('');
+                                setCheatProof('');
+                                setCheatReportSent(false);
+                                setShowAntiCheatModal(true);
+                              }}
+                              className="bg-white rounded-2xl border border-rose-200/90 p-3 flex items-center justify-between shadow-xs hover:border-rose-400 transition-all cursor-pointer active:scale-[0.99]"
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center">
+                                  <ShieldAlert className="w-5 h-5 text-rose-600" />
+                                </div>
+                                <div>
+                                  <span className="font-bold text-slate-900 text-sm">{tPhone('অ্যান্টি-চিট প্লেয়ার রিপোর্ট', 'Anti-Cheat Cheater Report')}</span>
+                                  <p className="text-[10px] text-rose-600 font-bold">{tPhone('চিটারদের IGN ও প্রুফ সাবমিট করুন', 'Submit IGN & video proof')}</p>
+                                </div>
+                              </div>
+                              <ChevronRight className="w-4 h-4 text-slate-400" />
+                            </div>
+
                             {/* 3. Report Bug */}
                             <div
                               onClick={handleOpenSupport}
@@ -4603,9 +4629,21 @@ export default function MobileAppViewPage(props: any) {
                 <p>ম্যাচ শুরুর ১০-১৫ মিনিট আগে অ্যাপের &quot;আমার ম্যাচ&quot; (My Matches) অপশনে রুম আইডি এবং পাসওয়ার্ড দেয়া হবে। নিজের নির্দিষ্ট স্লটেই বসতে হবে।</p>
               </div>
 
-              <div className="p-3 rounded-xl bg-rose-50/70 border border-rose-100">
+              <div className="p-3 rounded-xl bg-rose-50/70 border border-rose-100 space-y-2">
                 <h4 className="font-bold text-rose-900 mb-1">🛡️ অ্যান্টি-চিট ও ফেয়ার প্লে</h4>
                 <p>যেকোনো ধরনের হ্যাক, স্ক্রিপ্ট, কনফিগ ফাইল বা এম্যুলেটর ব্যবহার সম্পূর্ণ নিষিদ্ধ। ধরা পড়লে অ্যাকাউন্ট আজীবনের জন্য ব্যান হবে।</p>
+                <div className="pt-2 border-t border-rose-200/60 flex items-center justify-between gap-2">
+                  <span className="text-[11px] font-bold text-rose-800">অফিসিয়াল টেলিগ্রাম চ্যানেল:</span>
+                  <a
+                    href="https://t.me/ffrivalstourbdofficial"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-black text-[10px] inline-flex items-center gap-1 shadow-xs transition-colors"
+                  >
+                    <span>Telegram</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
               </div>
 
               <div className="p-3 rounded-xl bg-emerald-50/70 border border-emerald-100">
@@ -4621,6 +4659,155 @@ export default function MobileAppViewPage(props: any) {
             >
               {tPhone('বুঝেছি (Close)', 'I Understand')}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* 9.5. ANTI-CHEAT REPORT MODAL */}
+      {showAntiCheatModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fadeIn">
+          <div className="w-full max-w-md rounded-3xl bg-white border border-rose-200 p-6 shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto text-slate-900">
+            <div className="flex items-center justify-between pb-2 border-b border-rose-100">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center">
+                  <ShieldAlert className="w-4 h-4 text-rose-600" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-slate-900">
+                    {tPhone('🛡️ অ্যান্টি-চিট প্লেয়ার রিপোর্ট', '🛡️ Anti-Cheat Cheater Report')}
+                  </h3>
+                  <p className="text-[10px] text-slate-500">
+                    {tPhone('চিটারের ইন-গেম নাম ও প্রুফ সাবমিট করুন', 'Submit suspect IGN & proof')}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAntiCheatModal(false)}
+                className="w-7 h-7 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center text-xs"
+              >
+                ✕
+              </button>
+            </div>
+
+            {cheatReportSent ? (
+              <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-center space-y-3">
+                <CheckCircle2 className="w-10 h-10 mx-auto text-emerald-600" />
+                <div>
+                  <h4 className="font-black text-sm">রিপোর্ট সফলভাবে জমা হয়েছে!</h4>
+                  <p className="text-xs text-emerald-700 mt-1">
+                    অভিযুক্ত প্লেয়ারের নাম <strong>{suspectIgn}</strong> অ্যান্টি-চিট সুপারভাইজার ও এআই সেন্টিনেলে রিভিউয়ের জন্য পাঠানো হয়েছে।
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowAntiCheatModal(false)}
+                  className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs"
+                >
+                  ঠিক আছে
+                </button>
+              </div>
+            ) : (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!suspectIgn.trim()) return;
+                  try {
+                    createSupportTicket({
+                      userId: currentUser?.id || 'u-guest',
+                      userPhone: currentUser?.phone || '01700000000',
+                      userIgn: currentUser?.ign || 'Player',
+                      subject: `[অ্যান্টি-চিট রিপোর্ট] ${suspectIgn.trim()}`,
+                      category: 'OTHER',
+                      message: `অভিযুক্ত প্লেয়ারের নাম (IGN): ${suspectIgn.trim()}\nপ্রমাণ ও বিবরণ: ${cheatProof.trim() || 'ভিডিও/স্ক্রিনশট প্রুফ পর্যালোচনা অনুরোধ'}`,
+                    });
+                  } catch {}
+                  setCheatReportSent(true);
+                }}
+                className="space-y-3.5 text-xs"
+              >
+                {/* Telegram Official Channel Banner */}
+                <div className="p-3 rounded-2xl bg-gradient-to-r from-sky-50 to-blue-50 border border-sky-200 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-black text-sky-900 text-xs flex items-center gap-1.5">
+                      <span>📢 অফিসিয়াল টেলিগ্রাম চ্যানেল:</span>
+                    </span>
+                    <a
+                      href="https://t.me/ffrivalstourbdofficial"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-black text-[11px] inline-flex items-center gap-1 shadow-xs transition-colors"
+                    >
+                      <span>Join Telegram</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                  <p className="text-[11px] text-sky-800 leading-relaxed">
+                    📹 গেমপ্লে ভিডিও প্রুফ থাকলে সরাসরি আমাদের টেলিগ্রাম চ্যানেলে পাঠাতে পারেন।
+                  </p>
+                </div>
+
+                {/* Input: Suspect Player IGN */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="font-bold text-slate-800">
+                      অভিযুক্ত প্লেয়ারের গেম আইডির নাম (IGN):
+                    </label>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          const text = await readClipboardText();
+                          if (text && text.trim()) setSuspectIgn(text.trim());
+                        } catch {}
+                      }}
+                      className="text-[10px] font-bold text-rose-600 hover:text-rose-700 flex items-center gap-1 cursor-pointer bg-rose-50 hover:bg-rose-100 px-2 py-0.5 rounded-lg border border-rose-200"
+                    >
+                      <Copy className="w-2.5 h-2.5" />
+                      <span>পেস্ট করুন</span>
+                    </button>
+                  </div>
+                  <input
+                    type="text"
+                    required
+                    value={suspectIgn}
+                    onChange={(e) => setSuspectIgn(e.target.value)}
+                    placeholder="যেমন: Hacker_OP_44"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white font-bold text-slate-900 focus:outline-none focus:border-rose-500 shadow-xs"
+                  />
+                </div>
+
+                {/* Input: Proof description / link */}
+                <div className="space-y-1.5">
+                  <label className="font-bold text-slate-800">
+                    প্রুফ / প্রমাণের বিবরণ ও ভিডিও লিঙ্ক (Proof):
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={cheatProof}
+                    onChange={(e) => setCheatProof(e.target.value)}
+                    placeholder="কোন ম্যাচে হ্যাক করেছিল বা Google Drive / YouTube ভিডিও লিঙ্ক দিন..."
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white font-medium text-slate-900 focus:outline-none focus:border-rose-500 shadow-xs leading-relaxed"
+                  />
+                </div>
+
+                <div className="pt-2 flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowAntiCheatModal(false)}
+                    className="w-1/3 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold"
+                  >
+                    বাতিল
+                  </button>
+                  <button
+                    type="submit"
+                    className="w-2/3 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-black shadow-md shadow-rose-600/30 transition-all active:scale-95"
+                  >
+                    রিপোর্ট সাবমিট করুন
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}

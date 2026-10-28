@@ -424,11 +424,11 @@ export function banReportedPlayer(
   if (!matchedUser) {
     let msg = '';
     if (lang === 'BANGLA') {
-      msg = `🚨 **অ্যান্টি-চিট সাপোর্ট অ্যাকশন:**\n\nFF RIVAL TOUR BD প্ল্যাটফর্মে প্যানেল, হ্যাক বা যেকোনো অনৈতিক ফাইল ব্যবহার সম্পূর্ণ নিষিদ্ধ!\n\nঅনুগ্রহ করে অভিযুক্ত প্লেয়ারের **ইন-গেম নাম (IGN)** অথবা **Free Fire UID** লিখে দিন। নাম বা ইউআইডি দেওয়া মাত্রই আমাদের এআই সিস্টেম তার অ্যাকাউন্ট এবং ডিভাইস **তাৎক্ষণিক পার্মানেন্ট ব্যান (Permanent Ban)** করে দিবে!`;
+      msg = `🚨 **অ্যান্টি-চিট সাপোর্ট অ্যাকশন:**\n\nFF RIVAL TOUR BD প্ল্যাটফর্মে প্যানেল, হ্যাক বা যেকোনো অনৈতিক ফাইল ব্যবহার সম্পূর্ণ নিষিদ্ধ!\n\nঅনুগ্রহ করে অভিযুক্ত প্লেয়ারের **ইন-গেম নাম (IGN)** এবং স্ক্রিনশট বা ভিডিও প্রুফ দিন। নাম ও প্রমাণ দেওয়া মাত্রই আমাদের এআই সিস্টেম তার অ্যাকাউন্ট এবং ডিভাইস **তাৎক্ষণিক পার্মানেন্ট ব্যান (Permanent Ban)** করে দিবে!\n\n📹 বড় ভিডিও প্রুফ থাকলে সরাসরি আমাদের অফিসিয়াল টেলিগ্রাম চ্যানেলে পাঠান:\n👉 https://t.me/ffrivalstourbdofficial`;
     } else if (lang === 'BANGLISH') {
-      msg = `🚨 **Anti-Cheat Enforcement:**\n\nPlatform e panel ba hack use kora strictly prohibited!\n\nDoya kore accused cheater-er **Free Fire UID** ba **IGN (In-Game Name)** ekhane likhe din. UID pawa matroi amader AI engine taake instant permanent ban kore dibe!`;
+      msg = `🚨 **Anti-Cheat Enforcement:**\n\nPlatform e panel ba hack use kora strictly prohibited!\n\nDoya kore accused cheater-er **IGN (In-Game Name)** ebong video ba screenshot proof din. Proof pawa matroi amader AI engine taake instant permanent ban kore dibe!\n\n📹 Video proof pathate official Telegram:\n👉 https://t.me/ffrivalstourbdofficial`;
     } else {
-      msg = `🚨 **Anti-Cheat Enforcement:**\n\nThird-party panels, cheats, and illegal mods are strictly banned!\n\nPlease reply with the suspect player's **Free Fire UID** or **IGN**. Once provided, our AI system will permanently ban their account and device immediately!`;
+      msg = `🚨 **Anti-Cheat Enforcement:**\n\nThird-party panels, cheats, and illegal mods are strictly banned!\n\nPlease provide the suspect player's **In-Game Name (IGN)** and video/screenshot proof.\n\n📹 Send large video evidence directly to our official Telegram channel:\n👉 https://t.me/ffrivalstourbdofficial`;
     }
 
     return {

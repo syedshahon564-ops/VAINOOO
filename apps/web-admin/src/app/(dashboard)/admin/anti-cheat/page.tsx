@@ -87,10 +87,10 @@ export default function AntiCheatDeskPage() {
           <table className="w-full text-left text-xs">
           <thead className="bg-black/40 border-b border-white/10 text-gray-400 font-bold uppercase tracking-wider">
             <tr>
-              <th className="p-4">Player & UID</th>
-              <th className="p-4">Anomaly Type</th>
+              <th className="p-4">Player Game Name (IGN)</th>
+              <th className="p-4">Anomaly / Report Type</th>
               <th className="p-4">Confidence</th>
-              <th className="p-4">Telemetry Logs</th>
+              <th className="p-4">Proof & Telemetry Logs</th>
               <th className="p-4">Status</th>
               <th className="p-4 text-right">Action</th>
             </tr>
@@ -99,8 +99,8 @@ export default function AntiCheatDeskPage() {
             {logs.map((log) => (
               <tr key={log.id} className="hover:bg-white/[0.02]">
                 <td className="p-4">
-                  <div className="font-bold text-white">{log.user?.ign}</div>
-                  <div className="text-[10px] text-gray-500 font-mono">UID: {log.user?.uid}</div>
+                  <div className="font-bold text-white text-sm">{log.user?.ign}</div>
+                  <div className="text-[10px] text-gray-400">Player ID: {log.user?.id}</div>
                 </td>
                 <td className="p-4">
                   <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-rose-500/20 text-rose-400 border border-rose-500/30">

@@ -222,23 +222,23 @@ export function generateAdvancedAiResponse(input: AiMessageInput): AiResponseOut
       };
     }
 
-    // User has NOT provided video proof yet -> Specifically ask for video recording
+    // User has NOT provided video proof yet -> Specifically ask for video recording and Telegram channel
     if (lang === 'BANGLA') {
       return {
-        response: `🚨 **অ্যান্টি-চিট সাপোর্ট অ্যাকশন (ভিডিও প্রমাণ প্রয়োজন):**\n\nFF RIVAL TOUR BD প্ল্যাটফর্মে প্যানেল, হ্যাক বা যেকোনো অনৈতিক ফাইল ব্যবহার সম্পূর্ণ নিষিদ্ধ!\n\nঅভিযুক্ত প্লেয়ারকে নিশ্চিতভাবে ব্যান করার জন্য **ম্যাচ চলাকালীন অ্যান্টিচিটের একটি ভিডিও ক্লিপ বা ভিডিও লিঙ্ক (Google Drive / YouTube Link)** এখানে দিন এবং সাথে প্লেয়ারের **Free Fire UID** লিখে দিন।\n\nভিডিও দেওয়ার পর আমাদের সিস্টেম শতভাগ নিশ্চিত হয়ে অভিযুক্ত প্লেয়ারকে **তাৎক্ষণিক পার্মানেন্ট ব্যান (Permanent Ban)** করে দিবে! 🛡️`,
+        response: `🚨 **অ্যান্টি-চিট সাপোর্ট অ্যাকশন (প্রমাণ প্রয়োজন):**\n\nFF RIVAL TOUR BD প্ল্যাটফর্মে প্যানেল, হ্যাক বা যেকোনো অনৈতিক ফাইল ব্যবহার সম্পূর্ণ নিষিদ্ধ!\n\nঅভিযুক্ত প্লেয়ারকে নিশ্চিতভাবে ব্যান করার জন্য প্লেয়ারের **ইন-গেম নাম (IGN)** এবং **স্ক্রিনশট বা ভিডিও লিঙ্ক (Google Drive / YouTube Link)** এখানে দিন।\n\n📹 বড় ভিডিও প্রুফ থাকলে সরাসরি আমাদের অফিসিয়াল টেলিগ্রাম চ্যানেলে পাঠান:\n👉 **[t.me/ffrivalstourbdofficial](https://t.me/ffrivalstourbdofficial)**\n\nপ্রমাণ যাচাইয়ের সাথে সাথেই অভিযুক্ত প্লেয়ারকে **তাৎক্ষণিক পার্মানেন্ট ব্যান (Permanent Ban)** করে দেওয়া হবে! 🛡️`,
         detectedLanguage: lang,
         intent: 'REPORT_CHEATER',
       };
     }
     if (lang === 'BANGLISH') {
       return {
-        response: `🚨 **Anti-Cheat Support Action (Video Proof Required):**\n\nPlatform e kono dhoroner panel ba hack shompurno nishiddho!\n\nCheater-ke confirm ban korar jonno match-er **Anti-cheat Video Recording ba Video Link (Google Drive / YouTube)** ekhane din, ebong shathe tar **Free Fire UID** likhun.\n\nVideo evidence deyar por bot surety check kore accused player-ke **instant permanent ban** kore dibe! 🛡️`,
+        response: `🚨 **Anti-Cheat Support Action (Proof Required):**\n\nPlatform e kono dhoroner panel ba hack shompurno nishiddho!\n\nCheater-ke confirm ban korar jonno suspect player-er **In-Game Name (IGN)** ebong gameplay video ba screenshot proof link ekhane din.\n\n📹 Video proof shorashori pathate official Telegram:\n👉 **[t.me/ffrivalstourbdofficial](https://t.me/ffrivalstourbdofficial)**\n\nProof check kore accused player-ke **instant permanent ban** kore deya hobe! 🛡️`,
         detectedLanguage: lang,
         intent: 'REPORT_CHEATER',
       };
     }
     return {
-      response: `🚨 **Anti-Cheat Support Action (Video Proof Required):**\n\nThird-party panels, cheats, and illegal mods are strictly banned!\n\nTo ensure a guaranteed ban, please provide a **match gameplay video clip or video link (Google Drive / YouTube)** showing the cheating along with the suspect's **Free Fire UID**.\n\nOnce the video evidence is provided, our Anti-Cheat bot will verify and permanently ban the player immediately! 🛡️`,
+      response: `🚨 **Anti-Cheat Support Action (Proof Required):**\n\nThird-party panels, cheats, and illegal mods are strictly banned!\n\nPlease provide the suspect's **In-Game Name (IGN)** and video or screenshot proof link.\n\n📹 Send large video proof directly to our official Telegram:\n👉 **[t.me/ffrivalstourbdofficial](https://t.me/ffrivalstourbdofficial)**\n\nOur Anti-Cheat bot will verify and permanently ban the player immediately! 🛡️`,
       detectedLanguage: lang,
       intent: 'REPORT_CHEATER',
     };

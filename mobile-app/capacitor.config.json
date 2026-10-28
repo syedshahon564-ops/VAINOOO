@@ -3,7 +3,7 @@
   "appName": "FF Rivals",
   "webDir": "www",
   "server": {
-    "url": "https://ffrivalstourbd.com/?app=true&v=5.0.0",
+    "url": "https://hospitable-perception-production-d721.up.railway.app/?app=true&v=5.0.0",
     "cleartext": true,
     "androidScheme": "https",
     "errorPath": "offline.html",
